@@ -113,11 +113,11 @@ export default function Landing() {
                 Explore Events
               </Link>
               <Link
-                to={`/demo`}
-                data-testid="hero-demo-btn"
+                to={`/juri`}
+                data-testid="hero-juri-btn"
                 className="inline-flex items-center justify-center px-6 py-3.5 text-sm font-semibold text-zinc-300 underline decoration-[var(--okx-accent)] decoration-2 underline-offset-4 hover:text-white"
               >
-                Mulai Demo Terpandu
+                Demo untuk Juri — 3 menit
               </Link>
             </div>
             <p className="mt-6 text-xs text-zinc-500">
@@ -255,7 +255,10 @@ export default function Landing() {
             budget, sponsor, tenant, tiket, publish, sandbox payment, QR ticket, validasi, hingga Economic Ripple.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link to="/demo" data-testid="cta-demo-btn" className="bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
+            <Link to="/juri" data-testid="cta-juri-btn" className="bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
+              Demo untuk Juri
+            </Link>
+            <Link to="/demo" data-testid="cta-demo-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">
               Mulai Demo Terpandu
             </Link>
             <Link to="/discover" data-testid="cta-discover-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">

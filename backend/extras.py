@@ -221,7 +221,62 @@ async def stripe_webhook(request: Request):
 
 
 # ------------------------------------------------------------------ role workspaces
-@extras.get("/me/workspace")
+@extras.get("/demo/summary")
+async def demo_summary():
+    """Angka kunci publik untuk halaman Demo untuk Juri — semuanya dari database demo."""
+    import seed_data
+    from server import compute_budget
+
+    ev = await db.events.find_one({"id": seed_data.EVENT_ID}, {"_id": 0})
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event demo belum tersedia. Jalankan reset data demo.")
+    b = await compute_budget(ev["id"])
+    tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    orders = await db.ticket_orders.find({"event_id": ev["id"], "status": "paid"}, {"_id": 0}).to_list(1000)
+    tenants = await db.tenant_applications.find({"event_id": ev["id"], "status": "approved"}, {"_id": 0}).to_list(300)
+    vendors = await db.event_vendors.count_documents({"event_id": ev["id"]})
+    talents = await db.event_talents.count_documents({"event_id": ev["id"]})
+    booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    riders = await db.rider_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    sponsors = await db.sponsor_commitments.find({"event_id": ev["id"], "status": "Confirmed"}, {"_id": 0}).to_list(50)
+    ticket_gmv = sum(o["total"] for o in orders)
+    tenant_revenue = sum(t["amount"] for t in tenants)
+
+    personas = [
+        {"label": "Penyelenggara", "email": "organizer@okkax.id", "scope": "Event Studio, Event Graph, budget, sponsor, tenant, ticketing"},
+        {"label": "Sponsor", "email": "sponsor@okkax.id", "scope": "Sponsor Exchange, express interest, commitments"},
+        {"label": "Tenant", "email": "tenant@okkax.id", "scope": "Tenant Exchange, pilih booth, aplikasi"},
+        {"label": "Pengunjung", "email": "audience@okkax.id", "scope": "Discover, checkout sandbox, QR ticket, refund"},
+        {"label": "Supervisor", "email": "supervisor@okkax.id", "scope": "Command Center, run of show, incident"},
+    ]
+    return {
+        "event": {"id": ev["id"], "event_code": ev["event_code"], "name": ev["name"], "city": ev["city"],
+                  "start_date": ev["start_date"], "end_date": ev.get("end_date"), "capacity": ev["capacity"],
+                  "event_type": ev["event_type"], "organizer_name": ev.get("organizer_name"),
+                  "venue_name": ev.get("venue_name"), "status": ev["status"]},
+        "key_numbers": {
+            "total_event_cost": b["total_cost"],
+            "confirmed_funding": b["confirmed_funding"],
+            "funding_gap": b["funding_gap"],
+            "economic_activity": b["total_cost"] + ticket_gmv + tenant_revenue,
+        },
+        "network": {
+            "talents": talents, "vendors": vendors, "rider_items": len(riders),
+            "sponsor_commitments": len(sponsors), "sponsor_value": sum(s["amount"] for s in sponsors),
+            "booths_total": len(booths), "booths_occupied": len([x for x in booths if x["status"] == "occupied"]),
+            "tenant_revenue": tenant_revenue, "workforce_needed": sum(j["needed"] for j in jobs),
+            "tickets_sold": sum(t["sold"] for t in tiers), "ticket_capacity": sum(t["quantity"] for t in tiers),
+            "ticket_gmv": ticket_gmv, "break_even_tickets": b["break_even_tickets"],
+        },
+        "personas": personas,
+        "demo_password": os.environ.get("DEMO_PASSWORD"),
+        "sample_qr": "OKKAX|" + ev["event_code"] + "|OKX-TIX-000001",
+        "disclaimer": seed_data.DISCLAIMER,
+    }
+
+
+
 async def my_workspace(user: dict = Depends(get_current_user)):
     roles = set(user.get("roles", []))
     out: Dict[str, Any] = {"roles": sorted(roles), "sections": []}

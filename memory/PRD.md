@@ -51,6 +51,14 @@ sponsor, tenant/exhibitor, worker/freelancer, audience, finance approver, event 
 - **Dokumen resmi PDF ber-logo OKKAX** (reportlab): invoice per order, quotation per event (biaya per kategori + funding gap + break-even), payment schedule (semua milestone). Tombol unduh di Orders dan workspace event; otorisasi dijaga.
 - Diuji: 24/24 test backend iterasi 2 + Playwright UI lulus (`/app/backend/tests/test_iteration2.py`).
 
+## Implemented (12 Juni 2026 — iterasi 3)
+- **Halaman "Demo untuk Juri"** di `/juri` (alias `/judges`), ditautkan dari nav publik, footer, dan dua CTA landing:
+  narasi vertikal masalah → solusi, empat angka kunci live dari `GET /api/demo/summary` (memakai `compute_budget`,
+  bukan hard-code), 12 langkah demo terpandu dengan tombol ke route/tab nyata, progress bar tersimpan di
+  localStorage (`okkax_juri_steps`), 5 persona sandbox one-click login (admin & kredensial admin disembunyikan),
+  daftar status Berfungsi / Simulasi Sandbox / Roadmap, dan disclaimer data fiktif.
+- Diuji: 4/4 backend + seluruh 12 tautan langkah, 5 persona, progres persist, mobile 390px tanpa overflow, tanpa console error.
+
 ## Backlog
 - P1: email nyata (Resend) untuk notifikasi & reset password; pembayaran kartu Stripe dalam IDR (butuh akun Stripe Indonesia); nomor tiket dari counter monotonik (hindari race pada fulfillment konkuren).
 - P2: travel/hotel/logistics booking module, verified delivery record & review, tax reference admin, dispute/content report, upload dokumen verifikasi (object storage), SVG Event Graph dengan layout otomatis.

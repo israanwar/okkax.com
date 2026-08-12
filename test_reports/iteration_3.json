@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 3 review: /juri (alias /judges) page + GET /api/demo/summary. All acceptance criteria met. 4/4 backend tests pass, all 12 step buttons navigate correctly, all 5 personas login one-click, progress persists via localStorage and resets, no admin leak, no horizontal overflow on mobile 390x844, no console errors on any tested route. Numbers come from live budget engine (proven by adding a funding item and observing funding_gap drop by exactly Rp50.000.000).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration3.py",
+    "/app/test_reports/pytest/iter3.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "extras.py demo_summary uses `import seed_data; from server import compute_budget` inside function — acceptable to avoid circular import at module load, but consider moving to top with TYPE_CHECKING or a shared budget module for clarity.",
+    "JuriDemo.jsx exposes `d.demo_password` from the summary endpoint and uses it for one-click login. Even though the password is a shared demo credential and page states 'sandbox', exposing a plaintext password in a public JSON endpoint is a smell. For a jury demo this is acceptable; for production, replace with a signed short-lived persona token.",
+    "asPersona() routes only sponsor and tenant to their portals; Supervisor (`supervisor@okkax.id`) is sent to /app instead of the Command Center. Not a blocker (request accepts /app for supervisor+organizer) but consider routing supervisor to Command Center for a more polished demo.",
+    "STEPS labels in the review request say 'event-talent atau talent-card' etc.; actual DOM uses suffixed testids `event-talent-{id}`, `talent-card-{id}`, `venue-card-{id}`, `buy-tier-btn-{id}`. Prefix-selectors confirmed all pages render — no code change needed, only a note for future testers."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration3.py (new)"
+  ],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100% (all 12 steps + 5 personas + progress + responsive + landing links)"},
+  "test_credentials": "organizer@okkax.id / Okkax#2026 (all demo personas share Okkax#2026, verified not leaked in /juri body)",
+  "seed_data_creation": "Test added and then removed a funding item via POST /api/demo/reset to prove numbers are dynamic; demo data was reset to clean state at end.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 3 fully passes. If future iterations touch /juri or /api/demo/summary, re-run `pytest /app/backend/tests/test_iteration3.py -v` plus the Playwright flow that logs in via juri-persona-btn-penyelenggara and clicks each juri-step-btn-*. Note that target-page selectors are suffixed with entity IDs (e.g. event-talent-{id}, talent-card-{id}, venue-card-{id}, buy-tier-btn-{id}) — use starts-with matchers.",
+  "rca_of_the_issue": "No production issues found. Initial Playwright false-negatives on step talent/venue/buy came from the review-request wording listing bare testid names ('event-talent', 'talent-card', 'venue-card', 'buy-tier-btn') while the components actually append entity IDs. Verified via re-run with `[data-testid^=\"...\"]` selectors — all pages render as expected."
+}

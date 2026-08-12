@@ -14,6 +14,7 @@ export const Logo = ({ small }) => (
 
 const links = [
   { to: "/discover", label: "Discover" },
+  { to: "/juri", label: "Demo untuk Juri" },
   { to: "/discover?view=categories", label: "Categories" },
   { to: "/discover?view=cities", label: "Cities" },
   { to: "/for/organizers", label: "For Organizers" },
@@ -148,6 +149,7 @@ export function Footer() {
             <h4 className="mb-3 text-xs font-semibold uppercase tracking-widest text-zinc-500">Network</h4>
             <ul className="space-y-2 text-sm text-zinc-400">
               <li><Link to="/discover">Discover Events</Link></li>
+              <li><Link to="/juri">Demo untuk Juri</Link></li>
               <li><Link to="/for/sponsors">Sponsor Exchange</Link></li>
               <li><Link to="/for/tenants">Tenant Exchange</Link></li>
               <li><Link to="/validator">Ticket Validator</Link></li>

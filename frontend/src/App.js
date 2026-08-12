@@ -17,6 +17,7 @@ import { SponsorPortal, TenantPortal, AdminPanel } from "@/pages/Portals";
 import AuthCallback from "@/pages/AuthCallback";
 import RoleWorkspace from "@/pages/RoleWorkspace";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
+import JuriDemo from "@/pages/JuriDemo";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
@@ -31,6 +32,8 @@ function RouterBody() {
             <Route path="/events/:id" element={<PublicEvent />} />
             <Route path="/for/:audience" element={<ForPage />} />
             <Route path="/demo" element={<GuidedDemo />} />
+            <Route path="/juri" element={<JuriDemo />} />
+            <Route path="/judges" element={<JuriDemo />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
