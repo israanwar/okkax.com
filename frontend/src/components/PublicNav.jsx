@@ -2,13 +2,22 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Menu, X, Bell } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { LOGO_URL } from "@/lib/api";
 
 export const Logo = ({ small }) => (
-  <Link to="/" data-testid="okkax-logo" className="flex items-center gap-2">
-    <span className="flex h-7 w-7 items-center justify-center bg-[var(--okx-accent)] text-sm font-extrabold text-white">
-      O
-    </span>
+  <Link to="/" data-testid="okkax-logo" className="group flex items-center gap-2.5">
+    <span
+      aria-hidden="true"
+      className={`${small ? "h-7 w-7" : "h-8 w-8"} shrink-0 border border-[#ffffff1f] bg-[var(--okx-ivory)] transition-transform group-hover:scale-105`}
+      style={{
+        backgroundImage: `url(${LOGO_URL})`,
+        backgroundSize: "158%",
+        backgroundPosition: "50% 16%",
+        backgroundRepeat: "no-repeat",
+      }}
+    />
     <span className={`font-extrabold tracking-tight ${small ? "text-base" : "text-lg"}`}>OKKAX</span>
+    <span className="sr-only">OKKAX — The Event Economy Operating Network</span>
   </Link>
 );
 

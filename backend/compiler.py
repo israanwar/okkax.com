@@ -125,8 +125,23 @@ def _fallback(brief: dict) -> dict:
     }
 
 
-async def compile_blueprint(brief: dict) -> dict:
+AI_ENGINES = {
+    "gpt-5.4": {"provider": "openai", "model": "gpt-5.4", "label": "ChatGPT GPT-5.4", "vendor": "OpenAI"},
+    "gpt-5.5": {"provider": "openai", "model": "gpt-5.5", "label": "ChatGPT GPT-5.5", "vendor": "OpenAI"},
+    "gpt-5.4-mini": {"provider": "openai", "model": "gpt-5.4-mini", "label": "ChatGPT GPT-5.4 Mini (cepat)", "vendor": "OpenAI"},
+    "claude-haiku-4-5-20251001": {"provider": "anthropic", "model": "claude-haiku-4-5-20251001", "label": "Claude Haiku 4.5", "vendor": "Anthropic"},
+    "claude-sonnet-4-6": {"provider": "anthropic", "model": "claude-sonnet-4-6", "label": "Claude Sonnet 4.6", "vendor": "Anthropic"},
+}
+DEFAULT_ENGINE = "gpt-5.4"
+
+
+def resolve_engine(engine: str | None) -> dict:
+    return AI_ENGINES.get(engine or "", AI_ENGINES[DEFAULT_ENGINE])
+
+
+async def compile_blueprint(brief: dict, engine: str | None = None) -> dict:
     key = os.environ.get("EMERGENT_LLM_KEY")
+    eng = resolve_engine(engine)
     if not key:
         return _fallback(brief)
     try:
@@ -136,7 +151,7 @@ async def compile_blueprint(brief: dict) -> dict:
             api_key=key,
             session_id=f"okkax-compile-{brief.get('event_id')}",
             system_message=SYSTEM,
-        ).with_model("anthropic", "claude-haiku-4-5-20251001").with_params(max_tokens=14000)
+        ).with_model(eng["provider"], eng["model"]).with_params(max_tokens=14000)
         msg = UserMessage(text="Event brief (JSON):\n" + json.dumps(brief, default=str, ensure_ascii=False))
         raw = await asyncio.wait_for(chat.send_message(msg), timeout=150)
         text = raw if isinstance(raw, str) else str(raw)
@@ -149,11 +164,15 @@ async def compile_blueprint(brief: dict) -> dict:
         data = json.loads(text[start:end + 1])
         base = _fallback(brief)
         base.update({k: v for k, v in data.items() if v})
-        base["source"] = "claude-haiku-4-5"
+        base["source"] = eng["model"]
+        base["ai_engine"] = eng["model"]
+        base["ai_vendor"] = eng["vendor"]
         return base
     except Exception as e:
         logger.warning(f"AI compile failed, using deterministic fallback: {e}")
         fb = _fallback(brief)
         fb["source"] = "rule_based_fallback"
+        fb["ai_engine"] = eng["model"]
+        fb["ai_vendor"] = eng["vendor"]
         fb["ai_error"] = str(e)[:200]
         return fb

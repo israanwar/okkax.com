@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, ArrowRight, Maximize2, Minimize2, Play, Pause, RotateCcw, X, ExternalLink,
 } from "lucide-react";
-import { api, apiError, compact, idr, num, DEMO_EVENT_ID } from "@/lib/api";
+import { api, apiError, compact, idr, num, DEMO_EVENT_ID, LOGO_URL } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const FRAGMENTS = ["Brief", "Talent", "Rider", "Venue", "Vendor", "Sponsor", "Tenant", "Pekerja", "Ticketing", "Pembayaran", "Laporan"];
@@ -278,7 +278,16 @@ export default function PresentationMode() {
       {/* header */}
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--okx-border)] px-4 py-2.5 sm:px-8">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-6 w-6 items-center justify-center bg-[var(--okx-accent)] text-xs font-extrabold text-white">O</span>
+          <span
+            aria-hidden="true"
+            className="h-7 w-7 shrink-0 border border-[#ffffff1f] bg-[var(--okx-ivory)]"
+            style={{
+              backgroundImage: `url(${LOGO_URL})`,
+              backgroundSize: "158%",
+              backgroundPosition: "50% 16%",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
           <span className="text-sm font-extrabold tracking-tight sm:text-base">OKKAX</span>
           <span className="hidden text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:block">
             Event Economy Operating Network

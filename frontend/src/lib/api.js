@@ -34,6 +34,9 @@ export const num = (n) => new Intl.NumberFormat("id-ID").format(Math.round(n || 
 export const DISCLAIMER =
   "Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk keperluan demonstrasi kompetisi.";
 export const SANDBOX_NOTICE = "Mode demo kompetisi. Tidak ada uang nyata yang akan ditagihkan.";
+export const LOGO_URL =
+  "https://customer-assets-eiarnc6j.emergentagent.net/job_economy-network/artifacts/o3lnpfcw_LOGO%20OKKAX.png";
+
 export const DEMO_EVENT_ID = "evt-aruna-2026";
 
 export async function downloadDoc(path, filename) {

@@ -17,15 +17,16 @@ from pydantic import BaseModel, EmailStr, Field
 from core import (db, nid, now_iso, hash_password, verify_password, create_access_token, clean,
                   get_current_user, get_optional_user, require_roles, is_admin, audit, notify,
                   get_event_or_404, assert_event_access, ROLES, ROLE_KEYS)
-from compiler import compile_blueprint, _fallback as baseline_blueprint
+from compiler import (compile_blueprint, _fallback as baseline_blueprint,
+                      AI_ENGINES, DEFAULT_ENGINE, resolve_engine)
 import asyncio
 import seed_data
 
 
-async def refine_blueprint(event_id: str, brief: dict, doc_id: str):
+async def refine_blueprint(event_id: str, brief: dict, doc_id: str, engine: str | None = None):
     """AI Event Compiler runs in background so the UI stays responsive."""
     try:
-        bp = await compile_blueprint(brief)
+        bp = await compile_blueprint(brief, engine)
         bp.pop("id", None)
         await db.event_blueprints.update_one(
             {"id": doc_id},
@@ -321,8 +322,14 @@ async def get_brief(event_id: str, user: dict = Depends(get_current_user)):
     return {"event": ev, "brief": b}
 
 
+@api.get("/ai/engines")
+async def ai_engines():
+    return {"default": DEFAULT_ENGINE,
+            "engines": [{"key": k, **v} for k, v in AI_ENGINES.items()]}
+
+
 @api.post("/events/{event_id}/compile")
-async def compile_event(event_id: str, user: dict = Depends(get_current_user)):
+async def compile_event(event_id: str, engine: str | None = None, user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user, write=True)
     brief_doc = await db.event_briefs.find_one({"event_id": ev["id"]}, {"_id": 0})
@@ -330,9 +337,11 @@ async def compile_event(event_id: str, user: dict = Depends(get_current_user)):
     brief["event_id"] = ev["id"]
     bp = baseline_blueprint(brief)
     await db.event_blueprints.delete_many({"event_id": ev["id"]})
-    doc = {"id": nid(), "event_id": ev["id"], **bp, "ai_status": "refining", "created_at": now_iso()}
+    eng = resolve_engine(engine)
+    doc = {"id": nid(), "event_id": ev["id"], **bp, "ai_status": "refining",
+           "ai_engine": eng["model"], "ai_vendor": eng["vendor"], "created_at": now_iso()}
     await db.event_blueprints.insert_one(doc)
-    asyncio.create_task(refine_blueprint(ev["id"], brief, doc["id"]))
+    asyncio.create_task(refine_blueprint(ev["id"], brief, doc["id"], eng["model"]))
     # seed estimated budget items from blueprint if none exist
     if await db.budget_items.count_documents({"event_id": ev["id"]}) == 0:
         for c in bp.get("budget_categories", []):

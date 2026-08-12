@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Logo } from "@/components/PublicNav";
 import { useAuth } from "@/context/AuthContext";
-import { api, apiError } from "@/lib/api";
+import { api, apiError, LOGO_URL } from "@/lib/api";
 
 const ROLE_OPTIONS = [
   ["organizer", "Organizer / Corporate Buyer"],
@@ -35,6 +35,11 @@ function Shell({ title, subtitle, children }) {
       <div className="hidden flex-col justify-between border-r border-[var(--okx-border)] bg-[#070707] p-10 lg:flex">
         <Logo />
         <div>
+          <img
+            src={LOGO_URL}
+            alt="Logo OKKAX"
+            className="mb-8 h-28 w-28 border border-[#ffffff14] bg-[var(--okx-ivory)] object-contain p-2"
+          />
           <h2 className="editorial text-4xl leading-tight">One event.<br /><span className="accent-text">Every moving part.</span></h2>
           <p className="mt-4 max-w-sm text-sm text-zinc-400">
             OKKAX — The Event Economy Operating Network. Brief, blueprint, talent, venue, vendor, sponsor,

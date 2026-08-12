@@ -7,6 +7,15 @@ export function Blueprint({ eventId, event }) {
   const [brief, setBrief] = useState(null);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState("");
+  const [engines, setEngines] = useState([]);
+  const [engine, setEngine] = useState("");
+
+  useEffect(() => {
+    api.get("/ai/engines").then(({ data }) => {
+      setEngines(data.engines || []);
+      setEngine(data.default);
+    }).catch(() => {});
+  }, []);
 
   const load = async () => {
     const [{ data: b }, { data: br }] = await Promise.all([
@@ -25,7 +34,7 @@ export function Blueprint({ eventId, event }) {
   const compile = async () => {
     setBusy(true);
     try {
-      const { data } = await api.post(`/events/${eventId}/compile`);
+      const { data } = await api.post(`/events/${eventId}/compile`, null, { params: engine ? { engine } : {} });
       setBp(data.blueprint);
       setSummary(data.blueprint.summary);
     } finally {
@@ -62,9 +71,21 @@ export function Blueprint({ eventId, event }) {
             · Semua output AI dapat diedit sebelum dikonfirmasi.
           </p>
         </div>
-        <button data-testid="compile-btn" onClick={compile} disabled={busy} className="bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold disabled:opacity-60">
-          {busy ? "AI Event Compiler bekerja…" : bp ? "Kompilasi ulang" : "Compile Blueprint"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select
+            data-testid="ai-engine-select"
+            value={engine}
+            onChange={(e) => setEngine(e.target.value)}
+            className="border border-[var(--okx-border)] bg-[var(--okx-surface)] px-3 py-2.5 text-xs text-zinc-300 focus:outline-none"
+          >
+            {engines.map((e) => (
+              <option key={e.key} value={e.key}>{e.label}</option>
+            ))}
+          </select>
+          <button data-testid="compile-btn" onClick={compile} disabled={busy} className="bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold disabled:opacity-60">
+            {busy ? "AI Event Compiler bekerja…" : bp ? "Kompilasi ulang" : "Compile Blueprint"}
+          </button>
+        </div>
       </div>
 
       {!bp ? (
