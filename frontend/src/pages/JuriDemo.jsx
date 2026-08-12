@@ -34,7 +34,7 @@ const CAPABILITIES = [
 
 export default function JuriDemo() {
   const nav = useNavigate();
-  const { user, login } = useAuth();
+  const { user, adoptSession } = useAuth();
   const [d, setD] = useState(null);
   const [err, setErr] = useState("");
   const [done, setDone] = useState(() => JSON.parse(localStorage.getItem("okkax_juri_steps") || "[]"));
@@ -55,13 +55,13 @@ export default function JuriDemo() {
     nav(path);
   };
 
-  const asPersona = async (email) => {
-    if (!d?.demo_password) return;
-    setBusy(email);
+  const asPersona = async (persona) => {
+    setBusy(persona.email);
     try {
-      await login(email, d.demo_password);
-      toast.success(`Masuk sebagai ${email}`);
-      nav(email.startsWith("sponsor") ? "/app/sponsor" : email.startsWith("tenant") ? "/app/tenant" : "/app");
+      const { data } = await api.post("/demo/persona-login", { label: persona.label });
+      await adoptSession(data.token);
+      toast.success(`Masuk sebagai ${persona.label}`);
+      nav(persona.label === "Sponsor" ? "/app/sponsor" : persona.label === "Tenant" ? "/app/tenant" : "/app");
     } catch (e) {
       toast.error(apiError(e));
     } finally {
@@ -127,6 +127,13 @@ export default function JuriDemo() {
           <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
             Demo untuk Juri · 3 menit
           </span>
+          <Link
+            to="/present"
+            data-testid="juri-present-top-btn"
+            className="ml-2 inline-block border border-[var(--okx-border)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-300 hover:border-[var(--okx-accent)] hover:accent-text"
+          >
+            Mode Presentasi
+          </Link>
           <h1 className="editorial mt-6 text-4xl leading-[1.05] sm:text-5xl lg:text-6xl">
             Industri event tidak kekurangan pihak.
             <br />
@@ -204,7 +211,7 @@ export default function JuriDemo() {
                 <button
                   data-testid={`juri-persona-btn-${p.label.toLowerCase()}`}
                   disabled={busy === p.email}
-                  onClick={() => asPersona(p.email)}
+                  onClick={() => asPersona(p)}
                   className="inline-flex items-center justify-center gap-2 bg-[#0a0a0a] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--okx-accent)] disabled:opacity-60"
                 >
                   {busy === p.email ? "Masuk…" : `Masuk sebagai ${p.label}`} <ArrowRight size={14} />
@@ -314,7 +321,10 @@ export default function JuriDemo() {
             Stripe test mode. Estimasi pajak memerlukan verifikasi profesional dan bukan nasihat pajak.
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link to="/discover" data-testid="juri-discover-btn" className="inline-flex items-center justify-center gap-2 bg-[var(--okx-accent)] px-5 py-3 text-sm font-semibold">
+            <Link to="/present" data-testid="juri-present-btn" className="inline-flex items-center justify-center gap-2 bg-[var(--okx-accent)] px-5 py-3 text-sm font-semibold">
+              <Sparkles size={15} /> Mulai Presentasi (layar penuh, 8 scene)
+            </Link>
+            <Link to="/discover" data-testid="juri-discover-btn" className="inline-flex items-center justify-center gap-2 border border-[var(--okx-border)] px-5 py-3 text-sm font-semibold hover:border-[var(--okx-accent)]">
               <Map size={15} /> Explore Events
             </Link>
             <Link to={`/events/${ev.id}`} data-testid="juri-public-event-btn" className="inline-flex items-center justify-center border border-[var(--okx-border)] px-5 py-3 text-sm font-semibold hover:border-[var(--okx-accent)]">

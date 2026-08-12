@@ -51,7 +51,25 @@ sponsor, tenant/exhibitor, worker/freelancer, audience, finance approver, event 
 - **Dokumen resmi PDF ber-logo OKKAX** (reportlab): invoice per order, quotation per event (biaya per kategori + funding gap + break-even), payment schedule (semua milestone). Tombol unduh di Orders dan workspace event; otorisasi dijaga.
 - Diuji: 24/24 test backend iterasi 2 + Playwright UI lulus (`/app/backend/tests/test_iteration2.py`).
 
-## Implemented (12 Juni 2026 — iterasi 3)
+## Implemented (12 Juni 2026 — iterasi 5)
+- **Sistem tipografi baru**: `Bricolage Grotesque` (headline editorial, kuat di proyektor), `Plus Jakarta Sans`
+  (UI & body — typeface yang dirancang untuk Jakarta, relevan dengan konteks produk Indonesia),
+  `IBM Plex Mono` (angka finansial, Event ID, dan metrik dengan tabular numbers).
+- Polish UI: `:focus-visible` ring aksen untuk aksesibilitas keyboard, transisi properti spesifik pada tombol/tautan,
+  micro press-state, `text-wrap: balance` pada headline editorial.
+- **Perbaikan keamanan**: `/api/demo/summary` tidak lagi mengembalikan kata sandi demo; persona one-click kini
+  memakai `POST /api/demo/persona-login` yang hanya mengizinkan 5 persona sandbox (administrator ditolak 403).
+
+
+- **Mode Presentasi** layar penuh di `/present` (tertaut dari /juri, footer): 8 scene guided product story — Masalah,
+  Event Brief, Event Compiler, Event Network (Event Graph sebagai visual utama), Biaya & Pendanaan, Transaksi,
+  Operasi, Dampak. Semua angka dari `GET /api/demo/summary` (ditambah blok `brief`, `operations`, `ripple`,
+  read-only, tanpa data sensitif). Navigasi tombol + keyboard ArrowLeft/ArrowRight/Escape, dot per scene,
+  progress 1/8, fullscreen API, auto-advance 20 detik default MATI, tombol Buka Detail ke route asli, dan Reset Demo.
+- Diverifikasi: 8 scene tampil, keyboard & dot bekerja, tanpa horizontal overflow dan tanpa teks terpotong pada
+  1366×768 serta 1920×1080, tanpa console error, tanpa kebocoran akun/kredensial/token.
+
+
 - **Halaman "Demo untuk Juri"** di `/juri` (alias `/judges`), ditautkan dari nav publik, footer, dan dua CTA landing:
   narasi vertikal masalah → solusi, empat angka kunci live dari `GET /api/demo/summary` (memakai `compute_budget`,
   bukan hard-code), 12 langkah demo terpandu dengan tombol ke route/tab nyata, progress bar tersimpan di

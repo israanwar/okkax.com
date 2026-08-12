@@ -150,6 +150,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-zinc-400">
               <li><Link to="/discover">Discover Events</Link></li>
               <li><Link to="/juri">Demo untuk Juri</Link></li>
+              <li><Link to="/present">Mode Presentasi</Link></li>
               <li><Link to="/for/sponsors">Sponsor Exchange</Link></li>
               <li><Link to="/for/tenants">Tenant Exchange</Link></li>
               <li><Link to="/validator">Ticket Validator</Link></li>

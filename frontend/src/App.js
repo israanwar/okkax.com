@@ -18,6 +18,7 @@ import AuthCallback from "@/pages/AuthCallback";
 import RoleWorkspace from "@/pages/RoleWorkspace";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 import JuriDemo from "@/pages/JuriDemo";
+import PresentationMode from "@/pages/PresentationMode";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
@@ -34,6 +35,7 @@ function RouterBody() {
             <Route path="/demo" element={<GuidedDemo />} />
             <Route path="/juri" element={<JuriDemo />} />
             <Route path="/judges" element={<JuriDemo />} />
+            <Route path="/present" element={<PresentationMode />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

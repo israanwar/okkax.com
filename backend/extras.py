@@ -243,6 +243,31 @@ async def demo_summary():
     ticket_gmv = sum(o["total"] for o in orders)
     tenant_revenue = sum(t["amount"] for t in tenants)
 
+    et = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    headliner = max(et, key=lambda x: x["landed_cost"]) if et else None
+    evendors = await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    venue = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+    milestones = await db.payment_milestones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    incidents = await db.incidents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    packages = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    rider_matched = len([r for r in riders if r["status"] == "Matched"])
+    workforce_filled = sum(j["filled"] for j in jobs)
+    workforce_needed = sum(j["needed"] for j in jobs)
+    vendors_confirmed = len([v for v in evendors if v["status"] == "Confirmed"])
+    checks = [
+        any(t["status"] == "Confirmed" for t in et),
+        bool(venue and venue["status"] == "Confirmed"),
+        rider_matched / max(1, len(riders)) > 0.5,
+        vendors_confirmed / max(1, len(evendors)) > 0.5,
+        workforce_filled / max(1, workforce_needed) > 0.5,
+        any(t.get("active") for t in tiers),
+        len([x for x in booths if x["status"] == "occupied"]) > 0,
+        len(sponsors) > 0,
+    ]
+    readiness = int(100 * sum(1 for c in checks if c) / len(checks))
+    vendor_payout = sum(v["cost"] for v in evendors)
+    workforce_payout = sum(j["needed"] * j["compensation_per_day"] * j.get("days", 1) for j in jobs)
+
     personas = [
         {"label": "Penyelenggara", "email": "organizer@okkax.id", "scope": "Event Studio, Event Graph, budget, sponsor, tenant, ticketing"},
         {"label": "Sponsor", "email": "sponsor@okkax.id", "scope": "Sponsor Exchange, express interest, commitments"},
@@ -270,13 +295,45 @@ async def demo_summary():
             "ticket_gmv": ticket_gmv, "break_even_tickets": b["break_even_tickets"],
         },
         "personas": personas,
-        "demo_password": os.environ.get("DEMO_PASSWORD"),
+        "sandbox_login": "POST /api/demo/persona-login {\"label\": \"Penyelenggara\"}",
+        "brief": {
+            "city": ev["city"], "days": ev["days"], "setup_days": ev["setup_days"],
+            "capacity": ev["capacity"], "budget": ev["budget"], "objective": ev.get("objective"),
+            "headliner": (headliner or {}).get("talent_name"),
+            "headliner_landed_cost": (headliner or {}).get("landed_cost", 0),
+            "headliner_fee": (headliner or {}).get("fee", 0),
+            "booths": len(booths), "sponsor_tiers": len(packages),
+            "audience_profile": ev.get("audience_profile"),
+        },
+        "operations": {
+            "readiness": readiness,
+            "rider_matched": rider_matched, "rider_total": len(riders),
+            "workforce_filled": workforce_filled, "workforce_needed": workforce_needed,
+            "vendors_confirmed": vendors_confirmed, "vendors_total": len(evendors),
+            "milestones_paid": len([m for m in milestones if m["status"] == "Simulated Paid"]),
+            "milestones_total": len(milestones),
+            "milestones_pending_amount": sum(m["amount"] for m in milestones if m["status"] != "Simulated Paid"),
+            "incidents_open": len([i for i in incidents if i["status"] != "Resolved"]),
+            "incidents_total": len(incidents),
+            "tickets_sold": sum(t["sold"] for t in tiers), "ticket_capacity": sum(t["quantity"] for t in tiers),
+        },
+        "ripple": {
+            "businesses_activated": len(evendors) + len(tenants) + (1 if venue else 0) + len(et),
+            "workers_activated": workforce_needed,
+            "vendor_payout": vendor_payout,
+            "workforce_payout": workforce_payout,
+            "venue_income": (venue or {}).get("total_cost", 0),
+            "ticket_gmv": ticket_gmv,
+            "economic_activity": b["total_cost"] + ticket_gmv + tenant_revenue,
+        },
+        "demo_password": None,
         "sample_qr": "OKKAX|" + ev["event_code"] + "|OKX-TIX-000001",
         "disclaimer": seed_data.DISCLAIMER,
     }
 
 
 
+@extras.get("/me/workspace")
 async def my_workspace(user: dict = Depends(get_current_user)):
     roles = set(user.get("roles", []))
     out: Dict[str, Any] = {"roles": sorted(roles), "sections": []}
@@ -336,6 +393,35 @@ async def my_workspace(user: dict = Depends(get_current_user)):
         out["sections"].append({"kind": "finance", "title": "Persetujuan pembayaran", "items": rows})
 
     return out
+
+
+PERSONA_EMAILS = {
+    "Penyelenggara": "organizer@okkax.id",
+    "Sponsor": "sponsor@okkax.id",
+    "Tenant": "tenant@okkax.id",
+    "Pengunjung": "audience@okkax.id",
+    "Supervisor": "supervisor@okkax.id",
+}
+
+
+@extras.post("/demo/persona-login")
+async def persona_login(body: Dict[str, Any], response: Response):
+    """Masuk sekali klik sebagai persona sandbox. Persona administrator tidak diizinkan."""
+    email = PERSONA_EMAILS.get(body.get("label"))
+    if not email:
+        raise HTTPException(status_code=400, detail="Persona demo tidak dikenali")
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="Persona demo belum diseed. Jalankan reset data demo.")
+    if {"super_admin", "platform_admin"}.intersection(set(user.get("roles", []))):
+        raise HTTPException(status_code=403, detail="Persona administrator tidak tersedia pada mode demo")
+    user = clean(user)
+    token = create_access_token(user["id"], email)
+    response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none",
+                        path="/", max_age=7 * 24 * 3600)
+    await audit(None, user, "demo.persona_login", {"label": body.get("label")})
+    return {"token": token, "user": user}
+
 
 
 @extras.post("/me/workspace/confirm")
