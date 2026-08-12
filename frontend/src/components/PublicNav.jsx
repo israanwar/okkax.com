@@ -8,11 +8,11 @@ export const Logo = ({ small }) => (
   <Link to="/" data-testid="okkax-logo" className="group flex items-center gap-2.5">
     <span
       aria-hidden="true"
-      className={`${small ? "h-7 w-7" : "h-8 w-8"} shrink-0 border border-[#ffffff1f] bg-[var(--okx-ivory)] transition-transform group-hover:scale-105`}
+      className={`${small ? "h-7 w-7" : "h-8 w-8"} shrink-0 border border-[#ffffff1a] bg-[#0a0a0a] transition-transform group-hover:scale-105`}
       style={{
         backgroundImage: `url(${LOGO_URL})`,
-        backgroundSize: "158%",
-        backgroundPosition: "50% 16%",
+        backgroundSize: "120%",
+        backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
     />

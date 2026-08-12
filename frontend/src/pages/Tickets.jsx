@@ -137,7 +137,7 @@ export function Validator() {
     result?.result === "Valid"
       ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
       : result?.result === "Already Used"
-      ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
+      ? "border-[var(--okx-accent)]/50 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
       : "border-red-500/50 bg-red-500/10 text-red-400";
   return (
     <div className="max-w-xl">

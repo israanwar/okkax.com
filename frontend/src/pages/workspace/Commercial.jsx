@@ -204,7 +204,7 @@ export function TenantsTab({ eventId, onChange }) {
                     b.status === "occupied"
                       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
                       : b.status === "reserved"
-                      ? "border-amber-500/40 bg-amber-500/10 text-amber-400"
+                      ? "border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
                       : "border-[var(--okx-border)] text-zinc-400"
                   }`}
                 >

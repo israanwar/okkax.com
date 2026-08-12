@@ -232,6 +232,8 @@ async def seed(force: bool = False):
             availability=["2026-08-13", "2026-08-14", "2026-08-15"], created_at=now_iso()))
 
     await seed_demo_event()
+    from seed_events import seed_extra_events
+    await seed_extra_events()
     return {"seeded": True, "disclaimer": DISCLAIMER}
 
 

@@ -97,7 +97,7 @@ export default function AppShell({ children }) {
           data-testid={`side-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
-              isActive ? "bg-[#1c0a02] accent-text" : "text-zinc-400 hover:bg-[var(--okx-surface)] hover:text-white"
+              isActive ? "bg-[var(--okx-accent-tint)] accent-text" : "text-zinc-400 hover:bg-[var(--okx-surface)] hover:text-white"
             }`
           }
         >

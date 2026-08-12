@@ -182,7 +182,7 @@ export default function Checkout() {
                       <button
                         data-testid="pay-mode-sandbox"
                         onClick={() => setUseStripe(false)}
-                        className={`border px-3 py-3 text-left text-sm ${!useStripe ? "border-[var(--okx-accent)] bg-[#1c0a02]" : "border-[var(--okx-border)]"}`}
+                        className={`border px-3 py-3 text-left text-sm ${!useStripe ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-[var(--okx-border)]"}`}
                       >
                         Sandbox internal OKKAX
                         <div className="text-[11px] text-zinc-500">VA, QRIS, e-wallet, retail, corporate</div>
@@ -190,7 +190,7 @@ export default function Checkout() {
                       <button
                         data-testid="pay-mode-stripe"
                         onClick={() => setUseStripe(true)}
-                        className={`border px-3 py-3 text-left text-sm ${useStripe ? "border-[var(--okx-accent)] bg-[#1c0a02]" : "border-[var(--okx-border)]"}`}
+                        className={`border px-3 py-3 text-left text-sm ${useStripe ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-[var(--okx-border)]"}`}
                       >
                         Kartu via Stripe test mode
                         <div className="text-[11px] text-zinc-500">Kartu uji 4242 4242 4242 4242</div>
@@ -215,7 +215,7 @@ export default function Checkout() {
                           }}
                           className={`border px-3 py-2.5 text-left text-sm transition-colors ${
                             method?.key === m.key
-                              ? "border-[var(--okx-accent)] bg-[#1c0a02]"
+                              ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]"
                               : "border-[var(--okx-border)] hover:border-zinc-500"
                           } disabled:cursor-not-allowed disabled:opacity-40`}
                         >

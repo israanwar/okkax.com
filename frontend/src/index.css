@@ -7,8 +7,10 @@
     --okx-surface: #141414;
     --okx-surface-2: #1b1b1b;
     --okx-ivory: #fdfbf7;
-    --okx-accent: #ff4500;
-    --okx-accent-hover: #e34234;
+    --okx-accent: #ff2e7e;
+    --okx-accent-hover: #e01f68;
+    --okx-accent-soft: #ff7ab0;
+    --okx-accent-tint: #1b0711;
     --okx-border: #27272a;
     --okx-muted: #a1a1aa;
 }
@@ -21,19 +23,19 @@
         --card-foreground: 0 0% 100%;
         --popover: 0 0% 8%;
         --popover-foreground: 0 0% 100%;
-        --primary: 16 100% 50%;
+        --primary: 338 100% 59%;
         --primary-foreground: 0 0% 100%;
         --secondary: 0 0% 11%;
         --secondary-foreground: 0 0% 100%;
         --muted: 0 0% 11%;
         --muted-foreground: 240 5% 65%;
-        --accent: 16 100% 50%;
+        --accent: 338 100% 59%;
         --accent-foreground: 0 0% 100%;
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 100%;
         --border: 240 4% 16%;
         --input: 240 4% 16%;
-        --ring: 16 100% 50%;
+        --ring: 338 100% 59%;
         --radius: 0.25rem;
     }
 }

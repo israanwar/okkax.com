@@ -1,22 +1,27 @@
+const OK = "text-white border-white/40 bg-white/10";
+const WARN = "text-[var(--okx-accent-soft)] border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10";
+const CRIT = "text-white border-[var(--okx-accent)] bg-[var(--okx-accent)]/25";
+const IDLE = "text-zinc-400 border-zinc-700 bg-zinc-500/10";
+
 export const STATUS_STYLES = {
-  Confirmed: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10",
-  Completed: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10",
-  Matched: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10",
-  Pending: "text-amber-400 border-amber-500/40 bg-amber-500/10",
-  "Requires Confirmation": "text-amber-400 border-amber-500/40 bg-amber-500/10",
-  "Partially Matched": "text-amber-400 border-amber-500/40 bg-amber-500/10",
-  Draft: "text-zinc-400 border-zinc-600 bg-zinc-500/10",
-  "Not Started": "text-zinc-400 border-zinc-600 bg-zinc-500/10",
-  "In Progress": "text-sky-400 border-sky-500/40 bg-sky-500/10",
-  Missing: "text-red-400 border-red-500/40 bg-red-500/10",
-  Conflicted: "text-red-400 border-red-500/40 bg-red-500/10",
-  Blocked: "text-red-400 border-red-500/40 bg-red-500/10",
-  "At Risk": "text-orange-400 border-orange-500/40 bg-orange-500/10",
-  Cancelled: "text-zinc-500 border-zinc-700 bg-zinc-800/40",
+  Confirmed: OK,
+  Completed: OK,
+  Matched: OK,
+  Pending: WARN,
+  "Requires Confirmation": WARN,
+  "Partially Matched": WARN,
+  Draft: IDLE,
+  "Not Started": IDLE,
+  "In Progress": WARN,
+  Missing: CRIT,
+  Conflicted: CRIT,
+  Blocked: CRIT,
+  "At Risk": CRIT,
+  Cancelled: IDLE,
 };
 
 export default function StatusBadge({ status, className = "", testId }) {
-  const style = STATUS_STYLES[status] || "text-zinc-300 border-zinc-700 bg-zinc-800/40";
+  const style = STATUS_STYLES[status] || IDLE;
   return (
     <span
       data-testid={testId}

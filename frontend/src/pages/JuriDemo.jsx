@@ -10,7 +10,7 @@ const FRAGMENTS = ["Brief", "Talent", "Rider", "Venue", "Vendor", "Sponsor", "Te
 
 const STATUS_MAP = {
   live: ["Berfungsi", "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"],
-  sandbox: ["Simulasi Sandbox", "border-amber-500/40 bg-amber-500/10 text-amber-400"],
+  sandbox: ["Simulasi Sandbox", "border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"],
   roadmap: ["Roadmap", "border-zinc-600 bg-zinc-500/10 text-zinc-400"],
 };
 
@@ -245,7 +245,7 @@ export default function JuriDemo() {
             </button>
           </div>
           {!user && (
-            <p className="mt-3 flex items-start gap-2 text-xs text-amber-400">
+            <p className="mt-3 flex items-start gap-2 text-xs text-[var(--okx-accent-soft)]">
               <ShieldAlert size={13} className="mt-0.5 shrink-0" />
               Pilih persona di atas terlebih dahulu agar setiap langkah terbuka tanpa halaman login.
             </p>

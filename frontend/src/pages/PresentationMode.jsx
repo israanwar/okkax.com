@@ -341,7 +341,7 @@ export default function PresentationMode() {
             ))}
             <span className="num text-[10px] text-zinc-600 sm:text-xs">Data demonstrasi fiktif · pembayaran sandbox</span>
             {!user && (
-              <Link to="/juri" data-testid="present-login-hint" className="text-[10px] text-amber-400 underline sm:text-xs">
+              <Link to="/juri" data-testid="present-login-hint" className="text-[10px] text-[var(--okx-accent-soft)] underline sm:text-xs">
                 Masuk sebagai persona demo agar tombol detail langsung terbuka
               </Link>
             )}

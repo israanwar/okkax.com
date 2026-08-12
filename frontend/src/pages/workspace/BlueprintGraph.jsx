@@ -96,7 +96,7 @@ export function Blueprint({ eventId, event }) {
         <div className="space-y-6" data-testid="blueprint-content">
           <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
             <div className="flex items-center gap-2">
-              <span className="border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-400">Estimasi AI</span>
+              <span className="border border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 px-2 py-0.5 text-[11px] text-[var(--okx-accent-soft)]">Estimasi AI</span>
               <span className="text-xs text-zinc-500">Dapat diedit · bukan keputusan final</span>
             </div>
             <textarea
@@ -171,32 +171,79 @@ function Section({ title, rows = [] }) {
   );
 }
 
-const KIND_COLOR = {
-  Event: "#ff4500", Talent: "#f59e0b", Rider: "#f59e0b", Venue: "#38bdf8", Vendor: "#38bdf8",
-  Sponsor: "#a3e635", Tenant: "#a3e635", Worker: "#e879f9", "Ticket tier": "#34d399",
-  Budget: "#fbbf24", Funding: "#fbbf24", Risk: "#ef4444", Payment: "#34d399", Organizer: "#ffffff",
+const KIND_STYLE = {
+  Event: { c: "#ffffff", r: 30 },
+  Organizer: { c: "#ffffff", r: 15 },
+  Talent: { c: "#ff2e7e", r: 17 },
+  Rider: { c: "#ff7ab0", r: 13 },
+  Venue: { c: "#ff2e7e", r: 18 },
+  Vendor: { c: "#ff9ec4", r: 12 },
+  Sponsor: { c: "#ff2e7e", r: 15 },
+  Tenant: { c: "#ff7ab0", r: 15 },
+  Worker: { c: "#ffffff", r: 15 },
+  "Ticket tier": { c: "#ff7ab0", r: 14 },
+  Budget: { c: "#ffffff", r: 16 },
+  Funding: { c: "#ff2e7e", r: 16 },
+  Risk: { c: "#ff2e7e", r: 14 },
+  Payment: { c: "#ff7ab0", r: 13 },
 };
+const styleOf = (k) => KIND_STYLE[k] || { c: "#a1a1aa", r: 12 };
+const W = 1280;
+const H = 860;
+
+function layout(nodes) {
+  const pos = { event: { x: W / 2, y: H / 2 } };
+  const kinds = [...new Set(nodes.filter((n) => n.id !== "event").map((n) => n.kind))];
+  kinds.forEach((k, gi) => {
+    const g = nodes.filter((n) => n.kind === k && n.id !== "event");
+    const angle = (gi / kinds.length) * Math.PI * 2 - Math.PI / 2;
+    const spread = Math.min(0.62, 1.05 / kinds.length + 0.12 + (g.length > 6 ? 0.16 : 0));
+    g.forEach((n, i) => {
+      const t = g.length === 1 ? 0 : (i / (g.length - 1) - 0.5) * 2;
+      const a = angle + t * spread;
+      const rad = 235 + (i % 4) * 95;
+      pos[n.id] = { x: W / 2 + Math.cos(a) * rad * 1.35, y: H / 2 + Math.sin(a) * rad * 0.86 };
+    });
+  });
+  return { pos };
+}
 
 export function Graph({ eventId }) {
   const [data, setData] = useState(null);
   const [filter, setFilter] = useState("");
   const [active, setActive] = useState(null);
+  const [hover, setHover] = useState(null);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
+    setData(null);
     api.get(`/events/${eventId}/graph`).then(({ data }) => setData(data));
   }, [eventId]);
 
-  if (!data) return <div className="text-sm text-zinc-500">Memuat Event Graph…</div>;
+  if (!data) return <div className="text-sm text-zinc-500" data-testid="graph-loading">Memuat Event Graph…</div>;
+
   const kinds = [...new Set(data.nodes.map((n) => n.kind))];
-  const nodes = filter ? data.nodes.filter((n) => n.kind === filter || n.id === "event") : data.nodes;
+  const visible = filter ? data.nodes.filter((n) => n.kind === filter || n.id === "event") : data.nodes;
+  const { pos } = layout(visible);
+  const ids = new Set(visible.map((n) => n.id));
+  const edges = data.edges.filter((e) => ids.has(e.source) && ids.has(e.target));
+  const focus = hover || active;
+  const connected = new Set(
+    focus ? edges.filter((e) => e.source === focus.id || e.target === focus.id)
+      .flatMap((e) => [e.source, e.target]) : []
+  );
+  const dim = (id) => focus && id !== focus.id && !connected.has(id);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <div className="space-y-5" data-testid="event-graph">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
           <h2 className="text-base font-semibold md:text-lg">Event Graph</h2>
           <p className="text-xs text-zinc-500">
-            Readiness score <span className="num accent-text">{data.readiness_score}%</span> · {data.nodes.length} node · {data.edges.length} dependency
+            Satu Event ID menghubungkan seluruh komponen · readiness{" "}
+            <span className="num accent-text" data-testid="graph-readiness">{data.readiness_score}%</span> ·{" "}
+            <span className="num">{data.nodes.length}</span> node ·{" "}
+            <span className="num">{data.edges.length}</span> dependency
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -206,68 +253,151 @@ export function Graph({ eventId }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => setFilter("")} data-testid="graph-filter-all" className={`border px-3 py-1.5 text-xs ${!filter ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400"}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <button onClick={() => { setFilter(""); setActive(null); }} data-testid="graph-filter-all"
+          className={`border px-3 py-1.5 text-xs transition-colors ${!filter ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
           Semua kategori
         </button>
         {kinds.map((k) => (
-          <button
-            key={k}
-            data-testid={`graph-filter-${k.replace(/\s/g, "-")}`}
-            onClick={() => setFilter(k)}
-            className={`border px-3 py-1.5 text-xs ${filter === k ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400"}`}
-          >
+          <button key={k} data-testid={`graph-filter-${k.replace(/\s/g, "-")}`} onClick={() => setFilter(k)}
+            className={`flex items-center gap-1.5 border px-3 py-1.5 text-xs transition-colors ${filter === k ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: styleOf(k).c }} />
             {k}
           </button>
         ))}
+        <div className="ml-auto flex items-center gap-1">
+          <button data-testid="graph-zoom-out" onClick={() => setZoom((z) => Math.max(0.7, +(z - 0.15).toFixed(2)))}
+            className="border border-[var(--okx-border)] px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white">−</button>
+          <span className="num w-12 text-center text-xs text-zinc-500">{Math.round(zoom * 100)}%</span>
+          <button data-testid="graph-zoom-in" onClick={() => setZoom((z) => Math.min(1.8, +(z + 0.15).toFixed(2)))}
+            className="border border-[var(--okx-border)] px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white">+</button>
+        </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3" data-testid="graph-nodes">
-          {nodes.map((n) => (
-            <button
-              key={n.id}
-              data-testid={`graph-node-${n.id}`}
-              onClick={() => setActive(n)}
-              className={`border p-3 text-left transition-all hover:border-zinc-500 ${active?.id === n.id ? "border-[var(--okx-accent)] bg-[#1c0a02]" : "border-[var(--okx-border)] bg-[var(--okx-surface)]"}`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full" style={{ background: KIND_COLOR[n.kind] || "#a1a1aa" }} />
-                <span className="text-[11px] uppercase tracking-wider text-zinc-500">{n.kind}</span>
-              </div>
-              <div className="mt-1.5 text-sm font-medium">{n.label}</div>
-              <div className="mt-2"><StatusBadge status={n.status} /></div>
-            </button>
-          ))}
+      <div className="grid gap-5 lg:grid-cols-[1.65fr_1fr]">
+        <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808]" data-testid="graph-canvas">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.14]"
+            style={{ backgroundImage: "linear-gradient(#ffffff14 1px, transparent 1px), linear-gradient(90deg, #ffffff14 1px, transparent 1px)", backgroundSize: "42px 42px" }} />
+          <div className="okx-scroll max-h-[620px] overflow-auto">
+            <svg viewBox={`0 0 ${W} ${H}`} style={{ width: `${zoom * 100}%`, minWidth: "100%" }} className="block">
+              <defs>
+                <radialGradient id="coreGlow">
+                  <stop offset="0%" stopColor="#ff2e7e" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor="#ff2e7e" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx={W / 2} cy={H / 2} r={300} fill="url(#coreGlow)" opacity="0.45" />
+              {edges.map((e, i) => {
+                const a = pos[e.source], b = pos[e.target];
+                if (!a || !b) return null;
+                const on = focus && (e.source === focus.id || e.target === focus.id);
+                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 26;
+                return (
+                  <path key={i} d={`M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`} fill="none"
+                    stroke={on ? "#ff2e7e" : "#ffffff"} strokeWidth={on ? 1.8 : 0.8}
+                    strokeOpacity={on ? 0.95 : focus ? 0.06 : 0.16}
+                    style={{ transition: "stroke-opacity .2s ease, stroke .2s ease" }} />
+                );
+              })}
+              {visible.map((n) => {
+                const p = pos[n.id];
+                if (!p) return null;
+                const st = styleOf(n.kind);
+                const isFocus = focus?.id === n.id;
+                const faded = dim(n.id);
+                const crit = ["Missing", "At Risk", "Blocked", "Conflicted"].includes(n.status);
+                return (
+                  <g key={n.id} data-testid={`graph-node-${n.id}`} transform={`translate(${p.x},${p.y})`}
+                    onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(null)}
+                    onClick={() => setActive(n)} style={{ cursor: "pointer", opacity: faded ? 0.22 : 1, transition: "opacity .2s ease" }}>
+                    {(isFocus || crit) && (
+                      <circle r={st.r + 10} fill="none" stroke={crit ? "#ff2e7e" : "#ffffff"} strokeOpacity="0.45">
+                        <animate attributeName="r" values={`${st.r + 6};${st.r + 16};${st.r + 6}`} dur="2.4s" repeatCount="indefinite" />
+                        <animate attributeName="stroke-opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    <circle r={st.r} fill={st.c} fillOpacity={n.id === "event" ? 1 : 0.14}
+                      stroke={st.c} strokeWidth={isFocus ? 2.4 : 1.2} />
+                    {n.id === "event" && (
+                      <text textAnchor="middle" y="5" fontSize="13" fontWeight="800" fill="#0a0a0a">OKX</text>
+                    )}
+                    {(visible.length <= 16 || isFocus || connected.has(n.id) || n.id === "event") && (
+                      <>
+                        <text textAnchor="middle" y={st.r + 16} fontSize="12" fill={isFocus ? "#ffffff" : "#d4d4d8"}>
+                          {n.label.length > 26 ? `${n.label.slice(0, 25)}…` : n.label}
+                        </text>
+                        <text textAnchor="middle" y={st.r + 29} fontSize="9" fill="#71717a" letterSpacing="0.08em">
+                          {n.kind.toUpperCase()}
+                        </text>
+                      </>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-4 py-2 text-[11px] text-zinc-500">
+            <span>Klik node untuk detail · hover untuk menyorot dependency</span>
+            <span className="num">Event ID: {eventId}</span>
+          </div>
         </div>
-        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 lg:sticky lg:top-20 lg:self-start" data-testid="graph-detail">
-          {active ? (
-            <>
-              <div className="text-[11px] uppercase tracking-wider text-zinc-500">{active.kind}</div>
-              <h3 className="mt-1 text-base font-semibold md:text-lg">{active.label}</h3>
-              <div className="mt-2"><StatusBadge status={active.status} /></div>
-              <dl className="mt-4 space-y-2 text-sm">
-                {Object.entries(active.meta || {}).map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3 border-b border-[var(--okx-border)] pb-1.5">
-                    <dt className="text-zinc-500">{k}</dt>
-                    <dd className="num">{typeof v === "number" && v > 10000 ? idr(v) : String(v)}</dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="mt-4">
-                <div className="text-xs uppercase tracking-wider text-zinc-500">Dependency</div>
-                <ul className="mt-2 space-y-1 text-xs text-zinc-400">
-                  {data.edges.filter((e) => e.source === active.id || e.target === active.id).map((e, i) => (
-                    <li key={i}>
-                      {data.nodes.find((n) => n.id === e.source)?.label} → {e.label} → {data.nodes.find((n) => n.id === e.target)?.label}
-                    </li>
+
+        <div className="space-y-4">
+          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 lg:sticky lg:top-20" data-testid="graph-detail">
+            {active ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: styleOf(active.kind).c }} />
+                  <span className="text-[11px] uppercase tracking-wider text-zinc-500">{active.kind}</span>
+                </div>
+                <h3 className="mt-1 text-base font-semibold md:text-lg">{active.label}</h3>
+                <div className="mt-2"><StatusBadge status={active.status} testId="graph-detail-status" /></div>
+                <dl className="mt-4 space-y-2 text-sm">
+                  {Object.entries(active.meta || {}).map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-3 border-b border-[var(--okx-border)] pb-1.5">
+                      <dt className="text-zinc-500">{k}</dt>
+                      <dd className="num">{typeof v === "number" && v > 10000 ? idr(v) : String(v)}</dd>
+                    </div>
                   ))}
-                </ul>
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-zinc-500">Klik salah satu node untuk melihat detail, dependency, dan konflik.</p>
-          )}
+                </dl>
+                <div className="mt-4">
+                  <div className="text-xs uppercase tracking-wider text-zinc-500">Dependency</div>
+                  <ul className="mt-2 space-y-1.5 text-xs text-zinc-400">
+                    {edges.filter((e) => e.source === active.id || e.target === active.id).map((e, i) => {
+                      const other = e.source === active.id ? e.target : e.source;
+                      const on = data.nodes.find((n) => n.id === other);
+                      return (
+                        <li key={i}>
+                          <button onClick={() => setActive(on)} className="text-left hover:text-white">
+                            <span className="accent-text">{e.label}</span> → {on?.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-zinc-500">Klik salah satu node pada graph untuk melihat detail, dependency, dan konflik.</p>
+            )}
+          </div>
+
+          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
+            <div className="text-xs uppercase tracking-wider text-zinc-500">Daftar node</div>
+            <div className="okx-scroll mt-3 max-h-64 space-y-1.5 overflow-auto pr-1" data-testid="graph-nodes">
+              {visible.map((n) => (
+                <button key={n.id} data-testid={`graph-list-${n.id}`} onClick={() => setActive(n)}
+                  onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(null)}
+                  className={`flex w-full items-center justify-between gap-2 border px-2.5 py-2 text-left text-xs transition-colors ${active?.id === n.id ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-transparent hover:border-[var(--okx-border)]"}`}>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: styleOf(n.kind).c }} />
+                    <span className="truncate">{n.label}</span>
+                  </span>
+                  <StatusBadge status={n.status} />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

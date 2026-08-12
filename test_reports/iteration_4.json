@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 5 review: (a) new ChatGPT engines wired into /api/ai/engines (5 engines, default gpt-5.4), (b) 8 new events across 8 cities/9 categories seeded and returned by /api/discover/events, (c) /api/events/{id}/graph works for every new event id, (d) POST /api/events/{id}/compile?engine=gpt-5.4-mini creates a blueprint tagged with ai_engine/ai_vendor and refines to done/fallback without 500, (e) ticket purchase end-to-end on evt-bandung-indie works via /api/checkout + /api/payments/{id}/simulate. Frontend: workspace tabs (tab-graph, tab-blueprint) render, interactive graph shows canvas + 15 nodes + 12 filter chips + node list + detail on click, engine dropdown has all 5 options, discover filters (city=Bandung, category=Esports) filter correctly, /juri and /present render, and site palette is largely black/pink/white — EXCEPT the landing page Event Graph illustration still uses orange dots (#f59e0b and #ff4500) which violates the 'no orange, only black + pink + white' requirement. 13/13 backend tests pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Landing.jsx Event Graph illustration", "issue": "Status dots use orange #f59e0b (Pending) and #ff4500 (At Risk), plus green #10b981 (Confirmed). Requirement: only black + premium pink + white. Two amber-500 dots visible on landing page under the Event Graph diagram.", "selector": "src/pages/Landing.jsx line 21 (const DOT = {...})", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Landing (/)", "issues": ["Event Graph mini-diagram dots use orange/green outside the approved palette. Suggest replacing with pink/white/zinc variants (e.g. Confirmed=white, Pending=pink-400, At-Risk=pink-600)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter5.xml"
+  ],
+  "action_items": [
+    "Replace DOT color map in /app/frontend/src/pages/Landing.jsx line 21 to remove #f59e0b and #ff4500 (and the green #10b981) — use only black/pink/white/zinc tokens to match the rest of the site."
+  ],
+  "critical_code_review_comments": [
+    "server.py:1712 lines — well beyond the 700-line guideline; recommend splitting into routers (events, tickets, payments, discover, admin) for maintainability.",
+    "compiler.py resolve_engine falls back silently to DEFAULT_ENGINE for any unknown key; consider raising 400 for an explicit invalid engine query param so bad clients get feedback instead of a silent swap.",
+    "Landing.jsx hard-codes a status color map with orange/green — should reference a shared palette token to guarantee palette compliance in future edits."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration5.py (new)"
+  ],
+  "success_rate": {"backend": "100% (13/13)", "frontend": "~95% (all functional flows pass; one palette regression on landing)"},
+  "test_credentials": "organizer@okkax.id / Okkax#2026, audience@okkax.id / Okkax#2026 (verified working)",
+  "seed_data_creation": "Ticket purchase test created a sandbox order on evt-bandung-indie (buyer TEST_Iter5 Buyer). No demo reset called during token-based tests, per agent-to-agent note.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/test_iteration5.py -v -n0` — all 13 pass. New event ids: evt-nusa-tech, evt-bandung-indie, evt-surabaya-expo, evt-jogja-kuliner, evt-bali-fashion, evt-medan-startup, evt-jkt-esports, evt-semarang-umkm. Workspace tabs are subroutes (`/app/events/{id}/graph`, `/app/events/{id}/blueprint`), not React state — direct-navigate to test. Discover filters use <select> testids: discover-city-select, discover-category-select, discover-price-select + discover-apply-btn. Login submit button has NO data-testid — use `button:has-text('Sign in')` or add `data-testid='login-submit'`. Orange landing dots remain the only palette regression."
+}
