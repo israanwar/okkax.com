@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --okx-bg: #0a0a0a;
+    --okx-surface: #141414;
+    --okx-surface-2: #1b1b1b;
+    --okx-ivory: #fdfbf7;
+    --okx-accent: #ff4500;
+    --okx-accent-hover: #e34234;
+    --okx-border: #27272a;
+    --okx-muted: #a1a1aa;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 4%;
+        --foreground: 0 0% 100%;
+        --card: 0 0% 8%;
+        --card-foreground: 0 0% 100%;
+        --popover: 0 0% 8%;
+        --popover-foreground: 0 0% 100%;
+        --primary: 16 100% 50%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 11%;
+        --secondary-foreground: 0 0% 100%;
+        --muted: 0 0% 11%;
+        --muted-foreground: 240 5% 65%;
+        --accent: 16 100% 50%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 240 4% 16%;
+        --input: 240 4% 16%;
+        --ring: 16 100% 50%;
+        --radius: 0.25rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+        -webkit-tap-highlight-color: transparent;
+    }
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        margin: 0;
+        background: var(--okx-bg);
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+    }
+    h1,
+    h2,
+    h3,
+    h4 {
+        font-family: "Manrope", sans-serif;
+        letter-spacing: -0.02em;
+    }
+    ::selection {
+        background: var(--okx-accent);
+        color: #fff;
+    }
+}
+
+.editorial {
+    font-family: "Playfair Display", serif;
+    letter-spacing: -0.03em;
+}
+.num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+.surface {
+    background: var(--okx-surface);
+    border: 1px solid var(--okx-border);
+}
+.hairline {
+    border-bottom: 1px solid var(--okx-border);
+}
+.accent-text {
+    color: var(--okx-accent);
+}
+.grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image: radial-gradient(
+        rgba(255, 255, 255, 0.06) 1px,
+        transparent 1px
+    );
+    background-size: 3px 3px;
+}
+.okx-scroll::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+}
+.okx-scroll::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 6px;
+}
+.fade-up {
+    animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+@layer base {
+    [data-debug-wrapper="true"] {
+        display: contents !important;
+    }
+}

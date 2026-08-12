@@ -1,0 +1,40 @@
+{
+  "summary": "OKKAX end-to-end backend + frontend smoke testing. Wrote 27 pytest cases covering auth, RBAC, event studio + blueprint (with async refine), talent/rider, venue matches, sponsor flow (interest -> approval -> budget update), tenant flow (apply -> approve), ticketing (VA + QRIS), sandbox payment success + failure, refund, QR validation (Valid/Already Used/Invalid), budget engine + simulator, discover + public event, admin metrics/users/orgs/audit-logs. All 27 pass after fixing a critical MongoDB ObjectId serialization bug in several POST endpoints. Frontend smoke test: login (all demo accounts reachable), public event page, checkout with VA + BCA channel + paylater disabled correctly, create_order -> simulate_pay -> ticket issued (OKX-TIX-000005), validator: Valid then Already Used. Discover + tickets list render with correct data.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/events/{id}/talents, /checkout, /sponsor-interests, /tenant-applications, /orders/{id}/refund, /payments/{id}/simulate (tickets)", "issue": "Motor mutates dict passed to insert_one adding ObjectId `_id`, then FastAPI fails to serialize -> 500. FIXED by wrapping returned docs with clean(). Also fixed all other endpoints returning newly-inserted docs (create_zone, create_tier, create_package, event vendor/job/worker, budget/funding items, schedule/incidents)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Extend clean() usage pattern to any future POST endpoints that return the newly-inserted document; motor mutates the original dict with ObjectId `_id`. Consider a small helper insert_and_clean() to prevent regressions."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 1701 lines — consider splitting into routers (auth.py, events.py, ticketing.py, sponsors.py, tenants.py, admin.py) for maintainability (>700 line threshold).",
+    "MongoDB ObjectId leak was systemic: any `await db.<coll>.insert_one(doc); return {..: doc}` will 500. Adopt an insert_and_return helper. Fixed >10 sites in this run.",
+    "Blueprint refine background task uses asyncio.create_task without any tracking; if backend restarts mid-refine the event stays at 'refining'. Acceptable for MVP but worth noting.",
+    "`db.events.find(f)` on discover doesn't apply price filter for min-price sort; the free filter works. Minor.",
+    "`/api/auth/forgot-password` returns demo_token in body — correctly noted as demo/sandbox only."
+  ],
+  "updated_files": [
+    "/app/backend/server.py (added clean() wrappers to ~15 POST endpoints returning newly-inserted docs)",
+    "/app/backend/tests/backend_test.py (new)"
+  ],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% (login, event, checkout+payment+ticket issuance, QR validator Valid/AlreadyUsed, discover, tickets list all pass smoke test)"},
+  "test_credentials": "All demo accounts password Okkax#2026 (admin/organizer/sponsor/tenant/audience/etc @okkax.id). Demo event evt-aruna-2026.",
+  "seed_data_creation": "Called POST /api/demo/reset to ensure clean state before backend tests. New event created via studio flow: 'TEST Konser Sandbox 2026'.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest suite at /app/backend/tests/backend_test.py runs in ~12s with pytest-xdist loadscope. Uses REACT_APP_BACKEND_URL. Session-scoped fixture resets demo data. Ran with pytest.ini `-n 2 --dist loadscope`. All 27 pass. If retesting, run pytest first, then can proceed to browser flows. QR ticket numbers are sequential (OKX-TIX-000001..); if you re-run the E2E, the first ticket has usually been consumed by previous validator tests — either reset demo or use a freshly-issued ticket QR captured from the checkout page.",
+  "rca of the issue": "Critical bug fixed: motor's insert_one() mutates the input dict by inserting an ObjectId under '_id'. Endpoints that returned that same dict caused FastAPI serialization to explode with `TypeError: 'ObjectId' object is not iterable`. This affected POST /talents, /checkout, /sponsor-interests, /tenant-applications, /orders/{id}/refund, tickets returned by /payments/{id}/simulate, and several catalog/booth/tier/zone/job/worker/budget/schedule/incident inserts. Reproduction: `POST /api/checkout` with valid audience token -> 500 with stack trace showing ObjectId encoder failure. Mitigation applied: wrap returned doc in `clean()` (removes _id + sensitive fields)."
+}

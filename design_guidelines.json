@@ -1,0 +1,102 @@
+{
+  "project_name": "OKKAX",
+  "tagline": "One event. Every moving part.",
+  "theme": "Dark Theme (Cinematic / Editorial)",
+  "colors": {
+    "background": "#0A0A0A",
+    "surface": "#141414",
+    "surface_accent": "#FDFBF7",
+    "primary": "#FF4500",
+    "primary_hover": "#E34234",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#A1A1AA",
+    "border": "#27272A",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "error": "#EF4444"
+  },
+  "typography": {
+    "headings_marketing": "Playfair Display, serif",
+    "headings_ui": "Manrope, sans-serif",
+    "body": "Inter, sans-serif",
+    "financial_data": "Inter, sans-serif (tabular-nums)",
+    "rules": [
+      "Use Playfair Display for massive, editorial marketing headings only.",
+      "Use Manrope for dashboard headings, widget titles, and labels.",
+      "Always use 'tabular-nums' utility class in Tailwind for any financial metrics, budget engines, or ticketing numbers.",
+      "Never center align default text, prioritize optical left alignment."
+    ]
+  },
+  "visual_enhancers": {
+    "gradients": "Strictly limited. NO purple SaaS gradients. Use solid colors or barely perceptible linear gradients (e.g. 0A0A0A to 141414).",
+    "borders": "1px solid borders using neutral grays (#27272A). Avoid floating cards with heavy drop shadows; prefer flat, bounded regions.",
+    "glassmorphism": "Avoid excessive use. Only use minimal backdrop-blur-md on sticky navigation or critical modal overlays.",
+    "surfaces": "Mix of near-black for structural backdrop, and warm ivory (#FDFBF7) used extremely sparingly for high-impact emphasis (e.g. a specific active ticket tier or high-contrast callout)."
+  },
+  "layouts": {
+    "marketing": "Asymmetrical bento grids with generous spacing (p-12, p-24). Avoid generic center alignment.",
+    "dashboard": "High-density, strict grid hierarchy (Grid Mode B). Use sharp edges or max 8px border-radius. Avoid excessive spacing in data-heavy areas.",
+    "responsive": "Perfect responsiveness required. Sidebars convert to drawers on mobile. Complex tables convert to stacked cards on mobile view."
+  },
+  "motion": {
+    "style": "Smooth, fast, functional. No heavy/distracting animations.",
+    "interactions": "Transition on Event Graph nodes, funding gap meters, and modal/drawer toggles.",
+    "accessibility": "Always respect 'prefers-reduced-motion'."
+  },
+  "components": {
+    "buttons": "Sharp corners or subtle 4px radius. High contrast text. Use Vermilion (#FF4500) for primary actions.",
+    "tables": "Cardless design, plain rows divided by 1px borders. Left-aligned text, right-aligned tabular numbers.",
+    "drawers": "Use for mobile sidebars and for quick-edit 'Run of Show' or 'Event Blueprint' sliding panels.",
+    "event_graph": "Interactive node-edge visualization. Nodes should have status indicators (draft/pending/confirmed/blocked). Use 'react-force-graph-2d' or custom SVG logic for node edges."
+  },
+  "image_urls": {
+    "crowds": [
+      {
+        "url": "https://images.unsplash.com/photo-1780703913917-c605a6f260d1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwyfHxtYXNzaXZlJTIwY29uY2VydCUyMGNyb3dkJTIwY2luZW1hdGljfGVufDB8fHx8MTc4NjUyMzE4N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "Vibrant stage lights illuminate a large, energetic concert crowd.",
+        "category": "marketing_hero"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1674507738101-b4dbe86beea7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwxfHxtYXNzaXZlJTIwY29uY2VydCUyMGNyb3dkJTIwY2luZW1hdGljfGVufDB8fHx8MTc4NjUyMzE4N3ww&ixlib=rb-4.1.0&q=85",
+        "description": "a crowd of people watching a concert on stage",
+        "category": "discover_portal_event"
+      }
+    ],
+    "stages": [
+      {
+        "url": "https://images.unsplash.com/photo-1783979384797-7a5d2ad23fc8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwY29ycG9yYXRlJTIwZXZlbnQlMjBzdGFnZXxlbnwwfHx8fDE3ODY1MjMxODd8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Modern television studio with purple lighting and large screens.",
+        "category": "venue_matching"
+      }
+    ],
+    "crew": [
+      {
+        "url": "https://images.unsplash.com/photo-1632187989763-c9c620420b4d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwzfHxiYWNrc3RhZ2UlMjBldmVudCUyMGNyZXclMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzg2NTIzMTg3fDA&ixlib=rb-4.1.0&q=85",
+        "description": "a group of people standing around a camera set up",
+        "category": "workforce_talent"
+      }
+    ]
+  },
+  "instructions_to_main_agent": {
+    "tech_stack": "React JS (.jsx / .js files), Tailwind CSS, Shadcn UI components (configured via Tailwind).",
+    "architecture": "Hybrid fullstack approach with dedicated views for Landing, Discover Portal, and Event Command Center/Dashboard.",
+    "rules": [
+      "No Typescript. Use Javascript (.js / .jsx) for all components.",
+      "Ensure all interactive elements have `data-testid` attributes (e.g. data-testid='budget-submit-btn').",
+      "DO NOT use generic Vercel/Stripe looking components for the marketing page. Use raw HTML+Tailwind for high-impact asymmetric layouts.",
+      "In the dashboard, use cardless flat lists, 1px borders, dense data presentation.",
+      "Use Shadcn UI components but strip excessive styles/shadows to match the 'uncluttered, corporate-ready' flat aesthetic.",
+      "Integrate Lucide React for consistent iconography. Use Phosphor Icons if more specialized dashboard icons are needed.",
+      "For financial modules (Budget engine, What-if simulator), implement dynamic tabular inputs and use `tabular-nums` class.",
+      "For Indonesian sandbox payments, mock the flow but provide distinct UI states for BCA/BRI/GoPay/OVO/QRIS selections.",
+      "For the Event Graph, use a lightweight graph library or CSS grids/SVG connections. Focus on node statuses: draft/pending/confirmed/missing/conflicted/at-risk/blocked."
+    ],
+    "universal_guidelines": [
+      "Avoid 'AI slop' aesthetic: no generic centered text, no simplistic gradients, no uniform sizing. Use extreme size contrast in headings.",
+      "NEVER use emojis as icons in the UI. Strictly use SVG/React icons.",
+      "DO NOT add `.App { text-align: center; }`.",
+      "All overlays/dropdowns/sticky headers MUST have a solid or slightly blurred background. NO fully transparent backgrounds behind text.",
+      "Never use placeholder URLs (like via.placeholder.com). Use the provided unsplash URLs."
+    ]
+  }
+}

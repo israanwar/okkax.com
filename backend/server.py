@@ -1,0 +1,1700 @@
+import os
+import logging
+import secrets
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional, Dict, Any
+
+from dotenv import load_dotenv
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / ".env")
+
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response, Query
+from starlette.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, EmailStr, Field
+
+from core import (db, nid, now_iso, hash_password, verify_password, create_access_token, clean,
+                  get_current_user, get_optional_user, require_roles, is_admin, audit, notify,
+                  get_event_or_404, assert_event_access, ROLES, ROLE_KEYS)
+from compiler import compile_blueprint, _fallback as baseline_blueprint
+import asyncio
+import seed_data
+
+
+async def refine_blueprint(event_id: str, brief: dict, doc_id: str):
+    """AI Event Compiler runs in background so the UI stays responsive."""
+    try:
+        bp = await compile_blueprint(brief)
+        bp.pop("id", None)
+        await db.event_blueprints.update_one(
+            {"id": doc_id},
+            {"$set": {**bp, "ai_status": "ai_error" if bp.get("ai_error") else "done"}})
+    except Exception as e:
+        logger.warning(f"blueprint refine failed: {e}")
+        await db.event_blueprints.update_one({"id": doc_id}, {"$set": {"ai_status": "ai_error"}})
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("okkax")
+
+app = FastAPI(title="OKKAX API", description="Event Economy Operating Network")
+api = APIRouter(prefix="/api")
+
+DISCLAIMER = seed_data.DISCLAIMER
+SANDBOX_NOTICE = "Mode demo kompetisi. Tidak ada uang nyata yang akan ditagihkan."
+
+PAYMENT_METHODS = [
+    {"group": "Virtual Account", "key": "virtual_account", "channels": [
+        "BCA Virtual Account", "BRI Virtual Account", "BNI Virtual Account", "Mandiri Virtual Account",
+        "Permata Virtual Account", "CIMB Niaga Virtual Account"], "available": True},
+    {"group": "Transfer Bank", "key": "bank_transfer", "channels": ["Transfer manual dengan bukti pembayaran"], "available": True},
+    {"group": "QRIS", "key": "qris", "channels": ["QRIS Dynamic", "QRIS Static"], "available": True},
+    {"group": "E-Wallet", "key": "ewallet", "channels": ["GoPay", "OVO", "DANA", "ShopeePay", "LinkAja"], "available": True},
+    {"group": "Kartu", "key": "card", "channels": ["Kartu Kredit (sandbox)", "Kartu Debit (sandbox)"], "available": True},
+    {"group": "Retail Outlet", "key": "retail", "channels": ["Indomaret", "Alfamart"], "available": True},
+    {"group": "PayLater", "key": "paylater", "channels": ["Future integration"], "available": False},
+    {"group": "Corporate Payment", "key": "corporate", "channels": ["Invoice / Purchase Order", "Term payment", "Milestone payment"], "available": True},
+    {"group": "International Payment", "key": "international", "channels": ["Future-ready structure"], "available": False},
+]
+
+
+# ---------------------------------------------------------------- models
+class RegisterIn(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+    name: str
+    roles: List[str] = ["audience"]
+    organization_name: Optional[str] = None
+    organization_type: Optional[str] = None
+    city: Optional[str] = None
+    terms_accepted: bool = True
+
+
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class ForgotIn(BaseModel):
+    email: EmailStr
+
+
+class ResetIn(BaseModel):
+    token: str
+    password: str = Field(min_length=6)
+
+
+class BriefIn(BaseModel):
+    name: str
+    event_type: str
+    objective: str = ""
+    description: str = ""
+    city: str
+    venue_preference: str = "Indoor"
+    start_date: str
+    days: int = 1
+    setup_days: int = 1
+    capacity: int = 500
+    audience_profile: str = ""
+    target_age: str = ""
+    budget: int = 0
+    currency: str = "IDR"
+    talent_preference: str = ""
+    talent_category: str = ""
+    production_standard: str = "Balanced"
+    attendance_format: str = "Offline"
+    ticketed: bool = True
+    sponsor_requirement: bool = True
+    tenant_requirement: bool = True
+    workforce_requirement: bool = True
+    accessibility: str = ""
+    sustainability: str = ""
+    brand_restrictions: str = ""
+    brand: str = ""
+    brand_category: str = ""
+    notes: str = ""
+
+
+class CheckoutIn(BaseModel):
+    event_id: str
+    tier_id: str
+    quantity: int = Field(ge=1, le=10)
+    attendees: List[Dict[str, str]] = []
+    method: str
+    method_channel: str
+
+
+# ---------------------------------------------------------------- auth
+@api.post("/auth/register")
+async def register(payload: RegisterIn, response: Response):
+    email = payload.email.lower().strip()
+    if await db.users.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Email sudah terdaftar")
+    roles = [r for r in payload.roles if r in ROLE_KEYS] or ["audience"]
+    if "super_admin" in roles or "platform_admin" in roles:
+        roles = ["audience"]
+    org_id = None
+    if payload.organization_name:
+        org_id = nid()
+        await db.organizations.insert_one({
+            "id": org_id, "name": payload.organization_name, "org_type": payload.organization_type or "Other",
+            "city": payload.city or "", "verified": False, "document_status": "Pending",
+            "currency": "IDR", "timezone": "Asia/Jakarta", "language": "id", "created_at": now_iso()})
+    user = {"id": nid(), "email": email, "password_hash": hash_password(payload.password),
+            "name": payload.name, "roles": roles, "org_id": org_id, "city": payload.city or "",
+            "terms_accepted": payload.terms_accepted, "onboarded": bool(org_id or "audience" in roles),
+            "created_at": now_iso()}
+    await db.users.insert_one(user)
+    token = create_access_token(user["id"], email)
+    await audit(None, user, "auth.register")
+    return {"token": token, "user": clean(user)}
+
+
+@api.post("/auth/login")
+async def login(payload: LoginIn):
+    email = payload.email.lower().strip()
+    ident = f"{email}"
+    att = await db.login_attempts.find_one({"identifier": ident})
+    if att and att.get("count", 0) >= 5:
+        locked_until = datetime.fromisoformat(att["last_at"]) + timedelta(minutes=15)
+        if datetime.now(timezone.utc) < locked_until:
+            raise HTTPException(status_code=429, detail="Terlalu banyak percobaan. Coba lagi dalam 15 menit.")
+    user = await db.users.find_one({"email": email})
+    if not user or not verify_password(payload.password, user.get("password_hash", "")):
+        await db.login_attempts.update_one(
+            {"identifier": ident},
+            {"$inc": {"count": 1}, "$set": {"last_at": datetime.now(timezone.utc).isoformat()}}, upsert=True)
+        raise HTTPException(status_code=401, detail="Email atau kata sandi salah")
+    await db.login_attempts.delete_one({"identifier": ident})
+    token = create_access_token(user["id"], email)
+    await audit(None, clean(user), "auth.login")
+    return {"token": token, "user": clean(user)}
+
+
+@api.get("/auth/me")
+async def me(user: dict = Depends(get_current_user)):
+    org = await db.organizations.find_one({"id": user.get("org_id")}) if user.get("org_id") else None
+    return {"user": user, "organization": clean(org) if org else None}
+
+
+@api.post("/auth/logout")
+async def logout(user: dict = Depends(get_current_user)):
+    return {"ok": True}
+
+
+@api.post("/auth/forgot-password")
+async def forgot(payload: ForgotIn):
+    user = await db.users.find_one({"email": payload.email.lower().strip()})
+    token = secrets.token_urlsafe(32)
+    if user:
+        await db.password_reset_tokens.insert_one({
+            "id": nid(), "token": token, "user_id": user["id"], "used": False,
+            "expires_at": datetime.now(timezone.utc) + timedelta(hours=1), "created_at": now_iso()})
+        logger.info(f"[OKKAX] Password reset link: /reset-password?token={token}")
+        await notify(user["id"], "Permintaan reset kata sandi",
+                     "Tautan reset kata sandi OKKAX telah dibuat (mode demo: token tampil di respons).", "info")
+    return {"ok": True, "message": "Jika email terdaftar, tautan reset telah dikirim.",
+            "demo_token": token if user else None}
+
+
+@api.post("/auth/reset-password")
+async def reset(payload: ResetIn):
+    rec = await db.password_reset_tokens.find_one({"token": payload.token, "used": False})
+    if not rec:
+        raise HTTPException(status_code=400, detail="Token tidak valid atau sudah digunakan")
+    exp = rec["expires_at"]
+    if isinstance(exp, str):
+        exp = datetime.fromisoformat(exp)
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > exp:
+        raise HTTPException(status_code=400, detail="Token kedaluwarsa")
+    await db.users.update_one({"id": rec["user_id"]}, {"$set": {"password_hash": hash_password(payload.password)}})
+    await db.password_reset_tokens.update_one({"id": rec["id"]}, {"$set": {"used": True}})
+    return {"ok": True}
+
+
+@api.get("/meta/roles")
+async def meta_roles():
+    return {"roles": [{"key": k, "label": l} for k, l in ROLES],
+            "payment_methods": PAYMENT_METHODS, "disclaimer": DISCLAIMER, "sandbox_notice": SANDBOX_NOTICE}
+
+
+# ---------------------------------------------------------------- catalog
+@api.get("/catalog/talents")
+async def catalog_talents(q: str = "", category: str = "", city: str = ""):
+    f = {}
+    if q:
+        f["stage_name"] = {"$regex": q, "$options": "i"}
+    if category:
+        f["category"] = category
+    if city:
+        f["city"] = city
+    rows = await db.talents.find(f, {"_id": 0}).to_list(200)
+    return {"items": rows}
+
+
+@api.get("/catalog/venues")
+async def catalog_venues(city: str = "", min_capacity: int = 0):
+    f = {}
+    if city:
+        f["city"] = city
+    rows = await db.venues.find(f, {"_id": 0}).to_list(200)
+    if min_capacity:
+        rows = [r for r in rows if max(r["standing_capacity"], r["seated_capacity"]) >= min_capacity]
+    return {"items": rows}
+
+
+@api.get("/catalog/vendors")
+async def catalog_vendors(category: str = "", city: str = ""):
+    f = {}
+    if category:
+        f["category"] = category
+    if city:
+        f["service_cities"] = city
+    return {"items": await db.vendors.find(f, {"_id": 0}).to_list(300)}
+
+
+@api.get("/catalog/workers")
+async def catalog_workers(category: str = ""):
+    f = {"category": category} if category else {}
+    return {"items": await db.workers.find(f, {"_id": 0}).to_list(300)}
+
+
+# ---------------------------------------------------------------- events / studio
+async def next_event_code(city: str) -> str:
+    prefix = "".join([c for c in city.upper() if c.isalpha()])[:3] or "IDN"
+    count = await db.events.count_documents({}) + 1
+    return f"EVT-{prefix}-{datetime.now(timezone.utc).year}-{count:04d}"
+
+
+@api.post("/events")
+async def create_event(brief: BriefIn, user: dict = Depends(require_roles("organizer", "event_organizer", "promoter"))):
+    event_id = nid()
+    code = await next_event_code(brief.city)
+    org = await db.organizations.find_one({"id": user.get("org_id")}) if user.get("org_id") else None
+    ev = {
+        "id": event_id, "event_code": code, "name": brief.name, "event_type": brief.event_type,
+        "city": brief.city, "venue_name": None, "organizer_org_id": user.get("org_id"),
+        "organizer_name": (org or {}).get("name") or user["name"], "owner_user_id": user["id"],
+        "status": "draft", "start_date": brief.start_date, "end_date": brief.start_date,
+        "start_time": "18:00", "timezone": "Asia/Jakarta", "days": brief.days, "setup_days": brief.setup_days,
+        "capacity": brief.capacity, "budget": brief.budget, "currency": brief.currency,
+        "description": brief.description, "objective": brief.objective,
+        "audience_profile": brief.audience_profile, "age_limit": brief.target_age or "All ages",
+        "hero_image": seed_data.HERO2, "indoor": brief.venue_preference == "Indoor",
+        "format": brief.attendance_format, "accessibility": brief.accessibility,
+        "refund_policy": "Refund penuh hingga H-14, 50% hingga H-7.",
+        "reschedule_policy": "Tiket berlaku pada tanggal pengganti bila dijadwalkan ulang.",
+        "gate_info": "Informasi gate akan diperbarui organizer.", "support_contact": user["email"],
+        "faq": [], "is_demo": False, "created_at": now_iso(),
+    }
+    await db.events.insert_one(ev)
+    await db.event_briefs.insert_one({"id": nid(), "event_id": event_id,
+                                      "payload": {**brief.model_dump(), "event_id": event_id},
+                                      "created_at": now_iso()})
+    await audit(event_id, user, "event.create", {"name": brief.name})
+    return {"event": clean(ev)}
+
+
+@api.get("/events")
+async def list_events(user: dict = Depends(get_current_user)):
+    f = {"deleted": {"$ne": True}}
+    if not is_admin(user):
+        f["$or"] = [{"owner_user_id": user["id"]}]
+        if user.get("org_id"):
+            f["$or"].append({"organizer_org_id": user["org_id"]})
+    rows = await db.events.find(f, {"_id": 0}).sort("created_at", -1).to_list(100)
+    out = []
+    for ev in rows:
+        b = await compute_budget(ev["id"])
+        out.append({**ev, "funding_gap": b["funding_gap"], "total_cost": b["total_cost"],
+                    "confirmed_funding": b["confirmed_funding"]})
+    return {"items": out}
+
+
+@api.get("/events/{event_id}/brief")
+async def get_brief(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    b = await db.event_briefs.find_one({"event_id": ev["id"]}, {"_id": 0})
+    return {"event": ev, "brief": b}
+
+
+@api.post("/events/{event_id}/compile")
+async def compile_event(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    brief_doc = await db.event_briefs.find_one({"event_id": ev["id"]}, {"_id": 0})
+    brief = (brief_doc or {}).get("payload", {})
+    brief["event_id"] = ev["id"]
+    bp = baseline_blueprint(brief)
+    await db.event_blueprints.delete_many({"event_id": ev["id"]})
+    doc = {"id": nid(), "event_id": ev["id"], **bp, "ai_status": "refining", "created_at": now_iso()}
+    await db.event_blueprints.insert_one(doc)
+    asyncio.create_task(refine_blueprint(ev["id"], brief, doc["id"]))
+    # seed estimated budget items from blueprint if none exist
+    if await db.budget_items.count_documents({"event_id": ev["id"]}) == 0:
+        for c in bp.get("budget_categories", []):
+            await db.budget_items.insert_one({
+                "id": nid(), "event_id": ev["id"], "category": c.get("category", "Other"),
+                "label": c.get("label", "Estimasi AI"), "amount": int(c.get("amount_estimate") or 0),
+                "state": "estimated", "source": "blueprint", "created_at": now_iso()})
+    if await db.funding_items.count_documents({"event_id": ev["id"]}) == 0 and ev.get("budget"):
+        await db.funding_items.insert_one({
+            "id": nid(), "event_id": ev["id"], "source": "Organizer Budget", "label": "Anggaran penyelenggara",
+            "amount": int(ev["budget"]), "state": "committed", "source_type": "brief", "created_at": now_iso()})
+    await audit(ev["id"], user, "event.compile", {"source": bp.get("source")})
+    return {"blueprint": clean(doc)}
+
+
+@api.get("/events/{event_id}/blueprint")
+async def get_blueprint(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    bp = await db.event_blueprints.find_one({"event_id": ev["id"]}, {"_id": 0})
+    return {"blueprint": bp}
+
+
+@api.patch("/events/{event_id}/blueprint")
+async def patch_blueprint(event_id: str, patch: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    patch.pop("id", None)
+    patch.pop("event_id", None)
+    await db.event_blueprints.update_one({"event_id": ev["id"]}, {"$set": {**patch, "user_confirmed": True}})
+    await audit(ev["id"], user, "blueprint.edit", {"fields": list(patch.keys())})
+    bp = await db.event_blueprints.find_one({"event_id": ev["id"]}, {"_id": 0})
+    return {"blueprint": bp}
+
+
+# ---------------------------------------------------------------- talent + rider
+@api.get("/events/{event_id}/talents")
+async def event_talents(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    rows = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    riders = await db.rider_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    return {"items": rows, "riders": riders}
+
+
+@api.post("/events/{event_id}/talents")
+async def add_talent(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    talent = await db.talents.find_one({"id": body.get("talent_id")}, {"_id": 0})
+    if not talent:
+        raise HTTPException(status_code=404, detail="Talent tidak ditemukan")
+    if await db.event_talents.find_one({"event_id": ev["id"], "talent_id": talent["id"]}):
+        raise HTTPException(status_code=400, detail="Talent sudah ditambahkan ke event ini")
+    et_id = nid()
+    rider_cost = 0
+    for r in talent.get("rider_template", []):
+        rider_cost += int(r.get("estimated_cost") or 0)
+        await db.rider_items.insert_one({
+            "id": nid(), "event_id": ev["id"], "event_talent_id": et_id, "category": r["category"],
+            "item": r["item"], "quantity": r["quantity"], "specification": r["specification"],
+            "mandatory": r["mandatory"], "responsible_party": "Organizer", "matched_provider": None,
+            "status": "Requires Confirmation", "estimated_cost": r["estimated_cost"], "actual_cost": None,
+            "notes": "", "created_at": now_iso()})
+    fee = int(talent["base_fee"])
+    tax = int(fee * 0.02)
+    scale = max(1, talent.get("team_size", 1)) / 18
+    travel = int(72000000 * scale)
+    accommodation = int(48000000 * scale)
+    transport = int(24000000 * scale)
+    security = int(12000000 * scale)
+    hospitality = int(26000000 * scale)
+    landed = fee + tax + travel + accommodation + transport + security + hospitality + rider_cost
+    doc = {"id": et_id, "event_id": ev["id"], "talent_id": talent["id"], "talent_name": talent["stage_name"],
+           "fee": fee, "tax_estimate": tax, "travel": travel, "accommodation": accommodation,
+           "local_transport": transport, "security": security, "hospitality": hospitality,
+           "rider_cost": rider_cost, "landed_cost": landed, "status": "Pending",
+           "performance_slot": body.get("performance_slot") or "", "created_at": now_iso()}
+    await db.event_talents.insert_one(doc)
+    await audit(ev["id"], user, "talent.add", {"talent": talent["stage_name"], "landed_cost": landed})
+    return {"event_talent": clean(doc)}
+
+
+@api.patch("/events/{event_id}/talents/{et_id}")
+async def patch_event_talent(event_id: str, et_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    allowed = {k: v for k, v in body.items() if k in ("status", "performance_slot", "fee")}
+    if "fee" in allowed:
+        et = await db.event_talents.find_one({"id": et_id})
+        delta = int(allowed["fee"]) - int(et["fee"])
+        allowed["landed_cost"] = int(et["landed_cost"]) + delta
+        allowed["tax_estimate"] = int(int(allowed["fee"]) * 0.02)
+    await db.event_talents.update_one({"id": et_id, "event_id": ev["id"]}, {"$set": allowed})
+    await audit(ev["id"], user, "talent.update", allowed)
+    return {"ok": True}
+
+
+@api.delete("/events/{event_id}/talents/{et_id}")
+async def remove_talent(event_id: str, et_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    await db.event_talents.delete_one({"id": et_id, "event_id": ev["id"]})
+    await db.rider_items.delete_many({"event_talent_id": et_id})
+    await audit(ev["id"], user, "talent.remove", {"event_talent_id": et_id})
+    return {"ok": True}
+
+
+@api.patch("/events/{event_id}/rider/{item_id}")
+async def patch_rider(event_id: str, item_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    allowed = {k: v for k, v in body.items()
+               if k in ("status", "matched_provider", "responsible_party", "estimated_cost", "actual_cost", "notes")}
+    await db.rider_items.update_one({"id": item_id, "event_id": ev["id"]}, {"$set": allowed})
+    items = await db.rider_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    by_talent: Dict[str, int] = {}
+    for i in items:
+        by_talent[i["event_talent_id"]] = by_talent.get(i["event_talent_id"], 0) + int(i.get("estimated_cost") or 0)
+    for et_id, cost in by_talent.items():
+        et = await db.event_talents.find_one({"id": et_id})
+        if et:
+            new_landed = (int(et["landed_cost"]) - int(et["rider_cost"])) + cost
+            await db.event_talents.update_one({"id": et_id}, {"$set": {"rider_cost": cost, "landed_cost": new_landed}})
+    await audit(ev["id"], user, "rider.update", {"item": item_id, **allowed})
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- venue
+def venue_score(ev: dict, v: dict) -> dict:
+    reasons, score = [], 0
+    cap = max(v["standing_capacity"], v["seated_capacity"])
+    if cap >= ev["capacity"]:
+        score += 30
+        reasons.append(f"Kapasitas {cap:,} memenuhi target {ev['capacity']:,} pengunjung")
+    else:
+        reasons.append(f"Kapasitas {cap:,} di bawah target {ev['capacity']:,} pengunjung")
+    if v["city"].lower() == (ev.get("city") or "").lower():
+        score += 20
+        reasons.append(f"Berlokasi di {v['city']} sesuai brief")
+    else:
+        reasons.append(f"Berada di {v['city']}, di luar kota target")
+    if ev.get("indoor") == v["indoor"]:
+        score += 10
+        reasons.append("Tipe indoor/outdoor sesuai preferensi")
+    if v.get("power_kva", 0) >= 400:
+        score += 15
+        reasons.append(f"Power {v['power_kva']} kVA mendukung rider produksi")
+    else:
+        reasons.append("Power terbatas, membutuhkan genset tambahan")
+    total = v["event_day_price"] * ev.get("days", 1) + v["setup_day_price"] * ev.get("setup_days", 0)
+    if ev.get("budget") and total <= ev["budget"] * 0.25:
+        score += 15
+        reasons.append(f"Biaya venue Rp{total:,} berada dalam 25% anggaran")
+    else:
+        reasons.append(f"Biaya venue Rp{total:,} relatif tinggi terhadap anggaran")
+    if v.get("accessibility"):
+        score += 10
+        reasons.append("Informasi aksesibilitas tersedia: " + ", ".join(v["accessibility"][:3]))
+    return {"score": min(score, 100), "reasons": reasons, "estimated_total": total}
+
+
+@api.get("/events/{event_id}/venue-matches")
+async def venue_matches(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    venues = await db.venues.find({}, {"_id": 0}).to_list(200)
+    out = [{**v, "compatibility": venue_score(ev, v)} for v in venues]
+    out.sort(key=lambda x: -x["compatibility"]["score"])
+    return {"items": out}
+
+
+@api.get("/events/{event_id}/venue")
+async def get_event_venue(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    return {"item": await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})}
+
+
+@api.post("/events/{event_id}/venue")
+async def select_venue(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    v = await db.venues.find_one({"id": body.get("venue_id")}, {"_id": 0})
+    if not v:
+        raise HTTPException(status_code=404, detail="Venue tidak ditemukan")
+    comp = venue_score(ev, v)
+    doc = {"id": nid(), "event_id": ev["id"], "venue_id": v["id"], "venue_name": v["name"],
+           "event_days": ev.get("days", 1), "setup_days": ev.get("setup_days", 0),
+           "total_cost": comp["estimated_total"], "deposit": v["deposit"], "status": "Confirmed",
+           "compatibility": {"score": comp["score"], "reasons": comp["reasons"]}, "created_at": now_iso()}
+    await db.event_venues.delete_many({"event_id": ev["id"]})
+    await db.event_venues.insert_one(doc)
+    await db.events.update_one({"id": ev["id"]}, {"$set": {"venue_name": v["name"], "indoor": v["indoor"]}})
+    await audit(ev["id"], user, "venue.select", {"venue": v["name"], "score": comp["score"]})
+    return {"item": clean(doc)}
+
+
+# ---------------------------------------------------------------- vendors + workforce
+@api.get("/events/{event_id}/vendor-matches")
+async def vendor_matches(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    bp = await db.event_blueprints.find_one({"event_id": ev["id"]}, {"_id": 0}) or {}
+    needed = [r["category"] for r in bp.get("vendor_requirements", [])] or \
+             ["Event Organizer", "Stage", "Sound", "Lighting", "LED", "Security", "Medical"]
+    vendors = await db.vendors.find({}, {"_id": 0}).to_list(300)
+    out = []
+    for v in vendors:
+        match = 40 if v["category"] in needed else 10
+        reasons = [f"Kategori {v['category']}" + (" sesuai kebutuhan blueprint" if v["category"] in needed else " tidak pada daftar kebutuhan")]
+        if (ev.get("city") in v.get("service_cities", [])):
+            match += 25
+            reasons.append(f"Melayani {ev.get('city')}")
+        if v.get("verified"):
+            match += 15
+            reasons.append("Dokumen bisnis terverifikasi")
+        match += min(20, int(v.get("delivery_score", 0) / 5))
+        reasons.append(f"Delivery record {v.get('delivery_score')}/100, respons ~{v.get('response_hours')} jam")
+        out.append({**v, "match": {"score": min(match, 100), "reasons": reasons}})
+    out.sort(key=lambda x: -x["match"]["score"])
+    return {"items": out, "needed_categories": needed}
+
+
+@api.get("/events/{event_id}/vendors")
+async def get_event_vendors(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    return {"items": await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)}
+
+
+@api.post("/events/{event_id}/vendors")
+async def add_vendor(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    v = await db.vendors.find_one({"id": body.get("vendor_id")}, {"_id": 0})
+    if not v:
+        raise HTTPException(status_code=404, detail="Vendor tidak ditemukan")
+    cost = int(body.get("cost") or (v["price_min"] + v["price_max"]) // 2)
+    doc = {"id": nid(), "event_id": ev["id"], "vendor_id": v["id"], "vendor_name": v["name"],
+           "category": v["category"], "cost": cost, "status": body.get("status", "Pending"),
+           "created_at": now_iso()}
+    await db.event_vendors.insert_one(doc)
+    await audit(ev["id"], user, "vendor.add", {"vendor": v["name"], "cost": cost})
+    return {"item": clean(doc)}
+
+
+@api.patch("/events/{event_id}/vendors/{item_id}")
+async def patch_vendor(event_id: str, item_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    allowed = {k: v for k, v in body.items() if k in ("status", "cost")}
+    await db.event_vendors.update_one({"id": item_id, "event_id": ev["id"]}, {"$set": allowed})
+    return {"ok": True}
+
+
+@api.get("/events/{event_id}/workforce")
+async def get_workforce(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    workers = await db.event_workers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(300)
+    pool = await db.workers.find({}, {"_id": 0}).to_list(300)
+    return {"jobs": jobs, "assigned": workers, "pool": pool}
+
+
+@api.post("/events/{event_id}/jobs")
+async def create_job(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "role": body["role"], "needed": int(body.get("needed") or 1),
+           "shift": body.get("shift", "Show day"), "location": ev.get("venue_name") or ev["city"],
+           "compensation_per_day": int(body.get("compensation_per_day") or 300000),
+           "days": int(body.get("days") or ev.get("days", 1)), "supervisor": body.get("supervisor", "Event Supervisor"),
+           "required_skills": body.get("required_skills", [body["role"]]), "filled": 0, "status": "Not Started",
+           "created_at": now_iso()}
+    await db.event_jobs.insert_one(doc)
+    await audit(ev["id"], user, "job.create", {"role": doc["role"], "needed": doc["needed"]})
+    return {"item": clean(doc)}
+
+
+@api.post("/events/{event_id}/workers")
+async def assign_worker(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    w = await db.workers.find_one({"id": body.get("worker_id")}, {"_id": 0})
+    if not w:
+        raise HTTPException(status_code=404, detail="Pekerja tidak ditemukan")
+    doc = {"id": nid(), "event_id": ev["id"], "worker_id": w["id"], "worker_name": w["name"],
+           "role": w["category"], "job_id": body.get("job_id"), "status": "Selected", "check_in_at": None,
+           "payment_status": "Scheduled", "created_at": now_iso()}
+    await db.event_workers.insert_one(doc)
+    if body.get("job_id"):
+        await db.event_jobs.update_one({"id": body["job_id"]}, {"$inc": {"filled": 1}, "$set": {"status": "In Progress"}})
+    return {"item": clean(doc)}
+
+
+@api.post("/events/{event_id}/workers/{item_id}/checkin")
+async def worker_checkin(event_id: str, item_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    await db.event_workers.update_one({"id": item_id, "event_id": ev["id"]},
+                                      {"$set": {"status": "Checked In", "check_in_at": now_iso()}})
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- sponsors
+@api.get("/events/{event_id}/sponsor-packages")
+async def list_packages(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
+    ev = await get_event_or_404(event_id)
+    rows = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    return {"items": rows}
+
+
+@api.post("/events/{event_id}/sponsor-packages")
+async def create_package(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "name": body["name"], "tier": body.get("tier", body["name"]),
+           "price": int(body["price"]), "quantity": int(body.get("quantity") or 1), "sold": 0,
+           "rights": body.get("rights", []), "exclusivity": body.get("exclusivity", "Open"),
+           "deadline": body.get("deadline", ev["start_date"]),
+           "deliverables": [{"item": r, "status": "Not Started"} for r in body.get("rights", [])],
+           "audience_profile": ev.get("audience_profile", ""), "estimated_attendance": ev.get("capacity"),
+           "status": "Open", "created_at": now_iso()}
+    await db.sponsor_packages.insert_one(doc)
+    await audit(ev["id"], user, "sponsor_package.create", {"name": doc["name"], "price": doc["price"]})
+    return {"item": clean(doc)}
+
+
+@api.get("/sponsor/opportunities")
+async def sponsor_opportunities(city: str = "", category: str = ""):
+    f = {"status": "published", "deleted": {"$ne": True}}
+    if city:
+        f["city"] = city
+    if category:
+        f["event_type"] = {"$regex": category, "$options": "i"}
+    events = await db.events.find(f, {"_id": 0}).to_list(100)
+    out = []
+    for ev in events:
+        pkgs = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+        available = [p for p in pkgs if p["sold"] < p["quantity"]]
+        if available:
+            out.append({"event": ev, "packages": available})
+    return {"items": out}
+
+
+@api.post("/sponsor-interests")
+async def create_interest(body: Dict[str, Any], user: dict = Depends(require_roles("sponsor", "organizer"))):
+    pkg = await db.sponsor_packages.find_one({"id": body.get("package_id")}, {"_id": 0})
+    if not pkg:
+        raise HTTPException(status_code=404, detail="Sponsor package tidak ditemukan")
+    if pkg["sold"] >= pkg["quantity"]:
+        raise HTTPException(status_code=400, detail="Paket sponsor sudah penuh")
+    ev = await get_event_or_404(pkg["event_id"])
+    doc = {"id": nid(), "event_id": pkg["event_id"], "package_id": pkg["id"], "package_name": pkg["name"],
+           "sponsor_org_id": user.get("org_id"), "sponsor_user_id": user["id"], "sponsor_name": user["name"],
+           "amount": int(body.get("amount") or pkg["price"]), "message": body.get("message", ""),
+           "status": "pending", "created_at": now_iso()}
+    await db.sponsor_interests.insert_one(doc)
+    await notify(ev["owner_user_id"], "Sponsor interest baru",
+                 f"{user['name']} mengajukan minat pada paket {pkg['name']}.", "info", ev["id"])
+    await audit(ev["id"], user, "sponsor.interest", {"package": pkg["name"]})
+    return {"item": clean(doc)}
+
+
+@api.get("/sponsor/my-interests")
+async def my_interests(user: dict = Depends(get_current_user)):
+    rows = await db.sponsor_interests.find({"sponsor_user_id": user["id"]}, {"_id": 0}).to_list(200)
+    commits = await db.sponsor_commitments.find(
+        {"sponsor_org_id": user.get("org_id")} if user.get("org_id") else {"sponsor_name": user["name"]},
+        {"_id": 0}).to_list(200)
+    for r in rows + commits:
+        ev = await db.events.find_one({"id": r["event_id"]}, {"_id": 0})
+        r["event_name"] = (ev or {}).get("name")
+    return {"interests": rows, "commitments": commits}
+
+
+@api.get("/events/{event_id}/sponsor-interests")
+async def event_interests(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    return {"items": await db.sponsor_interests.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200),
+            "commitments": await db.sponsor_commitments.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)}
+
+
+@api.post("/sponsor-interests/{interest_id}/decision")
+async def decide_interest(interest_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    it = await db.sponsor_interests.find_one({"id": interest_id}, {"_id": 0})
+    if not it:
+        raise HTTPException(status_code=404, detail="Interest tidak ditemukan")
+    ev = await get_event_or_404(it["event_id"])
+    await assert_event_access(ev, user, write=True)
+    decision = body.get("decision")
+    if decision not in ("approved", "rejected"):
+        raise HTTPException(status_code=400, detail="Keputusan harus approved atau rejected")
+    await db.sponsor_interests.update_one({"id": interest_id}, {"$set": {"status": decision, "decided_at": now_iso()}})
+    if decision == "approved":
+        pkg = await db.sponsor_packages.find_one({"id": it["package_id"]})
+        await db.sponsor_commitments.insert_one({
+            "id": nid(), "event_id": ev["id"], "package_id": it["package_id"], "package_name": it["package_name"],
+            "sponsor_org_id": it.get("sponsor_org_id"), "sponsor_name": it["sponsor_name"],
+            "amount": it["amount"], "status": "Confirmed", "fulfillment_status": "Not Started",
+            "created_at": now_iso()})
+        await db.sponsor_packages.update_one({"id": it["package_id"]}, {"$inc": {"sold": 1}})
+        if pkg and pkg["sold"] + 1 >= pkg["quantity"]:
+            await db.sponsor_packages.update_one({"id": pkg["id"]}, {"$set": {"status": "Fully Committed"}})
+        for pct, desc in ((50, "Contract Signed"), (50, "Pre-event Settlement")):
+            await db.payment_milestones.insert_one({
+                "id": nid(), "event_id": ev["id"], "ref_type": "sponsor", "ref_id": it["id"],
+                "ref_name": it["sponsor_name"], "description": desc, "percentage": pct,
+                "amount": int(it["amount"] * pct / 100), "due_date": ev["start_date"],
+                "condition": desc, "status": "Pending", "created_at": now_iso()})
+        await notify(it["sponsor_user_id"], "Sponsorship disetujui",
+                     f"Komitmen {it['package_name']} untuk {ev['name']} telah disetujui organizer.", "success", ev["id"])
+    else:
+        await notify(it["sponsor_user_id"], "Sponsorship belum disetujui",
+                     f"Pengajuan {it['package_name']} untuk {ev['name']} ditolak organizer.", "warning", ev["id"])
+    await audit(ev["id"], user, "sponsor.decision", {"interest": interest_id, "decision": decision})
+    budget = await compute_budget(ev["id"])
+    return {"ok": True, "budget": budget}
+
+
+# ---------------------------------------------------------------- tenants
+@api.get("/events/{event_id}/tenant-zones")
+async def tenant_zones(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
+    ev = await get_event_or_404(event_id)
+    zones = await db.tenant_zones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    return {"zones": zones, "booths": booths}
+
+
+@api.post("/events/{event_id}/tenant-zones")
+async def create_zone(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    zid = nid()
+    slots = int(body.get("slots") or 5)
+    price = int(body.get("price") or 5000000)
+    zone = {"id": zid, "event_id": ev["id"], "name": body["name"], "category": body.get("category", "Retail Pop-up"),
+            "area_sqm": int(body.get("area_sqm") or 100), "slots": slots,
+            "utilities": body.get("utilities", ["Electricity"]),
+            "operating_hours": body.get("operating_hours", "15:00 - 22:00"),
+            "description": body.get("description", ""), "created_at": now_iso()}
+    await db.tenant_zones.insert_one(zone)
+    prefix = "".join([c for c in body["name"].upper() if c.isalpha()])[:3]
+    for i in range(slots):
+        await db.booth_slots.insert_one({
+            "id": nid(), "event_id": ev["id"], "zone_id": zid, "zone_name": zone["name"],
+            "code": f"{prefix}-{i+1:02d}", "size": body.get("size", "3m x 3m"), "price": price,
+            "deposit": int(price * 0.2), "electricity_watt": int(body.get("electricity_watt") or 1200),
+            "furniture": "1 meja, 2 kursi", "position": f"Row {chr(65 + i // 5)}-{i % 5 + 1}",
+            "status": "available", "tenant_name": None, "tenant_application_id": None, "created_at": now_iso()})
+    await audit(ev["id"], user, "tenant_zone.create", {"zone": zone["name"], "slots": slots})
+    return {"item": clean(zone)}
+
+
+@api.get("/tenant/opportunities")
+async def tenant_opportunities(city: str = ""):
+    f = {"status": "published", "deleted": {"$ne": True}}
+    if city:
+        f["city"] = city
+    events = await db.events.find(f, {"_id": 0}).to_list(100)
+    out = []
+    for ev in events:
+        booths = await db.booth_slots.find({"event_id": ev["id"], "status": "available"}, {"_id": 0}).to_list(500)
+        if booths:
+            out.append({"event": ev, "available_booths": len(booths), "booths": booths[:60]})
+    return {"items": out}
+
+
+@api.post("/tenant-applications")
+async def apply_booth(body: Dict[str, Any], user: dict = Depends(require_roles("tenant", "organizer"))):
+    booth = await db.booth_slots.find_one({"id": body.get("booth_id")}, {"_id": 0})
+    if not booth:
+        raise HTTPException(status_code=404, detail="Booth tidak ditemukan")
+    if booth["status"] != "available":
+        raise HTTPException(status_code=400, detail="Booth sudah tidak tersedia")
+    ev = await get_event_or_404(booth["event_id"])
+    conflicts = []
+    dupes = await db.tenant_applications.count_documents({
+        "event_id": ev["id"], "product_category": body.get("product_category"), "status": "approved"})
+    if dupes >= 3:
+        conflicts.append("Duplicate category: sudah ada 3 tenant pada kategori yang sama")
+    if int(body.get("power_watt") or 0) > booth["electricity_watt"]:
+        conflicts.append(f"Kebutuhan listrik melebihi kapasitas booth ({booth['electricity_watt']}W)")
+    doc = {"id": nid(), "event_id": ev["id"], "booth_id": booth["id"], "booth_code": booth["code"],
+           "zone_name": booth["zone_name"], "tenant_user_id": user["id"], "tenant_org_id": user.get("org_id"),
+           "business_name": body.get("business_name") or user["name"],
+           "product_category": body.get("product_category", "Retail Pop-up"),
+           "amount": booth["price"], "deposit": booth["deposit"], "status": "pending",
+           "payment_status": "Draft", "power_requirement": f"{body.get('power_watt', 0)}W",
+           "staffing": int(body.get("staffing") or 2), "documents": body.get("documents", []),
+           "food_safety": body.get("food_safety", False), "compatibility_conflicts": conflicts,
+           "checkin_status": "Not Checked In", "created_at": now_iso()}
+    await db.tenant_applications.insert_one(doc)
+    await db.booth_slots.update_one({"id": booth["id"]}, {"$set": {"status": "reserved", "tenant_application_id": doc["id"],
+                                                                   "tenant_name": doc["business_name"]}})
+    await notify(ev["owner_user_id"], "Aplikasi tenant baru",
+                 f"{doc['business_name']} mengajukan booth {booth['code']}.", "info", ev["id"])
+    await audit(ev["id"], user, "tenant.apply", {"booth": booth["code"]})
+    return {"item": clean(doc)}
+
+
+@api.get("/tenant/my-applications")
+async def my_applications(user: dict = Depends(get_current_user)):
+    rows = await db.tenant_applications.find({"tenant_user_id": user["id"]}, {"_id": 0}).to_list(200)
+    for r in rows:
+        ev = await db.events.find_one({"id": r["event_id"]}, {"_id": 0})
+        r["event_name"] = (ev or {}).get("name")
+    return {"items": rows}
+
+
+@api.get("/events/{event_id}/tenant-applications")
+async def event_applications(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    return {"items": await db.tenant_applications.find({"event_id": ev["id"]}, {"_id": 0}).to_list(300)}
+
+
+@api.post("/tenant-applications/{app_id}/decision")
+async def decide_application(app_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ap = await db.tenant_applications.find_one({"id": app_id}, {"_id": 0})
+    if not ap:
+        raise HTTPException(status_code=404, detail="Aplikasi tidak ditemukan")
+    ev = await get_event_or_404(ap["event_id"])
+    await assert_event_access(ev, user, write=True)
+    decision = body.get("decision")
+    if decision not in ("approved", "rejected"):
+        raise HTTPException(status_code=400, detail="Keputusan harus approved atau rejected")
+    await db.tenant_applications.update_one({"id": app_id}, {"$set": {
+        "status": decision, "payment_status": "Simulated Paid" if decision == "approved" else "Cancelled",
+        "decided_at": now_iso()}})
+    await db.booth_slots.update_one({"id": ap["booth_id"]}, {"$set": {
+        "status": "occupied" if decision == "approved" else "available",
+        "tenant_name": ap["business_name"] if decision == "approved" else None,
+        "tenant_application_id": ap["id"] if decision == "approved" else None}})
+    await notify(ap["tenant_user_id"], f"Aplikasi booth {ap['booth_code']} {'disetujui' if decision == 'approved' else 'ditolak'}",
+                 f"Event {ev['name']}", "success" if decision == "approved" else "warning", ev["id"])
+    await audit(ev["id"], user, "tenant.decision", {"application": app_id, "decision": decision})
+    return {"ok": True, "budget": await compute_budget(ev["id"])}
+
+
+# ---------------------------------------------------------------- ticketing
+@api.get("/events/{event_id}/ticket-tiers")
+async def list_tiers(event_id: str):
+    ev = await get_event_or_404(event_id)
+    return {"items": await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)}
+
+
+@api.post("/events/{event_id}/ticket-tiers")
+async def create_tier(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "name": body["name"], "ticket_type": body.get("ticket_type", "Regular"),
+           "price": int(body.get("price") or 0), "quantity": int(body.get("quantity") or 100), "sold": 0,
+           "sale_start": body.get("sale_start", now_iso()[:10]), "sale_end": body.get("sale_end", ev["start_date"]),
+           "benefits": body.get("benefits", []), "purchase_limit": int(body.get("purchase_limit") or 4),
+           "age_rule": body.get("age_rule", ev.get("age_limit", "All ages")),
+           "transfer_rule": body.get("transfer_rule", "Tidak dapat dipindahtangankan"),
+           "refund_rule": body.get("refund_rule", "Refund penuh hingga H-14"), "active": True,
+           "created_at": now_iso()}
+    await db.ticket_tiers.insert_one(doc)
+    await audit(ev["id"], user, "tier.create", {"name": doc["name"], "price": doc["price"]})
+    return {"item": clean(doc)}
+
+
+@api.patch("/events/{event_id}/ticket-tiers/{tier_id}")
+async def patch_tier(event_id: str, tier_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    allowed = {k: v for k, v in body.items() if k in ("name", "price", "quantity", "active", "sale_end", "benefits")}
+    await db.ticket_tiers.update_one({"id": tier_id, "event_id": ev["id"]}, {"$set": allowed})
+    return {"ok": True}
+
+
+@api.post("/events/{event_id}/publish")
+async def publish_event(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    tiers = await db.ticket_tiers.count_documents({"event_id": ev["id"]})
+    venue = await db.event_venues.find_one({"event_id": ev["id"]})
+    missing = []
+    if not venue:
+        missing.append("Venue belum dipilih")
+    if tiers == 0:
+        missing.append("Belum ada ticket tier")
+    if missing:
+        raise HTTPException(status_code=400, detail="Belum dapat dipublikasikan: " + "; ".join(missing))
+    await db.events.update_one({"id": ev["id"]}, {"$set": {"status": "published", "published_at": now_iso()}})
+    await audit(ev["id"], user, "event.publish")
+    await notify(user["id"], "Event dipublikasikan", f"{ev['name']} kini tampil di OKKAX Discover.", "success", ev["id"])
+    return {"ok": True, "status": "published"}
+
+
+@api.get("/discover/events")
+async def discover(city: str = "", category: str = "", q: str = "", free: Optional[bool] = None,
+                   sort: str = "trending"):
+    f = {"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}}
+    if city:
+        f["city"] = city
+    if category:
+        f["event_type"] = {"$regex": category, "$options": "i"}
+    if q:
+        f["name"] = {"$regex": q, "$options": "i"}
+    events = await db.events.find(f, {"_id": 0}).to_list(200)
+    out = []
+    for ev in events:
+        tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+        prices = [t["price"] for t in tiers if t.get("active")]
+        remaining = sum(max(0, t["quantity"] - t["sold"]) for t in tiers)
+        total_qty = sum(t["quantity"] for t in tiers) or 1
+        sold = sum(t["sold"] for t in tiers)
+        if free is True and (not prices or min(prices) > 0):
+            continue
+        if free is False and prices and min(prices) == 0:
+            continue
+        out.append({**ev, "min_price": min(prices) if prices else 0, "max_price": max(prices) if prices else 0,
+                    "tickets_remaining": remaining, "sold": sold,
+                    "almost_sold_out": remaining / total_qty < 0.2, "tiers": tiers})
+    if sort == "date":
+        out.sort(key=lambda x: x.get("start_date") or "")
+    else:
+        out.sort(key=lambda x: -x["sold"])
+    cities = sorted({e["city"] for e in out})
+    categories = sorted({e["event_type"] for e in out})
+    return {"items": out, "cities": cities, "categories": categories}
+
+
+@api.get("/public/events/{event_id}")
+async def public_event(event_id: str):
+    ev = await get_event_or_404(event_id)
+    if ev.get("status") not in ("published", "live", "completed"):
+        raise HTTPException(status_code=404, detail="Event belum dipublikasikan")
+    tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    talent_details = []
+    for t in talents:
+        tal = await db.talents.find_one({"id": t["talent_id"]},
+                                        {"_id": 0, "base_fee": 0, "fee_min": 0, "fee_max": 0, "rider_template": 0})
+        if tal:
+            talent_details.append({**tal, "status": t["status"], "slot": t.get("performance_slot")})
+    venue_link = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+    venue = await db.venues.find_one({"id": (venue_link or {}).get("venue_id")}, {"_id": 0}) if venue_link else None
+    sponsors = await db.sponsor_commitments.find({"event_id": ev["id"], "status": "Confirmed"},
+                                                 {"_id": 0, "amount": 0}).to_list(50)
+    tenants = await db.tenant_applications.find({"event_id": ev["id"], "status": "approved"},
+                                                {"_id": 0, "amount": 0, "documents": 0}).to_list(100)
+    schedule = await db.schedule_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    org = await db.organizations.find_one({"id": ev.get("organizer_org_id")}, {"_id": 0})
+    readiness = {
+        "organizer_verified": bool((org or {}).get("verified")),
+        "venue_confirmed": bool(venue_link and venue_link.get("status") == "Confirmed"),
+        "talent_confirmed": any(t["status"] == "Confirmed" for t in talents),
+        "ticketing_active": any(t.get("active") for t in tiers),
+        "refund_policy_available": bool(ev.get("refund_policy")),
+        "accessibility_info_available": bool(ev.get("accessibility")),
+    }
+    return {"event": ev, "tiers": tiers, "talents": talent_details, "venue": venue, "sponsors": sponsors,
+            "tenant_highlights": tenants[:12], "schedule": schedule, "organizer": clean(org) if org else None,
+            "readiness": readiness, "disclaimer": DISCLAIMER if ev.get("is_demo") else None}
+
+
+@api.post("/checkout")
+async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(payload.event_id)
+    tier = await db.ticket_tiers.find_one({"id": payload.tier_id, "event_id": ev["id"]}, {"_id": 0})
+    if not tier:
+        raise HTTPException(status_code=404, detail="Ticket tier tidak ditemukan")
+    if not tier.get("active"):
+        raise HTTPException(status_code=400, detail="Tier ini sedang tidak dijual")
+    remaining = tier["quantity"] - tier["sold"]
+    if payload.quantity > remaining:
+        raise HTTPException(status_code=400, detail=f"Sisa tiket hanya {remaining}")
+    if payload.quantity > tier.get("purchase_limit", 4):
+        raise HTTPException(status_code=400, detail=f"Maksimum {tier['purchase_limit']} tiket per transaksi")
+    method_valid = any(m["key"] == payload.method and m["available"] for m in PAYMENT_METHODS)
+    if not method_valid:
+        raise HTTPException(status_code=400, detail="Metode pembayaran belum tersedia pada MVP sandbox")
+    gross = tier["price"] * payload.quantity
+    platform_fee = int(gross * 0.03)
+    tax = int(gross * 0.11)
+    gateway_fee = 4000 if gross else 0
+    total = gross + platform_fee + tax
+    count = await db.ticket_orders.count_documents({}) + 1
+    order_id = nid()
+    payment_id = nid()
+    order = {"id": order_id, "order_code": f"OKX-ORD-{count:06d}", "event_id": ev["id"], "event_name": ev["name"],
+             "tier_id": tier["id"], "tier_name": tier["name"], "user_id": user["id"], "buyer_name": user["name"],
+             "buyer_email": user["email"], "quantity": payload.quantity,
+             "attendees": payload.attendees or [{"name": user["name"]}], "gross": gross,
+             "platform_fee": platform_fee, "tax": tax, "total": total, "currency": "IDR",
+             "status": "awaiting_payment", "payment_id": payment_id, "created_at": now_iso()}
+    await db.ticket_orders.insert_one(order)
+    payment = {"id": payment_id, "payment_ref": f"OKX-PAY-{count:06d}", "order_id": order_id, "event_id": ev["id"],
+               "payer_user_id": user["id"], "payer_name": user["name"], "payee": "OKKAX Sandbox Settlement",
+               "purpose": "Ticket purchase", "gross": gross, "discount": 0, "tax_estimate": tax,
+               "platform_fee": platform_fee, "gateway_fee": gateway_fee, "net": total - platform_fee - gateway_fee,
+               "currency": "IDR", "method": payload.method, "method_channel": payload.method_channel,
+               "status": "Awaiting Payment", "created_at": now_iso(),
+               "due_date": (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
+               "expired_at": (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
+               "paid_at": None, "refund_status": None,
+               "reference_number": f"{payload.method[:3].upper()}-{secrets.randbelow(9999999999):010d}",
+               "audit": [{"at": now_iso(), "action": "created", "by": user["email"]}],
+               "sandbox_notice": SANDBOX_NOTICE}
+    await db.payments.insert_one(payment)
+    await audit(ev["id"], user, "order.create", {"order": order["order_code"], "total": total})
+    return {"order": clean(order), "payment": clean(payment), "sandbox_notice": SANDBOX_NOTICE}
+
+
+@api.post("/payments/{payment_id}/simulate")
+async def simulate_payment(payment_id: str, body: Dict[str, Any] = None, user: dict = Depends(get_current_user)):
+    body = body or {}
+    pay = await db.payments.find_one({"id": payment_id}, {"_id": 0})
+    if not pay:
+        raise HTTPException(status_code=404, detail="Payment tidak ditemukan")
+    if pay["payer_user_id"] != user["id"] and not is_admin(user):
+        raise HTTPException(status_code=403, detail="Bukan pembayaran Anda")
+    if pay["status"] == "Simulated Paid":
+        return {"payment": pay, "already": True}
+    outcome = body.get("outcome", "success")
+    if outcome == "fail":
+        await db.payments.update_one({"id": payment_id}, {"$set": {"status": "Failed"},
+                                                          "$push": {"audit": {"at": now_iso(), "action": "failed"}}})
+        await db.ticket_orders.update_one({"id": pay["order_id"]}, {"$set": {"status": "failed"}})
+        return {"payment": {**pay, "status": "Failed"}}
+    order = await db.ticket_orders.find_one({"id": pay["order_id"]}, {"_id": 0})
+    tier = await db.ticket_tiers.find_one({"id": order["tier_id"]}, {"_id": 0})
+    remaining = tier["quantity"] - tier["sold"]
+    if order["quantity"] > remaining:
+        raise HTTPException(status_code=400, detail="Inventory tidak lagi tersedia")
+    await db.payments.update_one({"id": payment_id}, {
+        "$set": {"status": "Simulated Paid", "paid_at": now_iso()},
+        "$push": {"audit": {"at": now_iso(), "action": "simulated_paid", "channel": pay["method_channel"]}}})
+    await db.ticket_orders.update_one({"id": order["id"]}, {"$set": {"status": "paid"}})
+    await db.ticket_tiers.update_one({"id": tier["id"]}, {"$inc": {"sold": order["quantity"]}})
+    total_tickets = await db.tickets.count_documents({})
+    tickets = []
+    ev = await get_event_or_404(order["event_id"])
+    for i in range(order["quantity"]):
+        tno = f"OKX-TIX-{total_tickets + i + 1:06d}"
+        att = order["attendees"][i]["name"] if i < len(order["attendees"]) else order["buyer_name"]
+        t = {"id": nid(), "ticket_number": tno, "qr_code": f"OKKAX|{ev['event_code']}|{tno}",
+             "order_id": order["id"], "event_id": ev["id"], "event_name": ev["name"], "tier_id": tier["id"],
+             "tier_name": tier["name"], "attendee_name": att, "user_id": order["user_id"], "status": "valid",
+             "used_at": None, "created_at": now_iso()}
+        await db.tickets.insert_one(t)
+        tickets.append(clean(t))
+    await notify(order["user_id"], "Pembayaran sandbox berhasil",
+                 f"{order['quantity']} tiket {tier['name']} untuk {ev['name']} telah diterbitkan.", "success", ev["id"])
+    await notify(ev["owner_user_id"], "Penjualan tiket baru",
+                 f"{order['quantity']} tiket {tier['name']} terjual (sandbox).", "info", ev["id"])
+    await audit(ev["id"], user, "payment.simulated_paid", {"payment_ref": pay["payment_ref"]})
+    return {"payment": {**pay, "status": "Simulated Paid"}, "tickets": tickets,
+            "budget": await compute_budget(ev["id"])}
+
+
+@api.get("/my/orders")
+async def my_orders(user: dict = Depends(get_current_user)):
+    orders = await db.ticket_orders.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    for o in orders:
+        o["payment"] = await db.payments.find_one({"id": o.get("payment_id")}, {"_id": 0})
+    return {"items": orders}
+
+
+@api.get("/my/tickets")
+async def my_tickets(user: dict = Depends(get_current_user)):
+    rows = await db.tickets.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(300)
+    for t in rows:
+        ev = await db.events.find_one({"id": t["event_id"]}, {"_id": 0})
+        t["event"] = {"start_date": (ev or {}).get("start_date"), "venue_name": (ev or {}).get("venue_name"),
+                      "city": (ev or {}).get("city"), "start_time": (ev or {}).get("start_time"),
+                      "gate_info": (ev or {}).get("gate_info")}
+    return {"items": rows}
+
+
+@api.get("/my/refunds")
+async def my_refunds(user: dict = Depends(get_current_user)):
+    return {"items": await db.refunds.find({"requested_by": user["id"]}, {"_id": 0}).to_list(100)}
+
+
+@api.post("/orders/{order_id}/refund")
+async def request_refund(order_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    order = await db.ticket_orders.find_one({"id": order_id}, {"_id": 0})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order tidak ditemukan")
+    if order["user_id"] != user["id"] and not is_admin(user):
+        raise HTTPException(status_code=403, detail="Bukan order Anda")
+    if order["status"] != "paid":
+        raise HTTPException(status_code=400, detail="Hanya order berstatus paid dapat direfund")
+    ev = await get_event_or_404(order["event_id"])
+    amount = order["total"] if body.get("type", "full") == "full" else int(order["total"] * 0.5)
+    r = {"id": nid(), "payment_id": order["payment_id"], "order_id": order_id, "event_id": ev["id"],
+         "reason": body.get("reason", "Permintaan pembeli"), "policy": ev.get("refund_policy"),
+         "amount": amount, "requested_by": user["id"], "approved_by": "OKKAX Sandbox",
+         "status": "Processed", "processed_date": now_iso(), "created_at": now_iso()}
+    await db.refunds.insert_one(r)
+    await db.ticket_orders.update_one({"id": order_id}, {"$set": {"status": "refunded"}})
+    await db.payments.update_one({"id": order["payment_id"]}, {
+        "$set": {"status": "Refunded" if amount == order["total"] else "Partially Refunded",
+                 "refund_status": "Refunded"},
+        "$push": {"audit": {"at": now_iso(), "action": "refunded", "amount": amount}}})
+    await db.tickets.update_many({"order_id": order_id}, {"$set": {"status": "refunded"}})
+    await db.ticket_tiers.update_one({"id": order["tier_id"]}, {"$inc": {"sold": -order["quantity"]}})
+    await notify(user["id"], "Refund diproses (sandbox)", f"Refund Rp{amount:,} untuk {order['order_code']}.", "info", ev["id"])
+    await audit(ev["id"], user, "refund.process", {"order": order["order_code"], "amount": amount})
+    return {"refund": clean(r)}
+
+
+class ValidateIn(BaseModel):
+    qr_code: str
+    event_id: Optional[str] = None
+
+
+@api.post("/tickets/validate")
+async def validate_ticket(payload: ValidateIn, user: dict = Depends(get_current_user)):
+    t = await db.tickets.find_one({"qr_code": payload.qr_code.strip()}, {"_id": 0})
+    if not t:
+        t = await db.tickets.find_one({"ticket_number": payload.qr_code.strip()}, {"_id": 0})
+    if not t:
+        result = "Invalid"
+        await db.ticket_validations.insert_one({"id": nid(), "ticket_id": None, "event_id": payload.event_id,
+                                                "result": result, "at": now_iso(), "by": user["id"],
+                                                "qr_code": payload.qr_code})
+        return {"result": result, "message": "QR tidak dikenali oleh OKKAX."}
+    if t["status"] == "used":
+        result = "Already Used"
+        message = f"Tiket sudah digunakan pada {t.get('used_at')}"
+    elif t["status"] in ("cancelled", "refunded"):
+        result = t["status"].capitalize()
+        message = f"Tiket berstatus {t['status']}"
+    else:
+        result = "Valid"
+        message = f"Selamat masuk, {t['attendee_name']}"
+        await db.tickets.update_one({"id": t["id"]}, {"$set": {"status": "used", "used_at": now_iso()}})
+    await db.ticket_validations.insert_one({"id": nid(), "ticket_id": t["id"], "event_id": t["event_id"],
+                                            "result": result, "at": now_iso(), "by": user["id"],
+                                            "qr_code": payload.qr_code})
+    return {"result": result, "message": message, "ticket": {**t, "status": "used" if result == "Valid" else t["status"]}}
+
+
+@api.get("/events/{event_id}/validations")
+async def validations(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    return {"items": await db.ticket_validations.find({"event_id": ev["id"]}, {"_id": 0}).sort("at", -1).to_list(100)}
+
+
+# ---------------------------------------------------------------- budget engine
+async def compute_budget(event_id: str) -> dict:
+    ev = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not ev:
+        return {"total_cost": 0, "confirmed_funding": 0, "funding_gap": 0, "cost_lines": [], "funding_lines": []}
+    cost_lines: List[dict] = []
+    talents = await db.event_talents.find({"event_id": event_id}, {"_id": 0}).to_list(50)
+    for t in talents:
+        state = "committed" if t["status"] == "Confirmed" else "estimated"
+        cost_lines.append({"category": "Talent", "label": f"{t['talent_name']} (landed cost)",
+                           "amount": t["landed_cost"], "state": state, "source": "talent",
+                           "breakdown": {"Performance Fee": t["fee"], "Estimated Tax": t["tax_estimate"],
+                                         "Travel": t["travel"], "Accommodation": t["accommodation"],
+                                         "Local Transport": t["local_transport"], "Security": t["security"],
+                                         "Hospitality": t["hospitality"], "Technical Rider": t["rider_cost"]}})
+    venue = await db.event_venues.find_one({"event_id": event_id}, {"_id": 0})
+    if venue:
+        cost_lines.append({"category": "Venue", "label": venue["venue_name"], "amount": venue["total_cost"],
+                           "state": "committed" if venue["status"] == "Confirmed" else "estimated", "source": "venue"})
+    for v in await db.event_vendors.find({"event_id": event_id}, {"_id": 0}).to_list(200):
+        cost_lines.append({"category": v["category"], "label": v["vendor_name"], "amount": v["cost"],
+                           "state": "committed" if v["status"] == "Confirmed" else "estimated", "source": "vendor"})
+    for j in await db.event_jobs.find({"event_id": event_id}, {"_id": 0}).to_list(100):
+        cost_lines.append({"category": "Workforce", "label": f"{j['role']} x{j['needed']} ({j['days']} hari)",
+                           "amount": j["needed"] * j["compensation_per_day"] * j.get("days", 1),
+                           "state": "estimated", "source": "workforce"})
+    for b in await db.budget_items.find({"event_id": event_id}, {"_id": 0}).to_list(200):
+        cost_lines.append({"category": b["category"], "label": b["label"], "amount": b["amount"],
+                           "state": b.get("state", "estimated"), "source": b.get("source", "manual"),
+                           "id": b["id"]})
+    total_cost = sum(c["amount"] for c in cost_lines)
+
+    funding_lines: List[dict] = []
+    for f in await db.funding_items.find({"event_id": event_id}, {"_id": 0}).to_list(100):
+        funding_lines.append({"source": f["source"], "label": f["label"], "amount": f["amount"],
+                              "state": f.get("state", "estimated"), "id": f["id"]})
+    for c in await db.sponsor_commitments.find({"event_id": event_id, "status": "Confirmed"}, {"_id": 0}).to_list(100):
+        funding_lines.append({"source": "Sponsor Commitments", "label": f"{c['sponsor_name']} — {c['package_name']}",
+                              "amount": c["amount"], "state": "committed"})
+    tenant_rev = 0
+    for a in await db.tenant_applications.find({"event_id": event_id, "status": "approved"}, {"_id": 0}).to_list(300):
+        tenant_rev += a["amount"]
+    if tenant_rev:
+        funding_lines.append({"source": "Tenant Revenue", "label": "Booth terkonfirmasi", "amount": tenant_rev,
+                              "state": "committed"})
+    ticket_rev = 0
+    for o in await db.ticket_orders.find({"event_id": event_id, "status": "paid"}, {"_id": 0}).to_list(1000):
+        ticket_rev += o["gross"]
+    if ticket_rev:
+        funding_lines.append({"source": "Ticket Revenue", "label": "Order terbayar (sandbox)", "amount": ticket_rev,
+                              "state": "paid"})
+    confirmed_funding = sum(f["amount"] for f in funding_lines if f["state"] in ("committed", "paid"))
+    tiers = await db.ticket_tiers.find({"event_id": event_id}, {"_id": 0}).to_list(50)
+    sell_through = 0.65
+    projected_ticket_revenue = int(sum(t["price"] * t["quantity"] for t in tiers) * sell_through)
+    weighted_avg = 0
+    total_qty = sum(t["quantity"] for t in tiers)
+    if total_qty:
+        weighted_avg = sum(t["price"] * t["quantity"] for t in tiers) / total_qty
+    funding_gap = total_cost - confirmed_funding
+    break_even_tickets = int(max(0, funding_gap) / weighted_avg) + 1 if weighted_avg else None
+    by_category: Dict[str, int] = {}
+    for c in cost_lines:
+        by_category[c["category"]] = by_category.get(c["category"], 0) + c["amount"]
+    return {"event_id": event_id, "currency": ev.get("currency", "IDR"), "cost_lines": cost_lines,
+            "funding_lines": funding_lines, "total_cost": total_cost, "confirmed_funding": confirmed_funding,
+            "funding_gap": funding_gap, "projected_ticket_revenue": projected_ticket_revenue,
+            "sell_through_assumption": sell_through, "weighted_avg_ticket_price": int(weighted_avg),
+            "break_even_tickets": break_even_tickets, "tickets_sold": sum(t["sold"] for t in tiers),
+            "cost_by_category": by_category,
+            "tax_estimate_note": "Estimasi. Memerlukan verifikasi profesional. Bukan nasihat pajak."}
+
+
+@api.get("/events/{event_id}/budget")
+async def get_budget(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    return await compute_budget(ev["id"])
+
+
+@api.post("/events/{event_id}/budget-items")
+async def add_budget_item(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "category": body.get("category", "Other"),
+           "label": body.get("label", "Item baru"), "amount": int(body.get("amount") or 0),
+           "state": body.get("state", "estimated"), "source": "manual", "created_at": now_iso()}
+    await db.budget_items.insert_one(doc)
+    return {"item": clean(doc), "budget": await compute_budget(ev["id"])}
+
+
+@api.post("/events/{event_id}/funding-items")
+async def add_funding_item(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "source": body.get("source", "Other"),
+           "label": body.get("label", "Sumber baru"), "amount": int(body.get("amount") or 0),
+           "state": body.get("state", "committed"), "created_at": now_iso()}
+    await db.funding_items.insert_one(doc)
+    return {"item": clean(doc), "budget": await compute_budget(ev["id"])}
+
+
+@api.post("/events/{event_id}/simulate")
+async def simulate(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    base = await compute_budget(ev["id"])
+    scenarios = {}
+    presets = {"lean": {"production": 0.8, "sell": 0.5, "contingency": 0.03, "ticket": 0.9},
+               "balanced": {"production": 1.0, "sell": 0.65, "contingency": 0.05, "ticket": 1.0},
+               "premium": {"production": 1.25, "sell": 0.8, "contingency": 0.08, "ticket": 1.15}}
+    override = {"sell": body.get("sell_through"), "ticket": body.get("ticket_price_multiplier"),
+                "production": body.get("production_multiplier"), "capacity": body.get("capacity")}
+    tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    for key, p in presets.items():
+        prod_mult = override["production"] if (override["production"] and body.get("apply_to_all")) else p["production"]
+        sell = override["sell"] if (override["sell"] and body.get("apply_to_all")) else p["sell"]
+        tmult = override["ticket"] if (override["ticket"] and body.get("apply_to_all")) else p["ticket"]
+        cost = int(sum(c["amount"] * (prod_mult if c["category"] not in ("Talent", "Venue") else 1)
+                       for c in base["cost_lines"]))
+        cost += int(cost * p["contingency"])
+        cap = int(override["capacity"] or ev.get("capacity") or 0)
+        cap_factor = (cap / ev["capacity"]) if ev.get("capacity") else 1
+        ticket_rev = int(sum(t["price"] * tmult * t["quantity"] * cap_factor for t in tiers) * sell)
+        confirmed = base["confirmed_funding"]
+        gap = cost - confirmed - ticket_rev
+        wavg = base["weighted_avg_ticket_price"] * tmult or 1
+        scenarios[key] = {
+            "label": key.capitalize(), "total_cost": cost, "ticket_revenue": ticket_rev,
+            "confirmed_funding": confirmed, "funding_gap": gap,
+            "break_even_tickets": int(max(0, cost - confirmed) / wavg) + 1 if wavg else None,
+            "capacity": cap, "sell_through": sell, "production_multiplier": prod_mult,
+            "risk": "High" if gap > 0 else "Low",
+            "local_economic_impact": int(cost * 0.62 + ticket_rev * 0.18)}
+    return {"base": {"total_cost": base["total_cost"], "funding_gap": base["funding_gap"]},
+            "scenarios": scenarios, "note": "Estimasi AI/simulasi. Perubahan tidak memengaruhi event sebelum Apply Scenario."}
+
+
+@api.post("/events/{event_id}/apply-scenario")
+async def apply_scenario(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    updates = {}
+    if body.get("capacity"):
+        updates["capacity"] = int(body["capacity"])
+    if body.get("scenario"):
+        updates["applied_scenario"] = body["scenario"]
+    if updates:
+        await db.events.update_one({"id": ev["id"]}, {"$set": updates})
+    if body.get("ticket_price_multiplier"):
+        mult = float(body["ticket_price_multiplier"])
+        for t in await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50):
+            await db.ticket_tiers.update_one({"id": t["id"]}, {"$set": {"price": int(t["price"] * mult)}})
+    await audit(ev["id"], user, "scenario.apply", body)
+    return {"ok": True, "budget": await compute_budget(ev["id"])}
+
+
+# ---------------------------------------------------------------- graph / ripple / ops
+@api.get("/events/{event_id}/graph")
+async def event_graph(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    nodes, edges = [], []
+
+    def add(nid_, label, kind, status, meta=None):
+        nodes.append({"id": nid_, "label": label, "kind": kind, "status": status, "meta": meta or {}})
+
+    add("event", ev["name"], "Event", "Confirmed" if ev["status"] == "published" else "Draft",
+        {"event_code": ev["event_code"], "city": ev["city"], "capacity": ev["capacity"]})
+    add("organizer", ev.get("organizer_name") or "Organizer", "Organizer", "Confirmed", {})
+    edges.append({"source": "event", "target": "organizer", "label": "diselenggarakan oleh"})
+
+    talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    riders = await db.rider_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    for t in talents:
+        tid = f"talent-{t['id']}"
+        add(tid, t["talent_name"], "Talent", t["status"], {"landed_cost": t["landed_cost"], "fee": t["fee"]})
+        edges.append({"source": "event", "target": tid, "label": "talent"})
+        rs = [r for r in riders if r["event_talent_id"] == t["id"]]
+        missing = [r for r in rs if r["status"] in ("Missing", "Requires Confirmation") and r["mandatory"]]
+        rid = f"rider-{t['id']}"
+        add(rid, f"Rider {t['talent_name']} ({len(rs)} item)", "Rider",
+            "Missing" if missing else "Confirmed", {"items": len(rs), "unconfirmed": len(missing)})
+        edges.append({"source": tid, "target": rid, "label": "mengaktifkan"})
+
+    venue = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+    if venue:
+        add("venue", venue["venue_name"], "Venue", venue["status"],
+            {"cost": venue["total_cost"], "score": venue["compatibility"]["score"]})
+        edges.append({"source": "event", "target": "venue", "label": "venue"})
+    else:
+        add("venue", "Venue belum dipilih", "Venue", "Missing", {})
+        edges.append({"source": "event", "target": "venue", "label": "venue"})
+
+    for v in await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200):
+        vid = f"vendor-{v['id']}"
+        add(vid, f"{v['vendor_name']} ({v['category']})", "Vendor", v["status"], {"cost": v["cost"]})
+        edges.append({"source": "venue" if venue else "event", "target": vid, "label": "vendor"})
+
+    pkgs = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    for p in pkgs:
+        pid = f"sponsor-{p['id']}"
+        st = "Completed" if p["sold"] >= p["quantity"] else ("Pending" if p["sold"] else "Draft")
+        add(pid, f"{p['name']} ({p['sold']}/{p['quantity']})", "Sponsor", st,
+            {"price": p["price"], "sold": p["sold"]})
+        edges.append({"source": "event", "target": pid, "label": "sponsor inventory"})
+
+    zones = await db.tenant_zones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    for z in zones:
+        zid = f"zone-{z['id']}"
+        zb = [b for b in booths if b["zone_id"] == z["id"]]
+        occ = len([b for b in zb if b["status"] == "occupied"])
+        add(zid, f"{z['name']} ({occ}/{len(zb)} booth)", "Tenant", "Confirmed" if occ else "Pending",
+            {"occupied": occ, "total": len(zb)})
+        edges.append({"source": "event", "target": zid, "label": "tenant zone"})
+
+    jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    if jobs:
+        filled = sum(j["filled"] for j in jobs)
+        needed = sum(j["needed"] for j in jobs)
+        add("workforce", f"Workforce ({filled}/{needed})", "Worker",
+            "Confirmed" if filled >= needed else "At Risk", {"filled": filled, "needed": needed})
+        edges.append({"source": "event", "target": "workforce", "label": "workforce"})
+
+    tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    for t in tiers:
+        tid = f"tier-{t['id']}"
+        add(tid, f"{t['name']} ({t['sold']}/{t['quantity']})", "Ticket tier",
+            "Completed" if t["sold"] >= t["quantity"] else ("Pending" if t["sold"] else "Draft"),
+            {"price": t["price"], "sold": t["sold"]})
+        edges.append({"source": "event", "target": tid, "label": "ticket tier"})
+
+    b = await compute_budget(ev["id"])
+    add("budget", f"Total cost Rp{b['total_cost']:,}", "Budget",
+        "At Risk" if b["funding_gap"] > 0 else "Confirmed", {"total_cost": b["total_cost"]})
+    add("funding", f"Confirmed funding Rp{b['confirmed_funding']:,}", "Funding",
+        "Confirmed" if b["funding_gap"] <= 0 else "Pending",
+        {"confirmed": b["confirmed_funding"], "gap": b["funding_gap"]})
+    edges.append({"source": "event", "target": "budget", "label": "budget"})
+    edges.append({"source": "budget", "target": "funding", "label": "funding gap"})
+
+    risks = await db.risks.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    if risks:
+        high = [r for r in risks if r["severity"] in ("High", "Critical")]
+        add("risk", f"Risk register ({len(risks)})", "Risk", "At Risk" if high else "Pending",
+            {"high": len(high)})
+        edges.append({"source": "event", "target": "risk", "label": "risiko"})
+
+    payments = await db.payments.count_documents({"event_id": ev["id"], "status": "Simulated Paid"})
+    add("payments", f"Payments simulated paid ({payments})", "Payment", "Completed" if payments else "Draft", {})
+    edges.append({"source": "event", "target": "payments", "label": "payment"})
+
+    counts: Dict[str, int] = {}
+    for n in nodes:
+        counts[n["status"]] = counts.get(n["status"], 0) + 1
+    return {"nodes": nodes, "edges": edges, "status_counts": counts,
+            "readiness_score": int(100 * counts.get("Confirmed", 0) / max(1, len(nodes)))}
+
+
+@api.get("/events/{event_id}/ripple")
+async def ripple(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
+    ev = await get_event_or_404(event_id)
+    b = await compute_budget(ev["id"])
+    talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    vendors = await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    venue = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+    sponsors = await db.sponsor_commitments.find({"event_id": ev["id"], "status": "Confirmed"}, {"_id": 0}).to_list(100)
+    tenants = await db.tenant_applications.find({"event_id": ev["id"], "status": "approved"}, {"_id": 0}).to_list(300)
+    orders = await db.ticket_orders.find({"event_id": ev["id"], "status": "paid"}, {"_id": 0}).to_list(1000)
+    talent_payout = sum(t["fee"] for t in talents)
+    vendor_payout = sum(v["cost"] for v in vendors)
+    workforce_payout = sum(j["needed"] * j["compensation_per_day"] * j.get("days", 1) for j in jobs)
+    workers = sum(j["needed"] for j in jobs)
+    room_nights = sum(1 for t in talents) * 12 * 2
+    data = {
+        "total_event_cost": b["total_cost"], "total_funding": b["confirmed_funding"],
+        "ticket_gmv": sum(o["total"] for o in orders), "sponsor_commitment": sum(s["amount"] for s in sponsors),
+        "tenant_revenue": sum(t["amount"] for t in tenants), "talent_payout": talent_payout,
+        "venue_income": (venue or {}).get("total_cost", 0), "vendor_payout": vendor_payout,
+        "workforce_payout": workforce_payout,
+        "businesses_activated": len(vendors) + len(tenants) + (1 if venue else 0) + len(talents),
+        "workers": workers, "local_workers": int(workers * 0.85), "local_spending_percentage": 72,
+        "hotel_room_nights": room_nights, "transport_bookings": len(talents) * 6 + len(vendors),
+        "total_economic_activity": b["total_cost"] + sum(o["total"] for o in orders) + sum(t["amount"] for t in tenants),
+    }
+    return {"metrics": data, "is_demo": bool(ev.get("is_demo")),
+            "label": "Data fiktif untuk demonstrasi kompetisi." if ev.get("is_demo") else "Dihitung dari data event aktual di OKKAX."}
+
+
+@api.get("/events/{event_id}/command-center")
+async def command_center(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    graph = await event_graph(event_id, user)
+    b = await compute_budget(ev["id"])
+    tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+    jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    milestones = await db.payment_milestones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    riders = await db.rider_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
+    activities = await db.audit_logs.find({"event_id": ev["id"]}, {"_id": 0}).sort("created_at", -1).to_list(20)
+    try:
+        days_left = (datetime.fromisoformat(ev["start_date"]) - datetime.now()).days
+    except Exception:
+        days_left = None
+    return {
+        "event": ev, "days_to_event": days_left, "readiness_score": graph["readiness_score"],
+        "status_counts": graph["status_counts"], "budget": b,
+        "ticket_sales": {"sold": sum(t["sold"] for t in tiers), "capacity": sum(t["quantity"] for t in tiers),
+                         "revenue": sum(t["sold"] * t["price"] for t in tiers)},
+        "workforce": {"filled": sum(j["filled"] for j in jobs), "needed": sum(j["needed"] for j in jobs)},
+        "tenant_occupancy": {"occupied": len([x for x in booths if x["status"] == "occupied"]), "total": len(booths)},
+        "rider_fulfillment": {"matched": len([r for r in riders if r["status"] == "Matched"]), "total": len(riders)},
+        "milestones": milestones,
+        "risks": await db.risks.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50),
+        "incidents": await db.incidents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50),
+        "schedule": await db.schedule_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100),
+        "activities": activities,
+    }
+
+
+@api.post("/events/{event_id}/schedule")
+async def add_schedule(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "day": body.get("day", ev["start_date"]), "time": body["time"],
+           "activity": body["activity"], "location": body.get("location", ""), "owner": body.get("owner", ""),
+           "dependency": body.get("dependency", ""), "status": body.get("status", "Not Started"),
+           "notes": body.get("notes", ""), "created_at": now_iso()}
+    await db.schedule_items.insert_one(doc)
+    return {"item": clean(doc)}
+
+
+@api.patch("/events/{event_id}/schedule/{item_id}")
+async def patch_schedule(event_id: str, item_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    await db.schedule_items.update_one({"id": item_id, "event_id": ev["id"]},
+                                       {"$set": {k: v for k, v in body.items() if k in ("status", "time", "notes", "activity")}})
+    return {"ok": True}
+
+
+@api.post("/events/{event_id}/incidents")
+async def add_incident(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    doc = {"id": nid(), "event_id": ev["id"], "category": body.get("category", "Operations"),
+           "severity": body.get("severity", "Low"), "time": body.get("time", now_iso()),
+           "location": body.get("location", ""), "reporter": user["name"], "description": body["description"],
+           "owner": body.get("owner", user["name"]), "resolution": "", "status": "Open",
+           "evidence": body.get("evidence", []), "created_at": now_iso()}
+    await db.incidents.insert_one(doc)
+    await audit(ev["id"], user, "incident.create", {"severity": doc["severity"]})
+    return {"item": clean(doc)}
+
+
+@api.patch("/events/{event_id}/incidents/{item_id}")
+async def patch_incident(event_id: str, item_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    await db.incidents.update_one({"id": item_id, "event_id": ev["id"]},
+                                  {"$set": {k: v for k, v in body.items() if k in ("status", "resolution", "owner", "severity")}})
+    return {"ok": True}
+
+
+@api.get("/events/{event_id}/payments")
+async def event_payments(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    payments = await db.payments.find({"event_id": ev["id"]}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    milestones = await db.payment_milestones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    refunds = await db.refunds.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+    b = await compute_budget(ev["id"])
+    gross = sum(p["gross"] for p in payments if p["status"] == "Simulated Paid")
+    settlement = [
+        {"party": "Talent payout", "amount": sum(t["fee"] for t in await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50))},
+        {"party": "Venue payout", "amount": (await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0}) or {}).get("total_cost", 0)},
+        {"party": "Vendor payout", "amount": sum(v["cost"] for v in await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200))},
+        {"party": "Workforce payout", "amount": sum(j["needed"] * j["compensation_per_day"] * j.get("days", 1) for j in await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100))},
+        {"party": "Platform fee (OKKAX)", "amount": sum(p["platform_fee"] for p in payments)},
+        {"party": "Payment gateway fee", "amount": sum(p.get("gateway_fee", 0) for p in payments)},
+        {"party": "Tax allocation (estimasi)", "amount": sum(p["tax_estimate"] for p in payments)},
+    ]
+    return {"payments": payments, "milestones": milestones, "refunds": refunds,
+            "settlement_simulation": settlement, "gross_collected": gross, "budget_summary": {
+                "total_cost": b["total_cost"], "confirmed_funding": b["confirmed_funding"],
+                "funding_gap": b["funding_gap"]},
+            "notice": "Simulated settlement. OKKAX tidak menyimpan dana nyata dan bukan escrow."}
+
+
+@api.post("/events/{event_id}/milestones/{milestone_id}/pay")
+async def pay_milestone(event_id: str, milestone_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    await db.payment_milestones.update_one({"id": milestone_id, "event_id": ev["id"]},
+                                            {"$set": {"status": "Simulated Paid", "paid_at": now_iso()}})
+    await audit(ev["id"], user, "milestone.pay", {"milestone": milestone_id})
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------- notifications / admin / demo
+@api.get("/notifications")
+async def notifications(user: dict = Depends(get_current_user)):
+    rows = await db.notifications.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"items": rows, "unread": len([r for r in rows if not r.get("read")])}
+
+
+@api.post("/notifications/read")
+async def read_notifications(user: dict = Depends(get_current_user)):
+    await db.notifications.update_many({"user_id": user["id"]}, {"$set": {"read": True}})
+    return {"ok": True}
+
+
+@api.get("/admin/metrics")
+async def admin_metrics(user: dict = Depends(require_roles("platform_admin"))):
+    orders = await db.ticket_orders.find({"status": "paid"}, {"_id": 0}).to_list(2000)
+    return {"users": await db.users.count_documents({}), "organizations": await db.organizations.count_documents({}),
+            "events": await db.events.count_documents({}), "published_events": await db.events.count_documents({"status": "published"}),
+            "talents": await db.talents.count_documents({}), "venues": await db.venues.count_documents({}),
+            "vendors": await db.vendors.count_documents({}), "workers": await db.workers.count_documents({}),
+            "tickets": await db.tickets.count_documents({}), "orders": len(orders),
+            "gmv": sum(o["total"] for o in orders),
+            "sponsor_commitments": await db.sponsor_commitments.count_documents({}),
+            "tenant_applications": await db.tenant_applications.count_documents({})}
+
+
+@api.get("/admin/users")
+async def admin_users(user: dict = Depends(require_roles("platform_admin"))):
+    return {"items": await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(500)}
+
+
+@api.patch("/admin/users/{user_id}")
+async def admin_patch_user(user_id: str, body: Dict[str, Any], user: dict = Depends(require_roles("platform_admin"))):
+    allowed = {}
+    if "roles" in body:
+        allowed["roles"] = [r for r in body["roles"] if r in ROLE_KEYS]
+    if "suspended" in body:
+        allowed["suspended"] = bool(body["suspended"])
+    await db.users.update_one({"id": user_id}, {"$set": allowed})
+    await audit(None, user, "admin.user.update", {"user_id": user_id, **allowed})
+    return {"ok": True}
+
+
+@api.get("/admin/organizations")
+async def admin_orgs(user: dict = Depends(require_roles("platform_admin"))):
+    return {"items": await db.organizations.find({}, {"_id": 0}).to_list(500)}
+
+
+@api.post("/admin/verify")
+async def admin_verify(body: Dict[str, Any], user: dict = Depends(require_roles("platform_admin"))):
+    coll = {"talent": "talents", "venue": "venues", "vendor": "vendors", "worker": "workers",
+            "organization": "organizations"}.get(body.get("kind"))
+    if not coll:
+        raise HTTPException(status_code=400, detail="Jenis entitas tidak dikenali")
+    await db[coll].update_one({"id": body["id"]}, {"$set": {"verified": bool(body.get("verified", True))}})
+    await audit(None, user, "admin.verify", body)
+    return {"ok": True}
+
+
+@api.get("/admin/audit-logs")
+async def admin_audit(user: dict = Depends(require_roles("platform_admin")), limit: int = 100):
+    return {"items": await db.audit_logs.find({}, {"_id": 0}).sort("created_at", -1).to_list(limit)}
+
+
+@api.get("/admin/events")
+async def admin_events(user: dict = Depends(require_roles("platform_admin"))):
+    return {"items": await db.events.find({}, {"_id": 0}).to_list(500)}
+
+
+@api.post("/demo/reset")
+async def demo_reset():
+    res = await seed_data.seed(force=True)
+    return {"ok": True, **res, "demo_event_code": seed_data.EVENT_CODE, "demo_event_id": seed_data.EVENT_ID}
+
+
+@api.get("/demo/state")
+async def demo_state():
+    ev = await db.events.find_one({"id": seed_data.EVENT_ID}, {"_id": 0})
+    return {"seeded": bool(ev), "event": ev, "disclaimer": DISCLAIMER,
+            "accounts": [{"email": e, "name": n, "roles": r} for e, n, r, _ in seed_data.DEMO_USERS] +
+                        [{"email": os.environ.get("ADMIN_EMAIL"), "name": "OKKAX Super Admin",
+                          "roles": ["super_admin", "platform_admin"]}],
+            "password": os.environ.get("DEMO_PASSWORD")}
+
+
+@api.get("/health")
+async def health():
+    return {"status": "ok", "product": "OKKAX", "sandbox_notice": SANDBOX_NOTICE}
+
+
+app.include_router(api)
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("startup")
+async def startup():
+    await db.users.create_index("email", unique=True)
+    await db.events.create_index("event_code")
+    await db.tickets.create_index("qr_code")
+    await db.booth_slots.create_index([("event_id", 1), ("status", 1)])
+    await db.login_attempts.create_index("identifier")
+    res = await seed_data.seed(force=False)
+    logger.info(f"OKKAX startup seed: {res}")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    pass
