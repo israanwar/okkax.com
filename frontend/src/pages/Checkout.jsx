@@ -21,6 +21,7 @@ export default function Checkout() {
   const [payment, setPayment] = useState(null);
   const [busy, setBusy] = useState(false);
   const [tickets, setTickets] = useState(null);
+  const [useStripe, setUseStripe] = useState(false);
 
   useEffect(() => {
     api.get(`/public/events/${eventId}`).then(({ data }) => {
@@ -48,6 +49,18 @@ export default function Checkout() {
   const createOrder = async () => {
     setBusy(true);
     try {
+      if (useStripe) {
+        const { data } = await api.post("/payments/stripe/checkout", {
+          event_id: event.id,
+          tier_id: tier.id,
+          quantity: qty,
+          attendees: attendees.map((a) => ({ name: a.name || user?.name || "Attendee" })),
+          origin_url: window.location.origin,
+        });
+        toast.success("Mengalihkan ke Stripe test mode…");
+        window.location.href = data.checkout_url;
+        return;
+      }
       const { data } = await api.post("/checkout", {
         event_id: event.id,
         tier_id: tier.id,
@@ -165,7 +178,32 @@ export default function Checkout() {
 
                   <section className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
                     <h2 className="text-base font-semibold md:text-lg">Metode pembayaran</h2>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <button
+                        data-testid="pay-mode-sandbox"
+                        onClick={() => setUseStripe(false)}
+                        className={`border px-3 py-3 text-left text-sm ${!useStripe ? "border-[var(--okx-accent)] bg-[#1c0a02]" : "border-[var(--okx-border)]"}`}
+                      >
+                        Sandbox internal OKKAX
+                        <div className="text-[11px] text-zinc-500">VA, QRIS, e-wallet, retail, corporate</div>
+                      </button>
+                      <button
+                        data-testid="pay-mode-stripe"
+                        onClick={() => setUseStripe(true)}
+                        className={`border px-3 py-3 text-left text-sm ${useStripe ? "border-[var(--okx-accent)] bg-[#1c0a02]" : "border-[var(--okx-border)]"}`}
+                      >
+                        Kartu via Stripe test mode
+                        <div className="text-[11px] text-zinc-500">Kartu uji 4242 4242 4242 4242</div>
+                      </button>
+                    </div>
+                    {useStripe ? (
+                      <p className="mt-4 text-xs text-zinc-400" data-testid="stripe-note">
+                        Stripe test mode: nilai rupiah dikonversi ke USD pada kurs indikatif Rp16.000/USD hanya untuk
+                        keperluan uji. Tidak ada uang nyata yang ditagihkan.
+                      </p>
+                    ) : (
+                      <>
+                    <div className="mt-4 grid gap-2 sm:grid-cols-3">
                       {methods.map((m) => (
                         <button
                           key={m.key}
@@ -202,6 +240,8 @@ export default function Checkout() {
                           ))}
                         </div>
                       </div>
+                    )}
+                      </>
                     )}
                   </section>
                 </>
@@ -276,7 +316,7 @@ export default function Checkout() {
                     onClick={createOrder}
                     className="mt-5 w-full bg-[var(--okx-accent)] px-4 py-3 text-sm font-semibold hover:bg-[var(--okx-accent-hover)] disabled:opacity-60"
                   >
-                    {busy ? "Memproses…" : "Lanjut ke pembayaran"}
+                    {busy ? "Memproses…" : useStripe ? "Bayar dengan kartu (Stripe test)" : "Lanjut ke pembayaran"}
                   </button>
                 )}
                 <p className="mt-3 text-[11px] text-zinc-500">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { QrCode, Ticket as TicketIcon, ScanLine } from "lucide-react";
-import { api, apiError, idr } from "@/lib/api";
+import { api, apiError, idr, downloadDoc } from "@/lib/api";
 
 function QrBlock({ value }) {
   const cells = [];
@@ -96,6 +96,20 @@ export function MyOrders() {
                 Ajukan refund
               </button>
             )}
+            <button
+              data-testid={`invoice-btn-${o.id}`}
+              onClick={async () => {
+                try {
+                  await downloadDoc(`/documents/invoice/${o.id}`, `OKKAX-Invoice-${o.order_code}.pdf`);
+                  toast.success("Invoice OKKAX diunduh");
+                } catch (e) {
+                  toast.error(apiError(e));
+                }
+              }}
+              className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]"
+            >
+              Unduh invoice
+            </button>
           </div>
         </div>
       ))}

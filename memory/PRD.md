@@ -44,9 +44,15 @@ sponsor, tenant/exhibitor, worker/freelancer, audience, finance approver, event 
 - Tiket QR unik + validator (Valid / Already Used / Invalid), inventory berkurang, revenue & ripple ikut berubah.
 - Budget Engine + What-If Simulator (Lean/Balanced/Premium + Apply Scenario), Economic Ripple, Command Center, Run of Show, incident, risk register, notification center, Admin panel, guided demo 16 langkah, demo reset.
 
+## Implemented (12 Juni 2026 — iterasi 2)
+- **Google login sekali klik** via Emergent-managed auth: `POST /api/auth/session` (tukar X-Session-ID → JWT + cookie httpOnly), halaman AuthCallback, tombol di /login dan /register. Login email+password tetap jalan.
+- **Stripe test mode** untuk pembelian tiket kartu (Flow B / `STRIPE_API_KEY` environment; sandbox claimable tidak tersedia untuk negara ID): `POST /api/payments/stripe/checkout`, polling `GET /api/payments/stripe/status/{id}`, webhook `POST /api/webhook/stripe`, fulfillment idempoten (tiket QR + inventory), halaman /payment/success & /payment/cancel. Nilai IDR dikonversi ke USD pada kurs indikatif Rp16.000/USD dan ditampilkan sebagai catatan.
+- **Dashboard peran** `/app/me` + `GET /api/me/workspace`: talent (booking, rider, jadwal pembayaran), venue (booking + deposit), vendor (kontrak), worker (shift, upah, check-in), finance approver/supervisor (milestone menunggu). Self-confirm `POST /api/me/workspace/confirm` dengan pengecekan kepemilikan (403 untuk pihak lain). Akun demo dipetakan lewat `DEMO_LINKS`.
+- **Dokumen resmi PDF ber-logo OKKAX** (reportlab): invoice per order, quotation per event (biaya per kategori + funding gap + break-even), payment schedule (semua milestone). Tombol unduh di Orders dan workspace event; otorisasi dijaga.
+- Diuji: 24/24 test backend iterasi 2 + Playwright UI lulus (`/app/backend/tests/test_iteration2.py`).
+
 ## Backlog
-- P1: Emergent-managed Google login; Stripe test-mode untuk tiket; email nyata (Resend) untuk notifikasi & reset password; dokumen invoice/quotation PDF.
-- P1: dashboard khusus talent/venue/vendor/worker/finance approver (saat ini memakai overview generik).
+- P1: email nyata (Resend) untuk notifikasi & reset password; pembayaran kartu Stripe dalam IDR (butuh akun Stripe Indonesia); nomor tiket dari counter monotonik (hindari race pada fulfillment konkuren).
 - P2: travel/hotel/logistics booking module, verified delivery record & review, tax reference admin, dispute/content report, upload dokumen verifikasi (object storage), SVG Event Graph dengan layout otomatis.
 
 ## Next tasks

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { api, idr, compact } from "@/lib/api";
+import { api, idr, compact, downloadDoc, apiError } from "@/lib/api";
+import { toast } from "sonner";
 import StatusBadge from "@/components/StatusBadge";
 import { EVENT_TABS } from "@/components/AppShell";
 import { Blueprint, Graph } from "@/pages/workspace/BlueprintGraph";
@@ -65,6 +66,34 @@ export default function EventWorkspace() {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <StatusBadge status={event.status === "published" ? "Confirmed" : "Draft"} testId="workspace-status" />
+            <button
+              data-testid="download-quotation-btn"
+              onClick={async () => {
+                try {
+                  await downloadDoc(`/documents/quotation/${event.id}`, `OKKAX-Quotation-${event.event_code}.pdf`);
+                  toast.success("Quotation OKKAX diunduh");
+                } catch (e) {
+                  toast.error(apiError(e));
+                }
+              }}
+              className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]"
+            >
+              Unduh quotation
+            </button>
+            <button
+              data-testid="download-schedule-btn"
+              onClick={async () => {
+                try {
+                  await downloadDoc(`/documents/payment-schedule/${event.id}`, `OKKAX-Payment-Schedule-${event.event_code}.pdf`);
+                  toast.success("Payment schedule OKKAX diunduh");
+                } catch (e) {
+                  toast.error(apiError(e));
+                }
+              }}
+              className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]"
+            >
+              Unduh payment schedule
+            </button>
             {event.status === "published" && (
               <Link to={`/events/${event.id}`} className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]" data-testid="view-public-page-btn">
                 Halaman publik

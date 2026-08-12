@@ -68,7 +68,7 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const nav = useNavigate();
   const [sp] = useSearchParams();
 
@@ -89,7 +89,25 @@ export function Login() {
 
   return (
     <Shell title="Sign in" subtitle="Masuk ke OKKAX workspace Anda.">
-      <form onSubmit={submit} className="mt-8 space-y-4">
+      <button
+        type="button"
+        data-testid="google-login-btn"
+        onClick={loginWithGoogle}
+        className="mt-8 flex w-full items-center justify-center gap-3 border border-[var(--okx-border)] bg-white px-4 py-3 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-zinc-200"
+      >
+        <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.4 30.1 0 24 0 14.6 0 6.4 5.4 2.6 13.2l7.9 6.1C12.3 13.2 17.7 9.5 24 9.5z" />
+          <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.6c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 7-10.3 7-17.7z" />
+          <path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.9-6.1z" />
+          <path fill="#34A853" d="M24 48c6.1 0 11.3-2 15.1-5.4l-7.7-6c-2.1 1.4-4.8 2.3-7.4 2.3-6.3 0-11.7-3.7-13.5-9.2l-7.9 6.1C6.4 42.6 14.6 48 24 48z" />
+        </svg>
+        Masuk sekali klik dengan Google
+      </button>
+      <div className="mt-4 flex items-center gap-3 text-[11px] uppercase tracking-widest text-zinc-600">
+        <span className="h-px flex-1 bg-[var(--okx-border)]" /> atau email <span className="h-px flex-1 bg-[var(--okx-border)]" />
+      </div>
+
+      <form onSubmit={submit} className="mt-6 space-y-4">
         <label className="block">
           <span className="text-xs uppercase tracking-wider text-zinc-500">Email</span>
           <input
@@ -155,7 +173,7 @@ export function Register() {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const nav = useNavigate();
 
   const toggleRole = (r) =>
@@ -179,7 +197,19 @@ export function Register() {
 
   return (
     <Shell title="Compile an Event" subtitle="Daftarkan akun dan organisasi Anda. Satu pengguna dapat memiliki beberapa peran.">
-      <form onSubmit={submit} className="mt-8 space-y-4">
+      <button
+        type="button"
+        data-testid="google-register-btn"
+        onClick={loginWithGoogle}
+        className="mt-8 flex w-full items-center justify-center gap-3 border border-[var(--okx-border)] bg-white px-4 py-3 text-sm font-semibold text-[#0a0a0a] hover:bg-zinc-200"
+      >
+        Daftar sekali klik dengan Google
+      </button>
+      <div className="mt-4 flex items-center gap-3 text-[11px] uppercase tracking-widest text-zinc-600">
+        <span className="h-px flex-1 bg-[var(--okx-border)]" /> atau isi formulir <span className="h-px flex-1 bg-[var(--okx-border)]" />
+      </div>
+
+      <form onSubmit={submit} className="mt-6 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           {[["name", "Nama lengkap", "text"], ["email", "Email", "email"], ["password", "Kata sandi (min 6)", "password"], ["city", "Kota", "text"]].map(([k, label, type]) => (
             <label key={k} className="block">

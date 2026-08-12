@@ -144,6 +144,14 @@ DEMO_USERS = [
     ("supervisor@okkax.id", "Ops Supervisor", ["supervisor"], "org-aruna"),
 ]
 
+# links dari akun demo ke entitas katalog agar dashboard peran punya data nyata
+DEMO_LINKS = {
+    "talent@okkax.id": {"linked_talent_ids": ["tal-aksara", "tal-lantera"]},
+    "venue@okkax.id": {"linked_venue_id": "ven-mch"},
+    "vendor@okkax.id": {"linked_vendor_id": "ven-sound-1"},
+    "worker@okkax.id": {"linked_worker_id": "wkr-1"},
+}
+
 ORGS = [
     ("org-aruna", "PT Aruna Consumer Indonesia", "Corporate Brand", "Makassar", True),
     ("org-sentra", "Sentra Digital Pay", "Sponsor / Fintech", "Jakarta", True),
@@ -162,7 +170,8 @@ COLLECTIONS = [
     "event_workers", "sponsor_packages", "sponsor_interests", "sponsor_commitments", "tenant_zones",
     "booth_slots", "tenant_applications", "ticket_tiers", "ticket_orders", "tickets", "ticket_validations",
     "payments", "payment_milestones", "refunds", "budget_items", "funding_items", "incidents",
-    "schedule_items", "notifications", "audit_logs", "reviews", "risks",
+    "schedule_items", "notifications", "audit_logs", "reviews", "risks", "payment_transactions",
+    "user_sessions",
 ]
 
 
@@ -196,7 +205,8 @@ async def seed(force: bool = False):
         await db.users.insert_one(dict(
             id=f"usr-{i+1}", email=email, password_hash=hash_password(pwd), name=name, roles=roles,
             org_id=org, city="Makassar" if org in ("org-aruna", "org-koparakit", "org-mch", "org-sonic") else "Jakarta",
-            phone="+62-000-0000", terms_accepted=True, onboarded=True, created_at=now_iso()))
+            phone="+62-000-0000", terms_accepted=True, onboarded=True, created_at=now_iso(),
+            **DEMO_LINKS.get(email, {})))
 
     for t in TALENTS:
         rider = [dict(category=c, item=i, quantity=q, specification=s, mandatory=m, estimated_cost=cost)

@@ -35,3 +35,15 @@ export const DISCLAIMER =
   "Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk keperluan demonstrasi kompetisi.";
 export const SANDBOX_NOTICE = "Mode demo kompetisi. Tidak ada uang nyata yang akan ditagihkan.";
 export const DEMO_EVENT_ID = "evt-aruna-2026";
+
+export async function downloadDoc(path, filename) {
+  const res = await api.get(path, { responseType: "blob" });
+  const url = window.URL.createObjectURL(res.data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}

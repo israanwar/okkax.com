@@ -1675,6 +1675,8 @@ async def health():
 
 
 app.include_router(api)
+from extras import extras as extras_router  # noqa: E402
+app.include_router(extras_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,

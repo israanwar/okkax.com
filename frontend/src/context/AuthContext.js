@@ -28,8 +28,24 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    // CRITICAL: if returning from Google OAuth callback, skip /auth/me — AuthCallback exchanges session_id first.
+    if (window.location.hash?.includes("session_id=")) {
+      setLoading(false);
+      return;
+    }
     refresh();
   }, [refresh]);
+
+  const adoptSession = async (token) => {
+    localStorage.setItem("okkax_token", token);
+    await refresh();
+  };
+
+  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+  const loginWithGoogle = () => {
+    const redirectUrl = window.location.origin + "/app";
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  };
 
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
@@ -61,7 +77,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, org, loading, login, register, logout, refresh, hasRole }}>
+    <AuthContext.Provider
+      value={{ user, org, loading, login, register, logout, refresh, hasRole, adoptSession, loginWithGoogle }}
+    >
       {children}
     </AuthContext.Provider>
   );

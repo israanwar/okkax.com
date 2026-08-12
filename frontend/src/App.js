@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import "@/App.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -14,16 +14,18 @@ import { MyTickets, MyOrders, Validator } from "@/pages/Tickets";
 import { Overview, EventsList, EventStudio } from "@/pages/Organizer";
 import EventWorkspace from "@/pages/EventWorkspace";
 import { SponsorPortal, TenantPortal, AdminPanel } from "@/pages/Portals";
+import AuthCallback from "@/pages/AuthCallback";
+import RoleWorkspace from "@/pages/RoleWorkspace";
+import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
-function App() {
+function RouterBody() {
+  const location = useLocation();
+  // Detect Google OAuth callback synchronously during render, before protected routes run.
+  if (location.hash?.includes("session_id=")) return <AuthCallback />;
   return (
-    <div className="App">
-      <BrowserRouter>
-        <AuthProvider>
-          <Toaster theme="dark" position="top-right" />
-          <Routes>
+    <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/events/:id" element={<PublicEvent />} />
@@ -45,6 +47,9 @@ function App() {
             <Route path="/app/sponsor" element={shell(<SponsorPortal />)} />
             <Route path="/app/tenant" element={shell(<TenantPortal />)} />
             <Route path="/app/admin" element={shell(<AdminPanel />)} />
+            <Route path="/app/me" element={shell(<RoleWorkspace />)} />
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/cancel" element={<PaymentCancel />} />
             <Route
               path="*"
               element={
@@ -55,7 +60,17 @@ function App() {
                 </div>
               }
             />
-          </Routes>
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <div className="App">
+      <BrowserRouter>
+        <AuthProvider>
+          <Toaster theme="dark" position="top-right" />
+          <RouterBody />
         </AuthProvider>
       </BrowserRouter>
     </div>

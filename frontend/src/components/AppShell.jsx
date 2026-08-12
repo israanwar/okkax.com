@@ -13,7 +13,13 @@ const NAV = {
     ["/app", "Overview", LayoutDashboard],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/events", "Events", ListOrdered],
+    ["/app/me", "My Assignments", Settings],
     ["/app/validator", "Ticket Validator", ScanLine],
+    ["/app/tickets", "My Tickets", Ticket],
+  ],
+  role: [
+    ["/app", "Overview", LayoutDashboard],
+    ["/app/me", "My Assignments", Settings],
     ["/app/tickets", "My Tickets", Ticket],
   ],
   sponsor: [
@@ -68,6 +74,7 @@ export default function AppShell({ children }) {
   if (hasRole("organizer", "event_organizer", "promoter", "supervisor", "finance_approver")) links = NAV.organizer;
   else if (hasRole("sponsor")) links = NAV.sponsor;
   else if (hasRole("tenant")) links = NAV.tenant;
+  else if (hasRole("talent", "talent_management", "venue_manager", "vendor", "worker")) links = NAV.role;
   else links = NAV.audience;
   if (user.roles?.includes("super_admin") || user.roles?.includes("platform_admin")) links = [...NAV.organizer, ...NAV.admin];
 
