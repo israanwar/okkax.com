@@ -25,8 +25,6 @@ const links = [
   { to: "/discover", label: "Discover" },
   { to: "/peta", label: "Peta Ekonomi" },
   { to: "/juri", label: "Demo untuk Juri" },
-  { to: "/discover?view=categories", label: "Categories" },
-  { to: "/discover?view=cities", label: "Cities" },
   { to: "/for/organizers", label: "For Organizers" },
   { to: "/for/sponsors", label: "For Sponsors" },
   { to: "/for/tenants", label: "For Tenants" },
