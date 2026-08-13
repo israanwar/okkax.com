@@ -171,41 +171,87 @@ function Section({ title, rows = [] }) {
   );
 }
 
-const KIND_STYLE = {
-  Event: { c: "#ffffff", r: 30 },
-  Organizer: { c: "#ffffff", r: 15 },
-  Talent: { c: "#ff2e7e", r: 17 },
-  Rider: { c: "#ff7ab0", r: 13 },
-  Venue: { c: "#ff2e7e", r: 18 },
-  Vendor: { c: "#ff9ec4", r: 12 },
-  Sponsor: { c: "#ff2e7e", r: 15 },
-  Tenant: { c: "#ff7ab0", r: 15 },
-  Worker: { c: "#ffffff", r: 15 },
-  "Ticket tier": { c: "#ff7ab0", r: 14 },
-  Budget: { c: "#ffffff", r: 16 },
-  Funding: { c: "#ff2e7e", r: 16 },
-  Risk: { c: "#ff2e7e", r: 14 },
-  Payment: { c: "#ff7ab0", r: 13 },
+const KIND_META = {
+  Event: { icon: "sparkle", tone: "core", r: 34, ring: 0 },
+  Organizer: { icon: "building", tone: "neutral", r: 17, ring: 1 },
+  Venue: { icon: "pin", tone: "accent", r: 18, ring: 1 },
+  Talent: { icon: "mic", tone: "accent", r: 18, ring: 1 },
+  Rider: { icon: "list", tone: "soft", r: 14, ring: 2 },
+  Vendor: { icon: "box", tone: "soft", r: 14, ring: 2 },
+  Sponsor: { icon: "badge", tone: "accent", r: 16, ring: 1 },
+  Tenant: { icon: "store", tone: "soft", r: 16, ring: 1 },
+  Worker: { icon: "users", tone: "neutral", r: 16, ring: 1 },
+  "Ticket tier": { icon: "ticket", tone: "soft", r: 15, ring: 1 },
+  Budget: { icon: "coins", tone: "neutral", r: 17, ring: 1 },
+  Funding: { icon: "trend", tone: "accent", r: 17, ring: 1 },
+  Risk: { icon: "alert", tone: "accent", r: 15, ring: 1 },
+  Payment: { icon: "card", tone: "soft", r: 14, ring: 2 },
 };
-const styleOf = (k) => KIND_STYLE[k] || { c: "#a1a1aa", r: 12 };
-const W = 1280;
-const H = 860;
+const TONE = { core: "#ffffff", accent: "#ff2e7e", soft: "#ff7ab0", neutral: "#e4e4e7" };
+const metaOf = (k) => KIND_META[k] || { icon: "dot", tone: "neutral", r: 13, ring: 2 };
+export const colorOf = (k) => TONE[metaOf(k).tone];
 
+const ICON_PATHS = {
+  sparkle: "M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z",
+  building: "M4 20V6l6-3v17M10 20h10V10h-6M14 13h2M14 16h2M6.5 9h1M6.5 12h1M6.5 15h1",
+  pin: "M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  mic: "M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zM6 11v1a6 6 0 0 0 12 0v-1M12 18v3M9 21h6",
+  list: "M4 6h16M4 12h16M4 18h10",
+  box: "M12 3l8 4.5v9L12 21l-8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9",
+  badge: "M12 3l2.4 1.8 3-.2.9 2.9 2.4 1.8-1.2 2.7 1.2 2.7-2.4 1.8-.9 2.9-3-.2L12 21l-2.4-1.8-3 .2-.9-2.9L3.3 14.7 4.5 12 3.3 9.3l2.4-1.8.9-2.9 3 .2z",
+  store: "M4 9h16v11H4zM3 9l2-5h14l2 5M9 20v-6h6v6",
+  users: "M8 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 6.5a3 3 0 0 1 0 6M17.5 14.5c2.6.5 4.5 2.4 4.5 5.5",
+  ticket: "M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 0 0 4 2 2 0 0 1-2 2H6a2 2 0 0 1-2-2 2 2 0 0 0 0-4 2 2 0 0 0 0-4zM12 7v10",
+  coins: "M8 11a5 3 0 1 0 0-6 5 3 0 0 0 0 6zM3 8v5c0 1.7 2.2 3 5 3s5-1.3 5-3V8M11 15v3c0 1.7 2.2 3 5 3s5-1.3 5-3v-5M11 13c0 1.7 2.2 3 5 3s5-1.3 5-3-2.2-3-5-3-5 1.3-5 3z",
+  trend: "M3 17l6-6 4 4 8-8M15 7h6v6",
+  alert: "M12 4l9 16H3zM12 10v5M12 18h.01",
+  card: "M3 7h18v10H3zM3 11h18M7 15h3",
+  dot: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+};
+
+export function NodeIcon({ kind, size = 15, color = "#fff", opacity = 1 }) {
+  const d = ICON_PATHS[metaOf(kind).icon] || ICON_PATHS.dot;
+  return (
+    <g transform={`translate(${-size / 2},${-size / 2}) scale(${size / 24})`} opacity={opacity}>
+      <path d={d} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+  );
+}
+
+const W = 1180;
+const H = 780;
+const CX = W / 2;
+const CY = H / 2;
+const KIND_ORDER = ["Organizer", "Venue", "Vendor", "Talent", "Rider", "Sponsor", "Tenant", "Worker",
+  "Ticket tier", "Budget", "Funding", "Payment", "Risk"];
+
+/** Layout simetris: satu Event di pusat, node lain tersebar merata pada dua orbit. */
 function layout(nodes) {
-  const pos = { event: { x: W / 2, y: H / 2 } };
-  const kinds = [...new Set(nodes.filter((n) => n.id !== "event").map((n) => n.kind))];
-  kinds.forEach((k, gi) => {
-    const g = nodes.filter((n) => n.kind === k && n.id !== "event");
-    const angle = (gi / kinds.length) * Math.PI * 2 - Math.PI / 2;
-    const spread = Math.min(0.62, 1.05 / kinds.length + 0.12 + (g.length > 6 ? 0.16 : 0));
-    g.forEach((n, i) => {
-      const t = g.length === 1 ? 0 : (i / (g.length - 1) - 0.5) * 2;
-      const a = angle + t * spread;
-      const rad = 235 + (i % 4) * 95;
-      pos[n.id] = { x: W / 2 + Math.cos(a) * rad * 1.35, y: H / 2 + Math.sin(a) * rad * 0.86 };
+  const pos = { event: { x: CX, y: CY, a: 0 } };
+  const rest = nodes
+    .filter((n) => n.id !== "event")
+    .slice()
+    .sort((a, b) => {
+      const ka = KIND_ORDER.indexOf(a.kind), kb = KIND_ORDER.indexOf(b.kind);
+      return (ka < 0 ? 99 : ka) - (kb < 0 ? 99 : kb) || a.label.localeCompare(b.label);
     });
+  const N = rest.length || 1;
+  rest.forEach((n, i) => {
+    const a = -Math.PI / 2 + ((i + 0.5) / N) * Math.PI * 2;
+    const twoOrbits = N > 13;
+    const orbit = twoOrbits && i % 2 === 1 ? 1 : 0;
+    const rx = twoOrbits ? (orbit ? 470 : 328) : 320;
+    const ry = twoOrbits ? (orbit ? 322 : 214) : 212;
+    pos[n.id] = { x: CX + Math.cos(a) * rx, y: CY + Math.sin(a) * ry, a, orbit };
   });
-  return { pos };
+  return { pos, ordered: rest };
+}
+
+function labelAnchor(a) {
+  const c = Math.cos(a);
+  if (c > 0.12) return "start";
+  if (c < -0.12) return "end";
+  return "middle";
 }
 
 export function Graph({ eventId }) {
@@ -217,6 +263,7 @@ export function Graph({ eventId }) {
 
   useEffect(() => {
     setData(null);
+    setActive(null);
     api.get(`/events/${eventId}/graph`).then(({ data }) => setData(data));
   }, [eventId]);
 
@@ -227,10 +274,10 @@ export function Graph({ eventId }) {
   const { pos } = layout(visible);
   const ids = new Set(visible.map((n) => n.id));
   const edges = data.edges.filter((e) => ids.has(e.source) && ids.has(e.target));
-  const focus = hover || active;
+  const cand = hover || active;
+  const focus = cand && ids.has(cand.id) ? cand : null;
   const connected = new Set(
-    focus ? edges.filter((e) => e.source === focus.id || e.target === focus.id)
-      .flatMap((e) => [e.source, e.target]) : []
+    focus ? edges.filter((e) => e.source === focus.id || e.target === focus.id).flatMap((e) => [e.source, e.target]) : []
   );
   const dim = (id) => focus && id !== focus.id && !connected.has(id);
 
@@ -247,7 +294,7 @@ export function Graph({ eventId }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {Object.entries(data.status_counts).map(([s, c]) => (
+          {Object.entries(data.status_counts).map(([s]) => (
             <StatusBadge key={s} status={`${s}`} className="whitespace-nowrap" testId={`graph-count-${s.replace(/\s/g, "-")}`} />
           ))}
         </div>
@@ -261,7 +308,7 @@ export function Graph({ eventId }) {
         {kinds.map((k) => (
           <button key={k} data-testid={`graph-filter-${k.replace(/\s/g, "-")}`} onClick={() => setFilter(k)}
             className={`flex items-center gap-1.5 border px-3 py-1.5 text-xs transition-colors ${filter === k ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: styleOf(k).c }} />
+            <svg width="13" height="13" viewBox="-8 -8 16 16"><NodeIcon kind={k} size={14} color={colorOf(k)} /></svg>
             {k}
           </button>
         ))}
@@ -274,59 +321,92 @@ export function Graph({ eventId }) {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.65fr_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
         <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808]" data-testid="graph-canvas">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.14]"
-            style={{ backgroundImage: "linear-gradient(#ffffff14 1px, transparent 1px), linear-gradient(90deg, #ffffff14 1px, transparent 1px)", backgroundSize: "42px 42px" }} />
-          <div className="okx-scroll max-h-[620px] overflow-auto">
+          <div className="pointer-events-none absolute inset-0 opacity-[0.13]"
+            style={{ backgroundImage: "radial-gradient(#ffffff1f 1px, transparent 1px)", backgroundSize: "26px 26px" }} />
+          <div className="okx-scroll max-h-[660px] overflow-auto">
             <svg viewBox={`0 0 ${W} ${H}`} style={{ width: `${zoom * 100}%`, minWidth: "100%" }} className="block">
               <defs>
-                <radialGradient id="coreGlow">
-                  <stop offset="0%" stopColor="#ff2e7e" stopOpacity="0.55" />
+                <radialGradient id="okxCore">
+                  <stop offset="0%" stopColor="#ff2e7e" stopOpacity="0.5" />
+                  <stop offset="70%" stopColor="#ff2e7e" stopOpacity="0.07" />
                   <stop offset="100%" stopColor="#ff2e7e" stopOpacity="0" />
                 </radialGradient>
+                <linearGradient id="okxEdge" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#ff2e7e" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#ff7ab0" stopOpacity="0.15" />
+                </linearGradient>
               </defs>
-              <circle cx={W / 2} cy={H / 2} r={300} fill="url(#coreGlow)" opacity="0.45" />
+
+              <circle cx={CX} cy={CY} r={430} fill="url(#okxCore)" pointerEvents="none" />
+              {[214, 322].map((r, i) => (
+                <ellipse key={r} cx={CX} cy={CY} rx={i ? 470 : 328} ry={r} fill="none"
+                  stroke="#ffffff" strokeOpacity="0.05" strokeDasharray="3 9" pointerEvents="none" />
+              ))}
+
               {edges.map((e, i) => {
                 const a = pos[e.source], b = pos[e.target];
                 if (!a || !b) return null;
+                const radial = e.source === "event" || e.target === "event";
                 const on = focus && (e.source === focus.id || e.target === focus.id);
-                const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2 - 26;
+                const d = radial
+                  ? `M${a.x},${a.y} L${b.x},${b.y}`
+                  : `M${a.x},${a.y} Q${(a.x + b.x) / 2 + (CX - (a.x + b.x) / 2) * 0.35},${(a.y + b.y) / 2 + (CY - (a.y + b.y) / 2) * 0.35} ${b.x},${b.y}`;
                 return (
-                  <path key={i} d={`M${a.x},${a.y} Q${mx},${my} ${b.x},${b.y}`} fill="none"
-                    stroke={on ? "#ff2e7e" : "#ffffff"} strokeWidth={on ? 1.8 : 0.8}
-                    strokeOpacity={on ? 0.95 : focus ? 0.06 : 0.16}
-                    style={{ transition: "stroke-opacity .2s ease, stroke .2s ease" }} />
+                  <g key={i} pointerEvents="none">
+                    <path d={d} fill="none" stroke={on ? "#ff2e7e" : "#ffffff"} strokeWidth={on ? 1.6 : 0.7}
+                      strokeOpacity={on ? 0.9 : focus ? 0.05 : 0.13}
+                      style={{ transition: "stroke-opacity .25s ease, stroke .25s ease, stroke-width .25s ease" }} />
+                    <path d={d} fill="none" stroke="#ff2e7e" strokeWidth={on ? 2 : 1.1}
+                      strokeOpacity={on ? 0.85 : 0.28} strokeDasharray="2 26" strokeLinecap="round">
+                      <animate attributeName="stroke-dashoffset" from="28" to="0"
+                        dur={radial ? "5.5s" : "7s"} repeatCount="indefinite" />
+                    </path>
+                  </g>
                 );
               })}
+
               {visible.map((n) => {
                 const p = pos[n.id];
                 if (!p) return null;
-                const st = styleOf(n.kind);
+                const m = metaOf(n.kind);
+                const col = colorOf(n.kind);
+                const isCore = n.id === "event";
                 const isFocus = focus?.id === n.id;
                 const faded = dim(n.id);
                 const crit = ["Missing", "At Risk", "Blocked", "Conflicted"].includes(n.status);
+                const anchor = labelAnchor(p.a || 0);
+                const lx = anchor === "start" ? m.r + 11 : anchor === "end" ? -(m.r + 11) : 0;
+                const ly = anchor === "middle" ? (Math.sin(p.a || 0) > 0 ? m.r + 22 : -(m.r + 22)) : 4;
+                const showLabel = isCore || isFocus || connected.has(n.id) || p.orbit === 0 || visible.length <= 14;
                 return (
                   <g key={n.id} data-testid={`graph-node-${n.id}`} transform={`translate(${p.x},${p.y})`}
                     onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(null)}
-                    onClick={() => setActive(n)} style={{ cursor: "pointer", opacity: faded ? 0.22 : 1, transition: "opacity .2s ease" }}>
-                    {(isFocus || crit) && (
-                      <circle r={st.r + 10} fill="none" stroke={crit ? "#ff2e7e" : "#ffffff"} strokeOpacity="0.45">
-                        <animate attributeName="r" values={`${st.r + 6};${st.r + 16};${st.r + 6}`} dur="2.4s" repeatCount="indefinite" />
-                        <animate attributeName="stroke-opacity" values="0.5;0;0.5" dur="2.4s" repeatCount="indefinite" />
+                    onClick={() => setActive(n)}
+                    style={{ cursor: "pointer", opacity: faded ? 0.2 : 1, transition: "opacity .25s ease" }}>
+                    {(isFocus || crit || isCore) && (
+                      <circle r={m.r + 8} fill="none" stroke={crit ? "#ff2e7e" : isCore ? "#ff7ab0" : "#ffffff"} strokeOpacity="0.4">
+                        <animate attributeName="r" values={`${m.r + 5};${m.r + 17};${m.r + 5}`} dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
+                        <animate attributeName="stroke-opacity" values="0.45;0;0.45" dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
                       </circle>
                     )}
-                    <circle r={st.r} fill={st.c} fillOpacity={n.id === "event" ? 1 : 0.14}
-                      stroke={st.c} strokeWidth={isFocus ? 2.4 : 1.2} />
-                    {n.id === "event" && (
-                      <text textAnchor="middle" y="5" fontSize="13" fontWeight="800" fill="#0a0a0a">OKX</text>
+                    <circle r={m.r} fill={isCore ? "#ff2e7e" : "#0f0f11"} fillOpacity={isCore ? 1 : 0.92}
+                      stroke={isCore ? "#ffffff" : col} strokeOpacity={isCore ? 0.85 : isFocus ? 1 : 0.6}
+                      strokeWidth={isFocus || isCore ? 2 : 1.2}
+                      style={{ transition: "stroke-opacity .2s ease, stroke-width .2s ease" }} />
+                    <NodeIcon kind={n.kind} size={isCore ? 22 : 15} color={isCore ? "#0a0a0a" : col}
+                      opacity={isCore ? 1 : isFocus ? 1 : 0.85} />
+                    {crit && !isCore && (
+                      <circle cx={m.r * 0.72} cy={-m.r * 0.72} r="3.4" fill="#ff2e7e" stroke="#0a0a0a" strokeWidth="1" />
                     )}
-                    {(visible.length <= 16 || isFocus || connected.has(n.id) || n.id === "event") && (
+                    {showLabel && (
                       <>
-                        <text textAnchor="middle" y={st.r + 16} fontSize="12" fill={isFocus ? "#ffffff" : "#d4d4d8"}>
-                          {n.label.length > 26 ? `${n.label.slice(0, 25)}…` : n.label}
+                        <text x={lx} y={ly} textAnchor={anchor} fontSize={isCore ? 13 : 11.5}
+                          fontWeight={isCore ? 800 : 600} fill={isFocus || isCore ? "#ffffff" : "#d4d4d8"}>
+                          {n.label.length > 30 ? `${n.label.slice(0, 29)}…` : n.label}
                         </text>
-                        <text textAnchor="middle" y={st.r + 29} fontSize="9" fill="#71717a" letterSpacing="0.08em">
+                        <text x={lx} y={ly + 12} textAnchor={anchor} fontSize="8.6" letterSpacing="0.1em" fill="#71717a">
                           {n.kind.toUpperCase()}
                         </text>
                       </>
@@ -337,7 +417,7 @@ export function Graph({ eventId }) {
             </svg>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-4 py-2 text-[11px] text-zinc-500">
-            <span>Klik node untuk detail · hover untuk menyorot dependency</span>
+            <span>Event di pusat · orbit dalam = komponen utama, orbit luar = turunan · klik node untuk detail</span>
             <span className="num">Event ID: {eventId}</span>
           </div>
         </div>
@@ -347,7 +427,7 @@ export function Graph({ eventId }) {
             {active ? (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: styleOf(active.kind).c }} />
+                  <svg width="15" height="15" viewBox="-8 -8 16 16"><NodeIcon kind={active.kind} size={15} color={colorOf(active.kind)} /></svg>
                   <span className="text-[11px] uppercase tracking-wider text-zinc-500">{active.kind}</span>
                 </div>
                 <h3 className="mt-1 text-base font-semibold md:text-lg">{active.label}</h3>
@@ -390,7 +470,9 @@ export function Graph({ eventId }) {
                   onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(null)}
                   className={`flex w-full items-center justify-between gap-2 border px-2.5 py-2 text-left text-xs transition-colors ${active?.id === n.id ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-transparent hover:border-[var(--okx-border)]"}`}>
                   <span className="flex min-w-0 items-center gap-2">
-                    <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: styleOf(n.kind).c }} />
+                    <svg width="13" height="13" viewBox="-8 -8 16 16" className="shrink-0">
+                      <NodeIcon kind={n.kind} size={14} color={colorOf(n.kind)} />
+                    </svg>
                     <span className="truncate">{n.label}</span>
                   </span>
                   <StatusBadge status={n.status} />

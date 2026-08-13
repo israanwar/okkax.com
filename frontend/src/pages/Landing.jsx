@@ -1,63 +1,131 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Boxes, Building2, CircleDollarSign, LineChart, QrCode, Store, Ticket, Users, Workflow } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
+import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
 
 const HERO = "https://images.unsplash.com/photo-1780703913917-c605a6f260d1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwyfHxtYXNzaXZlJTIwY29uY2VydCUyMGNyb3dkJTIwY2luZW1hdGljfGVufDB8fHx8MTc4NjUyMzE4N3ww&ixlib=rb-4.1.0&q=85";
 
-const GRAPH_PREVIEW = [
-  { label: "Event", kind: "Event", status: "Confirmed", x: 50, y: 8 },
-  { label: "Talent + Rider", kind: "Talent", status: "Confirmed", x: 12, y: 30 },
-  { label: "Venue", kind: "Venue", status: "Confirmed", x: 50, y: 34 },
-  { label: "Vendors", kind: "Vendor", status: "Pending", x: 88, y: 30 },
-  { label: "Sponsors", kind: "Sponsor", status: "Pending", x: 8, y: 64 },
-  { label: "Tenants", kind: "Tenant", status: "Confirmed", x: 34, y: 74 },
-  { label: "Workforce", kind: "Worker", status: "At Risk", x: 66, y: 74 },
-  { label: "Ticketing", kind: "Ticket", status: "Confirmed", x: 92, y: 64 },
-  { label: "Budget & Funding Gap", kind: "Budget", status: "At Risk", x: 50, y: 94 },
-];
-const EDGES = [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [2, 3], [0, 8], [4, 8], [5, 8], [7, 8]];
 const DOT = { Confirmed: "#ffffff", Pending: "#ff7ab0", "At Risk": "#ff2e7e" };
+const PREVIEW_TONE = { get: (k) => PREVIEW_COLOR(k) };
+
+const PREVIEW_NODES = [
+  { id: "organizer", label: "Organizer", kind: "Organizer", status: "Confirmed" },
+  { id: "venue", label: "Venue", kind: "Venue", status: "Confirmed" },
+  { id: "talent", label: "Talent + Rider", kind: "Talent", status: "Confirmed" },
+  { id: "vendor", label: "Vendors", kind: "Vendor", status: "Pending" },
+  { id: "sponsor", label: "Sponsors", kind: "Sponsor", status: "Pending" },
+  { id: "tenant", label: "Tenants", kind: "Tenant", status: "Confirmed" },
+  { id: "worker", label: "Workforce", kind: "Worker", status: "At Risk" },
+  { id: "ticket", label: "Ticketing", kind: "Ticket tier", status: "Confirmed" },
+  { id: "budget", label: "Budget & Funding Gap", kind: "Budget", status: "At Risk" },
+];
+const PREVIEW_EDGES = [
+  ["event", "organizer", "diselenggarakan"], ["event", "venue", "venue"], ["event", "talent", "talent"],
+  ["event", "vendor", "vendor"], ["event", "sponsor", "sponsor"], ["event", "tenant", "tenant"],
+  ["event", "worker", "workforce"], ["event", "ticket", "ticketing"], ["event", "budget", "budget"],
+  ["venue", "vendor", "kebutuhan produksi"], ["sponsor", "budget", "menutup gap"],
+  ["ticket", "budget", "pendapatan"], ["tenant", "budget", "pendapatan"],
+];
+const PW = 640, PH = 560, PCX = 320, PCY = 280;
 
 function GraphPreview() {
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState("event");
+  const nodes = useMemo(() => {
+    const N = PREVIEW_NODES.length;
+    const out = { event: { x: PCX, y: PCY, a: 0, node: { id: "event", label: "Event", kind: "Event", status: "Confirmed" } } };
+    PREVIEW_NODES.forEach((n, i) => {
+      const a = -Math.PI / 2 + (i / N) * Math.PI * 2;
+      out[n.id] = { x: PCX + Math.cos(a) * 208, y: PCY + Math.sin(a) * 186, a, node: n };
+    });
+    return out;
+  }, []);
+  const linked = new Set(
+    PREVIEW_EDGES.filter(([s, t]) => s === active || t === active).flatMap(([s, t]) => [s, t])
+  );
+
   return (
-    <div className="relative h-[420px] w-full overflow-hidden border border-[var(--okx-border)] bg-[#0d0d0d] sm:h-[460px]">
-      <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-        {EDGES.map(([a, b], i) => (
-          <line
-            key={i}
-            x1={GRAPH_PREVIEW[a].x}
-            y1={GRAPH_PREVIEW[a].y}
-            x2={GRAPH_PREVIEW[b].x}
-            y2={GRAPH_PREVIEW[b].y}
-            stroke={active === a || active === b ? "#ff2e7e" : "#27272a"}
-            strokeWidth="0.3"
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
+    <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808]" data-testid="graph-preview">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.12]"
+        style={{ backgroundImage: "radial-gradient(#ffffff22 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+      <svg viewBox={`0 0 ${PW} ${PH}`} className="relative block w-full">
+        <defs>
+          <radialGradient id="previewCore">
+            <stop offset="0%" stopColor="#ff2e7e" stopOpacity="0.45" />
+            <stop offset="70%" stopColor="#ff2e7e" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#ff2e7e" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx={PCX} cy={PCY} r={250} fill="url(#previewCore)" pointerEvents="none" />
+        <ellipse cx={PCX} cy={PCY} rx={208} ry={186} fill="none" stroke="#ffffff" strokeOpacity="0.06" strokeDasharray="3 9" pointerEvents="none" />
+
+        {PREVIEW_EDGES.map(([s, t], i) => {
+          const a = nodes[s], b = nodes[t];
+          const radial = s === "event" || t === "event";
+          const on = s === active || t === active;
+          const d = radial
+            ? `M${a.x},${a.y} L${b.x},${b.y}`
+            : `M${a.x},${a.y} Q${(a.x + b.x) / 2 + (PCX - (a.x + b.x) / 2) * 0.4},${(a.y + b.y) / 2 + (PCY - (a.y + b.y) / 2) * 0.4} ${b.x},${b.y}`;
+          return (
+            <g key={i} pointerEvents="none">
+              <path d={d} fill="none" stroke={on ? "#ff2e7e" : "#ffffff"} strokeWidth={on ? 1.5 : 0.7}
+                strokeOpacity={on ? 0.85 : 0.11}
+                style={{ transition: "stroke-opacity .3s ease, stroke .3s ease, stroke-width .3s ease" }} />
+              <path d={d} fill="none" stroke="#ff2e7e" strokeWidth={on ? 1.9 : 1} strokeOpacity={on ? 0.8 : 0.24}
+                strokeDasharray="2 24" strokeLinecap="round">
+                <animate attributeName="stroke-dashoffset" from="26" to="0" dur={radial ? "6s" : "8s"} repeatCount="indefinite" />
+              </path>
+            </g>
+          );
+        })}
+
+        {Object.entries(nodes).map(([id, p]) => {
+          const n = p.node;
+          const isCore = id === "event";
+          const isActive = active === id;
+          const faded = !isActive && !linked.has(id);
+          const r = isCore ? 30 : 21;
+          const anchor = Math.cos(p.a) > 0.12 ? "start" : Math.cos(p.a) < -0.12 ? "end" : "middle";
+          const lx = anchor === "start" ? r + 9 : anchor === "end" ? -(r + 9) : 0;
+          const ly = anchor === "middle" ? (Math.sin(p.a) > 0 ? r + 16 : -(r + 12)) : 4;
+          return (
+            <g key={id} data-testid={`graph-preview-node-${id}`} transform={`translate(${p.x},${p.y})`}
+              onMouseEnter={() => setActive(id)} onClick={() => setActive(id)}
+              style={{ cursor: "pointer", opacity: faded ? 0.32 : 1, transition: "opacity .3s ease" }}>
+              {(isCore || isActive) && (
+                <circle r={r + 7} fill="none" stroke={isCore ? "#ff7ab0" : "#ffffff"} strokeOpacity="0.4">
+                  <animate attributeName="r" values={`${r + 4};${r + 15};${r + 4}`} dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
+                  <animate attributeName="stroke-opacity" values="0.45;0;0.45" dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
+                </circle>
+              )}
+              <circle r={r} fill={isCore ? "#ff2e7e" : "#0f0f11"} stroke={isCore ? "#ffffff" : PREVIEW_TONE.get(n.kind)}
+                strokeOpacity={isCore ? 0.85 : isActive ? 1 : 0.55} strokeWidth={isCore || isActive ? 2 : 1.2}
+                style={{ transition: "stroke-opacity .25s ease" }} />
+              <NodeIcon kind={n.kind} size={isCore ? 20 : 14} color={isCore ? "#0a0a0a" : PREVIEW_TONE.get(n.kind)} />
+              {!isCore && (
+                <circle cx={r * 0.72} cy={-r * 0.72} r="3.2" fill={DOT[n.status]} stroke="#080808" strokeWidth="1" />
+              )}
+              <text x={lx} y={ly} textAnchor={anchor} fontSize={isCore ? 12.5 : 11} fontWeight={isCore ? 800 : 600}
+                fill={isActive || isCore ? "#ffffff" : "#d4d4d8"}>{n.label}</text>
+              {isCore && (
+                <text x={lx} y={ly + 12} textAnchor={anchor} fontSize="8.4" letterSpacing="0.12em" fill="#71717a">
+                  SATU EVENT ID
+                </text>
+              )}
+            </g>
+          );
+        })}
       </svg>
-      {GRAPH_PREVIEW.map((n, i) => (
-        <button
-          key={n.label}
-          data-testid={`graph-preview-node-${i}`}
-          onMouseEnter={() => setActive(i)}
-          onFocus={() => setActive(i)}
-          onClick={() => setActive(i)}
-          style={{ left: `${n.x}%`, top: `${n.y}%` }}
-          className={`absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap border px-2.5 py-1.5 text-[11px] font-medium transition-all sm:text-xs ${
-            active === i
-              ? "border-[var(--okx-accent)] bg-[var(--okx-accent)] text-white"
-              : "border-[var(--okx-border)] bg-[var(--okx-surface)] text-zinc-300"
-          }`}
-        >
-          <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full" style={{ background: DOT[n.status] }} />
-          {n.label}
-        </button>
-      ))}
-      <div className="absolute bottom-3 left-3 border border-[var(--okx-border)] bg-[#0a0a0aee] px-3 py-2 text-[11px] text-zinc-400">
-        Event Graph — satu Event ID menghubungkan seluruh komponen.
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-4 py-2.5 text-[11px] text-zinc-500">
+        <span>Event Graph — satu Event ID menghubungkan seluruh komponen.</span>
+        <span className="flex items-center gap-3">
+          {Object.entries(DOT).map(([k, v]) => (
+            <span key={k} className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: v }} /> {k}
+            </span>
+          ))}
+        </span>
       </div>
     </div>
   );

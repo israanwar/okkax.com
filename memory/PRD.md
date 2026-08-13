@@ -38,6 +38,12 @@ Logo: mark X pink pada latar hitam (`LOGO_URL` di `frontend/src/lib/api.js`).
     gelembung per kota yang mengikuti metrik terpilih, hover highlight, klik kota → panel detail + daftar event,
     dan peringkat kota. Tertaut di nav publik & footer.
 
+  - **Redesign Event Graph (workspace + homepage)**: layout radial simetris (Event di pusat, satu/dua orbit
+    tergantung jumlah node), ikon SVG inline per kategori (`NodeIcon`, diekspor dari `workspace/BlueprintGraph.jsx`),
+    garis radial rapi + kurva melengkung ke pusat untuk relasi turunan, animasi aliran halus (stroke-dashoffset),
+    pulse pada node kritis/pusat, label anti-tabrakan (anchor mengikuti sudut), hover highlight dependency.
+    Nav publik: menu Categories & Cities dihapus (cukup Discover).
+
 ## Backlog
 - P0 Email Nyata: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).
 - P1 Lencana Rekam Jejak vendor/worker untuk event yang selesai.
