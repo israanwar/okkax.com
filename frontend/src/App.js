@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import AppShell from "@/components/AppShell";
 import Landing from "@/pages/Landing";
 import Discover from "@/pages/Discover";
+import EconomyMap from "@/pages/EconomyMap";
 import PublicEvent from "@/pages/PublicEvent";
 import ForPage from "@/pages/ForPage";
 import GuidedDemo from "@/pages/GuidedDemo";
@@ -30,6 +31,8 @@ function RouterBody() {
     <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
+            <Route path="/peta" element={<EconomyMap />} />
+            <Route path="/map" element={<EconomyMap />} />
             <Route path="/events/:id" element={<PublicEvent />} />
             <Route path="/for/:audience" element={<ForPage />} />
             <Route path="/demo" element={<GuidedDemo />} />

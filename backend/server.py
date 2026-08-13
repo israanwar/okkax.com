@@ -1482,6 +1482,79 @@ async def ripple(event_id: str, user: Optional[dict] = Depends(get_optional_user
             "label": "Data fiktif untuk demonstrasi kompetisi." if ev.get("is_demo") else "Dihitung dari data event aktual di OKKAX."}
 
 
+CITY_COORDS = {
+    "Jakarta": (-6.2088, 106.8456), "Bandung": (-6.9175, 107.6191), "Surabaya": (-7.2575, 112.7521),
+    "Yogyakarta": (-7.7956, 110.3695), "Denpasar": (-8.6705, 115.2126), "Medan": (3.5952, 98.6722),
+    "Semarang": (-6.9932, 110.4203), "Makassar": (-5.1477, 119.4327), "Palembang": (-2.9761, 104.7754),
+    "Balikpapan": (-1.2379, 116.8529), "Manado": (1.4748, 124.8421), "Padang": (-0.9471, 100.4172),
+    "Pontianak": (-0.0263, 109.3425), "Jayapura": (-2.5916, 140.6690), "Batam": (1.0456, 104.0305),
+    "Malang": (-7.9666, 112.6326),
+}
+
+
+@api.get("/economy/map")
+async def economy_map():
+    """Sebaran event dan dampak ekonomi per kota untuk peta Indonesia interaktif."""
+    events = await db.events.find({"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}},
+                                 {"_id": 0}).to_list(300)
+    cities: dict = {}
+    for ev in events:
+        b = await compute_budget(ev["id"])
+        tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+        vendors = await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+        talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+        jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+        booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(600)
+        pkgs = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+        venue = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+        occupied = [x for x in booths if x["status"] == "occupied"]
+        ticket_gmv = sum(t["sold"] * t["price"] for t in tiers)
+        tenant_revenue = sum(x.get("price") or 0 for x in occupied)
+        sponsor_value = sum(p["price"] * p["sold"] for p in pkgs)
+        workforce_payout = sum(j["needed"] * j["compensation_per_day"] * j.get("days", 1) for j in jobs)
+        workers = sum(j["needed"] for j in jobs)
+        c = cities.setdefault(ev["city"], {
+            "city": ev["city"], "lat": CITY_COORDS.get(ev["city"], (-2.0, 118.0))[0],
+            "lng": CITY_COORDS.get(ev["city"], (-2.0, 118.0))[1], "events": [], "event_count": 0,
+            "capacity": 0, "total_cost": 0, "confirmed_funding": 0, "funding_gap": 0, "ticket_gmv": 0,
+            "sponsor_value": 0, "tenant_revenue": 0, "venue_income": 0, "talent_payout": 0,
+            "vendor_payout": 0, "workforce_payout": 0, "workers": 0, "businesses": 0,
+            "categories": [], "economic_activity": 0})
+        c["events"].append({"id": ev["id"], "name": ev["name"], "event_type": ev["event_type"],
+                            "start_date": ev.get("start_date"), "capacity": ev.get("capacity", 0),
+                            "hero_image": ev.get("hero_image"), "venue_name": ev.get("venue_name"),
+                            "economic_activity": b["total_cost"] + ticket_gmv + tenant_revenue})
+        c["event_count"] += 1
+        c["capacity"] += ev.get("capacity", 0)
+        c["total_cost"] += b["total_cost"]
+        c["confirmed_funding"] += b["confirmed_funding"]
+        c["funding_gap"] += max(0, b["funding_gap"])
+        c["ticket_gmv"] += ticket_gmv
+        c["sponsor_value"] += sponsor_value
+        c["tenant_revenue"] += tenant_revenue
+        c["venue_income"] += (venue or {}).get("total_cost", 0)
+        c["talent_payout"] += sum(t["fee"] for t in talents)
+        c["vendor_payout"] += sum(v["cost"] for v in vendors)
+        c["workforce_payout"] += workforce_payout
+        c["workers"] += workers
+        c["businesses"] += len(vendors) + len(occupied) + len(talents) + (1 if venue else 0)
+        if ev["event_type"] not in c["categories"]:
+            c["categories"].append(ev["event_type"])
+        c["economic_activity"] += b["total_cost"] + ticket_gmv + tenant_revenue
+
+    items = sorted(cities.values(), key=lambda x: -x["economic_activity"])
+    for c in items:
+        c["events"].sort(key=lambda e: -e["economic_activity"])
+    totals = {k: sum(c[k] for c in items) for k in
+              ("event_count", "capacity", "total_cost", "confirmed_funding", "funding_gap", "ticket_gmv",
+               "sponsor_value", "tenant_revenue", "venue_income", "talent_payout", "vendor_payout",
+               "workforce_payout", "workers", "businesses", "economic_activity")}
+    totals["cities"] = len(items)
+    totals["categories"] = len({t for c in items for t in c["categories"]})
+    return {"cities": items, "totals": totals,
+            "label": "Angka pada mode demo merupakan data fiktif untuk keperluan demonstrasi kompetisi."}
+
+
 @api.get("/events/{event_id}/command-center")
 async def command_center(event_id: str, user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)

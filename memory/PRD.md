@@ -32,12 +32,18 @@ Logo: mark X pink pada latar hitam (`LOGO_URL` di `frontend/src/lib/api.js`).
     klik node → panel detail + navigasi dependency, filter kategori, zoom, daftar node.
   - Repalet total ke hitam/pink/putih (index.css tokens, StatusBadge, Landing, JuriDemo, Tickets, Checkout, dll).
   - Logo baru pink-on-black.
+  - **Peta Kota Event** (`/peta`, alias `/map`): `GET /api/economy/map` mengagregasi dampak ekonomi per kota
+    (biaya event, GMV tiket, sponsor, tenant, venue, talent, vendor, upah tenaga kerja, bisnis teraktivasi).
+    Frontend SVG peta Indonesia (`frontend/src/data/indonesia-map.json`, 34 provinsi tersimplifikasi) dengan
+    gelembung per kota yang mengikuti metrik terpilih, hover highlight, klik kota → panel detail + daftar event,
+    dan peringkat kota. Tertaut di nav publik & footer.
 
 ## Backlog
-- P0 Email Nyata: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).
+- P0 Email Nyata: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).
 - P1 Lencana Rekam Jejak vendor/worker untuk event yang selesai.
 - P2 Tema terang khusus cetak untuk laporan/halaman juri.
 - P2 Streaming (SSE) untuk output AI compiler agar terasa real-time.
+- P2 Zoom/pan pada Peta Kota Event dan filter rentang tanggal.
 
 ## Status uji
 Iteration 5: backend 13/13 pass (`/app/backend/tests/test_iteration5.py`), frontend Playwright pass.
