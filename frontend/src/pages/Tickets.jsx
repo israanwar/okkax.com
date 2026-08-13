@@ -42,7 +42,7 @@ export function MyTickets() {
               <h3 className="text-base font-semibold">{t.event_name}</h3>
               <div className="text-xs text-zinc-500">{t.tier_name} · {t.attendee_name}</div>
             </div>
-            <span className={`border px-2 py-0.5 text-xs ${t.status === "valid" ? "border-emerald-500/40 text-emerald-400" : "border-zinc-600 text-zinc-400"}`}>
+            <span className={`border px-2 py-0.5 text-xs ${t.status === "valid" ? "border-white/45 text-white" : "border-zinc-600 text-zinc-400"}`}>
               {t.status}
             </span>
           </div>
@@ -90,7 +90,7 @@ export function MyOrders() {
           </div>
           <div className="flex items-center gap-4">
             <span className="num text-sm font-bold">{idr(o.total)}</span>
-            <span className={`border px-2 py-0.5 text-xs ${o.status === "paid" ? "border-emerald-500/40 text-emerald-400" : "border-zinc-600 text-zinc-400"}`}>{o.status}</span>
+            <span className={`border px-2 py-0.5 text-xs ${o.status === "paid" ? "border-white/45 text-white" : "border-zinc-600 text-zinc-400"}`}>{o.status}</span>
             {o.status === "paid" && (
               <button data-testid={`refund-btn-${o.id}`} onClick={() => refund(o.id)} className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]">
                 Ajukan refund
@@ -135,7 +135,7 @@ export function Validator() {
   };
   const color =
     result?.result === "Valid"
-      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400"
+      ? "border-white/50 bg-white/10 text-white"
       : result?.result === "Already Used"
       ? "border-[var(--okx-accent)]/50 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
       : "border-red-500/50 bg-red-500/10 text-red-400";

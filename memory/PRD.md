@@ -44,6 +44,15 @@ Logo: mark X pink pada latar hitam (`LOGO_URL` di `frontend/src/lib/api.js`).
     pulse pada node kritis/pusat, label anti-tabrakan (anchor mengikuti sudut), hover highlight dependency.
     Nav publik: menu Categories & Cities dihapus (cukup Discover).
 
+  - **Discover P0 (Agu 2026)**: katalog demo diperbesar ke 31 event, 15 kota, 11 kategori
+    (`seed_events.py`: EXTRA_EVENTS + BULK_VENUES/BULK_EVENTS/_bulk_specs dengan tanggal relatif hari ini,
+    sehingga ada event berstatus `live`). `GET /api/discover/events` diperkaya: sold_percentage, headline_talent,
+    tenant_count, vendor_count, sponsor_slots/sold, economic_ripple, is_live/this_week/days_to_event,
+    plus `totals` & `highlights` (live / this_week / almost_sold_out / top_impact).
+    Halaman Discover dirombak: strip statistik jaringan, indikator "N event ditemukan", tombol Reset filter,
+    4 carousel seksi, grid "Semua event", kartu kaya (organizer, talent utama, progress tiket, tenant/vendor/sponsor, ripple).
+  - Semua sisa warna hijau/amber (readiness badge, /juri, tiket, checkout) diganti ke token hitam/pink/putih.
+
 ## Backlog
 - P0 Email Nyata: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).
 - P1 Lencana Rekam Jejak vendor/worker untuk event yang selesai.

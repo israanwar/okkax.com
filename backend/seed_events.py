@@ -82,6 +82,68 @@ EXTRA_EVENTS = [
      [("Gratis Masuk", 0, 1400), ("Workshop Pass", 95000, 300)], 70000000),
 ]
 
+BULK_VENUES = [
+    ("ven-plm-arena", "Sriwijaya Arena", "Palembang", True, 4200, 130000000, IMG["conference"]),
+    ("ven-bpn-hall", "Balikpapan Bay Hall", "Balikpapan", True, 2600, 120000000, IMG["expo"]),
+    ("ven-mnd-plaza", "Manado Waterfront Plaza", "Manado", False, 5200, 95000000, IMG["food2"]),
+    ("ven-pdg-convention", "Padang Convention Center", "Padang", True, 2400, 105000000, IMG["seminar"]),
+    ("ven-btm-dome", "Batam Nusantara Dome", "Batam", True, 3800, 160000000, IMG["esports"]),
+    ("ven-mlg-graha", "Graha Kreatif Malang", "Malang", True, 2200, 88000000, IMG["conference"]),
+    ("ven-ptk-lapangan", "Lapangan Khatulistiwa", "Pontianak", False, 6000, 78000000, IMG["food"]),
+    ("ven-jog-hall", "Jogja Expo Hall", "Yogyakarta", True, 3000, 115000000, IMG["expo"]),
+    ("ven-sby-pantai", "Kenjeran Open Stage", "Surabaya", False, 9000, 105000000, IMG["concert"]),
+    ("ven-bdg-dago", "Dago Creative Ground", "Bandung", False, 5000, 88000000, IMG["runway"]),
+    ("ven-jkt-senayan", "Senayan Grand Plaza", "Jakarta", False, 12000, 380000000, IMG["concert"]),
+    ("ven-dps-beach", "Sanur Beach Arena", "Denpasar", False, 4500, 145000000, IMG["food"]),
+]
+
+# (nama, jenis, kota, venue, offset hari dari hari ini, durasi, kapasitas, budget, gambar, harga dasar, rasio terjual)
+BULK_EVENTS = [
+    ("Nusantara Sound Fest", "Festival Musik", "Jakarta", "ven-jkt-senayan", -1, 3, 11000, 4200000000, "concert", 320000, 0.94),
+    ("Kopi Nusantara Weekend", "Festival Kuliner", "Bandung", "ven-bdg-dago", 0, 2, 4600, 620000000, "food", 45000, 0.88),
+    ("Surabaya Night Market Live", "Festival Kuliner", "Surabaya", "ven-sby-pantai", 1, 2, 8000, 740000000, "food2", 35000, 0.71),
+    ("Bali Wellness Summit", "Konferensi", "Denpasar", "ven-dps-beach", 3, 2, 3800, 1650000000, "seminar", 780000, 0.63),
+    ("Jogja Creative Expo", "Pameran UMKM", "Yogyakarta", "ven-jog-hall", 4, 3, 2900, 520000000, "expo", 40000, 0.55),
+    ("Sriwijaya Music Carnival", "Festival Musik", "Palembang", "ven-plm-arena", 6, 1, 3900, 890000000, "concert", 195000, 0.82),
+    ("Borneo Energy Forum", "Konferensi Teknologi", "Balikpapan", "ven-bpn-hall", 9, 2, 2400, 1980000000, "conference", 1350000, 0.47),
+    ("Manado Seafood Festival", "Festival Kuliner", "Manado", "ven-mnd-plaza", 12, 3, 5000, 680000000, "food", 30000, 0.66),
+    ("Padang Startup Week", "Seminar & Pitching", "Padang", "ven-pdg-convention", 15, 2, 2200, 540000000, "seminar", 145000, 0.42),
+    ("Batam Esports Invitational", "Esports", "Batam", "ven-btm-dome", 18, 2, 3600, 1450000000, "esports", 210000, 0.77),
+    ("Malang Indie Showcase", "Festival Musik", "Malang", "ven-mlg-graha", 21, 1, 2000, 380000000, "concert", 125000, 0.58),
+    ("Khatulistiwa Food & Craft", "Festival Kuliner", "Pontianak", "ven-ptk-lapangan", 24, 2, 5600, 460000000, "food2", 25000, 0.35),
+    ("Jakarta Fashion Exchange", "Fashion Week", "Jakarta", "ven-jkt-icehall", 27, 2, 4200, 2750000000, "runway", 950000, 0.51),
+    ("Bandung Coffee Conference", "Konferensi", "Bandung", "ven-bdg-sasana", 31, 2, 2600, 780000000, "conference", 420000, 0.44),
+    ("Surabaya Property Expo", "Trade Expo", "Surabaya", "ven-sby-graha", 34, 3, 5200, 1250000000, "expo", 0, 0.29),
+    ("Denpasar Digital Nomad Summit", "Konferensi Teknologi", "Denpasar", "ven-dps-garuda", 38, 2, 1900, 1420000000, "conference", 890000, 0.36),
+    ("Medan Culinary Heritage", "Festival Kuliner", "Medan", "ven-mdn-atrium", 42, 2, 1700, 420000000, "food", 38000, 0.31),
+    ("Semarang Youth Music Camp", "Festival Musik", "Semarang", "ven-smg-balai", 46, 2, 1450, 360000000, "concert", 95000, 0.24),
+    ("Jogja Wedding Showcase", "Wedding Expo", "Yogyakarta", "ven-jog-hall", 52, 2, 2600, 690000000, "fashion", 0, 0.18),
+    ("Nusantara Gaming Expo", "Esports", "Jakarta", "ven-jkt-icehall", 58, 3, 8800, 3150000000, "esports", 175000, 0.22),
+    ("Bali Art & Design Week", "Fashion Week", "Denpasar", "ven-dps-beach", 64, 3, 3400, 1780000000, "runway", 560000, 0.15),
+    ("Palembang Halal Food Fair", "Trade Expo", "Palembang", "ven-plm-arena", 70, 3, 3600, 820000000, "food2", 20000, 0.12),
+]
+
+
+def _bulk_specs():
+    """Bangun spesifikasi event massal dengan tanggal relatif hari ini."""
+    from datetime import date, timedelta
+    today = date.today()
+    out = []
+    for i, (name, etype, city, venue, offset, days, cap, budget, img, price, ratio) in enumerate(BULK_EVENTS):
+        start = (today + timedelta(days=offset)).isoformat()
+        code = f"EVT-{city[:3].upper()}-2026-{i + 20:04d}"
+        eid = "evt-b-" + "".join(ch for ch in name.lower().replace(" ", "-") if ch.isalnum() or ch == "-")
+        if price == 0:
+            tiers = [("Gratis Masuk", 0, int(cap * 0.8)), ("Premium Pass", 165000, int(cap * 0.12) or 60)]
+        else:
+            tiers = [("Presale", int(price * 0.72), int(cap * 0.35)),
+                     ("Regular", price, int(cap * 0.5)),
+                     ("VIP", int(price * 2.6), max(80, int(cap * 0.1)))]
+        out.append((eid, code, name, etype, city, venue, start, days, cap, budget, IMG[img],
+                    tiers, int(budget * 0.22), ratio))
+    return out
+
+
 SPONSOR_TIERS = [("Presenting Sponsor", 1.0, 1), ("Main Sponsor", 0.45, 2), ("Supporting Sponsor", 0.18, 4)]
 
 
@@ -89,11 +151,24 @@ async def seed_extra_events():
     for v in EXTRA_VENUES:
         await db.venues.update_one({"id": v["id"]}, {"$set": {**VENUE_DEFAULTS, **v, "created_at": now_iso()}},
                                    upsert=True)
+    for vid, vname, vcity, indoor, capv, price, img in BULK_VENUES:
+        await db.venues.update_one({"id": vid}, {"$set": {**VENUE_DEFAULTS, "id": vid, "name": vname,
+            "city": vcity, "indoor": indoor, "standing_capacity": capv,
+            "seated_capacity": int(capv * 0.7) if indoor else 0, "area_sqm": capv,
+            "event_day_price": price, "setup_day_price": int(price * 0.38), "deposit": int(price * 0.5),
+            "power_kva": 700 if indoor else 0, "curfew": "23:30" if indoor else "22:30",
+            "event_types": ["Konser", "Konferensi", "Festival", "Expo"], "image": img,
+            "created_at": now_iso()}}, upsert=True)
 
+    specs = [(*e, None) for e in EXTRA_EVENTS] + _bulk_specs()
     for (eid, code, name, etype, city, venue_id, start, days, cap, budget, img,
-         tiers, sponsor_base) in EXTRA_EVENTS:
+         tiers, sponsor_base, sold_ratio) in specs:
         venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
-        end = start if days == 1 else f"{start[:8]}{int(start[8:]) + days - 1:02d}"
+        from datetime import date as _date, timedelta as _td
+        _s = _date.fromisoformat(start)
+        end = (_s + _td(days=days - 1)).isoformat()
+        today = _date.today()
+        ev_status = "live" if _s <= today <= _s + _td(days=days - 1) else "published"
         brief = dict(
             name=name, event_type=etype, city=city, start_date=start, days=days, setup_days=1,
             capacity=cap, budget=budget, currency="IDR", organizer="PT Aruna Consumer Indonesia",
@@ -107,7 +182,7 @@ async def seed_extra_events():
         await db.events.update_one({"id": eid}, {"$set": dict(
             id=eid, event_code=code, name=name, event_type=etype, city=city,
             venue_name=venue["name"], organizer_org_id="org-aruna",
-            organizer_name="PT Aruna Consumer Indonesia", owner_user_id="usr-1", status="published",
+            organizer_name="PT Aruna Consumer Indonesia", owner_user_id="usr-1", status=ev_status,
             start_date=start, end_date=end, start_time="10:00" if "Konferensi" in etype or "Seminar" in etype else "16:00",
             timezone="Asia/Jakarta", days=days, setup_days=1, capacity=cap, budget=budget,
             currency="IDR", description=brief["description"], objective=brief["objective"],
@@ -136,7 +211,9 @@ async def seed_extra_events():
         # ticket tiers
         await db.ticket_tiers.delete_many({"event_id": eid})
         for i, (tname, price, qty) in enumerate(tiers):
-            sold = int(qty * (0.62 if i == 0 else 0.34 if i == 1 else 0.18))
+            base_ratio = sold_ratio if sold_ratio is not None else (0.62 if i == 0 else 0.34 if i == 1 else 0.18)
+            factor = 1.0 if sold_ratio is None else (1.0 if i == 0 else 0.82 if i == 1 else 0.6)
+            sold = min(qty, int(qty * base_ratio * factor))
             await db.ticket_tiers.insert_one(dict(
                 id=f"{eid}-tier-{i+1}", event_id=eid, name=tname, ticket_type=tname, price=price,
                 quantity=qty, sold=sold, sale_start="2026-05-01", sale_end=start,
@@ -170,6 +247,31 @@ async def seed_extra_events():
                 status="occupied" if i < 5 else "available",
                 tenant_name="Tenant Demo UMKM" if i < 5 else None,
                 tenant_application_id=None, created_at=now_iso()))
+
+        # vendor produksi + headline talent agar kartu Discover kaya konteks
+        await db.event_vendors.delete_many({"event_id": eid})
+        vendor_pool = await db.vendors.find({}, {"_id": 0}).sort("id", 1).to_list(50)
+        picks = [vendor_pool[(hash(eid) + k * 5) % len(vendor_pool)] for k in range(6)] if vendor_pool else []
+        seen = set()
+        for v in picks:
+            if v["id"] in seen:
+                continue
+            seen.add(v["id"])
+            await db.event_vendors.insert_one(dict(
+                id=nid(), event_id=eid, vendor_id=v["id"], vendor_name=v["name"], category=v["category"],
+                cost=int((v["price_min"] + v["price_max"]) / 2), status="Confirmed", created_at=now_iso()))
+
+        await db.event_talents.delete_many({"event_id": eid})
+        talent_pool = await db.talents.find({}, {"_id": 0}).sort("id", 1).to_list(20)
+        if talent_pool:
+            tal = talent_pool[hash(eid) % len(talent_pool)]
+            fee = tal["base_fee"]
+            await db.event_talents.insert_one(dict(
+                id=f"evttal-{eid}", event_id=eid, talent_id=tal["id"], talent_name=tal["stage_name"],
+                fee=fee, tax_estimate=int(fee * 0.02), travel=0, accommodation=0, local_transport=2000000,
+                security=0, rider_cost=0, hospitality=2500000,
+                landed_cost=int(fee * 1.02) + 4500000, status="Confirmed",
+                performance_slot=f"{start} 20:00", created_at=now_iso()))
 
         # workforce, budget, funding, risks
         await db.event_jobs.delete_many({"event_id": eid})
@@ -205,4 +307,4 @@ async def seed_extra_events():
                             ("Funding gap belum tertutup", "High", "Percepat closing sponsor & tenant")]:
             await db.risks.insert_one(dict(id=nid(), event_id=eid, risk=r, severity=sev,
                                           mitigation=mit, status="Open", created_at=now_iso()))
-    return {"events": len(EXTRA_EVENTS), "venues": len(EXTRA_VENUES)}
+    return {"events": len(specs), "venues": len(EXTRA_VENUES) + len(BULK_VENUES)}

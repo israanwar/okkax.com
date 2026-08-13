@@ -286,7 +286,7 @@ export function AdminPanel() {
                 <div className="text-sm font-medium">{o.name}</div>
                 <div className="text-xs text-zinc-500">{o.org_type} · {o.city} · dokumen {o.document_status}</div>
               </div>
-              <button data-testid={`verify-org-btn-${o.id}`} onClick={() => verifyOrg(o.id, !o.verified)} className={`border px-3 py-1.5 text-xs ${o.verified ? "border-emerald-500/40 text-emerald-400" : "border-[var(--okx-border)] text-zinc-400"}`}>
+              <button data-testid={`verify-org-btn-${o.id}`} onClick={() => verifyOrg(o.id, !o.verified)} className={`border px-3 py-1.5 text-xs ${o.verified ? "border-white/45 text-white" : "border-[var(--okx-border)] text-zinc-400"}`}>
                 {o.verified ? "Verified" : "Verifikasi"}
               </button>
             </div>

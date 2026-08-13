@@ -157,7 +157,7 @@ export function TalentRider({ eventId, onChange }) {
                   <h4 className="text-sm font-semibold">{t.stage_name}</h4>
                   <div className="text-xs text-zinc-500">{t.category} · {t.genre} · {t.city}</div>
                 </div>
-                {t.verified && <span className="border border-emerald-500/40 px-1.5 py-0.5 text-[10px] text-emerald-400">Verified</span>}
+                {t.verified && <span className="border border-white/45 px-1.5 py-0.5 text-[10px] accent-text">Verified</span>}
               </div>
               <p className="mt-2 line-clamp-2 text-xs text-zinc-400">{t.bio}</p>
               <div className="num mt-3 text-sm font-bold">{idr(t.base_fee)}</div>
@@ -451,7 +451,7 @@ export function WorkforceTab({ eventId, onChange }) {
             {data.pool.slice(0, 12).map((w) => (
               <div key={w.id} className="flex items-center justify-between gap-3 border-b border-[var(--okx-border)] p-3 last:border-0">
                 <div>
-                  <div className="text-sm font-medium">{w.name} {w.verified && <span className="ml-1 text-[10px] text-emerald-400">Verified</span>}</div>
+                  <div className="text-sm font-medium">{w.name} {w.verified && <span className="ml-1 text-[10px] accent-text">Verified</span>}</div>
                   <div className="num text-xs text-zinc-500">{w.category} · {idr(w.rate_per_day)}/hari · attendance {w.attendance_rate}%</div>
                 </div>
                 <button

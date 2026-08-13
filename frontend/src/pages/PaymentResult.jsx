@@ -49,8 +49,8 @@ export function PaymentSuccess() {
           </div>
         )}
         {state.status === "paid" && (
-          <div data-testid="stripe-success" className="border border-emerald-500/40 bg-emerald-500/5 p-8">
-            <CheckCircle2 className="text-emerald-400" />
+          <div data-testid="stripe-success" className="border border-[var(--okx-accent)]/45 bg-[var(--okx-accent)]/10 p-8">
+            <CheckCircle2 className="accent-text" />
             <h1 className="editorial mt-3 text-3xl">Pembayaran kartu berhasil</h1>
             <p className="mt-2 text-sm text-zinc-400">
               {state.order?.order_code} · {state.order?.tier_name} × {state.order?.quantity} · {idr(state.order?.total)}

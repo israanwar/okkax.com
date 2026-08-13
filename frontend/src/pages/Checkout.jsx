@@ -110,8 +110,8 @@ export default function Checkout() {
         <p className="mt-2 text-sm text-zinc-400">{event.name} · {tier.name}</p>
 
         {tickets ? (
-          <div className="mt-8 border border-emerald-500/40 bg-emerald-500/5 p-6" data-testid="checkout-success">
-            <CheckCircle2 className="text-emerald-400" />
+          <div className="mt-8 border border-[var(--okx-accent)]/45 bg-[var(--okx-accent)]/10 p-6" data-testid="checkout-success">
+            <CheckCircle2 className="accent-text" />
             <h2 className="mt-3 text-base font-semibold md:text-lg">Pembayaran sandbox berhasil</h2>
             <p className="mt-1 text-sm text-zinc-400">
               {tickets.length} tiket diterbitkan dengan nomor dan QR unik. Inventory tier telah dikurangi.

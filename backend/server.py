@@ -947,7 +947,8 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
         f["event_type"] = {"$regex": category, "$options": "i"}
     if q:
         f["name"] = {"$regex": q, "$options": "i"}
-    events = await db.events.find(f, {"_id": 0}).to_list(200)
+    events = await db.events.find(f, {"_id": 0}).to_list(400)
+    today = datetime.now().date()
     out = []
     for ev in events:
         tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
@@ -959,16 +960,47 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
             continue
         if free is False and prices and min(prices) == 0:
             continue
+        talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(20)
+        booths = await db.booth_slots.find({"event_id": ev["id"], "status": "occupied"}, {"_id": 0}).to_list(600)
+        vendors = await db.event_vendors.count_documents({"event_id": ev["id"]})
+        pkgs = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(20)
+        b = await compute_budget(ev["id"])
+        ticket_gmv = sum(t["sold"] * t["price"] for t in tiers)
+        tenant_revenue = sum(x.get("price") or 0 for x in booths)
+        try:
+            start = datetime.fromisoformat(ev["start_date"]).date()
+            end = datetime.fromisoformat(ev.get("end_date") or ev["start_date"]).date()
+        except Exception:
+            start = end = today
+        days_to = (start - today).days
         out.append({**ev, "min_price": min(prices) if prices else 0, "max_price": max(prices) if prices else 0,
                     "tickets_remaining": remaining, "sold": sold,
-                    "almost_sold_out": remaining / total_qty < 0.2, "tiers": tiers})
+                    "almost_sold_out": remaining / total_qty < 0.2, "tiers": tiers,
+                    "sold_percentage": round(sold / total_qty * 100),
+                    "headline_talent": talents[0]["talent_name"] if talents else None,
+                    "talent_count": len(talents), "tenant_count": len(booths), "vendor_count": vendors,
+                    "sponsor_slots": sum(p["quantity"] for p in pkgs),
+                    "sponsor_sold": sum(p["sold"] for p in pkgs),
+                    "economic_ripple": b["total_cost"] + ticket_gmv + tenant_revenue,
+                    "is_live": start <= today <= end, "days_to_event": days_to,
+                    "this_week": 0 <= days_to <= 7})
     if sort == "date":
         out.sort(key=lambda x: x.get("start_date") or "")
     else:
         out.sort(key=lambda x: -x["sold"])
     cities = sorted({e["city"] for e in out})
     categories = sorted({e["event_type"] for e in out})
-    return {"items": out, "cities": cities, "categories": categories}
+    highlights = {
+        "live": [e["id"] for e in out if e["is_live"]],
+        "this_week": [e["id"] for e in out if e["this_week"] and not e["is_live"]],
+        "almost_sold_out": [e["id"] for e in sorted(out, key=lambda x: -x["sold_percentage"]) if e["sold_percentage"] >= 70][:12],
+        "top_impact": [e["id"] for e in sorted(out, key=lambda x: -x["economic_ripple"])[:12]],
+    }
+    return {"items": out, "cities": cities, "categories": categories, "total": len(out),
+            "highlights": highlights,
+            "totals": {"events": len(out), "cities": len(cities), "categories": len(categories),
+                       "economic_ripple": sum(e["economic_ripple"] for e in out),
+                       "tickets_sold": sum(e["sold"] for e in out)}}
 
 
 @api.get("/public/events/{event_id}")

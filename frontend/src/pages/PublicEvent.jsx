@@ -90,7 +90,7 @@ export default function PublicEvent() {
               {Object.entries(readiness).map(([k, v]) => (
                 <span
                   key={k}
-                  className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs ${v ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-zinc-700 bg-zinc-800/40 text-zinc-500"}`}
+                  className={`inline-flex items-center gap-1.5 border px-2.5 py-1 text-xs ${v ? "border-white/45 bg-white/10 text-white" : "border-zinc-700 bg-zinc-800/40 text-zinc-500"}`}
                 >
                   <ShieldCheck size={13} /> {READINESS_LABEL[k]}{v ? "" : " — belum"}
                 </span>

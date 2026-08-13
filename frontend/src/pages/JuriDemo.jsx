@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 const FRAGMENTS = ["Brief", "Talent", "Rider", "Venue", "Vendor", "Sponsor", "Tenant", "Pekerja", "Ticketing", "Pembayaran", "Laporan keuangan"];
 
 const STATUS_MAP = {
-  live: ["Berfungsi", "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"],
+  live: ["Berfungsi", "border-white/45 bg-white/10 text-white"],
   sandbox: ["Simulasi Sandbox", "border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"],
   roadmap: ["Roadmap", "border-zinc-600 bg-zinc-500/10 text-zinc-400"],
 };

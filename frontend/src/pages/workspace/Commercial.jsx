@@ -202,7 +202,7 @@ export function TenantsTab({ eventId, onChange }) {
                   data-testid={`booth-${b.code}`}
                   className={`num border px-2 py-1 text-[11px] ${
                     b.status === "occupied"
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                      ? "border-white/45 bg-white/10 text-white"
                       : b.status === "reserved"
                       ? "border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
                       : "border-[var(--okx-border)] text-zinc-400"
