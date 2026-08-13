@@ -1,87 +1,44 @@
 # OKKAX — Event Economy Operating Network (PRD)
 
-## Original problem statement (ringkas)
-Bangun aplikasi web full-stack **OKKAX** — "Event Economy Operating Network". Bukan landing page atau mockup:
-harus punya autentikasi nyata, database persisten, RBAC 15 peran, relasi data benar, kalkulasi dinamis, alur
-transaksi sandbox, data demo, dan vertical slice end-to-end yang dapat diuji juri:
-Brief → AI Blueprint → Event Graph → Talent & Rider → Venue & Vendor → Sponsor & Tenant → Budget/Funding Gap →
-Publish → Ticket purchase → Sandbox payment → QR ticket → Validasi → Economic Ripple.
-Tagline: "One event. Every moving part." Browser title: "OKKAX — The Event Economy Operating Network".
+## Problem statement
+Full-stack app yang mengubah satu event brief menjadi sistem ekonomi event digital: Brief → Blueprint →
+Event Graph → Matching → Funding → Publishing → Sandbox Ticketing/Payments → Economic Ripple.
+Peran: organizer, talent, venue, vendor, sponsor, tenant, worker, audience, finance, supervisor, admin.
+Bahasa UI: Indonesia. Estetika: near-black premium, tipografi Bricolage Grotesque / Plus Jakarta Sans / IBM Plex Mono.
 
-## User choices (dari ask_human)
-- AI Event Compiler: Emergent LLM Key (Claude) — diimplementasikan dengan `claude-haiku-4-5-20251001` + fallback deterministik.
-- Auth: JWT email + password (Google login belum diimplementasikan — backlog P1).
-- Pembayaran: sandbox simulasi internal (Stripe test mode belum diimplementasikan — backlog P1).
-- Prioritas: vertical slice penuh + landing page.
-- Bahasa: campuran (istilah produk Inggris, konten Indonesia).
+## Palet resmi (final, per permintaan user Juni 2026)
+Hanya 3 warna: **hitam** (`#0a0a0a` / `#141414`), **pink premium** (`--okx-accent #ff2e7e`,
+`--okx-accent-soft #ff7ab0`, `--okx-accent-tint #1b0711`), dan **putih**. Oranye/amber DILARANG.
+Logo: mark X pink pada latar hitam (`LOGO_URL` di `frontend/src/lib/api.js`).
 
 ## Arsitektur
-- Backend: FastAPI (`/app/backend/server.py`, `core.py` auth/RBAC/audit, `compiler.py` AI, `seed_data.py` demo seed).
-- Frontend: React + Tailwind + shadcn primitives, near-black + warm ivory + vermilion accent, Manrope/Playfair/Inter.
-- DB: MongoDB, koleksi: users, organizations, talents, venues, vendors, workers, events, event_briefs,
-  event_blueprints, event_talents, rider_items, event_venues, event_vendors, event_jobs, event_workers,
-  sponsor_packages, sponsor_interests, sponsor_commitments, tenant_zones, booth_slots, tenant_applications,
-  ticket_tiers, ticket_orders, tickets, ticket_validations, payments, payment_milestones, refunds,
-  budget_items, funding_items, schedule_items, incidents, risks, notifications, audit_logs, login_attempts,
-  password_reset_tokens.
-- Event Graph, budget/funding gap, break-even, Economic Ripple dihitung on-the-fly dari relasi (bukan angka statis).
+- Frontend React SPA (`/app/frontend/src`) + Tailwind + Shadcn UI. Auth JWT + Emergent Google OAuth.
+- Backend FastAPI (`/app/backend`): `server.py` (routing), `compiler.py` (AI compiler + AI_ENGINES),
+  `extras.py` (Stripe + Google auth), `seed_data.py` (event utama + katalog), `seed_events.py` (multi-event/multi-kota).
+- MongoDB via MONGO_URL. Stripe Flow B (STRIPE_API_KEY di backend .env). PDF via ReportLab, preview via PyMuPDF.
 
-## Personas
-Organizer/corporate buyer, event organizer, promotor, talent & talent management, venue manager, vendor,
-sponsor, tenant/exhibitor, worker/freelancer, audience, finance approver, event supervisor, platform admin.
-
-## Implemented (12 Juni 2026 — MVP)
-- Auth JWT (register, login, logout, forgot/reset password, protected routes), RBAC 15 peran, isolasi data organisasi, audit log, rate-limit login.
-- Event Studio (guided brief 4 langkah + autosave), AI Event Compiler async (baseline instan → Claude Haiku menyempurnakan di background, semua output berlabel & editable).
-- Event Graph interaktif (node, status, dependency, filter, readiness score).
-- Talent network + Structured Rider Engine 17 kategori + Landed Talent Cost otomatis.
-- Venue compatibility score dengan penjelasan; vendor matching berskor; workforce jobs + QR check-in simulasi.
-- Sponsor Exchange (packages, express interest, approve/reject, commitment, milestone) → mengurangi funding gap.
-- Tenant Exchange (zones, booth map, apply, approve → booth occupied, revenue masuk funding, compatibility conflicts).
-- Ticketing (14 tipe tier), publish event, Discover portal + halaman publik event dengan indikator kesiapan faktual.
-- Checkout sandbox: VA (6 bank), QRIS, e-wallet (5), kartu, retail, corporate; PayLater & international ditandai future.
-- Payment object lengkap (fee, pajak estimasi, net, status, audit), simulate paid/failed, refund sandbox, milestones, split settlement simulation.
-- Tiket QR unik + validator (Valid / Already Used / Invalid), inventory berkurang, revenue & ripple ikut berubah.
-- Budget Engine + What-If Simulator (Lean/Balanced/Premium + Apply Scenario), Economic Ripple, Command Center, Run of Show, incident, risk register, notification center, Admin panel, guided demo 16 langkah, demo reset.
-
-## Implemented (12 Juni 2026 — iterasi 2)
-- **Google login sekali klik** via Emergent-managed auth: `POST /api/auth/session` (tukar X-Session-ID → JWT + cookie httpOnly), halaman AuthCallback, tombol di /login dan /register. Login email+password tetap jalan.
-- **Stripe test mode** untuk pembelian tiket kartu (Flow B / `STRIPE_API_KEY` environment; sandbox claimable tidak tersedia untuk negara ID): `POST /api/payments/stripe/checkout`, polling `GET /api/payments/stripe/status/{id}`, webhook `POST /api/webhook/stripe`, fulfillment idempoten (tiket QR + inventory), halaman /payment/success & /payment/cancel. Nilai IDR dikonversi ke USD pada kurs indikatif Rp16.000/USD dan ditampilkan sebagai catatan.
-- **Dashboard peran** `/app/me` + `GET /api/me/workspace`: talent (booking, rider, jadwal pembayaran), venue (booking + deposit), vendor (kontrak), worker (shift, upah, check-in), finance approver/supervisor (milestone menunggu). Self-confirm `POST /api/me/workspace/confirm` dengan pengecekan kepemilikan (403 untuk pihak lain). Akun demo dipetakan lewat `DEMO_LINKS`.
-- **Dokumen resmi PDF ber-logo OKKAX** (reportlab): invoice per order, quotation per event (biaya per kategori + funding gap + break-even), payment schedule (semua milestone). Tombol unduh di Orders dan workspace event; otorisasi dijaga.
-- Diuji: 24/24 test backend iterasi 2 + Playwright UI lulus (`/app/backend/tests/test_iteration2.py`).
-
-## Implemented (12 Juni 2026 — iterasi 5)
-- **Sistem tipografi baru**: `Bricolage Grotesque` (headline editorial, kuat di proyektor), `Plus Jakarta Sans`
-  (UI & body — typeface yang dirancang untuk Jakarta, relevan dengan konteks produk Indonesia),
-  `IBM Plex Mono` (angka finansial, Event ID, dan metrik dengan tabular numbers).
-- Polish UI: `:focus-visible` ring aksen untuk aksesibilitas keyboard, transisi properti spesifik pada tombol/tautan,
-  micro press-state, `text-wrap: balance` pada headline editorial.
-- **Perbaikan keamanan**: `/api/demo/summary` tidak lagi mengembalikan kata sandi demo; persona one-click kini
-  memakai `POST /api/demo/persona-login` yang hanya mengizinkan 5 persona sandbox (administrator ditolak 403).
-
-
-- **Mode Presentasi** layar penuh di `/present` (tertaut dari /juri, footer): 8 scene guided product story — Masalah,
-  Event Brief, Event Compiler, Event Network (Event Graph sebagai visual utama), Biaya & Pendanaan, Transaksi,
-  Operasi, Dampak. Semua angka dari `GET /api/demo/summary` (ditambah blok `brief`, `operations`, `ripple`,
-  read-only, tanpa data sensitif). Navigasi tombol + keyboard ArrowLeft/ArrowRight/Escape, dot per scene,
-  progress 1/8, fullscreen API, auto-advance 20 detik default MATI, tombol Buka Detail ke route asli, dan Reset Demo.
-- Diverifikasi: 8 scene tampil, keyboard & dot bekerja, tanpa horizontal overflow dan tanpa teks terpotong pada
-  1366×768 serta 1920×1080, tanpa console error, tanpa kebocoran akun/kredensial/token.
-
-
-- **Halaman "Demo untuk Juri"** di `/juri` (alias `/judges`), ditautkan dari nav publik, footer, dan dua CTA landing:
-  narasi vertikal masalah → solusi, empat angka kunci live dari `GET /api/demo/summary` (memakai `compute_budget`,
-  bukan hard-code), 12 langkah demo terpandu dengan tombol ke route/tab nyata, progress bar tersimpan di
-  localStorage (`okkax_juri_steps`), 5 persona sandbox one-click login (admin & kredensial admin disembunyikan),
-  daftar status Berfungsi / Simulasi Sandbox / Roadmap, dan disclaimer data fiktif.
-- Diuji: 4/4 backend + seluruh 12 tautan langkah, 5 persona, progres persist, mobile 390px tanpa overflow, tanpa console error.
+## Sudah diimplementasi
+- MVP vertical slice lengkap (blueprint, graph, matching, funding, publishing, ticketing sandbox, ripple).
+- Google login, Stripe test checkout, dokumen PDF (invoice/quotation/payment schedule).
+- Halaman demo `/juri` dan mode presentasi `/present`, GuidedDemo.
+- Overhaul tipografi + logo kustom.
+- **Juni 2026 — sesi ini:**
+  - Integrasi ChatGPT/OpenAI models sebagai mesin AI Event Compiler yang bisa dipilih
+    (`GET /api/ai/engines`, `POST /api/events/{id}/compile?engine=`; default `gpt-5.4`;
+    pilihan gpt-5.5, gpt-5.4-mini, Claude Haiku 4.5, Claude Sonnet 4.6) + dropdown `ai-engine-select` di tab Blueprint.
+  - 8 event demo baru di 7 kota tambahan (Jakarta, Bandung, Surabaya, Yogyakarta, Denpasar, Medan, Semarang)
+    dengan 9 jenis event, 7 venue baru, tiers, sponsor package, tenant zone, workforce, budget/funding, risks.
+  - Event Graph interaktif baru: kanvas SVG radial (satu Event ID di pusat), hover highlight dependency,
+    klik node → panel detail + navigasi dependency, filter kategori, zoom, daftar node.
+  - Repalet total ke hitam/pink/putih (index.css tokens, StatusBadge, Landing, JuriDemo, Tickets, Checkout, dll).
+  - Logo baru pink-on-black.
 
 ## Backlog
-- P1: email nyata (Resend) untuk notifikasi & reset password; pembayaran kartu Stripe dalam IDR (butuh akun Stripe Indonesia); nomor tiket dari counter monotonik (hindari race pada fulfillment konkuren).
-- P2: travel/hotel/logistics booking module, verified delivery record & review, tax reference admin, dispute/content report, upload dokumen verifikasi (object storage), SVG Event Graph dengan layout otomatis.
+- P0 Email Nyata: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).
+- P1 Lencana Rekam Jejak vendor/worker untuk event yang selesai.
+- P2 Tema terang khusus cetak untuk laporan/halaman juri.
+- P2 Streaming (SSE) untuk output AI compiler agar terasa real-time.
 
-## Next tasks
-1. Google login + email provider.
-2. Dashboard per peran (talent, venue, vendor, worker, finance approver).
-3. Invoice/quotation dokumen & payment schedule export.
+## Status uji
+Iteration 5: backend 13/13 pass (`/app/backend/tests/test_iteration5.py`), frontend Playwright pass.
+Satu temuan palet di Landing.jsx sudah diperbaiki setelah laporan.

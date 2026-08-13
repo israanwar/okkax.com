@@ -18,7 +18,7 @@ const GRAPH_PREVIEW = [
   { label: "Budget & Funding Gap", kind: "Budget", status: "At Risk", x: 50, y: 94 },
 ];
 const EDGES = [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [2, 3], [0, 8], [4, 8], [5, 8], [7, 8]];
-const DOT = { Confirmed: "#10b981", Pending: "#f59e0b", "At Risk": "#ff4500" };
+const DOT = { Confirmed: "#ffffff", Pending: "#ff7ab0", "At Risk": "#ff2e7e" };
 
 function GraphPreview() {
   const [active, setActive] = useState(0);
@@ -32,7 +32,7 @@ function GraphPreview() {
             y1={GRAPH_PREVIEW[a].y}
             x2={GRAPH_PREVIEW[b].x}
             y2={GRAPH_PREVIEW[b].y}
-            stroke={active === a || active === b ? "#ff4500" : "#27272a"}
+            stroke={active === a || active === b ? "#ff2e7e" : "#27272a"}
             strokeWidth="0.3"
             vectorEffect="non-scaling-stroke"
           />
