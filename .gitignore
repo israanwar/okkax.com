@@ -27,6 +27,7 @@ next-env.d.ts
 
 # Production builds
 /build
+frontend/build/
 dist/
 dist
 
@@ -51,6 +52,7 @@ __pycache__/
 *pyc*
 venv/
 .venv/
+backend/.venv/
 
 # Development tools
 chainlit.md
@@ -83,6 +85,8 @@ android-sdk/
 .env
 .env.*
 *.env
+!backend/.env.example
+!frontend/.env.example
 credentials.json
 *.key
 .credentials

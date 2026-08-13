@@ -9,15 +9,16 @@ import time
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://economy-network.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
-PASSWORD = "Okkax#2026"
+PASSWORD = os.environ["DEMO_PASSWORD"]
 EVENT_ID = "evt-aruna-2026"
 
 # ---------- helpers ----------
 
 def _login(email):
-    r = requests.post(f"{API}/auth/login", json={"email": email, "password": PASSWORD}, timeout=30)
+    password = os.environ["ADMIN_PASSWORD"] if email == os.environ["ADMIN_EMAIL"] else PASSWORD
+    r = requests.post(f"{API}/auth/login", json={"email": email, "password": password}, timeout=30)
     assert r.status_code == 200, f"login {email} failed: {r.status_code} {r.text}"
     return r.json()["token"]
 
@@ -28,8 +29,14 @@ def _h(tok):
 
 @pytest.fixture(scope="session")
 def tokens():
-    return {role: _login(f"{role}@okkax.id") for role in
-            ["admin", "organizer", "sponsor", "tenant", "audience"]}
+    emails = {
+        "admin": os.environ["ADMIN_EMAIL"],
+        "organizer": "organizer@okkax.id",
+        "sponsor": "sponsor@okkax.id",
+        "tenant": "tenant@okkax.id",
+        "audience": "audience@okkax.id",
+    }
+    return {role: _login(email) for role, email in emails.items()}
 
 
 # ---------- reset seed once ----------
@@ -49,7 +56,7 @@ class TestAuth:
         assert all(tokens.values())
 
     def test_login_wrong_password(self):
-        r = requests.post(f"{API}/auth/login", json={"email": "admin@okkax.id", "password": "wrong"})
+        r = requests.post(f"{API}/auth/login", json={"email": os.environ["ADMIN_EMAIL"], "password": "wrong"})
         assert r.status_code in (400, 401)
 
     def test_me(self, tokens):
@@ -57,7 +64,7 @@ class TestAuth:
         assert r.status_code == 200
         assert r.json()["user"]["email"] == "organizer@okkax.id"
 
-    def test_register_and_forgot_reset(self):
+    def test_register_and_forgot_password_does_not_leak_token(self):
         email = f"TEST_org_{int(time.time())}@okkax.id"
         r = requests.post(f"{API}/auth/register", json={
             "email": email, "password": "InitPass#1", "name": "Test Org",
@@ -69,16 +76,8 @@ class TestAuth:
         # forgot
         r = requests.post(f"{API}/auth/forgot-password", json={"email": email})
         assert r.status_code == 200
-        token = r.json().get("demo_token")
-        assert token, f"expected demo_token in response: {r.json()}"
-
-        # reset
-        r = requests.post(f"{API}/auth/reset-password", json={"token": token, "password": "NewPass#2"})
-        assert r.status_code == 200
-
-        # login with new
-        r = requests.post(f"{API}/auth/login", json={"email": email, "password": "NewPass#2"})
-        assert r.status_code == 200
+        assert "demo_token" not in r.json()
+        assert "token" not in r.json()
 
 
 # ---------- RBAC ----------

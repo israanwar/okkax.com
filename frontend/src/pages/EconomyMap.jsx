@@ -36,7 +36,7 @@ export default function EconomyMap() {
     });
   }, []);
 
-  const cities = data?.cities || [];
+  const cities = useMemo(() => data?.cities || [], [data]);
   const max = useMemo(() => Math.max(1, ...cities.map((c) => c[metric] || 0)), [cities, metric]);
   const active = cities.find((c) => c.city === activeCity) || null;
   const focus = hover ? cities.find((c) => c.city === hover) : null;

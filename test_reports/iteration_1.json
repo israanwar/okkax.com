@@ -30,7 +30,7 @@
     "/app/backend/tests/backend_test.py (new)"
   ],
   "success_rate": {"backend": "100% (27/27)", "frontend": "100% (login, event, checkout+payment+ticket issuance, QR validator Valid/AlreadyUsed, discover, tickets list all pass smoke test)"},
-  "test_credentials": "All demo accounts password Okkax#2026 (admin/organizer/sponsor/tenant/audience/etc @okkax.id). Demo event evt-aruna-2026.",
+  "test_credentials": "All demo accounts password [redacted demo credential] (admin/organizer/sponsor/tenant/audience/etc @okkax.id). Demo event evt-aruna-2026.",
   "seed_data_creation": "Called POST /api/demo/reset to ensure clean state before backend tests. New event created via studio flow: 'TEST Konser Sandbox 2026'.",
   "retest_needed": false,
   "should_main_agent_self_test": true,

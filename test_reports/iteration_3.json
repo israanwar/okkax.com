@@ -17,7 +17,7 @@
     "/app/backend/tests/test_iteration3.py (new)"
   ],
   "success_rate": {"backend": "100% (4/4)", "frontend": "100% (all 12 steps + 5 personas + progress + responsive + landing links)"},
-  "test_credentials": "organizer@okkax.id / Okkax#2026 (all demo personas share Okkax#2026, verified not leaked in /juri body)",
+  "test_credentials": "organizer@okkax.id / [redacted demo credential] (all demo personas share [redacted demo credential], verified not leaked in /juri body)",
   "seed_data_creation": "Test added and then removed a funding item via POST /api/demo/reset to prove numbers are dynamic; demo data was reset to clean state at end.",
   "retest_needed": false,
   "should_main_agent_self_test": false,

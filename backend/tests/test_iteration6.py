@@ -17,7 +17,7 @@ def _read_url():
 
 BASE = _read_url().rstrip("/")
 API = f"{BASE}/api"
-PW = "Okkax#2026"
+PW = os.environ["DEMO_PASSWORD"]
 
 
 @pytest.fixture(scope="module")
@@ -190,6 +190,7 @@ class TestPersonaLogin:
 
 
 # ---- Stripe checkout endpoint accessible ----
+@pytest.mark.skipif(not os.environ.get("STRIPE_API_KEY"), reason="requires Stripe test credentials")
 class TestStripe:
     def test_stripe_checkout_endpoint(self, audience_token):
         h = {"Authorization": f"Bearer {audience_token}"}

@@ -17,11 +17,11 @@
     "/app/backend/tests/test_iteration2.py (new)"
   ],
   "success_rate": {"backend": "100% (24/24)", "frontend": "100% (all iteration-2 UI selectors present and integrated with backend APIs)"},
-  "test_credentials": "All demo accounts password Okkax#2026 (see /app/memory/test_credentials.md).",
+  "test_credentials": "All demo accounts password [redacted demo credential] (see /app/memory/test_credentials.md).",
   "seed_data_creation": "POST /api/demo/reset invoked at session start; no other seed created.",
   "retest_needed": false,
   "should_main_agent_self_test": true,
   "main_agent_can_self_test": true,
-  "context_for_next_testing_agent": "Iteration-2 test file lives at /app/backend/tests/test_iteration2.py (24 tests, ~12s under xdist loadscope). Iteration-1 file at /app/backend/tests/backend_test.py (27 tests). Both use REACT_APP_BACKEND_URL and rely on POST /api/demo/reset for baseline. STRIPE_API_KEY='sk_test_emergent' in .env works for the emergentintegrations wrapper — creates real cs_test_* sessions on Stripe test mode. Do not attempt full card payment via automation — Stripe blocks headless. UI tabs for EventWorkspace are dynamic; use /app/events/<id>/overview to find download-quotation-btn + download-schedule-btn. Role workspace path is /app/me (not /app/dashboard).",
+  "context_for_next_testing_agent": "Iteration-2 test file lives at /app/backend/tests/test_iteration2.py (24 tests, ~12s under xdist loadscope). Iteration-1 file at /app/backend/tests/backend_test.py (27 tests). Both use REACT_APP_BACKEND_URL and rely on POST /api/demo/reset for baseline. STRIPE_API_KEY='[redacted Stripe test credential]' in .env works for the emergentintegrations wrapper — creates real cs_test_* sessions on Stripe test mode. Do not attempt full card payment via automation — Stripe blocks headless. UI tabs for EventWorkspace are dynamic; use /app/events/<id>/overview to find download-quotation-btn + download-schedule-btn. Role workspace path is /app/me (not /app/dashboard).",
   "rca of the issue": "No bugs found in iteration 2 features."
 }

@@ -4,14 +4,15 @@ import time
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://economy-network.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 API = f"{BASE_URL}/api"
 EVENT_ID = "evt-aruna-2026"
 
 
 @pytest.fixture(scope="module")
 def organizer_token():
-    r = requests.post(f"{API}/auth/login", json={"email": "organizer@okkax.id", "password": "Okkax#2026"})
+    r = requests.post(f"{API}/auth/login", json={
+        "email": "organizer@okkax.id", "password": os.environ["DEMO_PASSWORD"]})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 

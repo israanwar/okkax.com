@@ -1,4 +1,5 @@
 import os
+import hashlib
 import logging
 import secrets
 from datetime import datetime, timezone, timedelta
@@ -186,21 +187,21 @@ async def logout(user: dict = Depends(get_current_user)):
 @api.post("/auth/forgot-password")
 async def forgot(payload: ForgotIn):
     user = await db.users.find_one({"email": payload.email.lower().strip()})
-    token = secrets.token_urlsafe(32)
     if user:
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
         await db.password_reset_tokens.insert_one({
-            "id": nid(), "token": token, "user_id": user["id"], "used": False,
+            "id": nid(), "token_hash": token_hash, "user_id": user["id"], "used": False,
             "expires_at": datetime.now(timezone.utc) + timedelta(hours=1), "created_at": now_iso()})
-        logger.info(f"[OKKAX] Password reset link: /reset-password?token={token}")
         await notify(user["id"], "Permintaan reset kata sandi",
-                     "Tautan reset kata sandi OKKAX telah dibuat (mode demo: token tampil di respons).", "info")
-    return {"ok": True, "message": "Jika email terdaftar, tautan reset telah dikirim.",
-            "demo_token": token if user else None}
+                     "Permintaan reset diterima. Hubungi administrator bila Anda tidak memintanya.", "info")
+    return {"ok": True, "message": "Jika email terdaftar, instruksi reset akan dikirim."}
 
 
 @api.post("/auth/reset-password")
 async def reset(payload: ResetIn):
-    rec = await db.password_reset_tokens.find_one({"token": payload.token, "used": False})
+    token_hash = hashlib.sha256(payload.token.encode("utf-8")).hexdigest()
+    rec = await db.password_reset_tokens.find_one({"token_hash": token_hash, "used": False})
     if not rec:
         raise HTTPException(status_code=400, detail="Token tidak valid atau sudah digunakan")
     exp = rec["expires_at"]
@@ -1769,6 +1770,7 @@ async def admin_events(user: dict = Depends(require_roles("platform_admin"))):
 
 @api.post("/demo/reset")
 async def demo_reset():
+    """Restore deterministic demo fixtures without deleting unrelated records."""
     res = await seed_data.seed(force=True)
     return {"ok": True, **res, "demo_event_code": seed_data.EVENT_CODE, "demo_event_id": seed_data.EVENT_ID}
 
@@ -1779,8 +1781,7 @@ async def demo_state():
     return {"seeded": bool(ev), "event": ev, "disclaimer": DISCLAIMER,
             "accounts": [{"email": e, "name": n, "roles": r} for e, n, r, _ in seed_data.DEMO_USERS] +
                         [{"email": os.environ.get("ADMIN_EMAIL"), "name": "OKKAX Super Admin",
-                          "roles": ["super_admin", "platform_admin"]}],
-            "password": os.environ.get("DEMO_PASSWORD")}
+                          "roles": ["super_admin", "platform_admin"]}]}
 
 
 @api.get("/health")

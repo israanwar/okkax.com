@@ -14,14 +14,14 @@ def discover():
     return r.json()
 
 
-def test_minimal_12_published_events(discover):
-    assert discover["total"] >= 12, discover["total"]
+def test_minimal_31_published_events(discover):
+    assert discover["total"] >= 31, discover["total"]
     assert len(discover["items"]) == discover["total"]
 
 
 def test_multi_city_and_category(discover):
-    assert len(discover["cities"]) >= 8
-    assert len(discover["categories"]) >= 6
+    assert len(discover["cities"]) >= 15
+    assert len(discover["categories"]) >= 11
 
 
 def test_no_duplicate_event_ids(discover):
@@ -63,16 +63,28 @@ def test_filters_and_search_work(discover):
 
 
 def test_seed_is_idempotent(discover):
-    """Menjalankan seeder katalog ulang tidak menambah/menduplikasi event."""
+    """Menjalankan seluruh seeder ulang tidak menambah/menduplikasi dokumen."""
     import asyncio
     from dotenv import load_dotenv
     load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
-    from seed_events import seed_extra_events
 
-    before = discover["total"]
-    asyncio.get_event_loop().run_until_complete(seed_extra_events())
-    asyncio.get_event_loop().run_until_complete(seed_extra_events())
+    collections = ["events", "event_briefs", "ticket_tiers", "event_vendors", "risks"]
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    from seed_data import seed
+    from core import db
+    try:
+        before = {name: loop.run_until_complete(db[name].count_documents({})) for name in collections}
+        loop.run_until_complete(seed(force=True))
+        once = {name: loop.run_until_complete(db[name].count_documents({})) for name in collections}
+        loop.run_until_complete(seed(force=True))
+        twice = {name: loop.run_until_complete(db[name].count_documents({})) for name in collections}
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
     after = httpx.get(f"{API}/discover/events", timeout=120).json()
-    assert after["total"] == before
+    assert once == before
+    assert twice == once
+    assert after["total"] == discover["total"]
     ids = [e["id"] for e in after["items"]]
     assert len(ids) == len(set(ids))
