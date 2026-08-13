@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mongodb:
+        image: mongo:8.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      MONGO_URL: mongodb://127.0.0.1:27017
+      DB_NAME: okkax_local
+      JWT_SECRET: ci-only-jwt-secret-not-used-outside-github-actions
+      DEMO_PASSWORD: ci-only-demo-password
+      ADMIN_EMAIL: admin.local@okkax.id
+      ADMIN_PASSWORD: ci-only-admin-password
+      CORS_ORIGINS: http://localhost:3000
+      REACT_APP_BACKEND_URL: http://127.0.0.1:8001
+      TEST_BASE_URL: http://127.0.0.1:8001
+      PYTHONPATH: ${{ github.workspace }}/backend
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tracked environment files and secrets
+        run: ./scripts/check-secrets.sh
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-local.txt
+
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements-local.txt
+
+      - name: Start backend
+        run: |
+          cd backend
+          uvicorn server:app --host 127.0.0.1 --port 8001 > /tmp/okkax-backend.log 2>&1 &
+          for attempt in {1..60}; do
+            curl -fsS http://127.0.0.1:8001/api/health 2>/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/okkax-backend.log
+          exit 1
+
+      - name: Backend and Discover catalog tests
+        working-directory: backend
+        run: pytest -n 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: yarn install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: frontend
+        run: yarn build

@@ -17,14 +17,16 @@ NEW_EVENT_IDS = [
 
 @pytest.fixture(scope="module")
 def organizer_token():
-    r = requests.post(f"{API}/auth/login", json={"email": "organizer@okkax.id", "password": "Okkax#2026"})
+    r = requests.post(f"{API}/auth/login", json={
+        "email": "organizer@okkax.id", "password": os.environ["DEMO_PASSWORD"]})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 
 
 @pytest.fixture(scope="module")
 def audience_token():
-    r = requests.post(f"{API}/auth/login", json={"email": "audience@okkax.id", "password": "Okkax#2026"})
+    r = requests.post(f"{API}/auth/login", json={
+        "email": "audience@okkax.id", "password": os.environ["DEMO_PASSWORD"]})
     assert r.status_code == 200, r.text
     return r.json()["token"]
 

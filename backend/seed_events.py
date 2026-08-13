@@ -1,5 +1,15 @@
 """Katalog event demo tambahan OKKAX: banyak kota, banyak jenis event. Semua data fiktif."""
-from core import db, now_iso, nid
+import hashlib
+from datetime import date, timedelta
+
+from core import db
+
+SEED_TIMESTAMP = "2026-08-13T00:00:00+00:00"
+SEED_BASE_DATE = date(2026, 8, 13)
+
+
+def stable_index(value: str, size: int) -> int:
+    return int(hashlib.sha256(value.encode("utf-8")).hexdigest()[:16], 16) % size
 
 IMG = {
     "conference": "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwyfHx0ZWNoJTIwY29uZmVyZW5jZSUyMHN0YWdlJTIwYXVkaWVuY2V8ZW58MHx8fHwxNzg2NTQxNzQ5fDA&ixlib=rb-4.1.0&q=85",
@@ -125,12 +135,10 @@ BULK_EVENTS = [
 
 
 def _bulk_specs():
-    """Bangun spesifikasi event massal dengan tanggal relatif hari ini."""
-    from datetime import date, timedelta
-    today = date.today()
+    """Bangun spesifikasi event massal dari tanggal snapshot yang stabil."""
     out = []
     for i, (name, etype, city, venue, offset, days, cap, budget, img, price, ratio) in enumerate(BULK_EVENTS):
-        start = (today + timedelta(days=offset)).isoformat()
+        start = (SEED_BASE_DATE + timedelta(days=offset)).isoformat()
         code = f"EVT-{city[:3].upper()}-2026-{i + 20:04d}"
         eid = "evt-b-" + "".join(ch for ch in name.lower().replace(" ", "-") if ch.isalnum() or ch == "-")
         if price == 0:
@@ -149,7 +157,7 @@ SPONSOR_TIERS = [("Presenting Sponsor", 1.0, 1), ("Main Sponsor", 0.45, 2), ("Su
 
 async def seed_extra_events():
     for v in EXTRA_VENUES:
-        await db.venues.update_one({"id": v["id"]}, {"$set": {**VENUE_DEFAULTS, **v, "created_at": now_iso()}},
+        await db.venues.update_one({"id": v["id"]}, {"$set": {**VENUE_DEFAULTS, **v, "created_at": SEED_TIMESTAMP}},
                                    upsert=True)
     for vid, vname, vcity, indoor, capv, price, img in BULK_VENUES:
         await db.venues.update_one({"id": vid}, {"$set": {**VENUE_DEFAULTS, "id": vid, "name": vname,
@@ -158,17 +166,15 @@ async def seed_extra_events():
             "event_day_price": price, "setup_day_price": int(price * 0.38), "deposit": int(price * 0.5),
             "power_kva": 700 if indoor else 0, "curfew": "23:30" if indoor else "22:30",
             "event_types": ["Konser", "Konferensi", "Festival", "Expo"], "image": img,
-            "created_at": now_iso()}}, upsert=True)
+            "created_at": SEED_TIMESTAMP}}, upsert=True)
 
     specs = [(*e, None) for e in EXTRA_EVENTS] + _bulk_specs()
     for (eid, code, name, etype, city, venue_id, start, days, cap, budget, img,
          tiers, sponsor_base, sold_ratio) in specs:
         venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
-        from datetime import date as _date, timedelta as _td
-        _s = _date.fromisoformat(start)
-        end = (_s + _td(days=days - 1)).isoformat()
-        today = _date.today()
-        ev_status = "live" if _s <= today <= _s + _td(days=days - 1) else "published"
+        _s = date.fromisoformat(start)
+        end = (_s + timedelta(days=days - 1)).isoformat()
+        ev_status = "live" if _s <= SEED_BASE_DATE <= _s + timedelta(days=days - 1) else "published"
         brief = dict(
             name=name, event_type=etype, city=city, start_date=start, days=days, setup_days=1,
             capacity=cap, budget=budget, currency="IDR", organizer="PT Aruna Consumer Indonesia",
@@ -193,10 +199,10 @@ async def seed_extra_events():
             gate_info="Gate utama buka 1 jam sebelum acara",
             support_contact="support@okkax.demo", indoor=bool(venue.get("indoor")), format="Offline",
             faq=[{"q": "Apakah tiket bisa dipindahtangankan?", "a": "Tiket reguler dapat dipindahtangankan hingga H-3."}],
-            published_at=now_iso(), created_at=now_iso())}, upsert=True)
+            published_at=SEED_TIMESTAMP, created_at=SEED_TIMESTAMP)}, upsert=True)
 
         await db.event_briefs.update_one({"event_id": eid}, {"$set": dict(
-            id=nid(), event_id=eid, payload=brief, created_at=now_iso())}, upsert=True)
+            id=f"evtbrief-{eid}", event_id=eid, payload=brief, created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # venue link
         total = venue["event_day_price"] * days + venue["setup_day_price"]
@@ -206,7 +212,7 @@ async def seed_extra_events():
             status="Confirmed", compatibility={"score": 90, "reasons": [
                 f"Kapasitas {venue['standing_capacity']} memenuhi target {cap} pengunjung",
                 f"Curfew {venue.get('curfew')} sesuai rundown",
-                f"Kota {city} sesuai target audiens"]}, created_at=now_iso())}, upsert=True)
+                f"Kota {city} sesuai target audiens"]}, created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # ticket tiers
         for i, (tname, price, qty) in enumerate(tiers):
@@ -218,7 +224,7 @@ async def seed_extra_events():
                 quantity=qty, sold=sold, sale_start="2026-05-01", sale_end=start,
                 benefits=[f"Akses {days} hari", "E-ticket QR"], purchase_limit=5, age_rule="17+",
                 transfer_rule="Dapat dipindahtangankan hingga H-3",
-                refund_rule="Refund penuh hingga H-14", active=True, created_at=now_iso())}, upsert=True)
+                refund_rule="Refund penuh hingga H-14", active=True, created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # sponsor inventory
         for tier, mult, qty in SPONSOR_TIERS:
@@ -229,14 +235,14 @@ async def seed_extra_events():
                 rights=["Logo Placement", "LED Exposure", "Booth Activation"], exclusivity="Open",
                 deadline=start, deliverables=[{"item": "Logo Placement", "status": "Not Started"}],
                 audience_profile=brief["audience_profile"], estimated_attendance=cap,
-                status="Open", created_at=now_iso())}, upsert=True)
+                status="Open", created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # tenant zone + booth
         zid = f"{eid}-zone-1"
         await db.tenant_zones.update_one({"id": zid}, {"$set": dict(
             id=zid, event_id=eid, name="Tenant & Activation Zone", category="Food and Beverage",
             area_sqm=360, slots=12, utilities=["Electricity", "Water"], operating_hours="10:00 - 22:00",
-            description=f"Zona tenant {name}.", created_at=now_iso())}, upsert=True)
+            description=f"Zona tenant {name}.", created_at=SEED_TIMESTAMP)}, upsert=True)
         for i in range(12):
             await db.booth_slots.update_one({"id": f"{zid}-b{i+1}"}, {"$set": dict(
                 id=f"{zid}-b{i+1}", event_id=eid, zone_id=zid, zone_name="Tenant & Activation Zone",
@@ -244,11 +250,11 @@ async def seed_extra_events():
                 electricity_watt=2000, furniture="1 meja, 2 kursi", position=f"Row {chr(65 + i // 4)}-{i % 4 + 1}",
                 status="occupied" if i < 5 else "available",
                 tenant_name="Tenant Demo UMKM" if i < 5 else None,
-                tenant_application_id=None, created_at=now_iso())}, upsert=True)
+                tenant_application_id=None, created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # vendor produksi + headline talent agar kartu Discover kaya konteks
         vendor_pool = await db.vendors.find({}, {"_id": 0}).sort("id", 1).to_list(50)
-        picks = [vendor_pool[(hash(eid) + k * 5) % len(vendor_pool)] for k in range(6)] if vendor_pool else []
+        picks = [vendor_pool[(stable_index(eid, len(vendor_pool)) + k * 5) % len(vendor_pool)] for k in range(6)] if vendor_pool else []
         seen = set()
         for v in picks:
             if v["id"] in seen:
@@ -258,18 +264,18 @@ async def seed_extra_events():
             await db.event_vendors.update_one({"id": ven_id}, {"$set": dict(
                 id=ven_id, event_id=eid, vendor_id=v["id"], vendor_name=v["name"], category=v["category"],
                 cost=int((v["price_min"] + v["price_max"]) / 2), status="Confirmed",
-                created_at=now_iso())}, upsert=True)
+                created_at=SEED_TIMESTAMP)}, upsert=True)
 
         talent_pool = await db.talents.find({}, {"_id": 0}).sort("id", 1).to_list(20)
         if talent_pool:
-            tal = talent_pool[hash(eid) % len(talent_pool)]
+            tal = talent_pool[stable_index(eid, len(talent_pool))]
             fee = tal["base_fee"]
             await db.event_talents.update_one({"id": f"evttal-{eid}"}, {"$set": dict(
                 id=f"evttal-{eid}", event_id=eid, talent_id=tal["id"], talent_name=tal["stage_name"],
                 fee=fee, tax_estimate=int(fee * 0.02), travel=0, accommodation=0, local_transport=2000000,
                 security=0, rider_cost=0, hospitality=2500000,
                 landed_cost=int(fee * 1.02) + 4500000, status="Confirmed",
-                performance_slot=f"{start} 20:00", created_at=now_iso())}, upsert=True)
+                performance_slot=f"{start} 20:00", created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # workforce, budget, funding, risks
         for role, need, comp in [("Usher", max(6, cap // 250), 275000), ("Security", max(6, cap // 300), 400000),
@@ -279,7 +285,7 @@ async def seed_extra_events():
                 id=job_id, event_id=eid, role=role, needed=need, shift="Show day", location=venue["name"],
                 compensation_per_day=comp, days=days, supervisor="Ops Supervisor",
                 required_skills=[role], filled=max(0, need - 3), status="In Progress",
-                created_at=now_iso())}, upsert=True)
+                created_at=SEED_TIMESTAMP)}, upsert=True)
 
         for cat, label, share, state in [("Venue", "Sewa venue & setup", 0.0, "committed"),
                                          ("Production", "Panggung, audio, lighting, LED", 0.32, "committed"),
@@ -291,16 +297,16 @@ async def seed_extra_events():
             await db.budget_items.update_one({"id": bud_id}, {"$set": dict(
                 id=bud_id, event_id=eid, category=cat, label=label,
                 amount=total if cat == "Venue" else int(budget * share), state=state,
-                source="seed", created_at=now_iso())}, upsert=True)
+                source="seed", created_at=SEED_TIMESTAMP)}, upsert=True)
 
         await db.funding_items.update_one({"id": f"evtfund-{eid}-organizer"}, {"$set": dict(
             id=f"evtfund-{eid}-organizer", event_id=eid, source="Organizer Budget",
             label="Anggaran penyelenggara", amount=int(budget * 0.55), state="committed",
-            source_type="brief", created_at=now_iso())}, upsert=True)
+            source_type="brief", created_at=SEED_TIMESTAMP)}, upsert=True)
         await db.funding_items.update_one({"id": f"evtfund-{eid}-sponsor"}, {"$set": dict(
             id=f"evtfund-{eid}-sponsor", event_id=eid, source="Sponsor Commitments",
             label="Main Sponsor terkonfirmasi", amount=int(sponsor_base * 0.45), state="committed",
-            source_type="sponsor", created_at=now_iso())}, upsert=True)
+            source_type="sponsor", created_at=SEED_TIMESTAMP)}, upsert=True)
 
         for ri, (r, sev, mit) in enumerate([(f"Perizinan {city} belum final", "Medium", "Ajukan izin H-45"),
                                             ("Funding gap belum tertutup", "High",
@@ -308,5 +314,5 @@ async def seed_extra_events():
             risk_id = f"evtrisk-{eid}-{ri+1}"
             await db.risks.update_one({"id": risk_id}, {"$set": dict(
                 id=risk_id, event_id=eid, risk=r, severity=sev, mitigation=mit, status="Open",
-                created_at=now_iso())}, upsert=True)
+                created_at=SEED_TIMESTAMP)}, upsert=True)
     return {"events": len(specs), "venues": len(EXTRA_VENUES) + len(BULK_VENUES)}

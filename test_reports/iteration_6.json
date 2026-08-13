@@ -22,7 +22,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "100% (8/8 discover-catalog + 23/23 regression = 31/31)", "frontend": "100% on P0 Discover flow"},
-  "test_credentials": "organizer@okkax.id / Okkax#2026, audience@okkax.id / Okkax#2026 (from /app/memory/test_credentials.md).",
+  "test_credentials": "organizer@okkax.id / [redacted demo credential], audience@okkax.id / [redacted demo credential] (from /app/memory/test_credentials.md).",
   "seed_data_creation": "No new seed data. Did NOT call /api/demo/reset. Restarted backend twice via supervisorctl to verify idempotency of seed_extra_events() upserts.",
   "retest_needed": false,
   "should_main_agent_self_test": true,

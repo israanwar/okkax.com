@@ -26,7 +26,7 @@
     "/app/backend/tests/test_iteration5.py (new)"
   ],
   "success_rate": {"backend": "100% (13/13)", "frontend": "~95% (all functional flows pass; one palette regression on landing)"},
-  "test_credentials": "organizer@okkax.id / Okkax#2026, audience@okkax.id / Okkax#2026 (verified working)",
+  "test_credentials": "organizer@okkax.id / [redacted demo credential], audience@okkax.id / [redacted demo credential] (verified working)",
   "seed_data_creation": "Ticket purchase test created a sandbox order on evt-bandung-indie (buyer TEST_Iter5 Buyer). No demo reset called during token-based tests, per agent-to-agent note.",
   "retest_needed": true,
   "should_main_agent_self_test": true,

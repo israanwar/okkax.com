@@ -28,7 +28,7 @@
     "/app/backend/tests/test_iteration6.py (new — 23 tests, all pass)"
   ],
   "success_rate": {"backend": "100% (23/23)", "frontend": "~92% (all functional flows pass; palette regression on 3 pages)"},
-  "test_credentials": "organizer@okkax.id / Okkax#2026 and audience@okkax.id / Okkax#2026 (verified).",
+  "test_credentials": "organizer@okkax.id / [redacted demo credential] and audience@okkax.id / [redacted demo credential] (verified).",
   "seed_data_creation": "Two sandbox orders created on evt-b-nusantara-sound-fest during checkout tests (TEST_Iter6 Buyer / TEST_Iter6 Stripe). No /api/demo/reset invoked, per agent-to-agent note.",
   "retest_needed": true,
   "should_main_agent_self_test": true,

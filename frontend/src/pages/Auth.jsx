@@ -21,12 +21,11 @@ const ROLE_OPTIONS = [
 ];
 
 const DEMO_ACCOUNTS = [
-  ["admin@okkax.id", "Super Administrator"],
-  ["organizer@okkax.id", "Organizer + Event Organizer"],
-  ["sponsor@okkax.id", "Sponsor"],
-  ["tenant@okkax.id", "Tenant"],
-  ["audience@okkax.id", "Audience"],
-  ["supervisor@okkax.id", "Event Supervisor"],
+  ["organizer@okkax.id", "Organizer + Event Organizer", "Penyelenggara"],
+  ["sponsor@okkax.id", "Sponsor", "Sponsor"],
+  ["tenant@okkax.id", "Tenant", "Tenant"],
+  ["audience@okkax.id", "Audience", "Pengunjung"],
+  ["supervisor@okkax.id", "Event Supervisor", "Supervisor"],
 ];
 
 function Shell({ title, subtitle, children }) {
@@ -53,7 +52,7 @@ function Shell({ title, subtitle, children }) {
               <li key={e}><span className="text-zinc-200">{e}</span> — {r}</li>
             ))}
           </ul>
-          <div className="mt-2 text-xs text-zinc-500">Kata sandi semua akun demo: <span className="text-zinc-200">Okkax#2026</span></div>
+          <div className="mt-2 text-xs text-zinc-500">Gunakan akses sekali klik; kredensial tidak ditampilkan di aplikasi.</div>
         </div>
       </div>
       <div className="flex flex-col justify-center px-5 py-12 sm:px-12">
@@ -73,7 +72,7 @@ export function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, adoptSession } = useAuth();
   const nav = useNavigate();
   const [sp] = useSearchParams();
 
@@ -84,6 +83,21 @@ export function Login() {
     try {
       await login(email, password);
       toast.success("Berhasil masuk ke OKKAX");
+      nav(sp.get("next") || "/app");
+    } catch (err) {
+      setError(apiError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loginAsPersona = async (label) => {
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await api.post("/demo/persona-login", { label });
+      await adoptSession(data.token);
+      toast.success(`Masuk sebagai ${label}`);
       nav(sp.get("next") || "/app");
     } catch (err) {
       setError(apiError(err));
@@ -150,15 +164,13 @@ export function Login() {
         <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3">
           <div className="text-xs text-zinc-500">Akses cepat demo</div>
           <div className="mt-2 flex flex-wrap gap-2">
-            {DEMO_ACCOUNTS.map(([e]) => (
+            {DEMO_ACCOUNTS.map(([e, , persona]) => (
               <button
                 key={e}
                 type="button"
                 data-testid={`quickfill-${e.split("@")[0]}`}
-                onClick={() => {
-                  setEmail(e);
-                  setPassword("Okkax#2026");
-                }}
+                disabled={busy}
+                onClick={() => loginAsPersona(persona)}
                 className="border border-[var(--okx-border)] px-2 py-1 text-xs text-zinc-300 hover:border-[var(--okx-accent)]"
               >
                 {e.split("@")[0]}
@@ -299,29 +311,14 @@ export function Register() {
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
-  const [password, setPassword] = useState("");
-  const [stage, setStage] = useState("request");
-  const nav = useNavigate();
+  const [submitted, setSubmitted] = useState(false);
 
   const request = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await api.post("/auth/forgot-password", { email });
-      setToken(data.demo_token || "");
-      setStage("reset");
-      toast.success("Tautan reset dibuat (mode demo menampilkan token).");
-    } catch (err) {
-      toast.error(apiError(err));
-    }
-  };
-
-  const reset = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post("/auth/reset-password", { token, password });
-      toast.success("Kata sandi diperbarui. Silakan masuk.");
-      nav("/login");
+      await api.post("/auth/forgot-password", { email });
+      setSubmitted(true);
+      toast.success("Permintaan reset diterima.");
     } catch (err) {
       toast.error(apiError(err));
     }
@@ -329,7 +326,7 @@ export function ForgotPassword() {
 
   return (
     <Shell title="Reset kata sandi" subtitle="Masukkan email akun OKKAX Anda.">
-      {stage === "request" ? (
+      {!submitted ? (
         <form onSubmit={request} className="mt-8 space-y-4">
           <input
             data-testid="forgot-email-input"
@@ -345,27 +342,9 @@ export function ForgotPassword() {
           </button>
         </form>
       ) : (
-        <form onSubmit={reset} className="mt-8 space-y-4">
-          <input
-            data-testid="reset-token-input"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Token reset"
-            className="w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none"
-          />
-          <input
-            data-testid="reset-password-input"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Kata sandi baru"
-            className="w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none"
-          />
-          <button data-testid="reset-submit-btn" className="w-full bg-[var(--okx-accent)] px-4 py-3 text-sm font-semibold">
-            Simpan kata sandi
-          </button>
-        </form>
+        <div className="mt-8 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4 text-sm text-zinc-300">
+          Jika email terdaftar, instruksi reset akan dikirim. Token reset tidak pernah ditampilkan di aplikasi.
+        </div>
       )}
       <Link to="/login" className="mt-4 inline-block text-sm text-zinc-400 underline">Kembali ke Sign in</Link>
     </Shell>

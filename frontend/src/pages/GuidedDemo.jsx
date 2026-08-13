@@ -37,8 +37,8 @@ export default function GuidedDemo() {
           </Link>
         </div>
         <p className="mt-3 text-sm text-zinc-400">
-          16 langkah dari brief hingga Economic Ripple. Masuk sebagai <span className="text-zinc-200">organizer@okkax.id</span> /
-          <span className="text-zinc-200"> Okkax#2026</span> untuk mengikuti setiap langkah di workspace.
+          16 langkah dari brief hingga Economic Ripple. Gunakan akses sekali klik persona Penyelenggara
+          pada halaman Sign in untuk mengikuti setiap langkah di workspace.
         </p>
 
         <div className="mt-8 flex gap-1">

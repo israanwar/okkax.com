@@ -11,7 +11,7 @@ if not BASE_URL:
             if line.startswith("REACT_APP_BACKEND_URL="):
                 BASE_URL = line.strip().split("=", 1)[1].rstrip("/")
 
-DEMO_PASSWORD = "Okkax#2026"
+DEMO_PASSWORD = os.environ["DEMO_PASSWORD"]
 ORGANIZER_EMAIL = "organizer@okkax.id"
 EVENT_ID = "evt-aruna-2026"
 

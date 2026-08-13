@@ -5,11 +5,13 @@ import requests
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 API = f"{BASE_URL}/api"
-PASSWORD = "Okkax#2026"
+PASSWORD = os.environ["DEMO_PASSWORD"]
 EVENT_ID = "evt-aruna-2026"
 
 
 def _login(email, pw=PASSWORD):
+    if email == os.environ["ADMIN_EMAIL"]:
+        pw = os.environ["ADMIN_PASSWORD"]
     r = requests.post(f"{API}/auth/login", json={"email": email, "password": pw}, timeout=30)
     assert r.status_code == 200, f"login {email} failed: {r.status_code} {r.text}"
     return r.json()["token"]
@@ -29,7 +31,7 @@ def _reset():
 def tokens():
     roles = ["admin", "organizer", "sponsor", "tenant", "audience",
              "talent", "venue", "vendor", "worker", "finance", "supervisor"]
-    return {r: _login(f"{r}@okkax.id") for r in roles}
+    return {r: _login(os.environ["ADMIN_EMAIL"] if r == "admin" else f"{r}@okkax.id") for r in roles}
 
 
 # --------------------------------------------------------- Google auth guard
@@ -38,6 +40,8 @@ class TestGoogleAuthGuard:
         r = requests.post(f"{API}/auth/session", timeout=15)
         assert r.status_code == 400, r.text
 
+    @pytest.mark.skipif(not os.environ.get("RUN_EXTERNAL_INTEGRATION_TESTS"),
+                        reason="requires Emergent OAuth service")
     def test_invalid_session_id_401_no_user_created(self):
         r = requests.post(f"{API}/auth/session", headers={"X-Session-ID": "totally-bogus-nope"}, timeout=15)
         assert r.status_code == 401, f"expected 401 got {r.status_code} {r.text}"
@@ -50,6 +54,7 @@ class TestGoogleAuthGuard:
 
 
 # --------------------------------------------------------- Stripe checkout
+@pytest.mark.skipif(not os.environ.get("STRIPE_API_KEY"), reason="requires Stripe test credentials")
 class TestStripeCheckout:
     session_id = None
     order_id = None
