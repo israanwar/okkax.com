@@ -8,7 +8,7 @@ const SECTIONS = [
   ["live", "Sedang berlangsung", "Event yang panggungnya hidup hari ini"],
   ["this_week", "Minggu ini", "Berlangsung dalam 7 hari ke depan"],
   ["almost_sold_out", "Hampir habis", "Tiket terjual di atas 70%"],
-  ["top_impact", "Event berdampak terbesar", "Aktivitas ekonomi tertinggi di jaringan OKKAX"],
+  ["top_impact", "Event Terbesar", ""],
 ];
 
 function EventCard({ ev, saved, onSave, compactMode }) {
@@ -226,8 +226,7 @@ export default function Discover() {
                 <div className="flex flex-wrap items-end justify-between gap-2">
                   <div>
                     <h2 className="text-base font-semibold md:text-lg">{s.title}</h2>
-                    <p className="text-xs text-zinc-500">{s.sub}</p>
-                  </div>
+                    {s.sub && <p className="text-xs text-zinc-500">{s.sub}</p>}                  </div>
                   <span className="num text-xs text-zinc-500">{num(s.items.length)} event</span>
                 </div>
                 <div className="okx-scroll mt-4 flex gap-4 overflow-x-auto pb-2">
