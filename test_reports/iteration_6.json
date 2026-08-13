@@ -1,0 +1,31 @@
+{
+  "summary": "P0 verification of Discover catalog persistence & idempotency: ALL PASS. GET /api/discover/events returns 31 events (>=12) across 15 cities (>=8) and 11 categories (>=6), no duplicate ids/names, evt-aruna-2026 still present. Every event has a working /api/public/events/{id} detail page. Filters (city, category, free/paid) and text search return correct subsets. /api/economy/map is consistent with Discover (31 events, same 15 cities). Idempotency verified: restarted backend TWICE via supervisorctl and total stayed at exactly 31 (no growth, no duplicates). seed_events.py uses only update_one(..., upsert=True) — no delete_many/drop. seed_data.seed(force=False) short-circuits when users collection is non-empty, so existing DB is never wiped on startup; startup then calls seed_extra_events() to upsert the bulk catalog. Regression pytest suites: /app/backend/tests/test_discover_catalog.py 8/8 PASS; /app/backend/tests/test_iteration6.py 23/23 PASS (persona login, discover shape, filters, economy map, bulk public event, checkout+pay end-to-end on evt-b-nusantara-sound-fest, workspace Event Graph auth flow, AI engines list, Stripe checkout). Frontend /discover UI renders headline stats (Events 31 / Kota 15 / Kategori 11 / Aktivitas Ekonomi Rp180.63 M), '31 event ditemukan' indicator, all four horizontal sections (Sedang berlangsung, Minggu ini, Hampir habis, Event Terbesar) and the 'Semua event' grid with 31 cards showing organizer, headline talent, tiket terjual %, tenant/vendor/sponsor counts, price and Lihat Event / Simpan. No P0/P1 bugs found on the requested feature scope.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/discover stats strip", "issues": ["'Aktivitas Ekonomi Rp180.63 M' — the 'M' suffix is ambiguous in Bahasa Indonesia (Million vs Miliar). Consider explicit 'Miliar' or 'Mrd'. Carried over from iter5, not part of this P0 scope."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_discover_catalog.py",
+    "/app/backend/tests/test_iteration6.py",
+    "/app/test_reports/pytest/iter7_discover.xml",
+    "/app/test_reports/pytest/iter7_regression.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py still >1800 lines and the enriched /discover/events endpoint remains O(events * N) per request (~150 DB round-trips for 31 events). Fine at demo scale but should be batched with a single aggregation pipeline before scaling further.",
+    "Design regressions from iter5 (green emerald status badges on PublicEvent readiness, /juri 'Berfungsi' pills, Workspace Event Graph node/chip status colors) are NOT part of this P0 request and were not re-verified here.",
+    "seed_data.wipe() is still reachable via seed(force=True); ensure it is never invoked from startup or any request-triggered path (currently only from /api/demo/reset which is documented and gated)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (8/8 discover-catalog + 23/23 regression = 31/31)", "frontend": "100% on P0 Discover flow"},
+  "test_credentials": "organizer@okkax.id / Okkax#2026, audience@okkax.id / Okkax#2026 (from /app/memory/test_credentials.md).",
+  "seed_data_creation": "No new seed data. Did NOT call /api/demo/reset. Restarted backend twice via supervisorctl to verify idempotency of seed_extra_events() upserts.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "P0 Discover bug is fully fixed. Idempotency guarantee: /api/discover/events returns exactly 31 events before AND after 2 sequential `sudo supervisorctl restart backend` cycles. Both regression suites (test_discover_catalog.py, test_iteration6.py) are green. Any next agent should keep using these two files as the smoke-test regression pack. Remaining palette/design regressions from iter5 (green status badges on PublicEvent, Juri, BlueprintGraph) are still open — see iteration_5.json action_items.",
+  "rca of the issue": "ROOT CAUSE (already fixed by main agent): startup handler previously only invoked seed_data.seed(force=False), which short-circuits when the users collection has any docs — so on any environment that had ever been seeded before (e.g. production), the 30-event bulk catalog added in seed_events.py never made it into the DB, leaving only evt-aruna-2026 visible. FIX: startup now unconditionally awaits seed_extra_events(), which upserts each event/tier/booth/vendor/budget row by deterministic id (evt-b-<slug>, -tier-, -pkg-, -zone-1, -b{n}), so it is safe to run on every boot. VERIFIED by restarting backend twice and confirming total stays at 31 with no duplicate ids/names."
+}

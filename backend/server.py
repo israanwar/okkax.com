@@ -1809,6 +1809,11 @@ async def startup():
     await db.login_attempts.create_index("identifier")
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
+    # Katalog event demo multi-kota selalu di-upsert (idempotent) agar tidak hilang di DB lama/produksi.
+    from seed_events import seed_extra_events
+    extra = await seed_extra_events()
+    published = await db.events.count_documents({"status": {"$in": ["published", "live"]}})
+    logger.info(f"OKKAX startup catalog upsert: {extra} · published events: {published}")
 
 
 @app.on_event("shutdown")

@@ -53,6 +53,13 @@ Logo: mark X pink pada latar hitam (`LOGO_URL` di `frontend/src/lib/api.js`).
     4 carousel seksi, grid "Semua event", kartu kaya (organizer, talent utama, progress tiket, tenant/vendor/sponsor, ripple).
   - Semua sisa warna hijau/amber (readiness badge, /juri, tiket, checkout) diganti ke token hitam/pink/putih.
 
+  - **Fix P0 katalog Discover hilang (Agu 2026)**: penyebabnya startup hanya menjalankan
+    `seed_data.seed(force=False)` yang berhenti bila DB sudah pernah di-seed, sehingga 30 event katalog
+    tidak pernah masuk ke DB lama/produksi (hanya event Aruna tampil). Sekarang `startup()` di `server.py`
+    SELALU memanggil `seed_extra_events()` yang 100% upsert (tanpa delete_many/drop) dengan id deterministik.
+    Ditambah tes regresi `backend/tests/test_discover_catalog.py` (>=12 published, tanpa duplikat,
+    idempotent saat seed diulang, konsisten dengan /peta dan halaman detail).
+
 ## Backlog
 - P0 Email Nyata: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).: kirim invoice + tiket QR ke email pembeli setelah pembayaran (WAJIB pakai playbook Resend via integration_expert).
 - P1 Lencana Rekam Jejak vendor/worker untuk event yang selesai.

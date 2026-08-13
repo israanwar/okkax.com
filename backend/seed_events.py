@@ -209,28 +209,27 @@ async def seed_extra_events():
                 f"Kota {city} sesuai target audiens"]}, created_at=now_iso())}, upsert=True)
 
         # ticket tiers
-        await db.ticket_tiers.delete_many({"event_id": eid})
         for i, (tname, price, qty) in enumerate(tiers):
             base_ratio = sold_ratio if sold_ratio is not None else (0.62 if i == 0 else 0.34 if i == 1 else 0.18)
             factor = 1.0 if sold_ratio is None else (1.0 if i == 0 else 0.82 if i == 1 else 0.6)
             sold = min(qty, int(qty * base_ratio * factor))
-            await db.ticket_tiers.insert_one(dict(
+            await db.ticket_tiers.update_one({"id": f"{eid}-tier-{i+1}"}, {"$set": dict(
                 id=f"{eid}-tier-{i+1}", event_id=eid, name=tname, ticket_type=tname, price=price,
                 quantity=qty, sold=sold, sale_start="2026-05-01", sale_end=start,
                 benefits=[f"Akses {days} hari", "E-ticket QR"], purchase_limit=5, age_rule="17+",
                 transfer_rule="Dapat dipindahtangankan hingga H-3",
-                refund_rule="Refund penuh hingga H-14", active=True, created_at=now_iso()))
+                refund_rule="Refund penuh hingga H-14", active=True, created_at=now_iso())}, upsert=True)
 
         # sponsor inventory
-        await db.sponsor_packages.delete_many({"event_id": eid})
         for tier, mult, qty in SPONSOR_TIERS:
-            await db.sponsor_packages.insert_one(dict(
-                id=f"{eid}-pkg-{tier.lower().replace(' ', '-')}", event_id=eid, name=tier, tier=tier,
+            pkg_id = f"{eid}-pkg-{tier.lower().replace(' ', '-')}"
+            await db.sponsor_packages.update_one({"id": pkg_id}, {"$set": dict(
+                id=pkg_id, event_id=eid, name=tier, tier=tier,
                 price=int(sponsor_base * mult), quantity=qty, sold=1 if tier == "Main Sponsor" else 0,
                 rights=["Logo Placement", "LED Exposure", "Booth Activation"], exclusivity="Open",
                 deadline=start, deliverables=[{"item": "Logo Placement", "status": "Not Started"}],
                 audience_profile=brief["audience_profile"], estimated_attendance=cap,
-                status="Open", created_at=now_iso()))
+                status="Open", created_at=now_iso())}, upsert=True)
 
         # tenant zone + booth
         zid = f"{eid}-zone-1"
@@ -238,18 +237,16 @@ async def seed_extra_events():
             id=zid, event_id=eid, name="Tenant & Activation Zone", category="Food and Beverage",
             area_sqm=360, slots=12, utilities=["Electricity", "Water"], operating_hours="10:00 - 22:00",
             description=f"Zona tenant {name}.", created_at=now_iso())}, upsert=True)
-        await db.booth_slots.delete_many({"event_id": eid})
         for i in range(12):
-            await db.booth_slots.insert_one(dict(
+            await db.booth_slots.update_one({"id": f"{zid}-b{i+1}"}, {"$set": dict(
                 id=f"{zid}-b{i+1}", event_id=eid, zone_id=zid, zone_name="Tenant & Activation Zone",
                 code=f"TZ-{i+1:02d}", size="3m x 3m", price=6500000, deposit=1300000,
                 electricity_watt=2000, furniture="1 meja, 2 kursi", position=f"Row {chr(65 + i // 4)}-{i % 4 + 1}",
                 status="occupied" if i < 5 else "available",
                 tenant_name="Tenant Demo UMKM" if i < 5 else None,
-                tenant_application_id=None, created_at=now_iso()))
+                tenant_application_id=None, created_at=now_iso())}, upsert=True)
 
         # vendor produksi + headline talent agar kartu Discover kaya konteks
-        await db.event_vendors.delete_many({"event_id": eid})
         vendor_pool = await db.vendors.find({}, {"_id": 0}).sort("id", 1).to_list(50)
         picks = [vendor_pool[(hash(eid) + k * 5) % len(vendor_pool)] for k in range(6)] if vendor_pool else []
         seen = set()
@@ -257,54 +254,59 @@ async def seed_extra_events():
             if v["id"] in seen:
                 continue
             seen.add(v["id"])
-            await db.event_vendors.insert_one(dict(
-                id=nid(), event_id=eid, vendor_id=v["id"], vendor_name=v["name"], category=v["category"],
-                cost=int((v["price_min"] + v["price_max"]) / 2), status="Confirmed", created_at=now_iso()))
+            ven_id = f"evtven-{eid}-{v['id']}"
+            await db.event_vendors.update_one({"id": ven_id}, {"$set": dict(
+                id=ven_id, event_id=eid, vendor_id=v["id"], vendor_name=v["name"], category=v["category"],
+                cost=int((v["price_min"] + v["price_max"]) / 2), status="Confirmed",
+                created_at=now_iso())}, upsert=True)
 
-        await db.event_talents.delete_many({"event_id": eid})
         talent_pool = await db.talents.find({}, {"_id": 0}).sort("id", 1).to_list(20)
         if talent_pool:
             tal = talent_pool[hash(eid) % len(talent_pool)]
             fee = tal["base_fee"]
-            await db.event_talents.insert_one(dict(
+            await db.event_talents.update_one({"id": f"evttal-{eid}"}, {"$set": dict(
                 id=f"evttal-{eid}", event_id=eid, talent_id=tal["id"], talent_name=tal["stage_name"],
                 fee=fee, tax_estimate=int(fee * 0.02), travel=0, accommodation=0, local_transport=2000000,
                 security=0, rider_cost=0, hospitality=2500000,
                 landed_cost=int(fee * 1.02) + 4500000, status="Confirmed",
-                performance_slot=f"{start} 20:00", created_at=now_iso()))
+                performance_slot=f"{start} 20:00", created_at=now_iso())}, upsert=True)
 
         # workforce, budget, funding, risks
-        await db.event_jobs.delete_many({"event_id": eid})
         for role, need, comp in [("Usher", max(6, cap // 250), 275000), ("Security", max(6, cap // 300), 400000),
                                  ("Stagehand", 10, 350000), ("Ticketing Crew", 8, 300000)]:
-            await db.event_jobs.insert_one(dict(
-                id=nid(), event_id=eid, role=role, needed=need, shift="Show day", location=venue["name"],
+            job_id = f"evtjob-{eid}-{role.lower().replace(' ', '-')}"
+            await db.event_jobs.update_one({"id": job_id}, {"$set": dict(
+                id=job_id, event_id=eid, role=role, needed=need, shift="Show day", location=venue["name"],
                 compensation_per_day=comp, days=days, supervisor="Ops Supervisor",
-                required_skills=[role], filled=max(0, need - 3), status="In Progress", created_at=now_iso()))
+                required_skills=[role], filled=max(0, need - 3), status="In Progress",
+                created_at=now_iso())}, upsert=True)
 
-        await db.budget_items.delete_many({"event_id": eid})
         for cat, label, share, state in [("Venue", "Sewa venue & setup", 0.0, "committed"),
                                          ("Production", "Panggung, audio, lighting, LED", 0.32, "committed"),
                                          ("Talent", "Talent & pembicara", 0.22, "estimated"),
                                          ("Marketing", "Campaign & KOL", 0.12, "estimated"),
                                          ("Operations", "Workforce, security, medis", 0.1, "estimated"),
                                          ("Contingency", "Contingency 5%", 0.05, "estimated")]:
-            await db.budget_items.insert_one(dict(
-                id=nid(), event_id=eid, category=cat, label=label,
+            bud_id = f"evtbud-{eid}-{cat.lower()}"
+            await db.budget_items.update_one({"id": bud_id}, {"$set": dict(
+                id=bud_id, event_id=eid, category=cat, label=label,
                 amount=total if cat == "Venue" else int(budget * share), state=state,
-                source="seed", created_at=now_iso()))
+                source="seed", created_at=now_iso())}, upsert=True)
 
-        await db.funding_items.delete_many({"event_id": eid})
-        await db.funding_items.insert_one(dict(
-            id=nid(), event_id=eid, source="Organizer Budget", label="Anggaran penyelenggara",
-            amount=int(budget * 0.55), state="committed", source_type="brief", created_at=now_iso()))
-        await db.funding_items.insert_one(dict(
-            id=nid(), event_id=eid, source="Sponsor Commitments", label="Main Sponsor terkonfirmasi",
-            amount=int(sponsor_base * 0.45), state="committed", source_type="sponsor", created_at=now_iso()))
+        await db.funding_items.update_one({"id": f"evtfund-{eid}-organizer"}, {"$set": dict(
+            id=f"evtfund-{eid}-organizer", event_id=eid, source="Organizer Budget",
+            label="Anggaran penyelenggara", amount=int(budget * 0.55), state="committed",
+            source_type="brief", created_at=now_iso())}, upsert=True)
+        await db.funding_items.update_one({"id": f"evtfund-{eid}-sponsor"}, {"$set": dict(
+            id=f"evtfund-{eid}-sponsor", event_id=eid, source="Sponsor Commitments",
+            label="Main Sponsor terkonfirmasi", amount=int(sponsor_base * 0.45), state="committed",
+            source_type="sponsor", created_at=now_iso())}, upsert=True)
 
-        await db.risks.delete_many({"event_id": eid})
-        for r, sev, mit in [(f"Perizinan {city} belum final", "Medium", "Ajukan izin H-45"),
-                            ("Funding gap belum tertutup", "High", "Percepat closing sponsor & tenant")]:
-            await db.risks.insert_one(dict(id=nid(), event_id=eid, risk=r, severity=sev,
-                                          mitigation=mit, status="Open", created_at=now_iso()))
+        for ri, (r, sev, mit) in enumerate([(f"Perizinan {city} belum final", "Medium", "Ajukan izin H-45"),
+                                            ("Funding gap belum tertutup", "High",
+                                             "Percepat closing sponsor & tenant")]):
+            risk_id = f"evtrisk-{eid}-{ri+1}"
+            await db.risks.update_one({"id": risk_id}, {"$set": dict(
+                id=risk_id, event_id=eid, risk=r, severity=sev, mitigation=mit, status="Open",
+                created_at=now_iso())}, upsert=True)
     return {"events": len(specs), "venues": len(EXTRA_VENUES) + len(BULK_VENUES)}
