@@ -6,8 +6,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-SYSTEM = """You are the OKKAX AI Event Compiler. You convert an event brief into a structured Event Blueprint
-for the Indonesian event economy. Rules:
+SYSTEM = """You are the OKKAX Blueprint Engine. You convert an event brief into a structured Event Blueprint
+for Indonesian live event operations. Rules:
 - NEVER invent confirmed facts, prices, availability, permits, taxes or attendance. Anything numeric you propose
   must be labelled as "Estimasi AI" or "Harga indikatif".
 - Output MUST be a single valid JSON object, no markdown fences, no commentary.
@@ -48,7 +48,7 @@ def _fallback(brief: dict) -> dict:
             {"name": "Pre-Production", "objective": "Kunci talent, venue, dan vendor utama", "duration": "8 minggu"},
             {"name": "Production", "objective": "Load-in, instalasi, rehearsal", "duration": f"{brief.get('setup_days') or 1} hari"},
             {"name": "Show Days", "objective": "Eksekusi run of show", "duration": f"{days} hari"},
-            {"name": "Post-Event", "objective": "Settlement, laporan dampak ekonomi", "duration": "2 minggu"},
+            {"name": "Post-Event", "objective": "Settlement, laporan dampak live event", "duration": "2 minggu"},
         ],
         "workstreams": [
             {"name": "Talent & Rider", "owner_role": "Event Organizer", "description": "Kontrak talent dan pemenuhan rider terstruktur"},

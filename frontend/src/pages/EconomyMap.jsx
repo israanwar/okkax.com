@@ -4,6 +4,7 @@ import { MapPin, Users, Building2, TrendingUp } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, compact, idr, num } from "@/lib/api";
 import MAP from "@/data/indonesia-map.json";
+import CalendarBoard from "@/components/CalendarBoard";
 
 const [LNG0, LNG1, LAT0, LAT1] = MAP.bbox;
 const project = (lat, lng) => ({
@@ -12,7 +13,7 @@ const project = (lat, lng) => ({
 });
 
 const METRICS = [
-  ["Total aktivitas ekonomi", "economic_activity"],
+  ["Total aktivitas event", "economic_activity"],
   ["Total biaya event", "total_cost"],
   ["GMV tiket", "ticket_gmv"],
   ["Nilai sponsor", "sponsor_value"],
@@ -47,17 +48,17 @@ export default function EconomyMap() {
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
         <div className="max-w-3xl">
           <span className="border border-[var(--okx-accent)]/50 px-2.5 py-1 text-[11px] uppercase tracking-[0.2em] accent-text">
-            Economic Ripple Map
+            Live Event Map
           </span>
           <h1 className="editorial mt-5 text-3xl sm:text-5xl">Peta Kota Event</h1>
           <p className="mt-3 text-sm text-zinc-400">
-            Sebaran event OKKAX di seluruh Indonesia beserta dampak ekonominya per kota — biaya event,
+            Sebaran live event OKKAX di seluruh Indonesia beserta aktivitasnya per kota — biaya event,
             GMV tiket, nilai sponsor, pendapatan tenant dan venue, hingga upah tenaga kerja lokal.
           </p>
         </div>
 
         {!data ? (
-          <div className="mt-10 text-sm text-zinc-500" data-testid="map-loading">Memuat peta ekonomi event…</div>
+          <div className="mt-10 text-sm text-zinc-500" data-testid="map-loading">Memuat peta aktivitas live event…</div>
         ) : (
           <>
             <div className="mt-8 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4"
@@ -75,7 +76,7 @@ export default function EconomyMap() {
                 </div>
               ))}
               <div className="bg-[var(--okx-surface)] p-5 sm:col-span-2 lg:col-span-4">
-                <div className="text-xs uppercase tracking-widest text-zinc-500">Total aktivitas ekonomi jaringan</div>
+                <div className="text-xs uppercase tracking-widest text-zinc-500">Total aktivitas live event</div>
                 <div className="num mt-1 text-3xl font-semibold accent-text" data-testid="map-total-activity">
                   {idr(data.totals.economic_activity)}
                 </div>
@@ -94,14 +95,15 @@ export default function EconomyMap() {
             </div>
 
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.55fr_1fr]">
-              <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808]" data-testid="indonesia-map">
-                <div className="pointer-events-none absolute inset-0 opacity-[0.12]"
+              <div className="min-w-0 space-y-6">
+                <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808]" data-testid="indonesia-map">
+                  <div className="pointer-events-none absolute inset-0 opacity-[0.12]"
                   style={{
                     backgroundImage:
                       "linear-gradient(#ffffff14 1px, transparent 1px), linear-gradient(90deg, #ffffff14 1px, transparent 1px)",
                     backgroundSize: "40px 40px",
                   }} />
-                <svg viewBox={`0 0 ${MAP.width} ${MAP.height}`} className="relative block w-full">
+                  <svg viewBox={`0 0 ${MAP.width} ${MAP.height}`} className="relative block w-full">
                   <defs>
                     <radialGradient id="cityGlow">
                       <stop offset="0%" stopColor="#ff2e7e" stopOpacity="0.55" />
@@ -141,11 +143,13 @@ export default function EconomyMap() {
                       </g>
                     );
                   })}
-                </svg>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-4 py-2 text-[11px] text-zinc-500">
-                  <span>Ukuran gelembung mengikuti metrik terpilih · klik kota untuk detail</span>
-                  <span>{data.label}</span>
+                  </svg>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-4 py-2 text-[11px] text-zinc-500">
+                    <span>Ukuran gelembung mengikuti metrik terpilih · klik kota untuk detail</span>
+                    <span>{data.label}</span>
+                  </div>
                 </div>
+                <CalendarBoard mode="public" compact initialCity={activeCity || ""} />
               </div>
 
               <div className="space-y-6">

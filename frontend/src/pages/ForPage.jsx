@@ -7,12 +7,12 @@ const CONTENT = {
     lead: "Ubah satu brief menjadi event yang dapat dieksekusi, dibiayai, dijual, dioperasikan, dan diukur.",
     points: [
       ["Event Studio", "Guided brief dengan autosave, validasi, dan preview sebelum dikompilasi."],
-      ["AI Event Compiler", "Blueprint berisi fase, workstream, requirement, sponsor inventory, tenant zone, ticket recommendation, budget, dan risiko — semua dapat diedit."],
+      ["Blueprint Engine", "Blueprint berisi fase, workstream, requirement, sponsor inventory, tenant zone, ticket recommendation, budget, dan risiko — semua dapat diedit."],
       ["Event Graph", "Setiap komponen terhubung pada satu Event ID dengan status Draft, Pending, Confirmed, Missing, Conflicted, At Risk, Blocked."],
       ["Budget Engine", "Total Event Cost, Confirmed Funding, Funding Gap, projected ticket revenue, dan break-even dihitung otomatis."],
       ["Command Center", "Countdown, readiness, milestone, run of show, incident, dan aktivitas terbaru."],
     ],
-    cta: ["Compile an Event", "/register"],
+    cta: ["Build an Event", "/register"],
   },
   sponsors: {
     title: "For Sponsors",

@@ -31,6 +31,19 @@ def test_no_duplicate_event_ids(discover):
     assert len(names) == len(set(names))
 
 
+def test_every_event_has_a_unique_cover_image(discover):
+    """Kartu Discover tidak boleh menampilkan foto event yang sama berulang kali."""
+    images = [e["hero_image"].split("?", 1)[0] for e in discover["items"]]
+    assert all(images)
+    assert len(images) == len(set(images))
+
+
+def test_every_event_uses_an_indonesian_local_cover(discover):
+    """Discover harus memakai koleksi visual Indonesia yang terkurasi, bukan stok eksternal."""
+    images = [e["hero_image"] for e in discover["items"]]
+    assert all(image.startswith("/assets/discover-indonesia/") for image in images)
+
+
 def test_aruna_event_still_present(discover):
     assert any(e["id"] == "evt-aruna-2026" for e in discover["items"])
 

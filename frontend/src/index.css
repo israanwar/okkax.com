@@ -52,8 +52,8 @@
         margin: 0;
         background: var(--okx-bg);
         color: #fff;
-        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
-        font-feature-settings: "ss01";
+        font-family: "Mulish", system-ui, sans-serif;
+        font-feature-settings: "ss01", "ss02";
         letter-spacing: -0.005em;
         -webkit-font-smoothing: antialiased;
         overflow-x: hidden;
@@ -62,9 +62,10 @@
     h2,
     h3,
     h4 {
-        font-family: "Bricolage Grotesque", "Plus Jakarta Sans", sans-serif;
-        font-weight: 700;
-        letter-spacing: -0.025em;
+        font-family: "Fraunces", "Mulish", serif;
+        font-weight: 600;
+        font-optical-sizing: auto;
+        letter-spacing: -0.012em;
     }
     ::selection {
         background: var(--okx-accent);
@@ -77,22 +78,128 @@
 }
 
 .editorial {
-    font-family: "Bricolage Grotesque", "Plus Jakarta Sans", sans-serif;
-    font-weight: 800;
+    font-family: "Fraunces", "Mulish", serif;
+    font-weight: 600;
     font-optical-sizing: auto;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.018em;
     text-wrap: balance;
 }
 .num {
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-family: "Spline Sans Mono", ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
     letter-spacing: -0.02em;
 }
 .tracking-widest,
 .uppercase {
-    font-family: "Plus Jakarta Sans", sans-serif;
+    font-family: "Mulish", sans-serif;
     font-weight: 600;
+}
+.okx-nav-type {
+    font-family: "Mulish", sans-serif;
+    font-feature-settings: "ss01", "ss03";
+}
+.okx-public-nav {
+    animation: okxNavArrival 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.okx-nav-link {
+    animation: okxNavItemArrival 0.58s cubic-bezier(0.22, 1, 0.36, 1) var(--nav-delay, 0ms) both;
+}
+.okx-nav-link::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    background: var(--okx-accent);
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.okx-nav-link:hover,
+.okx-nav-link:focus-visible {
+    color: #f0e9e5;
+    transform: translateY(-1px);
+}
+.okx-nav-link:hover::after,
+.okx-nav-link:focus-visible::after,
+.okx-nav-link.is-active::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+}
+.okx-nav-cta {
+    animation: okxNavCtaArrival 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+.okkax-logo {
+    contain: layout;
+    transform-origin: left center;
+}
+.okkax-logo-image {
+    animation: okkaxLogoArrival 0.92s cubic-bezier(0.16, 1, 0.3, 1) both;
+    transition: filter 0.3s ease, transform 0.3s ease;
+    will-change: transform, filter;
+}
+.okkax-logo-category {
+    transition: color 0.3s ease;
+}
+.okkax-logo:hover .okkax-logo-image,
+.okkax-logo:focus-visible .okkax-logo-image {
+    animation: okkaxLogoTouch 0.68s cubic-bezier(0.22, 1, 0.36, 1) both;
+    filter: drop-shadow(0 0 9px rgba(255, 46, 126, 0.42));
+}
+.okkax-logo:hover .okkax-logo-category,
+.okkax-logo:focus-visible .okkax-logo-category {
+    color: #a8a3a6;
+}
+.okkax-logo:active .okkax-logo-image {
+    transform: scale(0.96);
+}
+.participant-intro,
+.participant-card {
+    opacity: 0;
+    transform: translateY(18px);
+}
+.participant-network[data-visible="true"] .participant-intro {
+    animation: participantReveal 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.participant-network[data-visible="true"] .participant-card {
+    animation: participantReveal 0.68s cubic-bezier(0.22, 1, 0.36, 1) var(--participant-delay, 0ms) both;
+}
+.participant-card::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--okx-accent);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.participant-card:hover,
+.participant-card:focus-within {
+    background: #151318;
+    scale: 1.008;
+}
+.participant-card:hover::after,
+.participant-card:focus-within::after {
+    transform: scaleX(1);
+}
+.participant-title {
+    font-family: "Mulish", sans-serif;
+    letter-spacing: -0.018em;
+}
+.participant-cta {
+    font-family: "Mulish", sans-serif;
+}
+.okx-mobile-menu {
+    animation: okxMobileMenuArrival 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transform-origin: top center;
+}
+.okx-mobile-link {
+    animation: okxMobileLinkArrival 0.34s cubic-bezier(0.22, 1, 0.36, 1) var(--mobile-delay, 0ms) both;
 }
 button,
 a {
@@ -115,6 +222,102 @@ button:active:not(:disabled) {
 }
 .accent-text {
     color: var(--okx-accent);
+}
+.okx-select-shell {
+    position: relative;
+    display: inline-flex;
+    min-width: 0;
+    isolation: isolate;
+}
+.okx-select-shell--icon .okx-premium-select {
+    padding-left: 2.65rem;
+}
+.okx-premium-select {
+    width: 100%;
+    min-height: 2.75rem;
+    appearance: none;
+    border: 1px solid #333238;
+    border-radius: 0;
+    background: #0d0d0f;
+    color: #f4f4f5;
+    padding: 0 3.25rem 0 0.9rem;
+    font-family: "Mulish", system-ui, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    outline: none;
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+.okx-select-shell:hover .okx-premium-select {
+    border-color: #52525b;
+    background: #111114;
+}
+.okx-select-shell:focus-within .okx-premium-select {
+    border-color: var(--okx-accent);
+    background: #111114;
+    box-shadow: 0 0 0 3px rgba(255, 46, 126, 0.12);
+}
+.okx-select-leading-icon {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    left: 0.95rem;
+    color: #71717a;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: color 0.2s ease;
+}
+.okx-select-divider {
+    position: absolute;
+    z-index: 1;
+    top: 0.65rem;
+    right: 2.45rem;
+    bottom: 0.65rem;
+    width: 1px;
+    background: #2b2a2f;
+    pointer-events: none;
+    transition: background-color 0.2s ease;
+}
+.okx-select-chevron {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: 0.9rem;
+    color: #a1a1aa;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.okx-select-shell:focus-within .okx-select-leading-icon,
+.okx-select-shell:focus-within .okx-select-chevron {
+    color: var(--okx-accent-soft);
+}
+.okx-select-shell:focus-within .okx-select-divider {
+    background: rgba(255, 46, 126, 0.35);
+}
+.okx-select-shell:focus-within .okx-select-chevron {
+    transform: translateY(-50%) rotate(180deg);
+}
+.okx-select-shell--compact .okx-premium-select {
+    min-height: 2.25rem;
+    padding-right: 2.75rem;
+    font-size: 0.75rem;
+}
+.okx-select-shell--compact .okx-select-divider {
+    top: 0.5rem;
+    right: 2.15rem;
+    bottom: 0.5rem;
+}
+.okx-select-shell--compact .okx-select-chevron {
+    right: 0.75rem;
+}
+.discover-stat-panel,
+.discover-filter-panel {
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.18);
 }
 .grain::before {
     content: "";
@@ -147,6 +350,89 @@ button:active:not(:disabled) {
     to {
         opacity: 1;
         transform: none;
+    }
+}
+@keyframes okxNavArrival {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes okxNavItemArrival {
+    from {
+        opacity: 0;
+        transform: translateY(-7px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes okxNavCtaArrival {
+    from {
+        opacity: 0;
+        transform: translateX(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+@keyframes okkaxLogoArrival {
+    0% {
+        opacity: 0;
+        filter: blur(6px);
+        transform: translateX(-18px) scale(0.94);
+    }
+    58% {
+        opacity: 1;
+        filter: blur(0) drop-shadow(0 0 12px rgba(255, 46, 126, 0.35));
+        transform: translateX(2px) scale(1.015);
+    }
+    100% {
+        opacity: 1;
+        filter: none;
+        transform: translateX(0) scale(1);
+    }
+}
+@keyframes okkaxLogoTouch {
+    0% { transform: translateX(0) scale(1); }
+    38% { transform: translateX(4px) scale(1.035); }
+    68% { transform: translateX(-1px) scale(0.995); }
+    100% { transform: translateX(0) scale(1.015); }
+}
+@keyframes participantReveal {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes okxMobileMenuArrival {
+    from {
+        opacity: 0;
+        transform: scaleY(0.94) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1) translateY(0);
+    }
+}
+@keyframes okxMobileLinkArrival {
+    from {
+        opacity: 0;
+        transform: translateX(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
     }
 }
 @media (prefers-reduced-motion: reduce) {

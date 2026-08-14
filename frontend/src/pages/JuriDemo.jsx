@@ -21,7 +21,7 @@ const CAPABILITIES = [
   ["Venue compatibility, vendor matching, workforce", "live"],
   ["Sponsor Exchange & Tenant Exchange (approval → funding)", "live"],
   ["Budget engine, funding gap, break-even, what-if simulator", "live"],
-  ["Ticketing, QR ticket, validasi, Economic Ripple", "live"],
+  ["Ticketing, QR ticket, validasi, Live Event Impact", "live"],
   ["Dokumen PDF: invoice, quotation, payment schedule", "live"],
   ["Pembayaran VA, QRIS, e-wallet, kartu, retail, corporate", "sandbox"],
   ["Kartu via Stripe test mode (kartu uji 4242…)", "sandbox"],
@@ -102,7 +102,7 @@ export default function JuriDemo() {
     ["buy", "Beli Tiket Sandbox", "Checkout VA, QRIS, e-wallet, retail, atau kartu Stripe test mode.", `/events/${ev.id}`],
     ["qr", "Lihat QR Ticket", `${num(N.tickets_sold)} tiket terjual dari ${num(N.ticket_capacity)} kuota.`, "/app/tickets"],
     ["validate", "Validasi Tiket", "Validasi pertama Valid, validasi kedua Already Used.", "/app/validator"],
-    ["ripple", "Lihat Economic Ripple", `Aktivitas ekonomi ${compact(K.economic_activity)} dihitung dari data event.`, `/app/events/${ev.id}/ripple`],
+    ["ripple", "Lihat Live Event Impact", `Aktivitas event ${compact(K.economic_activity)} dihitung dari data operasional.`, `/app/events/${ev.id}/ripple`],
   ];
   const progress = Math.round((done.filter((k) => STEPS.some(([s]) => s === k)).length / STEPS.length) * 100);
 
@@ -125,7 +125,7 @@ export default function JuriDemo() {
         {/* 1 & 2 narrative */}
         <section className="border-b border-[var(--okx-border)] py-14 sm:py-20">
           <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
-            Demo untuk Juri · 3 menit
+            Platform Demo · 3 menit
           </span>
           <Link
             to="/present"
@@ -175,7 +175,7 @@ export default function JuriDemo() {
               ["Total Event Cost", K.total_event_cost, "juri-total-cost"],
               ["Confirmed Funding", K.confirmed_funding, "juri-confirmed-funding"],
               ["Funding Gap", K.funding_gap, "juri-funding-gap"],
-              ["Economic Activity", K.economic_activity, "juri-economic-activity"],
+              ["Event Activity", K.economic_activity, "juri-economic-activity"],
             ].map(([label, value, tid]) => (
               <div key={label} className="bg-[var(--okx-surface)] p-6">
                 <div className="text-[11px] uppercase tracking-wider text-zinc-500">{label}</div>

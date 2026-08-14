@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Check, Pencil, X } from "lucide-react";
 import { api, apiError, idr, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import PremiumSelect from "@/components/PremiumSelect";
+
+const TICKET_TYPES = [
+  "Free Registration", "Invitation", "Early Bird", "Presale", "Regular", "VIP", "VVIP",
+  "Festival", "Seated", "Group", "Corporate Allocation", "Sponsor Allocation",
+  "Community Allocation", "Waiting List",
+];
 
 export function SponsorsTab({ eventId, onChange }) {
   const [packages, setPackages] = useState([]);
@@ -173,9 +181,9 @@ export function TenantsTab({ eventId, onChange }) {
         <h3 className="text-sm font-semibold">Buat tenant zone</h3>
         <div className="mt-3 grid gap-3 sm:grid-cols-5">
           <input data-testid="zone-name-input" placeholder="Nama zona" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none sm:col-span-2" />
-          <select data-testid="zone-category-select" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none">
+          <PremiumSelect data-testid="zone-category-select" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full">
             {["Food and Beverage", "Merchandise", "Fashion", "Beauty", "Technology", "Automotive", "Community", "Creative Product", "UMKM Lokal", "Exhibitor", "Franchise", "Retail Pop-up", "Sponsor Activation"].map((c) => <option key={c}>{c}</option>)}
-          </select>
+          </PremiumSelect>
           <input data-testid="zone-slots-input" type="number" value={form.slots} onChange={(e) => setForm({ ...form, slots: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
           <button data-testid="create-zone-btn" onClick={createZone} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Buat zona</button>
         </div>
@@ -250,6 +258,9 @@ export function TicketsTab({ eventId, event, onChange }) {
   const [tiers, setTiers] = useState([]);
   const [form, setForm] = useState({ name: "", ticket_type: "Regular", price: 250000, quantity: 300 });
   const [publishing, setPublishing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(null);
+  const [savingId, setSavingId] = useState(null);
 
   const load = () => api.get(`/events/${eventId}/ticket-tiers`).then(({ data }) => setTiers(data.items));
   useEffect(() => {
@@ -266,6 +277,55 @@ export function TicketsTab({ eventId, event, onChange }) {
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
+    }
+  };
+  const startEdit = (tier) => {
+    setEditingId(tier.id);
+    setEditForm({
+      name: tier.name,
+      ticket_type: tier.ticket_type,
+      price: tier.price,
+      quantity: tier.quantity,
+    });
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
+  };
+  const saveEdit = async (tier) => {
+    const name = editForm?.name?.trim();
+    const price = Number(editForm?.price);
+    const quantity = Number(editForm?.quantity);
+
+    if (!name) {
+      toast.error("Nama ticket tier wajib diisi");
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      toast.error("Harga tiket tidak boleh negatif");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < Number(tier.sold || 0)) {
+      toast.error(`Kuota minimal ${num(tier.sold)} karena tiket tersebut sudah terjual`);
+      return;
+    }
+
+    setSavingId(tier.id);
+    try {
+      const { data } = await api.patch(`/events/${eventId}/ticket-tiers/${tier.id}`, {
+        name,
+        ticket_type: editForm.ticket_type,
+        price,
+        quantity,
+      });
+      setTiers((current) => current.map((item) => (item.id === tier.id ? data.item : item)));
+      cancelEdit();
+      toast.success(`Tier ${name} diperbarui`);
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setSavingId(null);
     }
   };
   const publish = async () => {
@@ -296,9 +356,9 @@ export function TicketsTab({ eventId, event, onChange }) {
       <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4">
         <div className="grid gap-3 sm:grid-cols-5">
           <input data-testid="tier-name-input" placeholder="Nama tier" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
-          <select data-testid="tier-type-select" value={form.ticket_type} onChange={(e) => setForm({ ...form, ticket_type: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none">
-            {["Free Registration", "Invitation", "Early Bird", "Presale", "Regular", "VIP", "VVIP", "Festival", "Seated", "Group", "Corporate Allocation", "Sponsor Allocation", "Community Allocation", "Waiting List"].map((t) => <option key={t}>{t}</option>)}
-          </select>
+          <PremiumSelect data-testid="tier-type-select" value={form.ticket_type} onChange={(e) => setForm({ ...form, ticket_type: e.target.value })} className="w-full">
+            {TICKET_TYPES.map((t) => <option key={t}>{t}</option>)}
+          </PremiumSelect>
           <input data-testid="tier-price-input" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
           <input data-testid="tier-qty-input" type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
           <button data-testid="create-tier-btn" onClick={create} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Tambah tier</button>
@@ -306,26 +366,137 @@ export function TicketsTab({ eventId, event, onChange }) {
       </div>
 
       <div className="overflow-x-auto border border-[var(--okx-border)] okx-scroll" data-testid="tiers-table">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[900px] text-sm">
           <thead className="text-left text-xs uppercase tracking-wider text-zinc-500">
             <tr className="border-b border-[var(--okx-border)]">
-              <th className="p-3">Tier</th><th className="p-3">Tipe</th><th className="p-3 text-right">Harga</th>
+              <th className="min-w-[230px] p-3">Tier</th><th className="p-3">Tipe</th><th className="p-3 text-right">Harga</th>
               <th className="p-3 text-right">Kuota</th><th className="p-3 text-right">Terjual</th>
               <th className="p-3 text-right">Revenue</th><th className="p-3">Aturan</th>
             </tr>
           </thead>
           <tbody>
-            {tiers.map((t) => (
-              <tr key={t.id} className="border-b border-[var(--okx-border)] last:border-0" data-testid={`tier-row-${t.id}`}>
-                <td className="p-3 font-medium">{t.name}</td>
-                <td className="p-3 text-zinc-400">{t.ticket_type}</td>
-                <td className="num p-3 text-right">{idr(t.price)}</td>
-                <td className="num p-3 text-right">{num(t.quantity)}</td>
-                <td className="num p-3 text-right">{num(t.sold)}</td>
-                <td className="num p-3 text-right">{idr(t.sold * t.price)}</td>
-                <td className="p-3 text-xs text-zinc-500">{t.refund_rule} · {t.transfer_rule}</td>
-              </tr>
-            ))}
+            {tiers.map((t) => {
+              const isEditing = editingId === t.id;
+              const isSaving = savingId === t.id;
+              const inputClass = "w-full min-w-[120px] border border-[var(--okx-accent)] bg-[#0d0d0d] px-2.5 py-2 text-sm text-white outline-none focus:ring-1 focus:ring-[var(--okx-accent)]";
+              return (
+                <tr
+                  key={t.id}
+                  className={`border-b border-[var(--okx-border)] last:border-0 ${isEditing ? "bg-[#ff2e7e0a]" : ""}`}
+                  data-testid={`tier-row-${t.id}`}
+                  onKeyDown={(e) => {
+                    if (!isEditing) return;
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelEdit();
+                    }
+                    if (e.key === "Enter" && e.target.tagName !== "BUTTON") {
+                      e.preventDefault();
+                      saveEdit(t);
+                    }
+                  }}
+                >
+                  <td className="p-3 font-medium">
+                    {isEditing ? (
+                      <div className="min-w-[210px]">
+                        <input
+                          aria-label={`Nama tier ${t.name}`}
+                          data-testid={`edit-tier-name-${t.id}`}
+                          autoFocus
+                          value={editForm.name}
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          className={inputClass}
+                        />
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            aria-label={`Simpan perubahan ${t.name}`}
+                            title="Simpan perubahan"
+                            data-testid={`save-tier-${t.id}`}
+                            onClick={() => saveEdit(t)}
+                            disabled={isSaving}
+                            className="inline-flex h-8 items-center gap-2 bg-[var(--okx-accent)] px-3 text-xs font-semibold text-white hover:bg-[var(--okx-accent-hover)] disabled:opacity-50"
+                          >
+                            <Check size={13} /> {isSaving ? "Menyimpan…" : "Simpan"}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Batalkan perubahan ${t.name}`}
+                            title="Batalkan"
+                            data-testid={`cancel-tier-${t.id}`}
+                            onClick={cancelEdit}
+                            disabled={isSaving}
+                            className="inline-flex h-8 w-8 items-center justify-center border border-[var(--okx-border)] text-zinc-400 hover:border-zinc-500 hover:text-white disabled:opacity-50"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex min-w-[210px] items-center justify-between gap-3">
+                        <span>{t.name}</span>
+                        <button
+                          type="button"
+                          aria-label={`Edit tier ${t.name}`}
+                          title="Edit ticket tier"
+                          data-testid={`edit-tier-${t.id}`}
+                          onClick={() => startEdit(t)}
+                          disabled={Boolean(editingId)}
+                          className="inline-flex h-8 shrink-0 items-center gap-1.5 border border-[var(--okx-border)] px-2.5 text-xs font-semibold text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                        >
+                          <Pencil size={12} /> Edit
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-3 text-zinc-400">
+                    {isEditing ? (
+                      <PremiumSelect
+                        aria-label={`Tipe tier ${t.name}`}
+                        data-testid={`edit-tier-type-${t.id}`}
+                        value={editForm.ticket_type}
+                        onChange={(e) => setEditForm({ ...editForm, ticket_type: e.target.value })}
+                        compact
+                        className="w-full min-w-[120px]"
+                      >
+                        {TICKET_TYPES.map((type) => <option key={type}>{type}</option>)}
+                      </PremiumSelect>
+                    ) : t.ticket_type}
+                  </td>
+                  <td className="num p-3 text-right">
+                    {isEditing ? (
+                      <input
+                        aria-label={`Harga tier ${t.name}`}
+                        data-testid={`edit-tier-price-${t.id}`}
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={editForm.price}
+                        onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                        className={`${inputClass} text-right`}
+                      />
+                    ) : idr(t.price)}
+                  </td>
+                  <td className="num p-3 text-right">
+                    {isEditing ? (
+                      <input
+                        aria-label={`Kuota tier ${t.name}`}
+                        data-testid={`edit-tier-qty-${t.id}`}
+                        type="number"
+                        min={t.sold || 0}
+                        step="1"
+                        value={editForm.quantity}
+                        onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })}
+                        className={`${inputClass} min-w-[90px] text-right`}
+                      />
+                    ) : num(t.quantity)}
+                  </td>
+                  <td className="num p-3 text-right">{num(t.sold)}</td>
+                  <td className="num p-3 text-right">{idr(t.sold * (isEditing ? Number(editForm.price || 0) : t.price))}</td>
+                  <td className="p-3 text-xs text-zinc-500">{t.refund_rule} · {t.transfer_rule}</td>
+                </tr>
+              );
+            })}
             {tiers.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-sm text-zinc-500">Belum ada ticket tier.</td></tr>}
           </tbody>
         </table>

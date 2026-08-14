@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import PremiumSelect from "@/components/PremiumSelect";
 
 const RIDER_STATUSES = ["Matched", "Partially Matched", "Missing", "Conflicted", "Alternative Available", "Requires Confirmation"];
 
@@ -128,14 +129,14 @@ export function TalentRider({ eventId, onChange }) {
                         <td className="p-3 text-xs">{r.mandatory ? "Mandatory" : "Optional"}</td>
                         <td className="num p-3 text-right">{idr(r.estimated_cost)}</td>
                         <td className="p-3">
-                          <select
+                          <PremiumSelect
                             data-testid={`rider-status-${r.id}`}
                             value={r.status}
                             onChange={(e) => patchRider(r.id, { status: e.target.value })}
-                            className="border border-[var(--okx-border)] bg-[#0d0d0d] px-2 py-1 text-xs outline-none"
+                            compact
                           >
                             {RIDER_STATUSES.map((s) => <option key={s}>{s}</option>)}
-                          </select>
+                          </PremiumSelect>
                         </td>
                       </tr>
                     ))}

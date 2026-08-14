@@ -68,16 +68,25 @@ class TestAuth:
         email = f"TEST_org_{int(time.time())}@okkax.id"
         r = requests.post(f"{API}/auth/register", json={
             "email": email, "password": "InitPass#1", "name": "Test Org",
-            "roles": ["organizer", "event_organizer"], "organization_name": "TEST Org",
+            "role": "organizer", "organization_name": "TEST Org",
             "city": "Jakarta", "terms_accepted": True})
         assert r.status_code == 200, r.text
         assert "token" in r.json()
+        assert r.json()["user"]["roles"] == ["organizer"]
 
         # forgot
         r = requests.post(f"{API}/auth/forgot-password", json={"email": email})
         assert r.status_code == 200
         assert "demo_token" not in r.json()
         assert "token" not in r.json()
+
+    def test_register_rejects_multiple_roles(self):
+        email = f"TEST_multi_role_{int(time.time())}@okkax.id"
+        r = requests.post(f"{API}/auth/register", json={
+            "email": email, "password": "InitPass#1", "name": "Test Multi Role",
+            "roles": ["organizer", "sponsor"], "terms_accepted": True})
+        assert r.status_code == 400
+        assert "satu peran" in r.json()["detail"].lower()
 
 
 # ---------- RBAC ----------
