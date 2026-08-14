@@ -9,6 +9,7 @@ import { Blueprint, Graph } from "@/pages/workspace/BlueprintGraph";
 import { TalentRider, VenueTab, VendorTab, WorkforceTab } from "@/pages/workspace/Supply";
 import { SponsorsTab, TenantsTab, TicketsTab } from "@/pages/workspace/Commercial";
 import { BudgetTab, PaymentsTab, RippleTab, OperationsTab } from "@/pages/workspace/Finance";
+import { WorkspaceCalendar } from "@/pages/CalendarEngine";
 
 export default function EventWorkspace() {
   const { eventId, tab = "blueprint" } = useParams();
@@ -47,6 +48,7 @@ export default function EventWorkspace() {
     budget: <BudgetTab key={version} {...props} />,
     payments: <PaymentsTab key={version} {...props} />,
     operations: <OperationsTab key={version} {...props} />,
+    calendar: <WorkspaceCalendar eventId={eventId} />,
     ripple: <RippleTab key={version} {...props} />,
   };
 

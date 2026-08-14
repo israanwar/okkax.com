@@ -34,8 +34,8 @@ export const num = (n) => new Intl.NumberFormat("id-ID").format(Math.round(n || 
 export const DISCLAIMER =
   "Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk keperluan demonstrasi kompetisi.";
 export const SANDBOX_NOTICE = "Mode demo kompetisi. Tidak ada uang nyata yang akan ditagihkan.";
-export const LOGO_URL =
-  "https://static.prod-images.emergentagent.com/jobs/1985fafd-277f-402a-8167-03c38013bc01/images/a09d88f9b5200c374443089417c1f87641399283c8b2ba3e607106eddd6f3fbb.jpeg";
+export const LOGO_URL = "/assets/okkax-wordmark-v3.png";
+export const LOGO_MARK_URL = "/assets/okkax-x-mark-v3.png";
 
 export const DEMO_EVENT_ID = "evt-aruna-2026";
 

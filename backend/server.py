@@ -25,7 +25,7 @@ import seed_data
 
 
 async def refine_blueprint(event_id: str, brief: dict, doc_id: str, engine: str | None = None):
-    """AI Event Compiler runs in background so the UI stays responsive."""
+    """The OKKAX Blueprint Engine runs in background so the UI stays responsive."""
     try:
         bp = await compile_blueprint(brief, engine)
         bp.pop("id", None)
@@ -39,7 +39,7 @@ async def refine_blueprint(event_id: str, brief: dict, doc_id: str, engine: str 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("okkax")
 
-app = FastAPI(title="OKKAX API", description="Event Economy Operating Network")
+app = FastAPI(title="OKKAX API", description="Live Event Operating Network")
 api = APIRouter(prefix="/api")
 
 DISCLAIMER = seed_data.DISCLAIMER
@@ -65,7 +65,8 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
     name: str
-    roles: List[str] = ["audience"]
+    role: str = "audience"
+    roles: Optional[List[str]] = None
     organization_name: Optional[str] = None
     organization_type: Optional[str] = None
     city: Optional[str] = None
@@ -132,9 +133,13 @@ async def register(payload: RegisterIn, response: Response):
     email = payload.email.lower().strip()
     if await db.users.find_one({"email": email}):
         raise HTTPException(status_code=400, detail="Email sudah terdaftar")
-    roles = [r for r in payload.roles if r in ROLE_KEYS] or ["audience"]
-    if "super_admin" in roles or "platform_admin" in roles:
-        roles = ["audience"]
+    requested_roles = payload.roles if payload.roles is not None else [payload.role]
+    if len(requested_roles) != 1:
+        raise HTTPException(status_code=400, detail="Satu akun hanya dapat memiliki satu peran")
+    selected_role = requested_roles[0]
+    if selected_role not in ROLE_KEYS or selected_role in {"super_admin", "platform_admin"}:
+        raise HTTPException(status_code=400, detail="Peran tidak valid")
+    roles = [selected_role]
     org_id = None
     if payload.organization_name:
         org_id = nid()
@@ -914,9 +919,55 @@ async def create_tier(event_id: str, body: Dict[str, Any], user: dict = Depends(
 async def patch_tier(event_id: str, tier_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user, write=True)
-    allowed = {k: v for k, v in body.items() if k in ("name", "price", "quantity", "active", "sale_end", "benefits")}
+    tier = await db.ticket_tiers.find_one({"id": tier_id, "event_id": ev["id"]}, {"_id": 0})
+    if not tier:
+        raise HTTPException(status_code=404, detail="Ticket tier tidak ditemukan")
+
+    allowed = {k: v for k, v in body.items() if k in (
+        "name", "ticket_type", "price", "quantity", "active", "sale_end", "benefits",
+        "purchase_limit", "age_rule", "transfer_rule", "refund_rule",
+    )}
+    if "name" in allowed:
+        allowed["name"] = str(allowed["name"]).strip()
+        if not allowed["name"]:
+            raise HTTPException(status_code=400, detail="Nama ticket tier wajib diisi")
+    if "ticket_type" in allowed:
+        allowed["ticket_type"] = str(allowed["ticket_type"]).strip()
+        if not allowed["ticket_type"]:
+            raise HTTPException(status_code=400, detail="Tipe ticket tier wajib diisi")
+    if "price" in allowed:
+        try:
+            allowed["price"] = int(allowed["price"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Harga tiket harus berupa angka")
+        if allowed["price"] < 0:
+            raise HTTPException(status_code=400, detail="Harga tiket tidak boleh negatif")
+    if "quantity" in allowed:
+        try:
+            allowed["quantity"] = int(allowed["quantity"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Kuota tiket harus berupa angka")
+        if allowed["quantity"] < int(tier.get("sold") or 0):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Kuota tidak boleh lebih kecil dari {int(tier.get('sold') or 0)} tiket yang sudah terjual",
+            )
+    if "purchase_limit" in allowed:
+        try:
+            allowed["purchase_limit"] = int(allowed["purchase_limit"])
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Batas pembelian harus berupa angka")
+        if allowed["purchase_limit"] < 1:
+            raise HTTPException(status_code=400, detail="Batas pembelian minimal 1 tiket")
+
+    allowed["updated_at"] = now_iso()
     await db.ticket_tiers.update_one({"id": tier_id, "event_id": ev["id"]}, {"$set": allowed})
-    return {"ok": True}
+    updated = await db.ticket_tiers.find_one({"id": tier_id, "event_id": ev["id"]}, {"_id": 0})
+    await audit(ev["id"], user, "tier.update", {
+        "tier_id": tier_id,
+        "changes": {k: v for k, v in allowed.items() if k != "updated_at"},
+    })
+    return {"ok": True, "item": updated}
 
 
 @api.post("/events/{event_id}/publish")
@@ -1527,7 +1578,7 @@ CITY_COORDS = {
 
 @api.get("/economy/map")
 async def economy_map():
-    """Sebaran event dan dampak ekonomi per kota untuk peta Indonesia interaktif."""
+    """Sebaran live event dan aktivitasnya per kota untuk peta Indonesia interaktif."""
     events = await db.events.find({"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}},
                                  {"_id": 0}).to_list(300)
     cities: dict = {}
@@ -1734,7 +1785,10 @@ async def admin_users(user: dict = Depends(require_roles("platform_admin"))):
 async def admin_patch_user(user_id: str, body: Dict[str, Any], user: dict = Depends(require_roles("platform_admin"))):
     allowed = {}
     if "roles" in body:
-        allowed["roles"] = [r for r in body["roles"] if r in ROLE_KEYS]
+        requested_roles = body["roles"] if isinstance(body["roles"], list) else []
+        if len(requested_roles) != 1 or requested_roles[0] not in ROLE_KEYS:
+            raise HTTPException(status_code=400, detail="Satu akun hanya dapat memiliki satu peran yang valid")
+        allowed["roles"] = [requested_roles[0]]
     if "suspended" in body:
         allowed["suspended"] = bool(body["suspended"])
     await db.users.update_one({"id": user_id}, {"$set": allowed})
@@ -1781,7 +1835,7 @@ async def demo_state():
     return {"seeded": bool(ev), "event": ev, "disclaimer": DISCLAIMER,
             "accounts": [{"email": e, "name": n, "roles": r} for e, n, r, _ in seed_data.DEMO_USERS] +
                         [{"email": os.environ.get("ADMIN_EMAIL"), "name": "OKKAX Super Admin",
-                          "roles": ["super_admin", "platform_admin"]}]}
+                          "roles": ["super_admin"]}]}
 
 
 @api.get("/health")
@@ -1792,6 +1846,8 @@ async def health():
 app.include_router(api)
 from extras import extras as extras_router  # noqa: E402
 app.include_router(extras_router)
+from calendar_engine import calendar as calendar_router  # noqa: E402
+app.include_router(calendar_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -1808,8 +1864,25 @@ async def startup():
     await db.tickets.create_index("qr_code")
     await db.booth_slots.create_index([("event_id", 1), ("status", 1)])
     await db.login_attempts.create_index("identifier")
+    await db.calendar_entries.create_index([("resource_type", 1), ("resource_id", 1), ("start_at", 1)])
+    await db.calendar_entries.create_index([("event_id", 1), ("start_at", 1)])
+    await db.calendar_entries.create_index([("created_by", 1), ("start_at", 1)])
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
+    users = await db.users.find({}, {"_id": 0, "id": 1, "roles": 1}).to_list(10000)
+    normalized = 0
+    for account in users:
+        current_roles = [role for role in (account.get("roles") or []) if role in ROLE_KEYS]
+        if "super_admin" in current_roles:
+            selected_role = "super_admin"
+        elif "platform_admin" in current_roles:
+            selected_role = "platform_admin"
+        else:
+            selected_role = current_roles[0] if current_roles else "audience"
+        if account.get("roles") != [selected_role]:
+            await db.users.update_one({"id": account["id"]}, {"$set": {"roles": [selected_role]}})
+            normalized += 1
+    logger.info(f"OKKAX single-role normalization: {normalized} account(s) updated")
     # Katalog event demo multi-kota selalu di-upsert (idempotent) agar tidak hilang di DB lama/produksi.
     from seed_events import seed_extra_events
     extra = await seed_extra_events()

@@ -15,7 +15,7 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from core import (db, nid, now_iso, create_access_token, clean, get_current_user, is_admin,
-                  get_event_or_404, assert_event_access, audit, notify)
+                  get_event_or_404, assert_event_access, audit, notify, ROLE_KEYS)
 
 logger = logging.getLogger("okkax.extras")
 extras = APIRouter(prefix="/api")
@@ -45,7 +45,7 @@ async def google_session(request: Request, response: Response):
     if not user:
         user = {
             "id": nid(), "email": email, "password_hash": None, "name": data.get("name") or email,
-            "picture": data.get("picture"), "roles": ["organizer", "event_organizer", "audience"],
+            "picture": data.get("picture"), "roles": ["organizer"],
             "org_id": None, "city": "", "terms_accepted": True, "onboarded": True,
             "auth_provider": "google", "created_at": now_iso(),
         }
@@ -53,8 +53,17 @@ async def google_session(request: Request, response: Response):
         await notify(user["id"], "Selamat datang di OKKAX",
                      "Akun Google Anda terhubung. Mulai dari Event Studio atau demo terpandu.", "success")
     else:
+        existing_roles = [role for role in (user.get("roles") or []) if role in ROLE_KEYS] or ["audience"]
+        if "super_admin" in existing_roles:
+            normalized_roles = ["super_admin"]
+        elif "platform_admin" in existing_roles:
+            normalized_roles = ["platform_admin"]
+        else:
+            normalized_roles = [existing_roles[0]]
         await db.users.update_one({"id": user["id"]},
-                                  {"$set": {"picture": data.get("picture"), "auth_provider": "google"}})
+                                  {"$set": {"picture": data.get("picture"), "auth_provider": "google",
+                                            "roles": normalized_roles}})
+        user["roles"] = normalized_roles
     user = clean(user)
 
     await db.user_sessions.insert_one({
@@ -223,7 +232,7 @@ async def stripe_webhook(request: Request):
 # ------------------------------------------------------------------ role workspaces
 @extras.get("/demo/summary")
 async def demo_summary():
-    """Angka kunci publik untuk halaman Demo untuk Juri — semuanya dari database demo."""
+    """Angka kunci publik untuk halaman Platform Demo — semuanya dari database demo."""
     import seed_data
     from server import compute_budget
 
@@ -454,7 +463,7 @@ def _header(c, title: str, subtitle: str):
     c.setFont("Helvetica-Bold", 15)
     c.drawString(26 * mm, 285.6 * mm, "OKKAX")
     c.setFont("Helvetica", 7.5)
-    c.drawString(60 * mm, 285.6 * mm, "The Event Economy Operating Network")
+    c.drawString(60 * mm, 285.6 * mm, "Live Event Operating Network")
     c.setFillColor(INK)
     c.setFont("Helvetica-Bold", 19)
     c.drawString(15 * mm, 262 * mm, title)

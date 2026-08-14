@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, compact, idr } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import PremiumSelect from "@/components/PremiumSelect";
 
 export function Blueprint({ eventId, event }) {
   const [bp, setBp] = useState(null);
@@ -67,30 +68,30 @@ export function Blueprint({ eventId, event }) {
           <h2 className="text-base font-semibold md:text-lg">AI Event Blueprint</h2>
           <p className="text-xs text-zinc-500" data-testid="blueprint-source">
             Sumber: {bp?.source || "belum dikompilasi"}
-            {bp?.ai_status === "refining" && " · AI Event Compiler sedang menyempurnakan blueprint…"}
+            {bp?.ai_status === "refining" && " · Blueprint Engine sedang menyempurnakan blueprint…"}
             · Semua output AI dapat diedit sebelum dikonfirmasi.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <select
+          <PremiumSelect
             data-testid="ai-engine-select"
             value={engine}
             onChange={(e) => setEngine(e.target.value)}
-            className="border border-[var(--okx-border)] bg-[var(--okx-surface)] px-3 py-2.5 text-xs text-zinc-300 focus:outline-none"
+            compact
           >
             {engines.map((e) => (
               <option key={e.key} value={e.key}>{e.label}</option>
             ))}
-          </select>
+          </PremiumSelect>
           <button data-testid="compile-btn" onClick={compile} disabled={busy} className="bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold disabled:opacity-60">
-            {busy ? "AI Event Compiler bekerja…" : bp ? "Kompilasi ulang" : "Compile Blueprint"}
+            {busy ? "Blueprint Engine bekerja…" : bp ? "Bangun ulang" : "Build Blueprint"}
           </button>
         </div>
       </div>
 
       {!bp ? (
         <div data-testid="blueprint-empty" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-10 text-center text-sm text-zinc-400">
-          Belum ada blueprint. Jalankan AI Event Compiler untuk mengubah brief menjadi Event Blueprint.
+          Belum ada blueprint. Jalankan Blueprint Engine untuk mengubah brief menjadi Event Blueprint.
         </div>
       ) : (
         <div className="space-y-6" data-testid="blueprint-content">

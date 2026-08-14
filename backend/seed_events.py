@@ -23,6 +23,110 @@ IMG = {
     "runway": "https://images.unsplash.com/photo-1613909671501-f9678ffc1d33?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwcnVud2F5JTIwc2hvd3xlbnwwfHx8fDE3ODY1NDE3NDl8MA&ixlib=rb-4.1.0&q=85",
 }
 
+# Satu foto Indonesia untuk satu event. Asset lokal menjaga identitas visual Discover
+# tetap konsisten, cepat, dan tidak kembali bergantung pada stok foto generik.
+EVENT_IMAGE_SOURCES = {
+    "evt-b-nusantara-sound-fest": "/assets/discover-indonesia/nusantara-sound-fest.jpg",
+    "evt-b-surabaya-night-market-live": "/assets/discover-indonesia/surabaya-night-market-live.jpg",
+    "evt-jogja-kuliner": "/assets/discover-indonesia/jogja-rasa-nusantara.jpg",
+    "evt-jkt-esports": "/assets/discover-indonesia/arena-nusantara-esports-finals.jpg",
+    "evt-b-kopi-nusantara-weekend": "/assets/discover-indonesia/kopi-nusantara-weekend.jpg",
+    "evt-surabaya-expo": "/assets/discover-indonesia/surabaya-halal-industry-expo.jpg",
+    "evt-b-manado-seafood-festival": "/assets/discover-indonesia/manado-seafood-festival.jpg",
+    "evt-b-sriwijaya-music-carnival": "/assets/discover-indonesia/sriwijaya-music-carnival.jpg",
+    "evt-b-batam-esports-invitational": "/assets/discover-indonesia/batam-esports-invitational.jpg",
+    "evt-b-bali-wellness-summit": "/assets/discover-indonesia/bali-wellness-summit.jpg",
+    "evt-b-jakarta-fashion-exchange": "/assets/discover-indonesia/jakarta-fashion-exchange.jpg",
+    "evt-b-khatulistiwa-food--craft": "/assets/discover-indonesia/khatulistiwa-food-and-craft.jpg",
+    "evt-b-nusantara-gaming-expo": "/assets/discover-indonesia/nusantara-gaming-expo.jpg",
+    "evt-nusa-tech": "/assets/discover-indonesia/nusantara-tech-summit-2026.jpg",
+    "evt-bandung-indie": "/assets/discover-indonesia/bandung-indie-wave.jpg",
+    "evt-b-surabaya-property-expo": "/assets/discover-indonesia/surabaya-property-expo.jpg",
+    "evt-b-jogja-creative-expo": "/assets/discover-indonesia/jogja-creative-expo.jpg",
+    "evt-semarang-umkm": "/assets/discover-indonesia/semarang-umkm-growth-fair.jpg",
+    "evt-b-malang-indie-showcase": "/assets/discover-indonesia/malang-indie-showcase.jpg",
+    "evt-b-bandung-coffee-conference": "/assets/discover-indonesia/bandung-coffee-conference.jpg",
+    "evt-b-borneo-energy-forum": "/assets/discover-indonesia/borneo-energy-forum.jpg",
+    "evt-b-padang-startup-week": "/assets/discover-indonesia/padang-startup-week.jpg",
+    "evt-bali-fashion": "/assets/discover-indonesia/bali-resort-fashion-week.jpg",
+    "evt-medan-startup": "/assets/discover-indonesia/medan-startup-demo-day.jpg",
+    "evt-b-denpasar-digital-nomad-summit": "/assets/discover-indonesia/denpasar-digital-nomad-summit.jpg",
+    "evt-b-medan-culinary-heritage": "/assets/discover-indonesia/medan-culinary-heritage.jpg",
+    "evt-b-jogja-wedding-showcase": "/assets/discover-indonesia/jogja-wedding-showcase.jpg",
+    "evt-b-bali-art--design-week": "/assets/discover-indonesia/bali-art-and-design-week.jpg",
+    "evt-b-palembang-halal-food-fair": "/assets/discover-indonesia/palembang-halal-food-fair.jpg",
+    "evt-b-semarang-youth-music-camp": "/assets/discover-indonesia/semarang-youth-music-camp.jpg",
+    "evt-aruna-2026": "/assets/discover-indonesia/aruna-bold-live-experience-2026.jpg",
+}
+
+
+def discover_image(event_id: str) -> str:
+    direct = EVENT_IMAGE_SOURCES.get(event_id)
+    if direct:
+        return direct
+    local_images = tuple(EVENT_IMAGE_SOURCES.values())
+    return local_images[stable_index(event_id, len(local_images))]
+
+
+# Jaringan penyelenggara fiktif lintas Indonesia. Seluruh event katalog
+# mengacu ke organisasi database ini, bukan ke nama yang ditanam di frontend.
+PROMOTERS = [
+    ("org-aruna", "PT Aruna Consumer Indonesia", "Makassar"),
+    ("org-pulse-jakarta", "Pulse Jakarta Kreasi", "Jakarta"),
+    ("org-sora-bandung", "Bandung Sora Production", "Bandung"),
+    ("org-liveworks-surabaya", "Surabaya Liveworks", "Surabaya"),
+    ("org-ruang-jogja", "Jogja Ruang Event", "Yogyakarta"),
+    ("org-island-bali", "Bali Island Promotor", "Denpasar"),
+    ("org-panggung-medan", "Medan Panggung Bersama", "Medan"),
+    ("org-spektrum-semarang", "Semarang Spektrum Kreasi", "Semarang"),
+    ("org-sriwijaya-event", "Sriwijaya Event Network", "Palembang"),
+    ("org-borneo-stageworks", "Borneo Stageworks", "Balikpapan"),
+    ("org-bahari-manado", "Manado Bahari Production", "Manado"),
+    ("org-ranah-live", "Ranah Minang Live", "Padang"),
+    ("org-batam-crossborder", "Batam Crossborder Events", "Batam"),
+    ("org-malang-indie", "Malang Indie Movement", "Malang"),
+    ("org-khatulistiwa-creative", "Khatulistiwa Creative House", "Pontianak"),
+    ("org-makassar-promosindo", "Makassar Timur Promosindo", "Makassar"),
+]
+
+BAND_ROOTS = [
+    "Arunika", "Bahari", "Baskara", "Cakrawala", "Derap", "Ekuator", "Fajar", "Gema",
+    "Jelajah", "Khatulistiwa", "Lentera", "Meridian", "Niskala", "Purnama", "Rasi",
+]
+BAND_SUFFIXES = ["Collective", "Syndicate", "Ensemble", "Parade", "Society", "Project", "Orchestra", "Unit"]
+BAND_CITIES = [
+    "Jakarta", "Bandung", "Surabaya", "Yogyakarta", "Denpasar", "Medan", "Semarang",
+    "Palembang", "Balikpapan", "Manado", "Padang", "Batam", "Malang", "Pontianak", "Makassar",
+]
+
+
+def _catalog_talents():
+    """Bangun 120 band katalog dengan ID dan profil deterministik."""
+    talents = []
+    for root_index, root in enumerate(BAND_ROOTS):
+        for suffix_index, suffix in enumerate(BAND_SUFFIXES):
+            ordinal = root_index * len(BAND_SUFFIXES) + suffix_index + 1
+            base_fee = 45000000 + (ordinal % 12) * 12500000
+            talents.append(dict(
+                id=f"tal-catalog-{ordinal:03d}", stage_name=f"{root} {suffix}",
+                management="OKKAX Artist Network", category="Music Band",
+                genre=["Alternative Pop", "Indie Rock", "Electronic Pop", "Folk Fusion"][ordinal % 4],
+                city=BAND_CITIES[(ordinal - 1) % len(BAND_CITIES)], base_fee=base_fee,
+                fee_min=int(base_fee * 0.9), fee_max=int(base_fee * 1.25),
+                fee_status="Indicative Range", team_size=5 + ordinal % 8, duration_min=60,
+                verified=ordinal % 7 != 0,
+                bio=f"Band fiktif asal {BAND_CITIES[(ordinal - 1) % len(BAND_CITIES)]} dalam katalog demo OKKAX.",
+                brand_restrictions=[], age_restriction="All ages",
+                cancellation_policy="Pembatalan H-14: 40% fee", delivery_score=82 + ordinal % 15,
+                portfolio=3 + ordinal % 14, rider_template=[], currency="IDR",
+                availability=["2026-09-01", "2026-10-01", "2026-11-01"], created_at=SEED_TIMESTAMP,
+            ))
+    return talents
+
+
+CATALOG_TALENTS = _catalog_talents()
+
+
 # venue tambahan di berbagai kota
 EXTRA_VENUES = [
     dict(id="ven-jkt-icehall", name="Ice Hall Kemayoran", city="Jakarta", indoor=True,
@@ -133,6 +237,61 @@ BULK_EVENTS = [
     ("Palembang Halal Food Fair", "Trade Expo", "Palembang", "ven-plm-arena", 70, 3, 3600, 820000000, "food2", 20000, 0.12),
 ]
 
+# Tujuh seri di 15 kota menghasilkan 105 event tambahan. Nama, tanggal,
+# promotor, talent, kapasitas, dan nilai disimpan sebagai dokumen event biasa.
+CATALOG_MARKETS = [
+    ("JKT", "Jakarta", "ven-jkt-senayan"),
+    ("BDG", "Bandung", "ven-bdg-dago"),
+    ("SBY", "Surabaya", "ven-sby-pantai"),
+    ("YOG", "Yogyakarta", "ven-jog-hall"),
+    ("DPS", "Denpasar", "ven-dps-beach"),
+    ("MDN", "Medan", "ven-mdn-atrium"),
+    ("SMG", "Semarang", "ven-smg-balai"),
+    ("PLM", "Palembang", "ven-plm-arena"),
+    ("BPN", "Balikpapan", "ven-bpn-hall"),
+    ("MND", "Manado", "ven-mnd-plaza"),
+    ("PDG", "Padang", "ven-pdg-convention"),
+    ("BTM", "Batam", "ven-btm-dome"),
+    ("MLG", "Malang", "ven-mlg-graha"),
+    ("PTK", "Pontianak", "ven-ptk-lapangan"),
+    ("MKS", "Makassar", "ven-mch"),
+]
+CATALOG_SERIES = [
+    ("Soundscape Weekender", "Festival Musik", "concert", 210000, 980000000),
+    ("Resonansi Kota", "Konser", "concert", 185000, 760000000),
+    ("Panggung Nusantara", "Festival Musik", "concert", 240000, 1120000000),
+    ("Skyline Music Fest", "Konser", "concert", 275000, 1380000000),
+    ("Harmoni Lokal Live", "Festival Musik", "concert", 150000, 620000000),
+    ("Indie District", "Konser", "concert", 175000, 710000000),
+    ("Rhythm Archipelago", "Festival Musik", "concert", 225000, 1040000000),
+]
+
+
+def _catalog_specs():
+    """Bangun 105 event musik lintas Indonesia dari snapshot yang stabil."""
+    out = []
+    ordinal = 0
+    for market_index, (city_code, city, venue_id) in enumerate(CATALOG_MARKETS):
+        for series_index, (series, event_type, image_key, base_price, base_budget) in enumerate(CATALOG_SERIES):
+            ordinal += 1
+            start_date = SEED_BASE_DATE + timedelta(days=76 + ordinal * 3)
+            days = 2 if series_index % 3 == 0 else 1
+            capacity = 1800 + ((market_index * 7 + series_index * 5) % 18) * 280
+            budget = base_budget + market_index * 45000000
+            name = f"{city} {series} {start_date.year}"
+            slug = "".join(ch for ch in f"{city}-{series}".lower().replace(" ", "-") if ch.isalnum() or ch == "-")
+            eid = f"evt-catalog-{slug}"
+            code = f"EVT-{city_code}-{start_date.year}-{ordinal + 100:04d}"
+            tiers = [
+                ("Presale", int(base_price * 0.78), int(capacity * 0.34)),
+                ("Regular", base_price, int(capacity * 0.5)),
+                ("VIP", int(base_price * 2.4), max(80, int(capacity * 0.1))),
+            ]
+            sold_ratio = 0.18 + ((ordinal * 11) % 61) / 100
+            out.append((eid, code, name, event_type, city, venue_id, start_date.isoformat(), days,
+                        capacity, budget, IMG[image_key], tiers, int(budget * 0.2), sold_ratio))
+    return out
+
 
 def _bulk_specs():
     """Bangun spesifikasi event massal dari tanggal snapshot yang stabil."""
@@ -156,6 +315,17 @@ SPONSOR_TIERS = [("Presenting Sponsor", 1.0, 1), ("Main Sponsor", 0.45, 2), ("Su
 
 
 async def seed_extra_events():
+    for oid, name, city in PROMOTERS:
+        await db.organizations.update_one({"id": oid}, {"$set": dict(
+            id=oid, name=name, org_type="Event Promoter", city=city, verified=True,
+            address=f"{city}, Indonesia", contact_email=f"contact@{oid}.demo",
+            website=f"https://{oid}.demo",
+            description=f"{name} adalah promotor fiktif dalam katalog demo OKKAX.",
+            currency="IDR", timezone="Asia/Jakarta", language="id",
+            document_status="Verified", created_at=SEED_TIMESTAMP)}, upsert=True)
+    for talent in CATALOG_TALENTS:
+        await db.talents.update_one({"id": talent["id"]}, {"$set": talent}, upsert=True)
+
     for v in EXTRA_VENUES:
         await db.venues.update_one({"id": v["id"]}, {"$set": {**VENUE_DEFAULTS, **v, "created_at": SEED_TIMESTAMP}},
                                    upsert=True)
@@ -168,18 +338,29 @@ async def seed_extra_events():
             "event_types": ["Konser", "Konferensi", "Festival", "Expo"], "image": img,
             "created_at": SEED_TIMESTAMP}}, upsert=True)
 
-    specs = [(*e, None) for e in EXTRA_EVENTS] + _bulk_specs()
-    for (eid, code, name, etype, city, venue_id, start, days, cap, budget, img,
-         tiers, sponsor_base, sold_ratio) in specs:
+    specs = [(*e, None) for e in EXTRA_EVENTS] + _bulk_specs() + _catalog_specs()
+    vendor_pool = await db.vendors.find({}, {"_id": 0}).sort("id", 1).to_list(50)
+    for spec_index, (eid, code, name, etype, city, venue_id, start, days, cap, budget, img,
+                     tiers, sponsor_base, sold_ratio) in enumerate(specs):
+        img = discover_image(eid)
         venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
+        promoter_id, promoter_name, _promoter_city = PROMOTERS[spec_index % len(PROMOTERS)]
+        talent = CATALOG_TALENTS[spec_index % len(CATALOG_TALENTS)]
         _s = date.fromisoformat(start)
         end = (_s + timedelta(days=days - 1)).isoformat()
         ev_status = "live" if _s <= SEED_BASE_DATE <= _s + timedelta(days=days - 1) else "published"
+        # Calendar lifecycle is independent from publication state: an event may
+        # remain publicly documented while it is postponed, rescheduled, or cancelled.
+        calendar_status = (
+            "rescheduled" if _s > SEED_BASE_DATE and spec_index % 31 == 9 else
+            "postponed" if _s > SEED_BASE_DATE and spec_index % 37 == 14 else
+            "cancelled" if _s > SEED_BASE_DATE and spec_index % 43 == 21 else None
+        )
         brief = dict(
             name=name, event_type=etype, city=city, start_date=start, days=days, setup_days=1,
-            capacity=cap, budget=budget, currency="IDR", organizer="PT Aruna Consumer Indonesia",
+            capacity=cap, budget=budget, currency="IDR", organizer=promoter_name,
             objective=f"Menjalankan {etype.lower()} berskala kota di {city} dengan ekosistem OKKAX.",
-            description=f"{name} adalah {etype.lower()} fiktif di {city} untuk demonstrasi jaringan ekonomi event OKKAX.",
+            description=f"{name} adalah {etype.lower()} fiktif di {city} untuk demonstrasi jaringan operasional live event OKKAX.",
             venue_preference="Indoor" if venue.get("indoor") else "Outdoor", ticketed=True,
             sponsor_requirement=True, tenant_requirement=True, workforce_requirement=True,
             audience_profile="Urban professional & creative community", target_age="18-45",
@@ -187,8 +368,10 @@ async def seed_extra_events():
 
         await db.events.update_one({"id": eid}, {"$set": dict(
             id=eid, event_code=code, name=name, event_type=etype, city=city,
-            venue_name=venue["name"], organizer_org_id="org-aruna",
-            organizer_name="PT Aruna Consumer Indonesia", owner_user_id="usr-1", status=ev_status,
+            venue_name=venue["name"], organizer_org_id=promoter_id,
+            organizer_name=promoter_name, owner_user_id="usr-1", status=ev_status,
+            calendar_status=calendar_status, country="Indonesia",
+            original_start_date=(_s - timedelta(days=7)).isoformat() if calendar_status == "rescheduled" else None,
             start_date=start, end_date=end, start_time="10:00" if "Konferensi" in etype or "Seminar" in etype else "16:00",
             timezone="Asia/Jakarta", days=days, setup_days=1, capacity=cap, budget=budget,
             currency="IDR", description=brief["description"], objective=brief["objective"],
@@ -253,7 +436,6 @@ async def seed_extra_events():
                 tenant_application_id=None, created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # vendor produksi + headline talent agar kartu Discover kaya konteks
-        vendor_pool = await db.vendors.find({}, {"_id": 0}).sort("id", 1).to_list(50)
         picks = [vendor_pool[(stable_index(eid, len(vendor_pool)) + k * 5) % len(vendor_pool)] for k in range(6)] if vendor_pool else []
         seen = set()
         for v in picks:
@@ -266,16 +448,13 @@ async def seed_extra_events():
                 cost=int((v["price_min"] + v["price_max"]) / 2), status="Confirmed",
                 created_at=SEED_TIMESTAMP)}, upsert=True)
 
-        talent_pool = await db.talents.find({}, {"_id": 0}).sort("id", 1).to_list(20)
-        if talent_pool:
-            tal = talent_pool[stable_index(eid, len(talent_pool))]
-            fee = tal["base_fee"]
-            await db.event_talents.update_one({"id": f"evttal-{eid}"}, {"$set": dict(
-                id=f"evttal-{eid}", event_id=eid, talent_id=tal["id"], talent_name=tal["stage_name"],
-                fee=fee, tax_estimate=int(fee * 0.02), travel=0, accommodation=0, local_transport=2000000,
-                security=0, rider_cost=0, hospitality=2500000,
-                landed_cost=int(fee * 1.02) + 4500000, status="Confirmed",
-                performance_slot=f"{start} 20:00", created_at=SEED_TIMESTAMP)}, upsert=True)
+        fee = talent["base_fee"]
+        await db.event_talents.update_one({"id": f"evttal-{eid}"}, {"$set": dict(
+            id=f"evttal-{eid}", event_id=eid, talent_id=talent["id"], talent_name=talent["stage_name"],
+            fee=fee, tax_estimate=int(fee * 0.02), travel=0, accommodation=0, local_transport=2000000,
+            security=0, rider_cost=0, hospitality=2500000,
+            landed_cost=int(fee * 1.02) + 4500000, status="Confirmed",
+            performance_slot=f"{start} 20:00", created_at=SEED_TIMESTAMP)}, upsert=True)
 
         # workforce, budget, funding, risks
         for role, need, comp in [("Usher", max(6, cap // 250), 275000), ("Security", max(6, cap // 300), 400000),
@@ -315,4 +494,12 @@ async def seed_extra_events():
             await db.risks.update_one({"id": risk_id}, {"$set": dict(
                 id=risk_id, event_id=eid, risk=r, severity=sev, mitigation=mit, status="Open",
                 created_at=SEED_TIMESTAMP)}, upsert=True)
-    return {"events": len(specs), "venues": len(EXTRA_VENUES) + len(BULK_VENUES)}
+
+    # Event utama dibuat oleh seed_data, tetapi foto Discover-nya tetap dikelola
+    # bersama katalog agar database lama ikut menerima asset Indonesia terbaru.
+    await db.events.update_one(
+        {"id": "evt-aruna-2026"},
+        {"$set": {"hero_image": discover_image("evt-aruna-2026")}},
+    )
+    return {"events": len(specs), "venues": len(EXTRA_VENUES) + len(BULK_VENUES),
+            "promoters": len(PROMOTERS), "talents": len(CATALOG_TALENTS)}

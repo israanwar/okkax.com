@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, apiError, idr, compact, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import PremiumSelect from "@/components/PremiumSelect";
 
 export function BudgetTab({ eventId, onChange }) {
   const [b, setB] = useState(null);
@@ -170,7 +171,7 @@ export function BudgetTab({ eventId, onChange }) {
                     ["Funding gap", compact(s.funding_gap)],
                     ["Break-even tiket", num(s.break_even_tickets)],
                     ["Kapasitas", num(s.capacity)],
-                    ["Dampak ekonomi lokal", compact(s.local_economic_impact)],
+                    ["Dampak event lokal", compact(s.local_economic_impact)],
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between gap-3">
                       <dt className="text-zinc-500">{k}</dt>
@@ -291,13 +292,13 @@ export function RippleTab({ eventId }) {
   useEffect(() => {
     api.get(`/events/${eventId}/ripple`).then(({ data }) => setD(data));
   }, [eventId]);
-  if (!d) return <div className="text-sm text-zinc-500">Menghitung Economic Ripple…</div>;
+  if (!d) return <div className="text-sm text-zinc-500">Menghitung Live Event Impact…</div>;
   const m = d.metrics;
   const money = ["total_event_cost", "total_funding", "ticket_gmv", "sponsor_commitment", "tenant_revenue", "talent_payout", "venue_income", "vendor_payout", "workforce_payout", "total_economic_activity"];
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-base font-semibold md:text-lg">Economic Ripple</h2>
+        <h2 className="text-base font-semibold md:text-lg">Live Event Impact</h2>
         <p className="text-xs text-zinc-500">{d.label}</p>
       </div>
       <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4" data-testid="ripple-metrics">
@@ -371,14 +372,14 @@ export function OperationsTab({ eventId }) {
                   <div className="text-xs text-zinc-500">{s.location} · {s.owner} · dep: {s.dependency}</div>
                 </div>
               </div>
-              <select
+              <PremiumSelect
                 data-testid={`schedule-status-${s.id}`}
                 value={s.status}
                 onChange={(e) => setScheduleStatus(s.id, e.target.value)}
-                className="border border-[var(--okx-border)] bg-[#0d0d0d] px-2 py-1 text-xs outline-none"
+                compact
               >
                 {["Not Started", "In Progress", "Blocked", "Ready", "Completed", "Cancelled"].map((x) => <option key={x}>{x}</option>)}
-              </select>
+              </PremiumSelect>
             </div>
           ))}
           {d.schedule.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">Belum ada rundown.</div>}
@@ -403,9 +404,9 @@ export function OperationsTab({ eventId }) {
             <h3 className="text-sm font-semibold">Laporkan incident</h3>
             <div className="mt-3 grid gap-2 sm:grid-cols-4">
               <input data-testid="incident-desc-input" placeholder="Deskripsi" value={inc.description} onChange={(e) => setInc({ ...inc, description: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none sm:col-span-2" />
-              <select data-testid="incident-severity-select" value={inc.severity} onChange={(e) => setInc({ ...inc, severity: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none">
+              <PremiumSelect data-testid="incident-severity-select" value={inc.severity} onChange={(e) => setInc({ ...inc, severity: e.target.value })} className="w-full">
                 {["Low", "Medium", "High", "Critical"].map((s) => <option key={s}>{s}</option>)}
-              </select>
+              </PremiumSelect>
               <button data-testid="incident-submit-btn" onClick={report} disabled={!inc.description} className="bg-[var(--okx-accent)] px-3 py-2 text-sm font-semibold disabled:opacity-50">Catat</button>
             </div>
           </div>

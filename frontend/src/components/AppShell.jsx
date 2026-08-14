@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Wand2, Network, Mic2, Building2, Wrench, HardHat, Handshake, Store, Ticket,
   Wallet, Activity, LineChart, Bell, Menu, X, ShieldCheck, LogOut, ScanLine, ListOrdered, Settings,
+  CalendarDays,
 } from "lucide-react";
 import { Logo } from "@/components/PublicNav";
 import { useAuth } from "@/context/AuthContext";
@@ -13,6 +14,7 @@ const NAV = {
     ["/app", "Overview", LayoutDashboard],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/events", "Events", ListOrdered],
+    ["/app/calendar", "Calendar", CalendarDays],
     ["/app/me", "My Assignments", Settings],
     ["/app/validator", "Ticket Validator", ScanLine],
     ["/app/tickets", "My Tickets", Ticket],
@@ -20,16 +22,19 @@ const NAV = {
   role: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/me", "My Assignments", Settings],
+    ["/app/calendar", "Calendar", CalendarDays],
     ["/app/tickets", "My Tickets", Ticket],
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/sponsor", "Opportunities", Handshake],
+    ["/app/calendar", "Calendar", CalendarDays],
     ["/app/tickets", "My Tickets", Ticket],
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/tenant", "Opportunities", Store],
+    ["/app/calendar", "Calendar", CalendarDays],
     ["/app/tickets", "My Tickets", Ticket],
   ],
   audience: [
@@ -53,7 +58,8 @@ export const EVENT_TABS = [
   ["budget", "Budget & Simulator", Wallet],
   ["payments", "Payments", Wallet],
   ["operations", "Operations", Activity],
-  ["ripple", "Economic Ripple", LineChart],
+  ["calendar", "Calendar", CalendarDays],
+  ["ripple", "Live Event Impact", LineChart],
 ];
 
 export default function AppShell({ children }) {
@@ -116,7 +122,7 @@ export default function AppShell({ children }) {
               <Menu size={20} />
             </button>
             <Logo small />
-            <span className="hidden text-xs text-zinc-500 sm:block">Event Economy Operating Network</span>
+            <span className="hidden text-xs text-zinc-500 sm:block">Live Event Operating Network</span>
           </div>
           <div className="flex items-center gap-2">
             <Link to="/discover" className="hidden text-sm text-zinc-400 hover:text-white sm:block">Discover</Link>

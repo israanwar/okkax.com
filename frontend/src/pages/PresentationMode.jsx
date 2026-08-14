@@ -108,7 +108,7 @@ export default function PresentationMode() {
         {
           kicker: "02 · Event Brief",
           headline: d.event.name,
-          body: "Satu brief masuk. Inilah titik awal seluruh ekonomi event.",
+          body: "Satu brief masuk. Inilah titik awal seluruh operasi live event.",
           render: () => (
             <div className="grid gap-5 sm:grid-cols-3">
               <Big label="Kota" value={d.brief.city} sub={`${d.brief.days} hari + ${d.brief.setup_days} setup day`} />
@@ -121,9 +121,9 @@ export default function PresentationMode() {
           ),
         },
         {
-          kicker: "03 · Event Compiler",
+          kicker: "03 · Blueprint Engine",
           headline: "Brief berubah menjadi Blueprint, lalu menjadi Event Graph.",
-          body: "AI Event Compiler menyusun fase, workstream, requirement, sponsor inventory, tenant zone, ticket tier, budget, dan risiko — semuanya berlabel dan dapat diedit.",
+          body: "Blueprint Engine menyusun fase, workstream, requirement, sponsor inventory, tenant zone, ticket tier, budget, dan risiko — semuanya berlabel dan dapat diedit.",
           render: () => (
             <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
               {["Event Brief", "AI Event Blueprint", "Event Graph"].map((s, idx) => (
@@ -196,7 +196,7 @@ export default function PresentationMode() {
         },
         {
           kicker: "08 · Dampak",
-          headline: "Satu event menjadi aktivitas ekonomi yang terukur.",
+          headline: "Satu event menjadi dampak live event yang terukur.",
           render: () => (
             <>
               <div className="grid gap-5 sm:grid-cols-3">
@@ -208,12 +208,12 @@ export default function PresentationMode() {
                 <Big label="Ticket GMV" value={compact(d.ripple.ticket_gmv)} sub={idr(d.ripple.ticket_gmv)} />
               </div>
               <div className="mt-6 border border-[var(--okx-accent)] bg-[#140700] p-4">
-                <div className="text-[10px] uppercase tracking-[0.18em] accent-text sm:text-xs">Total aktivitas ekonomi event</div>
+                <div className="text-[10px] uppercase tracking-[0.18em] accent-text sm:text-xs">Total aktivitas live event</div>
                 <div className="num mt-1 text-3xl font-bold sm:text-5xl">{compact(d.ripple.economic_activity)}</div>
               </div>
             </>
           ),
-          actions: [["Buka Economic Ripple", `/app/events/${DEMO_EVENT_ID}/ripple`]],
+          actions: [["Buka Live Event Impact", `/app/events/${DEMO_EVENT_ID}/ripple`]],
         },
       ]
     : [];
@@ -278,19 +278,9 @@ export default function PresentationMode() {
       {/* header */}
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--okx-border)] px-4 py-2.5 sm:px-8">
         <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className="h-7 w-7 shrink-0 border border-[#ffffff1f] bg-[var(--okx-ivory)]"
-            style={{
-              backgroundImage: `url(${LOGO_URL})`,
-              backgroundSize: "158%",
-              backgroundPosition: "50% 16%",
-              backgroundRepeat: "no-repeat",
-            }}
-          />
-          <span className="text-sm font-extrabold tracking-tight sm:text-base">OKKAX</span>
+          <img src={LOGO_URL} alt="OKKAX" className="h-5 w-auto object-contain sm:h-6" />
           <span className="hidden text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:block">
-            Event Economy Operating Network
+            Live Event Operating Network
           </span>
         </div>
         <div className="flex items-center gap-1.5">

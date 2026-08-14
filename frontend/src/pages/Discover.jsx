@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, CalendarDays, Filter, RotateCcw, Users, Store, TrendingUp, Mic2 } from "lucide-react";
+import {
+  Activity,
+  CalendarDays,
+  ChevronDown,
+  CircleDot,
+  Filter,
+  LayoutGrid,
+  MapPin,
+  Mic2,
+  RotateCcw,
+  Search,
+  Store,
+  Tags,
+  TicketCheck,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, compact, idr, num } from "@/lib/api";
 
@@ -10,6 +26,29 @@ const SECTIONS = [
   ["almost_sold_out", "Hampir habis", "Tiket terjual di atas 70%"],
   ["top_impact", "Event Terbesar", ""],
 ];
+
+const FILTER_SELECT_CLASS = "h-14 w-full appearance-none border border-[#333238] bg-[#0c0c0d] pl-11 pr-12 text-sm font-medium text-zinc-100 outline-none transition-[border-color,background-color,box-shadow] duration-200 hover:border-zinc-500 focus:border-[var(--okx-accent)] focus:bg-[#101012] focus:shadow-[0_0_0_3px_rgba(255,46,126,0.12)]";
+
+function FilterSelect({ testId, label, icon: Icon, value, onChange, children }) {
+  return (
+    <label className="group block min-w-0">
+      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500 transition-colors group-focus-within:text-[var(--okx-accent-soft)]">
+        {label}
+      </span>
+      <span className="relative block">
+        <Icon aria-hidden="true" size={17} strokeWidth={1.7}
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[var(--okx-accent)]" />
+        <select data-testid={testId} aria-label={label} value={value} onChange={onChange}
+          className={FILTER_SELECT_CLASS}>
+          {children}
+        </select>
+        <span className="pointer-events-none absolute inset-y-3 right-11 w-px bg-[#2b2a2f] transition-colors group-focus-within:bg-[var(--okx-accent)]/35" />
+        <ChevronDown aria-hidden="true" size={17} strokeWidth={1.8}
+          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-[color,transform] duration-200 group-focus-within:-translate-y-1/2 group-focus-within:rotate-180 group-focus-within:text-white" />
+      </span>
+    </label>
+  );
+}
 
 function EventCard({ ev, saved, onSave, compactMode }) {
   return (
@@ -128,10 +167,21 @@ export default function Discover() {
 
   const byId = useMemo(() => Object.fromEntries(data.items.map((e) => [e.id, e])), [data.items]);
   const hasFilter = Boolean(q || city || category || priceMode);
-  const sections = SECTIONS.map(([key, title, sub]) => ({
-    key, title, sub,
-    items: (data.highlights?.[key] || []).map((id) => byId[id]).filter(Boolean).slice(0, 8),
-  })).filter((s) => s.items.length > 0);
+  const featuredEventIds = new Set();
+  const sections = SECTIONS.map(([key, title, sub]) => {
+    const items = [];
+    for (const id of data.highlights?.[key] || []) {
+      const event = byId[id];
+      if (!event || featuredEventIds.has(event.id)) continue;
+      featuredEventIds.add(event.id);
+      items.push(event);
+      if (items.length === 8) break;
+    }
+    return { key, title, sub, items };
+  }).filter((s) => s.items.length > 0);
+  const catalogueItems = hasFilter
+    ? data.items
+    : data.items.filter((event) => !featuredEventIds.has(event.id));
 
   return (
     <div className="min-h-screen bg-[var(--okx-bg)]">
@@ -140,69 +190,114 @@ export default function Discover() {
         <h1 className="editorial text-3xl sm:text-5xl">OKKAX Discover</h1>
         <p className="mt-3 max-w-2xl text-sm text-zinc-400">
           Event yang sedang berlangsung, akan berlangsung, hampir habis, gratis, dan berbayar — beserta organizer,
-          talent, tenant, sponsor, dan dampak ekonominya. Semua berasal dari data OKKAX.
+          talent, tenant, sponsor, dan skala aktivitas eventnya. Semua berasal dari data OKKAX.
         </p>
 
         {data.totals && (
-          <div className="mt-7 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4"
-            data-testid="discover-network-stats">
-            {[
-              ["Event di jaringan", num(data.totals.events)],
-              ["Kota", num(data.totals.cities)],
-              ["Kategori", num(data.totals.categories)],
-              ["Aktivitas ekonomi", compact(data.totals.economic_ripple)],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-[var(--okx-surface)] p-4">
-                <div className="text-[11px] uppercase tracking-widest text-zinc-500">{label}</div>
-                <div className="num mt-1 text-xl font-semibold">{value}</div>
+          <section className="discover-stat-panel mt-8 overflow-hidden border border-[#302f34] bg-[#101011]"
+            data-testid="discover-network-stats" aria-label="Ringkasan jaringan event">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#29282d] px-5 py-3.5 sm:px-6">
+              <div className="flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+                <Activity size={14} strokeWidth={1.7} className="text-[var(--okx-accent)]" />
+                Network overview
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+                <CircleDot size={12} strokeWidth={2} className="animate-pulse text-[var(--okx-accent)]" />
+                Data katalog aktif
+              </div>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                [LayoutGrid, "Event terhubung", num(data.totals.events), "live & mendatang"],
+                [MapPin, "Kota aktif", num(data.totals.cities), "di seluruh Indonesia"],
+                [Tags, "Format event", num(data.totals.categories), "kategori terkurasi"],
+                [TicketCheck, "Nilai operasional", compact(data.totals.economic_ripple), "dalam jaringan"],
+              ].map(([Icon, label, value, detail], index) => (
+                <div key={label}
+                  className={`group relative px-5 py-5 transition-colors duration-300 hover:bg-[#151418] sm:px-6 ${index > 0 ? "lg:border-l lg:border-[#29282d]" : ""} ${index % 2 ? "sm:border-l sm:border-[#29282d] lg:border-l" : ""} ${index > 1 ? "border-t border-[#29282d] lg:border-t-0" : ""}`}>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">{label}</span>
+                    <Icon size={16} strokeWidth={1.6} className="text-zinc-600 transition-colors group-hover:text-[var(--okx-accent)]" />
+                  </div>
+                  <div className="num mt-3 text-2xl font-semibold tracking-[-0.055em] text-zinc-100 sm:text-[1.7rem]">{value}</div>
+                  <div className="mt-1.5 text-[11px] text-zinc-600">{detail}</div>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
 
-        <div className="mt-6 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4">
-          <div className="flex flex-col gap-3 lg:flex-row">
-            <div className="flex flex-1 items-center gap-2 border border-[var(--okx-border)] bg-[#0d0d0d] px-3">
-              <Search size={16} className="text-zinc-500" />
-              <input data-testid="discover-search-input" value={q} onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && load()} placeholder="Cari event, talent, atau organizer"
-                aria-label="Cari event" className="w-full bg-transparent py-2.5 text-sm outline-none placeholder:text-zinc-600" />
+        <section className="discover-filter-panel mt-7 border border-[#302f34] bg-[#121214] p-4 sm:p-5 lg:p-6"
+          aria-label="Filter event">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
+                <Filter size={13} strokeWidth={1.8} /> Curated discovery
+              </div>
+              <h2 className="mt-1.5 text-base font-semibold text-zinc-100">Temukan event yang tepat</h2>
             </div>
-            <select data-testid="discover-city-select" aria-label="Filter kota" value={city}
-              onChange={(e) => setCity(e.target.value)}
-              className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none">
-              <option value="">Semua kota</option>
-              {data.cities.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select data-testid="discover-category-select" aria-label="Filter kategori" value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none">
-              <option value="">Semua kategori</option>
-              {data.categories.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select data-testid="discover-price-select" aria-label="Filter harga" value={priceMode}
-              onChange={(e) => setPriceMode(e.target.value)}
-              className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none">
-              <option value="">Gratis & berbayar</option>
-              <option value="free">Gratis</option>
-              <option value="paid">Berbayar</option>
-            </select>
-            <button data-testid="discover-apply-btn" onClick={() => load()}
-              className="inline-flex items-center justify-center gap-2 bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold hover:bg-[var(--okx-accent-hover)]">
-              <Filter size={15} /> Terapkan
-            </button>
-            <button data-testid="discover-reset-btn" onClick={reset}
-              className="inline-flex items-center justify-center gap-2 border border-[var(--okx-border)] px-4 py-2.5 text-sm text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white">
-              <RotateCcw size={15} /> Reset filter
-            </button>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
-            <span data-testid="discover-result-count" className="num text-zinc-300">
-              {num(data.items.length)} event ditemukan
+            <span data-testid="discover-result-count"
+              className="inline-flex h-8 items-center gap-2 border border-[#343238] bg-[#0c0c0d] px-3 text-xs text-zinc-400">
+              <span className="num font-semibold text-white">{num(data.items.length)}</span>
+              event ditemukan
             </span>
-            {hasFilter && <span>· filter aktif: {[city, category, priceMode, q].filter(Boolean).join(" · ")}</span>}
           </div>
-        </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-12 xl:items-end">
+            <label className="group block min-w-0 sm:col-span-2 xl:col-span-4">
+              <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500 transition-colors group-focus-within:text-[var(--okx-accent-soft)]">
+                Pencarian
+              </span>
+              <span className="relative block">
+                <Search aria-hidden="true" size={18} strokeWidth={1.7}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[var(--okx-accent)]" />
+                <input data-testid="discover-search-input" value={q} onChange={(e) => setQ(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && load()} placeholder="Nama event, talent, atau organizer"
+                  aria-label="Cari event" className="h-14 w-full border border-[#333238] bg-[#0c0c0d] pl-11 pr-4 text-sm font-medium text-zinc-100 outline-none transition-[border-color,background-color,box-shadow] duration-200 placeholder:font-normal placeholder:text-zinc-600 hover:border-zinc-500 focus:border-[var(--okx-accent)] focus:bg-[#101012] focus:shadow-[0_0_0_3px_rgba(255,46,126,0.12)]" />
+              </span>
+            </label>
+            <div className="xl:col-span-2">
+              <FilterSelect testId="discover-city-select" label="Kota" icon={MapPin} value={city}
+                onChange={(e) => setCity(e.target.value)}>
+                <option value="">Semua kota</option>
+                {data.cities.map((c) => <option key={c} value={c}>{c}</option>)}
+              </FilterSelect>
+            </div>
+            <div className="xl:col-span-3">
+              <FilterSelect testId="discover-category-select" label="Kategori" icon={Tags} value={category}
+                onChange={(e) => setCategory(e.target.value)}>
+                <option value="">Semua kategori</option>
+                {data.categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </FilterSelect>
+            </div>
+            <div className="xl:col-span-3">
+              <FilterSelect testId="discover-price-select" label="Akses tiket" icon={TicketCheck} value={priceMode}
+                onChange={(e) => setPriceMode(e.target.value)}>
+                <option value="">Gratis & berbayar</option>
+                <option value="free">Gratis</option>
+                <option value="paid">Berbayar</option>
+              </FilterSelect>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-col justify-between gap-3 border-t border-[#29282d] pt-5 sm:flex-row sm:items-center">
+            <div className="min-h-5 text-xs text-zinc-500">
+              {hasFilter ? (
+                <span>Filter aktif <span className="mx-2 text-zinc-700">/</span>
+                  <span className="font-medium text-zinc-300">{[city, category, priceMode, q].filter(Boolean).join(" · ")}</span>
+                </span>
+              ) : "Tampilkan seluruh event dalam jaringan OKKAX"}
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <button data-testid="discover-reset-btn" onClick={reset}
+                className="inline-flex h-11 items-center justify-center gap-2 border border-[#38363c] bg-transparent px-5 text-sm font-semibold text-zinc-400 hover:border-zinc-500 hover:bg-[#18171a] hover:text-white">
+                <RotateCcw size={15} strokeWidth={1.8} /> Reset
+              </button>
+              <button data-testid="discover-apply-btn" onClick={() => load()}
+                className="inline-flex h-11 items-center justify-center gap-2 bg-[var(--okx-accent)] px-6 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(255,46,126,0.18)] hover:-translate-y-0.5 hover:bg-[var(--okx-accent-hover)] hover:shadow-[0_14px_34px_rgba(255,46,126,0.28)]">
+                <Filter size={15} strokeWidth={1.9} /> Terapkan filter
+              </button>
+            </div>
+          </div>
+        </section>
 
         {loading ? (
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -239,11 +334,13 @@ export default function Discover() {
               </section>
             ))}
 
-            <section className="mt-14" data-testid="discover-all-section">
+            {catalogueItems.length > 0 && <section className="mt-14" data-testid="discover-all-section">
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
-                  <h2 className="text-base font-semibold md:text-lg">Semua event</h2>
-                  <p className="text-xs text-zinc-500">Seluruh event terpublikasi di jaringan OKKAX</p>
+                  <h2 className="text-base font-semibold md:text-lg">{hasFilter ? "Hasil event" : "Event lainnya"}</h2>
+                  <p className="text-xs text-zinc-500">
+                    {hasFilter ? "Event yang sesuai dengan filter Anda" : "Event terpublikasi lain di jaringan OKKAX"}
+                  </p>
                 </div>
                 <span className="flex items-center gap-3 text-xs text-zinc-500">
                   <span className="inline-flex items-center gap-1"><Users size={12} /> organizer terverifikasi</span>
@@ -251,11 +348,11 @@ export default function Discover() {
                 </span>
               </div>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {data.items.map((ev) => (
+                {catalogueItems.map((ev) => (
                   <EventCard key={ev.id} ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} />
                 ))}
               </div>
-            </section>
+            </section>}
           </>
         )}
       </div>

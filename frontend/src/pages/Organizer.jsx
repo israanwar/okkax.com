@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus, Sparkles } from "lucide-react";
 import { api, apiError, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
 
 export function Overview() {
@@ -75,10 +76,10 @@ export function Overview() {
 
       {ripple && (
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Economic Ripple — event demo</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Live Event Impact — event demo</h2>
           <div className="mt-3 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Total economic activity", compact(ripple.total_economic_activity)],
+              ["Total event activity", compact(ripple.total_economic_activity)],
               ["Businesses activated", num(ripple.businesses_activated)],
               ["Workers", num(ripple.workers)],
               ["Ticket GMV", compact(ripple.ticket_gmv)],
@@ -214,13 +215,13 @@ export function EventStudio() {
           <label key={k} className={`block ${["description", "objective", "notes"].includes(k) ? "sm:col-span-2" : ""}`}>
             <span className="text-xs uppercase tracking-wider text-zinc-500">{FIELD_LABEL[k]}</span>
             {k === "event_type" ? (
-              <select data-testid={`studio-${k}-input`} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none">
+              <PremiumSelect data-testid={`studio-${k}-input`} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full">
                 {EVENT_TYPES.map((t) => <option key={t}>{t}</option>)}
-              </select>
+              </PremiumSelect>
             ) : k === "production_standard" || k === "attendance_format" || k === "venue_preference" ? (
-              <select data-testid={`studio-${k}-input`} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none">
+              <PremiumSelect data-testid={`studio-${k}-input`} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full">
                 {(k === "production_standard" ? ["Lean", "Balanced", "Premium"] : k === "attendance_format" ? ["Offline", "Hybrid", "Virtual"] : ["Indoor", "Outdoor"]).map((t) => <option key={t}>{t}</option>)}
-              </select>
+              </PremiumSelect>
             ) : ["description", "objective", "notes", "audience_profile"].includes(k) ? (
               <textarea data-testid={`studio-${k}-input`} rows={2} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none focus:border-[var(--okx-accent)]" />
             ) : (
@@ -246,7 +247,7 @@ export function EventStudio() {
           </button>
         ) : (
           <button data-testid="studio-submit-btn" onClick={submit} disabled={busy} className="bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold disabled:opacity-60">
-            {busy ? "AI Event Compiler bekerja…" : "Submit for compilation"}
+            {busy ? "Blueprint Engine bekerja…" : "Build Event Blueprint"}
           </button>
         )}
         <span className="self-center text-xs text-zinc-500">Autosave aktif</span>

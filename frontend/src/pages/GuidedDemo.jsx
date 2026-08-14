@@ -6,7 +6,7 @@ import { DEMO_EVENT_ID, DISCLAIMER } from "@/lib/api";
 
 const STEPS = [
   ["Event Brief", "Brief Aruna Bold Live Experience 2026: product launch + music festival, Makassar, 2 hari, 2.000 pengunjung, anggaran Rp2.500.000.000.", `/app/events/${DEMO_EVENT_ID}/blueprint`],
-  ["AI Event Blueprint", "AI Event Compiler menyusun fase, workstream, requirement, sponsor inventory, tenant zone, ticket recommendation, budget, dan risiko. Semua dapat diedit.", `/app/events/${DEMO_EVENT_ID}/blueprint`],
+  ["Event Blueprint", "Blueprint Engine menyusun fase, workstream, requirement, sponsor inventory, tenant zone, ticket recommendation, budget, dan risiko. Semua dapat diedit.", `/app/events/${DEMO_EVENT_ID}/blueprint`],
   ["Event Graph", "Satu Event ID menghubungkan seluruh node: talent, rider, venue, vendor, sponsor, tenant, workforce, ticket tier, budget, funding, risiko, payment.", `/app/events/${DEMO_EVENT_ID}/graph`],
   ["Talent", "Aksara Band dengan base fee Rp400.000.000 dan tim 18 orang dipilih dari talent network.", `/app/events/${DEMO_EVENT_ID}/talent`],
   ["Structured Rider", "Rider menjadi data terstruktur 17 kategori dengan status compatibility dan biaya. Landed Talent Cost dihitung otomatis.", `/app/events/${DEMO_EVENT_ID}/talent`],
@@ -20,7 +20,7 @@ const STEPS = [
   ["Sandbox Payment", "Checkout dengan Virtual Account, QRIS, e-wallet, kartu, atau retail outlet. Tidak ada uang nyata.", `/events/${DEMO_EVENT_ID}`],
   ["QR Ticket", "Nomor tiket dan QR unik diterbitkan, inventory tier berkurang, revenue organizer diperbarui.", "/app/tickets"],
   ["Ticket Validation", "Validasi pertama Valid, validasi kedua Already Used.", "/app/validator"],
-  ["Economic Ripple", "Dampak ekonomi dihitung dari biaya, funding, GMV tiket, payout, jumlah bisnis, pekerja, dan room nights.", `/app/events/${DEMO_EVENT_ID}/ripple`],
+  ["Live Event Impact", "Dampak live event dihitung dari biaya, funding, GMV tiket, payout, jumlah bisnis, pekerja, dan room nights.", `/app/events/${DEMO_EVENT_ID}/ripple`],
 ];
 
 export default function GuidedDemo() {
@@ -37,7 +37,7 @@ export default function GuidedDemo() {
           </Link>
         </div>
         <p className="mt-3 text-sm text-zinc-400">
-          16 langkah dari brief hingga Economic Ripple. Gunakan akses sekali klik persona Penyelenggara
+          16 langkah dari ide pertama hingga showtime. Gunakan akses sekali klik persona Penyelenggara
           pada halaman Sign in untuk mengikuti setiap langkah di workspace.
         </p>
 

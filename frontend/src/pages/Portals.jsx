@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
+import PremiumSelect from "@/components/PremiumSelect";
 
 export function SponsorPortal() {
   const [ops, setOps] = useState([]);
@@ -171,9 +172,9 @@ export function TenantPortal() {
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-4">
             <input data-testid="tenant-business-input" placeholder="Nama bisnis" value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
-            <select data-testid="tenant-category-select" value={form.product_category} onChange={(e) => setForm({ ...form, product_category: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none">
+            <PremiumSelect data-testid="tenant-category-select" value={form.product_category} onChange={(e) => setForm({ ...form, product_category: e.target.value })} className="w-full">
               {["Food and Beverage", "Merchandise", "Fashion", "Beauty", "Technology", "Automotive", "Community", "Creative Product", "UMKM Lokal", "Exhibitor", "Franchise", "Retail Pop-up"].map((c) => <option key={c}>{c}</option>)}
-            </select>
+            </PremiumSelect>
             <input data-testid="tenant-power-input" type="number" value={form.power_watt} onChange={(e) => setForm({ ...form, power_watt: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
             <button data-testid="tenant-apply-btn" onClick={apply} disabled={!form.business_name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Kirim aplikasi</button>
           </div>

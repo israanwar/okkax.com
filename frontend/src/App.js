@@ -20,6 +20,7 @@ import RoleWorkspace from "@/pages/RoleWorkspace";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 import JuriDemo from "@/pages/JuriDemo";
 import PresentationMode from "@/pages/PresentationMode";
+import { PublicCalendar, WorkspaceCalendar } from "@/pages/CalendarEngine";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
@@ -33,6 +34,7 @@ function RouterBody() {
             <Route path="/discover" element={<Discover />} />
             <Route path="/peta" element={<EconomyMap />} />
             <Route path="/map" element={<EconomyMap />} />
+            <Route path="/calendar" element={<PublicCalendar />} />
             <Route path="/events/:id" element={<PublicEvent />} />
             <Route path="/for/:audience" element={<ForPage />} />
             <Route path="/demo" element={<GuidedDemo />} />
@@ -48,6 +50,7 @@ function RouterBody() {
             <Route path="/app" element={shell(<Overview />)} />
             <Route path="/app/studio" element={shell(<EventStudio />)} />
             <Route path="/app/events" element={shell(<EventsList />)} />
+            <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
             <Route path="/app/events/:eventId/:tab" element={shell(<EventWorkspace />)} />
             <Route path="/app/tickets" element={shell(<MyTickets />)} />
             <Route path="/app/orders" element={shell(<MyOrders />)} />

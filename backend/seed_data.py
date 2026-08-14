@@ -29,7 +29,7 @@ async def upsert_seed(collection: str, document: dict):
         upsert=True,
     )
 
-HERO = "https://images.unsplash.com/photo-1780703913917-c605a6f260d1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwyfHxtYXNzaXZlJTIwY29uY2VydCUyMGNyb3dkJTIwY2luZW1hdGljfGVufDB8fHx8MTc4NjUyMzE4N3ww&ixlib=rb-4.1.0&q=85"
+HERO = "/assets/discover-indonesia/aruna-bold-live-experience-2026.jpg"
 HERO2 = "https://images.unsplash.com/photo-1674507738101-b4dbe86beea7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHwxfHxtYXNzaXZlJTIwY29uY2VydCUyMGNyb3dkJTIwY2luZW1hdGljfGVufDB8fHx8MTc4NjUyMzE4N3ww&ixlib=rb-4.1.0&q=85"
 HERO3 = "https://images.unsplash.com/photo-1783979384797-7a5d2ad23fc8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNTl8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwY29ycG9yYXRlJTIwZXZlbnQlMjBzdGFnZXxlbnwwfHx8fDE3ODY1MjMxODd8MA&ixlib=rb-4.1.0&q=85"
 
@@ -45,7 +45,7 @@ RIDER_TEMPLATE = [
     ("Catering", "Meal crew & talent 3 kali", 60, "Halal, vegetarian option", True, 21000000),
     ("Hospitality", "Beverage & fruit platter", 1, "Tanpa alkohol", True, 5000000),
     ("Accommodation", "Hotel 4 bintang, twin & single", 12, "2 malam, breakfast included", True, 48000000),
-    ("Flights", "Penerbangan CGK - UPG", 18, "Ekonomi, bagasi 30kg", True, 63000000),
+    ("Flights", "Penerbangan CGK - UPG", 18, "Kelas standar, bagasi 30kg", True, 63000000),
     ("Baggage", "Extra baggage equipment", 6, "Instrumen musik", False, 9000000),
     ("Local Transport", "Hiace + van + truck", 4, "Standby 3 hari", True, 24000000),
     ("Security", "Personal security talent", 6, "Backstage & artist movement", True, 12000000),
@@ -68,7 +68,7 @@ TALENTS = [
     dict(id="tal-rani", stage_name="Rani Prawira", management="Independen", category="Speaker",
          genre="Brand & Consumer Strategy", city="Jakarta", base_fee=45000000, fee_min=35000000, fee_max=60000000,
          fee_status="Custom Quotation", team_size=2, duration_min=45, verified=True,
-         bio="Pembicara fiktif bidang strategi brand dan consumer economy.", brand_restrictions=[],
+         bio="Pembicara fiktif bidang strategi brand dan perilaku konsumen.", brand_restrictions=[],
          age_restriction="All ages", cancellation_policy="Pembatalan H-7: 25% fee", delivery_score=91, portfolio=12),
     dict(id="tal-dimas", stage_name="Dimas Arka", management="Voice Republic", category="Host / MC",
          genre="Bilingual MC", city="Makassar", base_fee=25000000, fee_min=20000000, fee_max=35000000,
@@ -155,11 +155,11 @@ WORKERS = [
 ]
 
 DEMO_USERS = [
-    ("organizer@okkax.id", "Aruna Brand Team", ["organizer", "event_organizer"], "org-aruna"),
+    ("organizer@okkax.id", "Aruna Brand Team", ["organizer"], "org-aruna"),
     ("sponsor@okkax.id", "Sentra Digital Pay", ["sponsor"], "org-sentra"),
     ("tenant@okkax.id", "Kopi Rakit Makassar", ["tenant"], "org-koparakit"),
     ("audience@okkax.id", "Putri Amelia", ["audience"], None),
-    ("talent@okkax.id", "Aksara Band Management", ["talent", "talent_management"], "org-nusantara"),
+    ("talent@okkax.id", "Aksara Band Management", ["talent_management"], "org-nusantara"),
     ("venue@okkax.id", "Makassar Convention Hall", ["venue_manager"], "org-mch"),
     ("vendor@okkax.id", "Sonic Timur Audio", ["vendor"], "org-sonic"),
     ("worker@okkax.id", "Andi Saputra", ["worker"], None),
@@ -204,7 +204,7 @@ async def seed(force: bool = False):
 
     await upsert_seed("users", dict(
         id="usr-admin", email=admin_email, password_hash=hash_password(admin_pwd), name="OKKAX Super Admin",
-        roles=["super_admin", "platform_admin"], org_id=None, city="Jakarta", phone="+62-000-0000",
+        roles=["super_admin"], org_id=None, city="Jakarta", phone="+62-000-0000",
         terms_accepted=True, onboarded=True, created_at=SEED_TIMESTAMP))
 
     for i, (email, name, roles, org) in enumerate(DEMO_USERS):
