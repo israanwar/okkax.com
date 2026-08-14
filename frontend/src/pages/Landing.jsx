@@ -967,8 +967,8 @@ export default function Landing() {
               <span className="accent-text xl:whitespace-nowrap">Every moving part.</span>
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
-              OKKAX menghubungkan setiap pihak, mitra, proses, dan pembayaran di balik live event
-              dalam satu jaringan operasional.
+              Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
+              setiap detail di balik pertunjukan hidup Indonesia.
             </p>
             <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
               <Link
