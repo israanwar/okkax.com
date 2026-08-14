@@ -155,6 +155,72 @@
 .okkax-logo:active .okkax-logo-image {
     transform: scale(0.96);
 }
+
+/* Footer social tiles — "Stage Spotlight" hover metafora lampu panggung.
+   Tiga lapisan berjalan bersamaan: lift (translateY -4px), radial glow
+   pink di belakang tile, dan scale icon 1.08x. Semua mengikuti curve
+   `cubic-bezier(0.22, 1, 0.36, 1)` yang sama dengan animasi OKKAX lain. */
+.okx-social-tile {
+    position: relative;
+    isolation: isolate;
+    transition:
+        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.24s ease,
+        color 0.24s ease,
+        box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.okx-social-tile::before {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    z-index: -1;
+    background: radial-gradient(circle at center,
+        rgba(255, 46, 126, 0.55) 0%,
+        rgba(255, 46, 126, 0.18) 42%,
+        transparent 72%);
+    opacity: 0;
+    filter: blur(10px);
+    pointer-events: none;
+    transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.okx-social-tile > svg {
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.okx-social-tile:hover,
+.okx-social-tile:focus-visible {
+    transform: translateY(-4px);
+    border-color: var(--okx-accent);
+    color: var(--okx-accent);
+    box-shadow: 0 14px 32px -14px rgba(255, 46, 126, 0.6);
+    outline: none;
+}
+.okx-social-tile:hover::before,
+.okx-social-tile:focus-visible::before {
+    opacity: 1;
+}
+.okx-social-tile:hover > svg,
+.okx-social-tile:focus-visible > svg {
+    transform: scale(1.08);
+}
+.okx-social-tile:active {
+    transform: translateY(-2px);
+}
+@media (prefers-reduced-motion: reduce) {
+    .okx-social-tile,
+    .okx-social-tile::before,
+    .okx-social-tile > svg {
+        transition: none;
+    }
+    .okx-social-tile:hover,
+    .okx-social-tile:focus-visible {
+        transform: none;
+    }
+    .okx-social-tile:hover > svg,
+    .okx-social-tile:focus-visible > svg {
+        transform: none;
+    }
+}
+
 .participant-intro,
 .participant-card {
     opacity: 0;

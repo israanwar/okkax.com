@@ -232,20 +232,20 @@ export function Footer() {
           <FooterLinks title="Access" links={[["Build an Event", "/register"], ["Sign In", "/login"]]} />
         </div>
 
-        <div className="flex flex-col justify-between gap-4 border-t border-[var(--okx-border)] pt-6 sm:flex-row sm:items-center">
-          <div className="text-xs text-zinc-500">
-            Dibuat oleh{" "}
+        <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] py-8 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <span>Dibuat oleh</span>
             <a
               href="https://www.instagram.com/okkarhys"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-zinc-300 transition-colors hover:text-[var(--okx-accent)]"
+              className="font-medium tracking-tight text-zinc-200 transition-colors hover:text-[var(--okx-accent)]"
               data-testid="footer-creator-link"
             >
               Isra Anwar
             </a>
           </div>
-          <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-5">
+          <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2.5">
             {SOCIAL_LINKS.map(({ label, href, Icon }) => (
               <a
                 key={label}
@@ -255,9 +255,9 @@ export function Footer() {
                 aria-label={label}
                 title={label}
                 data-testid={`footer-social-${label.split(" ")[0].toLowerCase()}`}
-                className="inline-flex text-zinc-500 transition-colors hover:text-[var(--okx-accent)] focus-visible:text-[var(--okx-accent)]"
+                className="okx-social-tile inline-flex h-10 w-10 items-center justify-center border border-[var(--okx-border)] text-zinc-400"
               >
-                <Icon size={17} />
+                <Icon size={18} />
               </a>
             ))}
           </nav>
