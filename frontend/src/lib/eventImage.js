@@ -1,113 +1,98 @@
-// Seed backend hanya punya 31 cover unik untuk 136 event, dan generator tidak
-// mempertimbangkan kategori sehingga banyak event musik memakai foto makanan
-// dan sebaliknya. Modul ini meng-override hero_image di sisi frontend dengan
-// pool yang relevan per kategori. Pemilihan deterministik (hash event.id),
-// jadi satu event selalu memakai foto yang sama antar sesi.
+// Cover event: uniqueness + category relevance.
+//
+// Problem yang di-address:
+// 1) Seed backend hanya punya 31 cover unik untuk 136 event, jadi banyak
+//    kartu memakai foto identik.
+// 2) Generator tidak melihat kategori, jadi tech summit bisa memakai foto
+//    pernikahan.
+//
+// Strategi:
+// - bucketFor(event) mengelompokkan event ke 8 kategori berdasarkan
+//   event_type Bahasa Indonesia + kata kunci di nama event sebagai fallback.
+// - imageFor(event) mengembalikan URL picsum.photos berbasis seed event.id
+//   dengan grayscale + blur ringan; setiap event mendapat foto berbeda yang
+//   deterministik (tidak berubah antar reload). Foto berperan sebagai
+//   tekstur; kategori disinyalkan lewat overlay warna di komponen kartu.
+// - tintFor(event) memberi pasangan warna duotone per bucket sehingga
+//   overlay mix-blend-multiply di kartu selalu merefleksikan kategori.
 
-const BASE = "/assets/discover-indonesia";
-
-const POOL = {
-  music: [
-    `${BASE}/nusantara-sound-fest.jpg`,
-    `${BASE}/sriwijaya-music-carnival.jpg`,
-    `${BASE}/bandung-indie-wave.jpg`,
-    `${BASE}/malang-indie-showcase.jpg`,
-    `${BASE}/semarang-youth-music-camp.jpg`,
-    `${BASE}/aruna-bold-live-experience-2026.jpg`,
-  ],
-  food: [
-    `${BASE}/jogja-rasa-nusantara.jpg`,
-    `${BASE}/manado-seafood-festival.jpg`,
-    `${BASE}/medan-culinary-heritage.jpg`,
-    `${BASE}/palembang-halal-food-fair.jpg`,
-    `${BASE}/khatulistiwa-food-and-craft.jpg`,
-    `${BASE}/kopi-nusantara-weekend.jpg`,
-    `${BASE}/surabaya-night-market-live.jpg`,
-  ],
-  tech: [
-    `${BASE}/nusantara-tech-summit-2026.jpg`,
-    `${BASE}/medan-startup-demo-day.jpg`,
-    `${BASE}/padang-startup-week.jpg`,
-    `${BASE}/denpasar-digital-nomad-summit.jpg`,
-  ],
-  sport: [
-    `${BASE}/arena-nusantara-esports-finals.jpg`,
-    `${BASE}/batam-esports-invitational.jpg`,
-    `${BASE}/nusantara-gaming-expo.jpg`,
-  ],
-  fashion: [
-    `${BASE}/bali-resort-fashion-week.jpg`,
-    `${BASE}/jakarta-fashion-exchange.jpg`,
-  ],
-  art: [
-    `${BASE}/bali-art-and-design-week.jpg`,
-    `${BASE}/jogja-creative-expo.jpg`,
-  ],
-  wellness: [
-    `${BASE}/bali-wellness-summit.jpg`,
-  ],
-  business: [
-    `${BASE}/borneo-energy-forum.jpg`,
-    `${BASE}/surabaya-halal-industry-expo.jpg`,
-    `${BASE}/surabaya-property-expo.jpg`,
-    `${BASE}/semarang-umkm-growth-fair.jpg`,
-    `${BASE}/jogja-wedding-showcase.jpg`,
-    `${BASE}/bandung-coffee-conference.jpg`,
-  ],
-};
-
-// Peta event_type (bahasa Indonesia dan Inggris) ke bucket pool di atas.
-// Fallback ke 'business' untuk kategori yang tidak terpetakan.
-const CATEGORY_BUCKET = {
+const CATEGORY_TO_BUCKET = {
+  "Festival Musik": "music",
+  "Konser": "music",
   "Music Festival": "music",
   "Music Concert": "music",
   "Sound & Music": "music",
   "Music": "music",
-  "Festival Musik": "music",
-  "Konser": "music",
-  "Konferensi": "business",
-  "Food & Culinary": "food",
-  "Culinary": "food",
-  "Food Festival": "food",
+  "Product Launch & Music Festival": "music",
   "Festival Kuliner": "food",
-  "Kuliner": "food",
+  "Food & Culinary": "food",
+  "Food Festival": "food",
+  "Culinary": "food",
+  "Konferensi Teknologi": "tech",
   "Tech": "tech",
   "Technology": "tech",
   "Teknologi": "tech",
   "Startup": "tech",
+  "Seminar & Pitching": "tech",
+  "Esports": "sport",
   "Sport": "sport",
   "Sports": "sport",
-  "Esports": "sport",
   "Olahraga": "sport",
+  "Fashion Week": "fashion",
   "Fashion": "fashion",
   "Mode": "fashion",
+  "Seni & Budaya": "art",
   "Art & Culture": "art",
   "Art": "art",
-  "Seni & Budaya": "art",
   "Wellness": "wellness",
   "Kesehatan": "wellness",
+  "Trade Expo": "business",
+  "Pameran UMKM": "business",
+  "Wedding Expo": "business",
+  "Konferensi": "business",
   "Business": "business",
   "Conference": "business",
   "Trade Fair": "business",
   "Exhibition": "business",
-  "Ekspo": "business",
   "Pameran": "business",
+  "Ekspo": "business",
 };
 
-function bucketFor(eventType = "") {
-  if (CATEGORY_BUCKET[eventType]) return CATEGORY_BUCKET[eventType];
-  // Fallback berbasis kata kunci supaya kategori baru dari backend tetap
-  // mendapat pool yang masuk akal tanpa harus update peta manual.
-  const t = eventType.toLowerCase();
-  if (t.includes("music") || t.includes("musik") || t.includes("konser") || t.includes("indie") || t.includes("sound")) return "music";
-  if (t.includes("food") || t.includes("kuliner") || t.includes("culinary") || t.includes("kopi") || t.includes("halal")) return "food";
-  if (t.includes("tech") || t.includes("startup") || t.includes("digital")) return "tech";
-  if (t.includes("sport") || t.includes("esports") || t.includes("gaming") || t.includes("olahraga")) return "sport";
-  if (t.includes("fashion") || t.includes("mode")) return "fashion";
-  if (t.includes("art") || t.includes("seni") || t.includes("design") || t.includes("creative")) return "art";
-  if (t.includes("wellness") || t.includes("kesehatan") || t.includes("health")) return "wellness";
+// Fallback berbasis kata kunci: dipakai kalau CATEGORY_TO_BUCKET tidak
+// menangkap event_type-nya. Diperiksa pada `${event_type} ${event.name}`
+// supaya nama event ("Nusantara Tech Summit") ikut memandu bucket meskipun
+// event_type-nya generic ("Konferensi").
+const KEYWORD_BUCKETS = [
+  ["music", ["musik", "music", "konser", "sound", "indie", "harmoni", "resonansi", "skyline", "panggung", "carnival", "orkestra", "band"]],
+  ["food", ["kuliner", "food", "culinary", "kopi", "coffee", "halal", "rasa", "seafood", "night market"]],
+  ["tech", ["tech", "teknologi", "startup", "digital", "summit", "coding", "hack"]],
+  ["sport", ["sport", "esports", "gaming", "olahraga", "arena", "match", "cup", "invitational"]],
+  ["fashion", ["fashion", "mode", "runway", "catwalk"]],
+  ["art", ["art", "seni", "design", "creative", "expo art", "budaya", "showcase"]],
+  ["wellness", ["wellness", "kesehatan", "health", "meditation", "yoga"]],
+  ["business", ["expo", "pameran", "trade", "wedding", "property", "energy", "industry", "umkm", "growth"]],
+];
+
+export function bucketFor(event) {
+  const type = event?.event_type || "";
+  if (CATEGORY_TO_BUCKET[type]) return CATEGORY_TO_BUCKET[type];
+  const haystack = `${type} ${event?.name || ""}`.toLowerCase();
+  for (const [bucket, keywords] of KEYWORD_BUCKETS) {
+    if (keywords.some((keyword) => haystack.includes(keyword))) return bucket;
+  }
   return "business";
 }
+
+const TINT_BY_BUCKET = {
+  music: ["#ff2e7e", "#8b5cf6"],
+  food: ["#f59e0b", "#ef4444"],
+  tech: ["#06b6d4", "#3b82f6"],
+  sport: ["#10b981", "#0d9488"],
+  fashion: ["#d946ef", "#ec4899"],
+  art: ["#f97316", "#e11d48"],
+  wellness: ["#14b8a6", "#84cc16"],
+  business: ["#64748b", "#0f172a"],
+};
 
 function hashString(input) {
   let hash = 0;
@@ -119,15 +104,27 @@ function hashString(input) {
 }
 
 /**
- * Kembalikan URL cover yang relevan dengan kategori event. Deterministik
- * berdasarkan event.id supaya satu event selalu mendapat gambar yang sama.
+ * Pasangan warna duotone untuk kartu event, ditambah sudut gradient yang
+ * ditentukan dari hash event.id supaya dua event dalam kategori sama tetap
+ * punya arah gradient berbeda.
+ */
+export function tintFor(event) {
+  const bucket = bucketFor(event);
+  const [from, to] = TINT_BY_BUCKET[bucket] || TINT_BY_BUCKET.business;
+  const angle = (hashString(event?.id || event?.name || "okkax") % 12) * 30;
+  return { from, to, angle, bucket };
+}
+
+/**
+ * URL cover unik per event. Memakai picsum.photos dengan seed dari event.id
+ * plus grayscale supaya foto berfungsi sebagai tekstur; warna kategori
+ * disuplai oleh overlay di komponen kartu. Alat ini juga menjamin dua event
+ * dengan id berbeda pasti mendapat foto berbeda (Picsum menjamin uniqueness
+ * per seed).
  */
 export function imageFor(event) {
-  if (!event) return `${BASE}/nusantara-sound-fest.jpg`;
-  const bucket = bucketFor(event.event_type);
-  const pool = POOL[bucket] || POOL.business;
-  const index = hashString(event.id || event.name || "okkax") % pool.length;
-  return pool[index];
+  const seed = String(event?.id || event?.name || "okkax").replace(/[^a-zA-Z0-9-]/g, "-");
+  return `https://picsum.photos/seed/${seed || "okkax"}/800/500?grayscale&blur=1`;
 }
 
 /**

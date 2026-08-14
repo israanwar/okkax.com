@@ -19,45 +19,7 @@ import {
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
 import { api, compact, idr, num } from "@/lib/api";
-import { imageFor, eventDedupeKey } from "@/lib/eventImage";
-
-// Duotone tints per kategori. Karena backend seed hanya punya 31 gambar unik
-// untuk 136 event, foto akan berulang. Overlay warna gradient ini membuat tiap
-// kartu tetap terasa distinct: foto turun jadi tekstur, warna + tipografi jadi
-// hero. Pattern editorial yang lazim dipakai Spotify, Bandcamp, Apple Music.
-const CATEGORY_TINTS = {
-  "Music Festival": ["#ff2e7e", "#8b5cf6"],
-  "Music Concert": ["#ff2e7e", "#f97316"],
-  "Sound & Music": ["#ff2e7e", "#8b5cf6"],
-  "Music": ["#ff2e7e", "#8b5cf6"],
-  "Tech": ["#06b6d4", "#3b82f6"],
-  "Technology": ["#06b6d4", "#3b82f6"],
-  "Startup": ["#0ea5e9", "#8b5cf6"],
-  "Food & Culinary": ["#f59e0b", "#ef4444"],
-  "Culinary": ["#f59e0b", "#ef4444"],
-  "Food Festival": ["#f59e0b", "#ef4444"],
-  "Sport": ["#10b981", "#0d9488"],
-  "Sports": ["#10b981", "#0d9488"],
-  "Esports": ["#8b5cf6", "#ec4899"],
-  "Fashion": ["#d946ef", "#ec4899"],
-  "Wellness": ["#14b8a6", "#84cc16"],
-  "Art & Culture": ["#f97316", "#e11d48"],
-  "Art": ["#f97316", "#e11d48"],
-  "Business": ["#475569", "#0f172a"],
-  "Conference": ["#475569", "#0f172a"],
-  "Trade Fair": ["#22c55e", "#0ea5e9"],
-  "Exhibition": ["#a855f7", "#3b82f6"],
-};
-const DEFAULT_TINT = ["#ff2e7e", "#0a0a0a"];
-
-// Angle gradient (0-330, step 30) diturunkan dari hash event.id supaya dua event
-// dengan kategori sama tetap punya arah gradient berbeda.
-function tintFor(event) {
-  const [from, to] = CATEGORY_TINTS[event.event_type] || DEFAULT_TINT;
-  const hash = String(event.id || event.name || "").split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
-  const angle = (hash % 12) * 30;
-  return { from, to, angle };
-}
+import { imageFor, tintFor, eventDedupeKey } from "@/lib/eventImage";
 
 const SECTIONS = [
   ["live", "Sedang berlangsung", "Event yang panggungnya hidup hari ini"],
