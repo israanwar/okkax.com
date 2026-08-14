@@ -4,6 +4,7 @@ import { CalendarDays, MapPin, Clock, ShieldCheck, Info, Users, Accessibility } 
 import PublicNav, { Footer } from "@/components/PublicNav";
 import StatusBadge from "@/components/StatusBadge";
 import { api, idr, num } from "@/lib/api";
+import { imageFor } from "@/lib/eventImage";
 import { useAuth } from "@/context/AuthContext";
 
 const READINESS_LABEL = {
@@ -49,7 +50,7 @@ export default function PublicEvent() {
     <div className="min-h-screen bg-[var(--okx-bg)]">
       <PublicNav />
       <div className="relative border-b border-[var(--okx-border)]">
-        <img src={ev.hero_image} alt={ev.name} className="h-64 w-full object-cover opacity-40 sm:h-80" />
+        <img src={imageFor(ev)} alt={ev.name} className="h-64 w-full object-cover opacity-40 sm:h-80" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a99] to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-7xl px-4 pb-6 sm:px-6">
           <div className="flex flex-wrap items-center gap-2 text-xs">

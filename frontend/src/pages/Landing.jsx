@@ -26,6 +26,7 @@ import {
   Workflow,
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
+import OkxDropdown from "@/components/OkxDropdown";
 import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
 
@@ -311,88 +312,6 @@ function StatusPill({ status, testId, tooltipAlign = "center" }) {
   );
 }
 
-// Custom event picker: menggantikan <select> native untuk section graph showcase.
-// Native <select> popup Chrome mengapung di posisi trigger dan tetap terbuka
-// saat page di-scroll, sehingga terasa "melayang aneh". Custom dropdown ini
-// posisinya absolute di dalam parent, jadi ikut scroll bersama page secara wajar.
-function EventPicker({ value, events, onChange }) {
-  const [open, setOpen] = useState(false);
-  const shellRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOnOutside = (event) => {
-      if (!shellRef.current?.contains(event.target)) setOpen(false);
-    };
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", closeOnOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
-
-  const active = events.find((event) => event.id === value) || events[0];
-
-  return (
-    <div ref={shellRef} className="relative mt-2" data-testid="graph-event-select-shell">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        data-testid="graph-event-select"
-        className="flex h-11 w-full items-center justify-between gap-3 border border-zinc-700 bg-[#111114] px-3 text-left text-sm font-semibold text-white outline-none transition-colors hover:border-zinc-500 focus:border-[var(--okx-accent)]"
-      >
-        <span className="truncate">{active?.name || "Event OKKAX"}</span>
-        <ChevronDown
-          size={16}
-          strokeWidth={1.8}
-          className={`shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`}
-          aria-hidden="true"
-        />
-      </button>
-      {open && (
-        <ul
-          role="listbox"
-          className="okx-scroll absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto border border-zinc-700 bg-[#0d0d0f] shadow-2xl"
-          data-testid="graph-event-select-menu"
-        >
-          {events.map((event) => {
-            const selected = event.id === value;
-            return (
-              <li key={event.id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    onChange(event.id);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/[0.04] ${
-                    selected
-                      ? "bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
-                      : "text-zinc-300"
-                  }`}
-                >
-                  <span className="truncate">{event.name}</span>
-                  {selected && (
-                    <span aria-hidden="true" className="ml-3 inline-block h-1.5 w-1.5 bg-[var(--okx-accent)]" />
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
-  );
-}
-
 function GraphPreview() {
   const graphScrollRef = useRef(null);
   const [summary, setSummary] = useState(null);
@@ -436,6 +355,21 @@ function GraphPreview() {
     promoters: new Set(catalogEvents.map((event) => event.organizer_name).filter(Boolean)).size,
     bands: new Set(catalogEvents.map((event) => event.headline_talent).filter(Boolean)).size,
   }), [catalogEvents]);
+  // Dedupe by name supaya event dengan nama identik (seed backend hasilkan
+  // beberapa nama yang berulang) tidak muncul dua kali di dropdown.
+  const eventPickerOptions = useMemo(() => {
+    if (!catalogEvents.length) {
+      return [{ value: DEMO_EVENT_ID, label: "Event OKKAX" }];
+    }
+    const seen = new Set();
+    const options = [];
+    for (const event of catalogEvents) {
+      if (seen.has(event.name)) continue;
+      seen.add(event.name);
+      options.push({ value: event.id, label: event.name });
+    }
+    return options;
+  }, [catalogEvents]);
   const graphNodes = useMemo(() => buildPreviewNodes(summary, selectedCatalogEvent), [summary, selectedCatalogEvent]);
   const nodeMap = useMemo(() => Object.fromEntries(graphNodes.map((node) => [node.id, node])), [graphNodes]);
   const positions = useMemo(() => {
@@ -566,10 +500,13 @@ function GraphPreview() {
           <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
             Event aktif
           </div>
-          <EventPicker
+          <OkxDropdown
             value={selectedEventId}
-            events={catalogEvents.length ? catalogEvents.slice(0, 30) : [{ id: DEMO_EVENT_ID, name: graphEvent.name || "Event OKKAX" }]}
             onChange={chooseEvent}
+            options={eventPickerOptions}
+            placeholder="Event OKKAX"
+            testId="graph-event-select"
+            className="mt-2"
           />
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
             <span data-testid="graph-active-organizer">{graphEvent.organizer_name || "Organizer belum tersedia"}</span>

@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   Activity,
   CalendarDays,
-  ChevronDown,
   CircleDot,
   Filter,
   LayoutGrid,
@@ -18,7 +17,47 @@ import {
   Users,
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
+import OkxDropdown from "@/components/OkxDropdown";
 import { api, compact, idr, num } from "@/lib/api";
+import { imageFor, eventDedupeKey } from "@/lib/eventImage";
+
+// Duotone tints per kategori. Karena backend seed hanya punya 31 gambar unik
+// untuk 136 event, foto akan berulang. Overlay warna gradient ini membuat tiap
+// kartu tetap terasa distinct: foto turun jadi tekstur, warna + tipografi jadi
+// hero. Pattern editorial yang lazim dipakai Spotify, Bandcamp, Apple Music.
+const CATEGORY_TINTS = {
+  "Music Festival": ["#ff2e7e", "#8b5cf6"],
+  "Music Concert": ["#ff2e7e", "#f97316"],
+  "Sound & Music": ["#ff2e7e", "#8b5cf6"],
+  "Music": ["#ff2e7e", "#8b5cf6"],
+  "Tech": ["#06b6d4", "#3b82f6"],
+  "Technology": ["#06b6d4", "#3b82f6"],
+  "Startup": ["#0ea5e9", "#8b5cf6"],
+  "Food & Culinary": ["#f59e0b", "#ef4444"],
+  "Culinary": ["#f59e0b", "#ef4444"],
+  "Food Festival": ["#f59e0b", "#ef4444"],
+  "Sport": ["#10b981", "#0d9488"],
+  "Sports": ["#10b981", "#0d9488"],
+  "Esports": ["#8b5cf6", "#ec4899"],
+  "Fashion": ["#d946ef", "#ec4899"],
+  "Wellness": ["#14b8a6", "#84cc16"],
+  "Art & Culture": ["#f97316", "#e11d48"],
+  "Art": ["#f97316", "#e11d48"],
+  "Business": ["#475569", "#0f172a"],
+  "Conference": ["#475569", "#0f172a"],
+  "Trade Fair": ["#22c55e", "#0ea5e9"],
+  "Exhibition": ["#a855f7", "#3b82f6"],
+};
+const DEFAULT_TINT = ["#ff2e7e", "#0a0a0a"];
+
+// Angle gradient (0-330, step 30) diturunkan dari hash event.id supaya dua event
+// dengan kategori sama tetap punya arah gradient berbeda.
+function tintFor(event) {
+  const [from, to] = CATEGORY_TINTS[event.event_type] || DEFAULT_TINT;
+  const hash = String(event.id || event.name || "").split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  const angle = (hash % 12) * 30;
+  return { from, to, angle };
+}
 
 const SECTIONS = [
   ["live", "Sedang berlangsung", "Event yang panggungnya hidup hari ini"],
@@ -27,45 +66,41 @@ const SECTIONS = [
   ["top_impact", "Event Terbesar", ""],
 ];
 
-const FILTER_SELECT_CLASS = "h-14 w-full appearance-none border border-[#333238] bg-[#0c0c0d] pl-11 pr-12 text-sm font-medium text-zinc-100 outline-none transition-[border-color,background-color,box-shadow] duration-200 hover:border-zinc-500 focus:border-[var(--okx-accent)] focus:bg-[#101012] focus:shadow-[0_0_0_3px_rgba(255,46,126,0.12)]";
-
-function FilterSelect({ testId, label, icon: Icon, value, onChange, children }) {
+function FilterSelect({ testId, label, icon, value, onChange, options }) {
   return (
-    <label className="group block min-w-0">
-      <span className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500 transition-colors group-focus-within:text-[var(--okx-accent-soft)]">
-        {label}
-      </span>
-      <span className="relative block">
-        <Icon aria-hidden="true" size={17} strokeWidth={1.7}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-[var(--okx-accent)]" />
-        <select data-testid={testId} aria-label={label} value={value} onChange={onChange}
-          className={FILTER_SELECT_CLASS}>
-          {children}
-        </select>
-        <span className="pointer-events-none absolute inset-y-3 right-11 w-px bg-[#2b2a2f] transition-colors group-focus-within:bg-[var(--okx-accent)]/35" />
-        <ChevronDown aria-hidden="true" size={17} strokeWidth={1.8}
-          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-[color,transform] duration-200 group-focus-within:-translate-y-1/2 group-focus-within:rotate-180 group-focus-within:text-white" />
-      </span>
-    </label>
+    <div className="block min-w-0">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{label}</div>
+      <OkxDropdown value={value} onChange={onChange} options={options} icon={icon} testId={testId} ariaLabel={label} />
+    </div>
   );
 }
 
 function EventCard({ ev, saved, onSave, compactMode }) {
+  const tint = tintFor(ev);
   return (
     <article data-testid={`discover-event-card-${ev.id}`}
       className="group flex flex-col border border-[var(--okx-border)] bg-[var(--okx-surface)] transition-colors hover:border-[var(--okx-accent)]/60">
       <div className={`relative overflow-hidden ${compactMode ? "h-32" : "h-44"}`}>
-        <img src={ev.hero_image} alt={ev.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
+        <img src={imageFor(ev)} alt={ev.name}
+          className="h-full w-full object-cover contrast-125 saturate-50 transition-transform duration-500 group-hover:scale-105" />
+        {/* Duotone-style category tint overlay dengan arah gradient unik per event.id. */}
+        <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply"
+          style={{ background: `linear-gradient(${tint.angle}deg, ${tint.from} 0%, ${tint.to} 100%)`, opacity: 0.78 }} />
+        {/* Vignette bawah untuk readability badge/copy nanti. */}
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a80] to-transparent" />
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <span className="bg-[#0a0a0acc] px-2 py-1 text-[11px] uppercase tracking-wider">{ev.event_type}</span>
+          <span className="border border-white/25 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+            {ev.event_type}
+          </span>
           {ev.is_live && (
-            <span className="flex items-center gap-1.5 bg-[var(--okx-accent)] px-2 py-1 text-[11px] font-semibold">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
+            <span className="flex items-center gap-1.5 bg-[var(--okx-accent)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+              <span className="h-1.5 w-1.5 animate-pulse bg-white" /> Live
             </span>
           )}
           {!ev.is_live && ev.almost_sold_out && (
-            <span className="bg-[var(--okx-accent)] px-2 py-1 text-[11px] font-semibold">Hampir habis</span>
+            <span className="bg-[var(--okx-accent)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+              Hampir habis
+            </span>
           )}
         </div>
       </div>
@@ -165,7 +200,20 @@ export default function Discover() {
     localStorage.setItem("okkax_saved", JSON.stringify(next));
   };
 
-  const byId = useMemo(() => Object.fromEntries(data.items.map((e) => [e.id, e])), [data.items]);
+  // Dedupe event dari seed yang membuat baris identik (nama + tanggal + kota
+  // sama tapi id berbeda). Tampilkan hanya satu representasi per kombinasi.
+  const uniqueItems = useMemo(() => {
+    const seen = new Set();
+    const result = [];
+    for (const event of data.items) {
+      const key = eventDedupeKey(event);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(event);
+    }
+    return result;
+  }, [data.items]);
+  const byId = useMemo(() => Object.fromEntries(uniqueItems.map((e) => [e.id, e])), [uniqueItems]);
   const hasFilter = Boolean(q || city || category || priceMode);
   const featuredEventIds = new Set();
   const sections = SECTIONS.map(([key, title, sub]) => {
@@ -180,8 +228,8 @@ export default function Discover() {
     return { key, title, sub, items };
   }).filter((s) => s.items.length > 0);
   const catalogueItems = hasFilter
-    ? data.items
-    : data.items.filter((event) => !featuredEventIds.has(event.id));
+    ? uniqueItems
+    : uniqueItems.filter((event) => !featuredEventIds.has(event.id));
 
   return (
     <div className="min-h-screen bg-[var(--okx-bg)]">
@@ -256,26 +304,16 @@ export default function Discover() {
               </span>
             </label>
             <div className="xl:col-span-2">
-              <FilterSelect testId="discover-city-select" label="Kota" icon={MapPin} value={city}
-                onChange={(e) => setCity(e.target.value)}>
-                <option value="">Semua kota</option>
-                {data.cities.map((c) => <option key={c} value={c}>{c}</option>)}
-              </FilterSelect>
+              <FilterSelect testId="discover-city-select" label="Kota" icon={MapPin} value={city} onChange={setCity}
+                options={[{ value: "", label: "Semua kota" }, ...data.cities.map((c) => ({ value: c, label: c }))]} />
             </div>
             <div className="xl:col-span-3">
-              <FilterSelect testId="discover-category-select" label="Kategori" icon={Tags} value={category}
-                onChange={(e) => setCategory(e.target.value)}>
-                <option value="">Semua kategori</option>
-                {data.categories.map((c) => <option key={c} value={c}>{c}</option>)}
-              </FilterSelect>
+              <FilterSelect testId="discover-category-select" label="Kategori" icon={Tags} value={category} onChange={setCategory}
+                options={[{ value: "", label: "Semua kategori" }, ...data.categories.map((c) => ({ value: c, label: c }))]} />
             </div>
             <div className="xl:col-span-3">
-              <FilterSelect testId="discover-price-select" label="Akses tiket" icon={TicketCheck} value={priceMode}
-                onChange={(e) => setPriceMode(e.target.value)}>
-                <option value="">Gratis & berbayar</option>
-                <option value="free">Gratis</option>
-                <option value="paid">Berbayar</option>
-              </FilterSelect>
+              <FilterSelect testId="discover-price-select" label="Akses tiket" icon={TicketCheck} value={priceMode} onChange={setPriceMode}
+                options={[{ value: "", label: "Gratis & berbayar" }, { value: "free", label: "Gratis" }, { value: "paid", label: "Berbayar" }]} />
             </div>
           </div>
           <div className="mt-5 flex flex-col justify-between gap-3 border-t border-[#29282d] pt-5 sm:flex-row sm:items-center">

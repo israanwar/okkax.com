@@ -6,7 +6,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
-import PremiumSelect from "@/components/PremiumSelect";
+import OkxDropdown from "@/components/OkxDropdown";
+
+// Helper: bangun options untuk OkxDropdown dengan placeholder "Semua X" sebagai
+// item pertama yang memilih nilai kosong (mereset filter).
+const buildFacetOptions = (label, values = []) => [
+  { value: "", label },
+  ...values.map((v) => ({ value: String(v), label: String(v) })),
+];
 
 const PUBLIC_STATUSES = {
   upcoming: ["Akan berlangsung", Clock3, "border-sky-400/50 bg-sky-400/10 text-sky-200"],
@@ -155,7 +162,7 @@ function ListView({ items, selected, onSelect }) {
 
 function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) {
   if (compact) return null;
-  const field = "w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[var(--okx-accent)]";
+  const inputField = "w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[var(--okx-accent)]";
   const useLocation = () => {
     if (!navigator.geolocation) return toast.error("Geolokasi tidak tersedia di browser ini");
     navigator.geolocation.getCurrentPosition(({ coords }) => {
@@ -163,28 +170,34 @@ function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) 
       toast.success("Lokasi digunakan untuk filter jarak");
     }, () => toast.error("Izin lokasi tidak diberikan"));
   };
+  const label = (text) => <span className="mb-1 block text-[10px] uppercase tracking-wider text-zinc-500">{text}</span>;
+  const set = (key) => (value) => setFilters({ ...filters, [key]: value });
+  const statusOptions = [
+    { value: "", label: "Semua status" },
+    ...(facets.statuses || []).map((item) => ({ value: item.value, label: item.label })),
+  ];
   return (
     <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4" data-testid="calendar-public-filters">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Dari tanggal</span><input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className={field} /></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Sampai tanggal</span><input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className={field} /></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Kota</span><PremiumSelect value={filters.city} onChange={(e) => setFilters({ ...filters, city: e.target.value })} className={field}><option value="">Semua kota</option>{facets.cities?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Negara</span><PremiumSelect value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value })} className={field}><option value="">Semua negara</option>{facets.countries?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Kategori</span><PremiumSelect value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })} className={field}><option value="">Semua kategori</option>{facets.categories?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Artis</span><PremiumSelect value={filters.artist} onChange={(e) => setFilters({ ...filters, artist: e.target.value })} className={field}><option value="">Semua artis</option>{facets.artists?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Venue</span><PremiumSelect value={filters.venue} onChange={(e) => setFilters({ ...filters, venue: e.target.value })} className={field}><option value="">Semua venue</option>{facets.venues?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Organizer</span><PremiumSelect value={filters.organizer} onChange={(e) => setFilters({ ...filters, organizer: e.target.value })} className={field}><option value="">Semua organizer</option>{facets.organizers?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Harga minimum</span><input type="number" min="0" placeholder="Rp0" value={filters.min_price} onChange={(e) => setFilters({ ...filters, min_price: e.target.value })} className={field} /></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Harga maksimum</span><input type="number" min="0" placeholder="Tanpa batas" value={filters.max_price} onChange={(e) => setFilters({ ...filters, max_price: e.target.value })} className={field} /></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Kapasitas minimum</span><input type="number" min="0" value={filters.min_capacity} onChange={(e) => setFilters({ ...filters, min_capacity: e.target.value })} className={field} /></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Usia penonton</span><input placeholder="17+, All ages…" value={filters.age} onChange={(e) => setFilters({ ...filters, age: e.target.value })} className={field} /></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Penjualan tiket</span><PremiumSelect value={filters.sale_status} onChange={(e) => setFilters({ ...filters, sale_status: e.target.value })} className={field}><option value="">Semua status</option><option value="on_sale">Sedang dijual</option><option value="sold_out">Habis</option><option value="closed">Ditutup</option></PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Harga event</span><PremiumSelect value={filters.pricing} onChange={(e) => setFilters({ ...filters, pricing: e.target.value })} className={field}><option value="">Gratis & berbayar</option><option value="free">Gratis</option><option value="paid">Berbayar</option></PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Format</span><PremiumSelect value={filters.format} onChange={(e) => setFilters({ ...filters, format: e.target.value })} className={field}><option value="">Offline, hybrid, virtual</option>{facets.formats?.map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-        <label><span className="text-[10px] uppercase tracking-wider text-zinc-500">Status kalender</span><PremiumSelect value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })} className={field}><option value="">Semua status</option>{facets.statuses?.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</PremiumSelect></label>
+        <label>{label("Dari tanggal")}<input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className={inputField} /></label>
+        <label>{label("Sampai tanggal")}<input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className={inputField} /></label>
+        <div>{label("Kota")}<OkxDropdown value={filters.city} onChange={set("city")} options={buildFacetOptions("Semua kota", facets.cities)} placeholder="Semua kota" testId="calendar-filter-city" /></div>
+        <div>{label("Negara")}<OkxDropdown value={filters.country} onChange={set("country")} options={buildFacetOptions("Semua negara", facets.countries)} placeholder="Semua negara" testId="calendar-filter-country" /></div>
+        <div>{label("Kategori")}<OkxDropdown value={filters.category} onChange={set("category")} options={buildFacetOptions("Semua kategori", facets.categories)} placeholder="Semua kategori" testId="calendar-filter-category" /></div>
+        <div>{label("Artis")}<OkxDropdown value={filters.artist} onChange={set("artist")} options={buildFacetOptions("Semua artis", facets.artists)} placeholder="Semua artis" testId="calendar-filter-artist" /></div>
+        <div>{label("Venue")}<OkxDropdown value={filters.venue} onChange={set("venue")} options={buildFacetOptions("Semua venue", facets.venues)} placeholder="Semua venue" testId="calendar-filter-venue" /></div>
+        <div>{label("Organizer")}<OkxDropdown value={filters.organizer} onChange={set("organizer")} options={buildFacetOptions("Semua organizer", facets.organizers)} placeholder="Semua organizer" testId="calendar-filter-organizer" /></div>
+        <label>{label("Harga minimum")}<input type="number" min="0" placeholder="Rp0" value={filters.min_price} onChange={(e) => setFilters({ ...filters, min_price: e.target.value })} className={inputField} /></label>
+        <label>{label("Harga maksimum")}<input type="number" min="0" placeholder="Tanpa batas" value={filters.max_price} onChange={(e) => setFilters({ ...filters, max_price: e.target.value })} className={inputField} /></label>
+        <label>{label("Kapasitas minimum")}<input type="number" min="0" value={filters.min_capacity} onChange={(e) => setFilters({ ...filters, min_capacity: e.target.value })} className={inputField} /></label>
+        <label>{label("Usia penonton")}<input placeholder="17+, All ages…" value={filters.age} onChange={(e) => setFilters({ ...filters, age: e.target.value })} className={inputField} /></label>
+        <div>{label("Penjualan tiket")}<OkxDropdown value={filters.sale_status} onChange={set("sale_status")} placeholder="Semua status" testId="calendar-filter-sale-status" options={[{ value: "", label: "Semua status" }, { value: "on_sale", label: "Sedang dijual" }, { value: "sold_out", label: "Habis" }, { value: "closed", label: "Ditutup" }]} /></div>
+        <div>{label("Harga event")}<OkxDropdown value={filters.pricing} onChange={set("pricing")} placeholder="Gratis & berbayar" testId="calendar-filter-pricing" options={[{ value: "", label: "Gratis & berbayar" }, { value: "free", label: "Gratis" }, { value: "paid", label: "Berbayar" }]} /></div>
+        <div>{label("Format")}<OkxDropdown value={filters.format} onChange={set("format")} options={buildFacetOptions("Offline, hybrid, virtual", facets.formats)} placeholder="Offline, hybrid, virtual" testId="calendar-filter-format" /></div>
+        <div>{label("Status kalender")}<OkxDropdown value={filters.status} onChange={set("status")} options={statusOptions} placeholder="Semua status" testId="calendar-filter-status" /></div>
       </div>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="min-w-32"><span className="text-[10px] uppercase tracking-wider text-zinc-500">Jarak lokasi</span><PremiumSelect value={filters.radius_km} onChange={(e) => setFilters({ ...filters, radius_km: e.target.value })} className={field}><option value="">Tanpa batas</option><option value="10">10 km</option><option value="25">25 km</option><option value="50">50 km</option><option value="100">100 km</option><option value="250">250 km</option></PremiumSelect></label>
+        <div className="min-w-40">{label("Jarak lokasi")}<OkxDropdown value={filters.radius_km} onChange={set("radius_km")} placeholder="Tanpa batas" testId="calendar-filter-radius" options={[{ value: "", label: "Tanpa batas" }, { value: "10", label: "10 km" }, { value: "25", label: "25 km" }, { value: "50", label: "50 km" }, { value: "100", label: "100 km" }, { value: "250", label: "250 km" }]} /></div>
         <button type="button" onClick={useLocation} className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-3 py-2 text-xs text-zinc-300 hover:border-zinc-500"><Crosshair size={14} /> Gunakan lokasi saya</button>
         <button type="button" disabled={busy} onClick={onApply} className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-xs font-semibold text-[#080808] disabled:opacity-50"><Search size={14} /> Terapkan filter</button>
       </div>
@@ -257,8 +270,8 @@ function CreateEntry({ seed, onClose, onCreated }) {
           <label className="sm:col-span-2"><span className="text-xs text-zinc-500">Judul</span><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={field} /></label>
           <label><span className="text-xs text-zinc-500">Mulai</span><input required type="datetime-local" value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} className={field} /></label>
           <label><span className="text-xs text-zinc-500">Selesai</span><input required type="datetime-local" value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} className={field} /></label>
-          <label><span className="text-xs text-zinc-500">Jenis resource</span><PremiumSelect value={form.resource_type} onChange={(e) => setForm({ ...form, resource_type: e.target.value })} className={field}>{["event", "talent", "venue", "vendor", "worker", "sponsor", "tenant"].map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
-          <label><span className="text-xs text-zinc-500">Status</span><PremiumSelect value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={field}>{["Pending", "Confirmed", "Completed", "At Risk", "Missing"].map((value) => <option key={value}>{value}</option>)}</PremiumSelect></label>
+          <div><span className="mb-1 block text-xs text-zinc-500">Jenis resource</span><OkxDropdown value={form.resource_type} onChange={(v) => setForm({ ...form, resource_type: v })} options={["event", "talent", "venue", "vendor", "worker", "sponsor", "tenant"].map((v) => ({ value: v, label: v }))} testId="calendar-create-resource-type" /></div>
+          <div><span className="mb-1 block text-xs text-zinc-500">Status</span><OkxDropdown value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={["Pending", "Confirmed", "Completed", "At Risk", "Missing"].map((v) => ({ value: v, label: v }))} testId="calendar-create-status" /></div>
           <label><span className="text-xs text-zinc-500">Resource ID</span><input required value={form.resource_id} onChange={(e) => setForm({ ...form, resource_id: e.target.value })} className={field} /></label>
           <label><span className="text-xs text-zinc-500">Nama resource</span><input value={form.resource_name} onChange={(e) => setForm({ ...form, resource_name: e.target.value })} className={field} /></label>
           <label className="sm:col-span-2"><span className="text-xs text-zinc-500">Catatan</span><textarea rows="3" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={field} /></label>
