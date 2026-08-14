@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ArrowUpRight, Instagram, Mail, MapPinned, Menu, Radio, ShieldCheck, Waypoints, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { LOGO_URL } from "@/lib/api";
+import LiveTicker from "@/components/LiveTicker";
 
 // Brand-accurate marks untuk platform yang tidak ada di lucide (X, WhatsApp).
 // Semua icon (termasuk Instagram/Mail dari lucide) mewarisi currentColor supaya
@@ -136,6 +137,7 @@ export default function PublicNav() {
           </button>
         </div>
       </div>
+      <LiveTicker />
       {open && (
         <div className="okx-mobile-menu border-t border-[var(--okx-border)] bg-[var(--okx-surface)] px-4 py-3 lg:hidden">
           <nav className="okx-nav-type flex flex-col gap-1">

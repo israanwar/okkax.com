@@ -221,6 +221,33 @@
     }
 }
 
+/* Live ticker di bawah PublicNav.
+   `okx-ticker-mask` memberi fade kiri/kanan (32px) sehingga teks yang masuk/keluar
+   viewport tidak terpotong keras. `okx-ticker-track` men-scroll -50% penuh karena
+   komponennya duplikasi item (loop mulus tanpa jump). Hover men-pause animasi
+   supaya user bisa baca. `prefers-reduced-motion` melambatkan animasi ke ~5x
+   supaya masih terasa "hidup" tapi tidak agresif. */
+.okx-ticker-mask {
+    mask-image: linear-gradient(to right, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 32px, black calc(100% - 32px), transparent 100%);
+}
+.okx-ticker-track {
+    animation: okxTickerScroll 45s linear infinite;
+}
+.okx-ticker-mask:hover .okx-ticker-track,
+.okx-ticker-mask:focus-within .okx-ticker-track {
+    animation-play-state: paused;
+}
+@keyframes okxTickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .okx-ticker-track {
+        animation-duration: 240s;
+    }
+}
+
 .participant-intro,
 .participant-card {
     opacity: 0;
