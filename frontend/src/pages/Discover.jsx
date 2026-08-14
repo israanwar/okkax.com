@@ -19,7 +19,8 @@ import {
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
 import { api, compact, idr, num } from "@/lib/api";
-import { imageFor, tintFor, eventDedupeKey } from "@/lib/eventImage";
+import { imageFor, eventDedupeKey } from "@/lib/eventImage";
+import { loadUnsplashAssignments, pickAssignedPhoto } from "@/lib/unsplash";
 
 const SECTIONS = [
   ["live", "Sedang berlangsung", "Event yang panggungnya hidup hari ini"],
@@ -37,32 +38,35 @@ function FilterSelect({ testId, label, icon, value, onChange, options }) {
   );
 }
 
-function EventCard({ ev, saved, onSave, compactMode }) {
-  const tint = tintFor(ev);
+function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments }) {
+  const cover = pickAssignedPhoto(unsplashAssignments, ev, imageFor(ev));
   return (
     <article data-testid={`discover-event-card-${ev.id}`}
       className="group flex flex-col border border-[var(--okx-border)] bg-[var(--okx-surface)] transition-colors hover:border-[var(--okx-accent)]/60">
       <div className={`relative overflow-hidden ${compactMode ? "h-32" : "h-44"}`}>
-        <img src={imageFor(ev)} alt={ev.name}
-          className="h-full w-full object-cover contrast-125 saturate-50 transition-transform duration-500 group-hover:scale-105" />
-        {/* Duotone-style category tint overlay dengan arah gradient unik per event.id. */}
-        <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply"
-          style={{ background: `linear-gradient(${tint.angle}deg, ${tint.from} 0%, ${tint.to} 100%)`, opacity: 0.78 }} />
-        {/* Vignette bawah untuk readability badge/copy nanti. */}
-        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a80] to-transparent" />
+        <img
+          src={cover}
+          alt={ev.name}
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          onError={(event) => {
+            if (event.currentTarget.src !== imageFor(ev)) {
+              event.currentTarget.src = imageFor(ev);
+            }
+          }}
+        />
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0a0a0a] to-transparent" />
         <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <span className="border border-white/25 bg-black/45 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white backdrop-blur-sm">
+          <span className="bg-[#0a0a0acc] px-2 py-1 text-[11px] uppercase tracking-wider text-white">
             {ev.event_type}
           </span>
           {ev.is_live && (
-            <span className="flex items-center gap-1.5 bg-[var(--okx-accent)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-              <span className="h-1.5 w-1.5 animate-pulse bg-white" /> Live
+            <span className="flex items-center gap-1.5 bg-[var(--okx-accent)] px-2 py-1 text-[11px] font-semibold text-white">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
             </span>
           )}
           {!ev.is_live && ev.almost_sold_out && (
-            <span className="bg-[var(--okx-accent)] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
-              Hampir habis
-            </span>
+            <span className="bg-[var(--okx-accent)] px-2 py-1 text-[11px] font-semibold text-white">Hampir habis</span>
           )}
         </div>
       </div>
@@ -131,6 +135,7 @@ export default function Discover() {
   const [priceMode, setPriceMode] = useState("");
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(() => JSON.parse(localStorage.getItem("okkax_saved") || "[]"));
+  const [unsplashAssignments, setUnsplashAssignments] = useState({});
 
   const load = async (override = {}) => {
     setLoading(true);
@@ -150,6 +155,17 @@ export default function Discover() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, priceMode]);
+
+  // Assignment Unsplash dijalankan sekali per daftar event (signature-based
+  // cache) sehingga setiap event mendapat foto unik dalam bucket-nya.
+  useEffect(() => {
+    if (!data.items?.length) return;
+    let cancelled = false;
+    loadUnsplashAssignments(data.items).then((assignments) => {
+      if (!cancelled) setUnsplashAssignments(assignments || {});
+    });
+    return () => { cancelled = true; };
+  }, [data.items]);
 
   const reset = () => {
     setQ(""); setCity(""); setCategory(""); setPriceMode("");
@@ -327,7 +343,7 @@ export default function Discover() {
                 <div className="okx-scroll mt-4 flex gap-4 overflow-x-auto pb-2">
                   {s.items.map((ev) => (
                     <div key={`${s.key}-${ev.id}`} className="w-[290px] shrink-0">
-                      <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} compactMode />
+                      <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} compactMode unsplashAssignments={unsplashAssignments} />
                     </div>
                   ))}
                 </div>
@@ -349,7 +365,7 @@ export default function Discover() {
               </div>
               <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {catalogueItems.map((ev) => (
-                  <EventCard key={ev.id} ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} />
+                  <EventCard key={ev.id} ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} unsplashAssignments={unsplashAssignments} />
                 ))}
               </div>
             </section>}

@@ -1,20 +1,14 @@
-// Cover event: uniqueness + category relevance.
+// Cover event: foto real yang relevan dengan kategori.
 //
-// Problem yang di-address:
-// 1) Seed backend hanya punya 31 cover unik untuk 136 event, jadi banyak
-//    kartu memakai foto identik.
-// 2) Generator tidak melihat kategori, jadi tech summit bisa memakai foto
-//    pernikahan.
+// Backend seed hanya menyediakan 31 foto lokal untuk 136 event, jadi
+// duplikasi antar event masih akan terjadi selama pool foto belum diperluas.
+// Modul ini menjaga foto tetap KATEGORI-RELEVAN (event musik dapat foto
+// musik, kuliner dapat kuliner, tech dapat tech) sambil menyeragamkan
+// pemilihan lewat hash event.id supaya konsisten antar reload.
 //
-// Strategi:
-// - bucketFor(event) mengelompokkan event ke 8 kategori berdasarkan
-//   event_type Bahasa Indonesia + kata kunci di nama event sebagai fallback.
-// - imageFor(event) mengembalikan URL picsum.photos berbasis seed event.id
-//   dengan grayscale + blur ringan; setiap event mendapat foto berbeda yang
-//   deterministik (tidak berubah antar reload). Foto berperan sebagai
-//   tekstur; kategori disinyalkan lewat overlay warna di komponen kartu.
-// - tintFor(event) memberi pasangan warna duotone per bucket sehingga
-//   overlay mix-blend-multiply di kartu selalu merefleksikan kategori.
+// Untuk menghilangkan duplikasi sepenuhnya perlu tambah asset foto di
+// frontend/public/assets/discover-indonesia/ dan daftarkan URL-nya ke POOL
+// di bawah.
 
 const CATEGORY_TO_BUCKET = {
   "Festival Musik": "music",
@@ -34,7 +28,7 @@ const CATEGORY_TO_BUCKET = {
   "Teknologi": "tech",
   "Startup": "tech",
   "Seminar & Pitching": "tech",
-  "Esports": "sport",
+  "Esports": "esports",
   "Sport": "sport",
   "Sports": "sport",
   "Olahraga": "sport",
@@ -66,7 +60,8 @@ const KEYWORD_BUCKETS = [
   ["music", ["musik", "music", "konser", "sound", "indie", "harmoni", "resonansi", "skyline", "panggung", "carnival", "orkestra", "band"]],
   ["food", ["kuliner", "food", "culinary", "kopi", "coffee", "halal", "rasa", "seafood", "night market"]],
   ["tech", ["tech", "teknologi", "startup", "digital", "summit", "coding", "hack"]],
-  ["sport", ["sport", "esports", "gaming", "olahraga", "arena", "match", "cup", "invitational"]],
+  ["esports", ["esports", "gaming", "e-sport", "invitational"]],
+  ["sport", ["sport", "olahraga", "arena", "match", "cup", "athlete", "stadium"]],
   ["fashion", ["fashion", "mode", "runway", "catwalk"]],
   ["art", ["art", "seni", "design", "creative", "expo art", "budaya", "showcase"]],
   ["wellness", ["wellness", "kesehatan", "health", "meditation", "yoga"]],
@@ -87,6 +82,7 @@ const TINT_BY_BUCKET = {
   music: ["#ff2e7e", "#8b5cf6"],
   food: ["#f59e0b", "#ef4444"],
   tech: ["#06b6d4", "#3b82f6"],
+  esports: ["#8b5cf6", "#ec4899"],
   sport: ["#10b981", "#0d9488"],
   fashion: ["#d946ef", "#ec4899"],
   art: ["#f97316", "#e11d48"],
@@ -115,16 +111,59 @@ export function tintFor(event) {
   return { from, to, angle, bucket };
 }
 
+const BASE = "/assets/discover-indonesia";
+const POOL = {
+  music: [
+    `${BASE}/nusantara-sound-fest.jpg`,
+    `${BASE}/sriwijaya-music-carnival.jpg`,
+    `${BASE}/bandung-indie-wave.jpg`,
+    `${BASE}/malang-indie-showcase.jpg`,
+    `${BASE}/semarang-youth-music-camp.jpg`,
+    `${BASE}/aruna-bold-live-experience-2026.jpg`,
+  ],
+  food: [
+    `${BASE}/jogja-rasa-nusantara.jpg`,
+    `${BASE}/manado-seafood-festival.jpg`,
+    `${BASE}/medan-culinary-heritage.jpg`,
+    `${BASE}/palembang-halal-food-fair.jpg`,
+    `${BASE}/khatulistiwa-food-and-craft.jpg`,
+    `${BASE}/kopi-nusantara-weekend.jpg`,
+    `${BASE}/surabaya-night-market-live.jpg`,
+  ],
+  tech: [
+    `${BASE}/nusantara-tech-summit-2026.jpg`,
+    `${BASE}/medan-startup-demo-day.jpg`,
+    `${BASE}/padang-startup-week.jpg`,
+    `${BASE}/denpasar-digital-nomad-summit.jpg`,
+  ],
+  sport: [
+    `${BASE}/arena-nusantara-esports-finals.jpg`,
+    `${BASE}/batam-esports-invitational.jpg`,
+    `${BASE}/nusantara-gaming-expo.jpg`,
+  ],
+  fashion: [`${BASE}/bali-resort-fashion-week.jpg`, `${BASE}/jakarta-fashion-exchange.jpg`],
+  art: [`${BASE}/bali-art-and-design-week.jpg`, `${BASE}/jogja-creative-expo.jpg`],
+  wellness: [`${BASE}/bali-wellness-summit.jpg`],
+  business: [
+    `${BASE}/borneo-energy-forum.jpg`,
+    `${BASE}/surabaya-halal-industry-expo.jpg`,
+    `${BASE}/surabaya-property-expo.jpg`,
+    `${BASE}/semarang-umkm-growth-fair.jpg`,
+    `${BASE}/jogja-wedding-showcase.jpg`,
+    `${BASE}/bandung-coffee-conference.jpg`,
+  ],
+};
+
 /**
- * URL cover unik per event. Memakai picsum.photos dengan seed dari event.id
- * plus grayscale supaya foto berfungsi sebagai tekstur; warna kategori
- * disuplai oleh overlay di komponen kartu. Alat ini juga menjamin dua event
- * dengan id berbeda pasti mendapat foto berbeda (Picsum menjamin uniqueness
- * per seed).
+ * Foto lokal yang relevan dengan kategori event, deterministik per event.id.
+ * Pool total 31 asset; kartu memakai foto langsung tanpa tint keras supaya
+ * subjeknya terlihat apa adanya.
  */
 export function imageFor(event) {
-  const seed = String(event?.id || event?.name || "okkax").replace(/[^a-zA-Z0-9-]/g, "-");
-  return `https://picsum.photos/seed/${seed || "okkax"}/800/500?grayscale&blur=1`;
+  const bucket = bucketFor(event);
+  const pool = POOL[bucket] || POOL.business;
+  const index = hashString(event?.id || event?.name || "okkax") % pool.length;
+  return pool[index];
 }
 
 /**
