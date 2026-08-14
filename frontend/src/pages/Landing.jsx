@@ -968,7 +968,7 @@ export default function Landing() {
             </h1>
             <p className="mt-7 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
               Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
-              setiap detail di balik pertunjukan hidup Indonesia.
+              setiap detail di balik live event.
             </p>
             <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
               <Link

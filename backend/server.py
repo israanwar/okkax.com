@@ -2,6 +2,7 @@ import os
 import hashlib
 import logging
 import secrets
+from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 
@@ -1001,9 +1002,34 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
         f["name"] = {"$regex": q, "$options": "i"}
     events = await db.events.find(f, {"_id": 0}).to_list(400)
     today = datetime.now().date()
+    ids = [ev["id"] for ev in events]
+
+    # Batched lookups: satu query per koleksi (bukan per event). Untuk 136 event ini
+    # menurunkan >1.600 query menjadi delapan, sehingga /discover/events tidak lagi
+    # timeout di produksi.
+    async def group(coll: str, extra: dict | None = None) -> dict:
+        query: dict = {"event_id": {"$in": ids}}
+        if extra:
+            query.update(extra)
+        rows = await db[coll].find(query, {"_id": 0}).to_list(20000)
+        by_event: dict = defaultdict(list)
+        for row in rows:
+            by_event[row["event_id"]].append(row)
+        return by_event
+
+    tiers_by = await group("ticket_tiers")
+    talents_by = await group("event_talents")
+    booths_by = await group("booth_slots", {"status": "occupied"})
+    pkgs_by = await group("sponsor_packages")
+    vendors_by = await group("event_vendors")
+    venues_by = await group("event_venues")
+    jobs_by = await group("event_jobs")
+    budget_items_by = await group("budget_items")
+
     out = []
     for ev in events:
-        tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
+        eid = ev["id"]
+        tiers = tiers_by.get(eid, [])
         prices = [t["price"] for t in tiers if t.get("active")]
         remaining = sum(max(0, t["quantity"] - t["sold"]) for t in tiers)
         total_qty = sum(t["quantity"] for t in tiers) or 1
@@ -1012,11 +1038,20 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
             continue
         if free is False and prices and min(prices) == 0:
             continue
-        talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(20)
-        booths = await db.booth_slots.find({"event_id": ev["id"], "status": "occupied"}, {"_id": 0}).to_list(600)
-        vendors = await db.event_vendors.count_documents({"event_id": ev["id"]})
-        pkgs = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(20)
-        b = await compute_budget(ev["id"])
+        talents = talents_by.get(eid, [])
+        booths = booths_by.get(eid, [])
+        pkgs = pkgs_by.get(eid, [])
+        vendors_list = vendors_by.get(eid, [])
+        # total_cost mengikuti struktur compute_budget: talent landed_cost + venue
+        # total_cost + vendor cost + workforce (needed × comp × days) + budget_items.
+        total_cost = (
+            sum(t.get("landed_cost", 0) for t in talents)
+            + sum(v.get("total_cost", 0) for v in venues_by.get(eid, []))
+            + sum(v.get("cost", 0) for v in vendors_list)
+            + sum(j.get("needed", 0) * j.get("compensation_per_day", 0) * j.get("days", 1)
+                  for j in jobs_by.get(eid, []))
+            + sum(b.get("amount", 0) for b in budget_items_by.get(eid, []))
+        )
         ticket_gmv = sum(t["sold"] * t["price"] for t in tiers)
         tenant_revenue = sum(x.get("price") or 0 for x in booths)
         try:
@@ -1030,10 +1065,11 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
                     "almost_sold_out": remaining / total_qty < 0.2, "tiers": tiers,
                     "sold_percentage": round(sold / total_qty * 100),
                     "headline_talent": talents[0]["talent_name"] if talents else None,
-                    "talent_count": len(talents), "tenant_count": len(booths), "vendor_count": vendors,
+                    "talent_count": len(talents), "tenant_count": len(booths),
+                    "vendor_count": len(vendors_list),
                     "sponsor_slots": sum(p["quantity"] for p in pkgs),
                     "sponsor_sold": sum(p["sold"] for p in pkgs),
-                    "economic_ripple": b["total_cost"] + ticket_gmv + tenant_revenue,
+                    "economic_ripple": total_cost + ticket_gmv + tenant_revenue,
                     "is_live": start <= today <= end, "days_to_event": days_to,
                     "this_week": 0 <= days_to <= 7})
     if sort == "date":
@@ -1581,22 +1617,67 @@ async def economy_map():
     """Sebaran live event dan aktivitasnya per kota untuk peta Indonesia interaktif."""
     events = await db.events.find({"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}},
                                  {"_id": 0}).to_list(300)
+    ids = [ev["id"] for ev in events]
+
+    # Sama seperti /discover/events: batch semua lookup dengan $in supaya total query
+    # tidak tumbuh linear terhadap jumlah event (dulu 15 query per event x 136 = ~2000).
+    async def group(coll: str, extra: dict | None = None) -> dict:
+        query: dict = {"event_id": {"$in": ids}}
+        if extra:
+            query.update(extra)
+        rows = await db[coll].find(query, {"_id": 0}).to_list(20000)
+        by_event: dict = defaultdict(list)
+        for row in rows:
+            by_event[row["event_id"]].append(row)
+        return by_event
+
+    tiers_by = await group("ticket_tiers")
+    vendors_by = await group("event_vendors")
+    talents_by = await group("event_talents")
+    jobs_by = await group("event_jobs")
+    booths_by = await group("booth_slots")
+    pkgs_by = await group("sponsor_packages")
+    venues_by = await group("event_venues")
+    budget_items_by = await group("budget_items")
+    funding_items_by = await group("funding_items")
+    sponsor_confirmed_by = await group("sponsor_commitments", {"status": "Confirmed"})
+    tenant_approved_by = await group("tenant_applications", {"status": "approved"})
+    ticket_orders_paid_by = await group("ticket_orders", {"status": "paid"})
+
     cities: dict = {}
     for ev in events:
-        b = await compute_budget(ev["id"])
-        tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
-        vendors = await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
-        talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
-        jobs = await db.event_jobs.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
-        booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(600)
-        pkgs = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
-        venue = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+        eid = ev["id"]
+        tiers = tiers_by.get(eid, [])
+        vendors = vendors_by.get(eid, [])
+        talents = talents_by.get(eid, [])
+        jobs = jobs_by.get(eid, [])
+        booths = booths_by.get(eid, [])
+        pkgs = pkgs_by.get(eid, [])
+        venue = (venues_by.get(eid) or [{}])[0] if venues_by.get(eid) else None
         occupied = [x for x in booths if x["status"] == "occupied"]
         ticket_gmv = sum(t["sold"] * t["price"] for t in tiers)
         tenant_revenue = sum(x.get("price") or 0 for x in occupied)
         sponsor_value = sum(p["price"] * p["sold"] for p in pkgs)
         workforce_payout = sum(j["needed"] * j["compensation_per_day"] * j.get("days", 1) for j in jobs)
         workers = sum(j["needed"] for j in jobs)
+
+        # Rekonstruksi total_cost/confirmed_funding/funding_gap sesuai compute_budget()
+        # tanpa memanggilnya (biayanya 8 query per event).
+        total_cost = (
+            sum(t.get("landed_cost", 0) for t in talents)
+            + (venue.get("total_cost", 0) if venue else 0)
+            + sum(v.get("cost", 0) for v in vendors)
+            + workforce_payout
+            + sum(b.get("amount", 0) for b in budget_items_by.get(eid, []))
+        )
+        confirmed_funding = (
+            sum(f.get("amount", 0) for f in funding_items_by.get(eid, []) if f.get("state") in ("committed", "paid"))
+            + sum(s.get("amount", 0) for s in sponsor_confirmed_by.get(eid, []))
+            + sum(t.get("amount", 0) for t in tenant_approved_by.get(eid, []))
+            + sum(o.get("gross", 0) for o in ticket_orders_paid_by.get(eid, []))
+        )
+        funding_gap = total_cost - confirmed_funding
+
         c = cities.setdefault(ev["city"], {
             "city": ev["city"], "lat": CITY_COORDS.get(ev["city"], (-2.0, 118.0))[0],
             "lng": CITY_COORDS.get(ev["city"], (-2.0, 118.0))[1], "events": [], "event_count": 0,
@@ -1607,12 +1688,12 @@ async def economy_map():
         c["events"].append({"id": ev["id"], "name": ev["name"], "event_type": ev["event_type"],
                             "start_date": ev.get("start_date"), "capacity": ev.get("capacity", 0),
                             "hero_image": ev.get("hero_image"), "venue_name": ev.get("venue_name"),
-                            "economic_activity": b["total_cost"] + ticket_gmv + tenant_revenue})
+                            "economic_activity": total_cost + ticket_gmv + tenant_revenue})
         c["event_count"] += 1
         c["capacity"] += ev.get("capacity", 0)
-        c["total_cost"] += b["total_cost"]
-        c["confirmed_funding"] += b["confirmed_funding"]
-        c["funding_gap"] += max(0, b["funding_gap"])
+        c["total_cost"] += total_cost
+        c["confirmed_funding"] += confirmed_funding
+        c["funding_gap"] += max(0, funding_gap)
         c["ticket_gmv"] += ticket_gmv
         c["sponsor_value"] += sponsor_value
         c["tenant_revenue"] += tenant_revenue
@@ -1624,7 +1705,7 @@ async def economy_map():
         c["businesses"] += len(vendors) + len(occupied) + len(talents) + (1 if venue else 0)
         if ev["event_type"] not in c["categories"]:
             c["categories"].append(ev["event_type"])
-        c["economic_activity"] += b["total_cost"] + ticket_gmv + tenant_revenue
+        c["economic_activity"] += total_cost + ticket_gmv + tenant_revenue
 
     items = sorted(cities.values(), key=lambda x: -x["economic_activity"])
     for c in items:
