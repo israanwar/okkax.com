@@ -17,7 +17,8 @@ from pymongo.errors import DuplicateKeyError
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
-from core import (db, nid, now_iso, hash_password, verify_password, create_access_token, clean,
+from core import (db, nid, now_iso, hash_password, verify_password, create_access_token,
+                  issue_access_token, revoke_session, clean,
                   get_current_user, get_optional_user, require_roles, is_admin, is_demo_mode,
                   ensure_account_active, audit, notify, get_event_or_404, assert_event_access,
                   assert_ticket_validator, user_has_active_membership, TICKET_VALIDATOR_ROLES,
@@ -156,7 +157,7 @@ async def register(payload: RegisterIn, response: Response):
             "terms_accepted": payload.terms_accepted, "onboarded": bool(org_id or "audience" in roles),
             "created_at": now_iso()}
     await db.users.insert_one(user)
-    token = create_access_token(user["id"], email)
+    token, _ = await issue_access_token(user["id"], email)
     await audit(None, user, "auth.register")
     return {"token": token, "user": clean(user)}
 
@@ -178,7 +179,7 @@ async def login(payload: LoginIn):
         raise HTTPException(status_code=401, detail="Email atau kata sandi salah")
     ensure_account_active(user)
     await db.login_attempts.delete_one({"identifier": ident})
-    token = create_access_token(user["id"], email)
+    token, _ = await issue_access_token(user["id"], email)
     await audit(None, clean(user), "auth.login")
     return {"token": token, "user": clean(user)}
 
@@ -190,7 +191,14 @@ async def me(user: dict = Depends(get_current_user)):
 
 
 @api.post("/auth/logout")
-async def logout(user: dict = Depends(get_current_user)):
+async def logout(request: Request, user: dict = Depends(get_current_user)):
+    """Revoke the session that authenticated THIS request. Idempotent
+    (revoking a already-revoked session is a no-op) and scoped to a
+    single session — Phase 01 deliberately excludes logout-all."""
+    sid = getattr(request.state, "session_id", None)
+    if sid:
+        await revoke_session(sid)
+        await audit(None, user, "auth.logout", {"sid": sid})
     return {"ok": True}
 
 
@@ -2393,6 +2401,9 @@ async def startup():
     )
     await db.organization_members.create_index("user_id")
     await db.organization_members.create_index("organization_id")
+    # Phase 01 — server-authoritative session registry indexes.
+    await db.sessions.create_index("id", unique=True, name="uniq_session_id")
+    await db.sessions.create_index([("user_id", 1), ("revoked_at", 1)])
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
     users = await db.users.find({}, {"_id": 0, "id": 1, "roles": 1, "role": 1}).to_list(10000)

@@ -9,6 +9,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 JWT_ALG = "HS256"
 
+# Sessions expire alongside the access token they were issued with, so a
+# stale token whose corresponding session has been revoked or has aged
+# out gets rejected at `get_current_user`. Same TTL keeps the two
+# lifetimes coupled — no refresh flow (deliberately out of scope).
+ACCESS_TOKEN_TTL_DAYS = 7
+SESSION_TTL_DAYS = 7
+
 client = AsyncIOMotorClient(os.environ["MONGO_URL"])
 db = client[os.environ["DB_NAME"]]
 
@@ -32,14 +39,61 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
-def create_access_token(user_id: str, email: str) -> str:
+def create_access_token(user_id: str, email: str, sid: str) -> str:
+    """Mint an access token bound to a server-side session.
+
+    `sid` is required. Every request re-verifies the referenced session
+    against `db.sessions` — a token whose session was revoked or aged
+    out is rejected even though the JWT signature is still valid. This
+    is what makes revocation server-authoritative.
+    """
     payload = {
         "sub": user_id,
         "email": email,
         "type": "access",
-        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+        "sid": sid,
+        "exp": datetime.now(timezone.utc) + timedelta(days=ACCESS_TOKEN_TTL_DAYS),
     }
     return jwt.encode(payload, os.environ["JWT_SECRET"], algorithm=JWT_ALG)
+
+
+async def create_session(user_id: str) -> dict:
+    """Insert a new session row for `user_id` and return the full doc.
+    Caller passes the returned `id` as the `sid` claim of the paired
+    access token."""
+    now = datetime.now(timezone.utc)
+    doc = {
+        "id": nid(),
+        "user_id": user_id,
+        "issued_at": now.isoformat(),
+        "expires_at": (now + timedelta(days=SESSION_TTL_DAYS)).isoformat(),
+        "revoked_at": None,
+    }
+    await db.sessions.insert_one(dict(doc))
+    return doc
+
+
+async def issue_access_token(user_id: str, email: str) -> tuple[str, dict]:
+    """Convenience wrapper — create a session and mint the JWT bound to
+    it in one call. Every production JWT-issuance site (login, register,
+    Google session, persona login) goes through this so the two are
+    never out of sync."""
+    session = await create_session(user_id)
+    token = create_access_token(user_id, email, sid=session["id"])
+    return token, session
+
+
+async def revoke_session(sid: str) -> None:
+    """Idempotent — revoking a session that is already revoked (or
+    never existed) is a no-op. We only stamp `revoked_at` when the row
+    exists and is currently active, keeping the first-revoke timestamp
+    accurate for audit."""
+    if not sid:
+        return
+    await db.sessions.update_one(
+        {"id": sid, "revoked_at": None},
+        {"$set": {"revoked_at": datetime.now(timezone.utc).isoformat()}},
+    )
 
 
 def clean(doc: dict) -> dict:
@@ -66,10 +120,37 @@ async def get_current_user(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+    # Phase 01 — server-authoritative session gate. Any token minted
+    # before session tracking (missing `sid`) is rejected. Production
+    # code never emits such tokens; test fixtures updated to seed a
+    # session row + include the sid.
+    sid = payload.get("sid")
+    if not sid:
+        raise HTTPException(status_code=401, detail="Session missing")
+    session = await db.sessions.find_one({"id": sid}, {"_id": 0})
+    if not session or session.get("user_id") != payload.get("sub"):
+        raise HTTPException(status_code=401, detail="Session invalid")
+    if session.get("revoked_at"):
+        raise HTTPException(status_code=401, detail="Session revoked")
+    expires_at = session.get("expires_at")
+    if expires_at:
+        expires_dt = expires_at if isinstance(expires_at, datetime) else \
+            datetime.fromisoformat(str(expires_at).replace("Z", "+00:00"))
+        if expires_dt.tzinfo is None:
+            expires_dt = expires_dt.replace(tzinfo=timezone.utc)
+        if expires_dt <= datetime.now(timezone.utc):
+            raise HTTPException(status_code=401, detail="Session expired")
+
     user = await db.users.find_one({"id": payload["sub"]})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     ensure_account_active(user)
+    # Stash the sid on request.state (not on the user dict) so
+    # endpoints like `/auth/logout` can revoke the exact session that
+    # authorized this request without leaking sid into any response
+    # payload that whitelists user fields.
+    request.state.session_id = sid
     return clean(user)
 
 

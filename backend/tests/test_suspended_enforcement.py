@@ -25,6 +25,24 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from core import SUSPENDED_MESSAGE, create_access_token, ensure_account_active, hash_password  # noqa: E402
 
+# Phase 01 session gate: every JWT this suite mints for `/auth/me` etc.
+# needs a matching session row in `db.sessions`. Test helper inserts one
+# synchronously and returns the sid to embed in the token.
+import uuid as _uuid  # noqa: E402
+from datetime import datetime as _dt, timezone as _tz, timedelta as _td  # noqa: E402
+
+
+def _seed_session(user_id: str) -> str:
+    sid = str(_uuid.uuid4())
+    now = _dt.now(_tz.utc)
+    _sync_db.sessions.insert_one({
+        "id": sid, "user_id": user_id,
+        "issued_at": now.isoformat(),
+        "expires_at": (now + _td(days=7)).isoformat(),
+        "revoked_at": None,
+    })
+    return sid
+
 BASE = os.environ.get("TEST_BASE_URL", "http://127.0.0.1:8001").rstrip("/")
 API = f"{BASE}/api"
 
@@ -112,14 +130,14 @@ def test_login_wrong_password_still_returns_401_not_403():
 # ------------------------------------------------------------ /auth/me (JWT dep)
 
 def test_authenticated_active_user_allowed_on_protected_endpoint():
-    token = create_access_token(ACTIVE_ID, ACTIVE_EMAIL)
+    token = create_access_token(ACTIVE_ID, ACTIVE_EMAIL, sid=_seed_session(ACTIVE_ID))
     r = httpx.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {token}"}, timeout=30)
     assert r.status_code == 200, r.text
     assert r.json()["user"]["email"] == ACTIVE_EMAIL
 
 
 def test_authenticated_suspended_user_denied_on_protected_endpoint():
-    token = create_access_token(SUSPENDED_ID, SUSPENDED_EMAIL)
+    token = create_access_token(SUSPENDED_ID, SUSPENDED_EMAIL, sid=_seed_session(SUSPENDED_ID))
     r = httpx.get(f"{API}/auth/me", headers={"Authorization": f"Bearer {token}"}, timeout=30)
     assert r.status_code == 403, r.text
     assert r.json().get("detail") == SUSPENDED_MESSAGE
@@ -128,7 +146,7 @@ def test_authenticated_suspended_user_denied_on_protected_endpoint():
 def test_authenticated_suspended_user_denied_on_notifications_endpoint():
     """Enforcement lives in get_current_user, so every dependency-user endpoint
     gets it for free."""
-    token = create_access_token(SUSPENDED_ID, SUSPENDED_EMAIL)
+    token = create_access_token(SUSPENDED_ID, SUSPENDED_EMAIL, sid=_seed_session(SUSPENDED_ID))
     r = httpx.post(f"{API}/notifications/read",
                    headers={"Authorization": f"Bearer {token}"}, timeout=30)
     assert r.status_code == 403, r.text

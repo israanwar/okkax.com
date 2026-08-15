@@ -14,9 +14,9 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
-from core import (db, nid, now_iso, create_access_token, clean, get_current_user, is_admin,
-                  is_demo_mode, ensure_account_active, get_event_or_404, assert_event_access,
-                  audit, notify, ROLE_KEYS)
+from core import (db, nid, now_iso, create_access_token, issue_access_token, clean,
+                  get_current_user, is_admin, is_demo_mode, ensure_account_active,
+                  get_event_or_404, assert_event_access, audit, notify, ROLE_KEYS)
 
 logger = logging.getLogger("okkax.extras")
 extras = APIRouter(prefix="/api")
@@ -71,7 +71,7 @@ async def google_session(request: Request, response: Response):
     await db.user_sessions.insert_one({
         "id": nid(), "user_id": user["id"], "session_token": data.get("session_token"),
         "expires_at": datetime.now(timezone.utc) + timedelta(days=7), "created_at": now_iso()})
-    token = create_access_token(user["id"], email)
+    token, _ = await issue_access_token(user["id"], email)
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none",
                         path="/", max_age=7 * 24 * 3600)
     await audit(None, user, "auth.google_login")
@@ -434,7 +434,7 @@ async def persona_login(body: Dict[str, Any], response: Response):
         raise HTTPException(status_code=403, detail="Persona administrator tidak tersedia pada mode demo")
     ensure_account_active(user)
     user = clean(user)
-    token = create_access_token(user["id"], email)
+    token, _ = await issue_access_token(user["id"], email)
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none",
                         path="/", max_age=7 * 24 * 3600)
     await audit(None, user, "demo.persona_login", {"label": body.get("label")})
