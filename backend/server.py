@@ -2493,6 +2493,8 @@ async def startup():
     await db.sessions.create_index([("user_id", 1), ("revoked_at", 1)])
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
+    memberships = await seed_data.ensure_demo_memberships()
+    logger.info(f"OKKAX canonical demo memberships: {memberships}")
     users = await db.users.find({}, {"_id": 0, "id": 1, "roles": 1, "role": 1}).to_list(10000)
     normalized = 0
     for account in users:

@@ -184,6 +184,61 @@ ORGS = [
     ("org-sonic", "Sonic Timur Audio", "Vendor Produksi", "Makassar", True),
 ]
 
+def demo_membership_documents():
+    """Bangun membership canonical untuk akun demo yang terhubung ke organisasi.
+
+    Personal-only accounts seperti audience dan worker tidak mendapat
+    organization membership. ID deterministic dan relationship tetap
+    mengikuti DEMO_USERS sebagai source of truth.
+    """
+    documents = []
+    for i, (_email, _name, roles, organization_id) in enumerate(DEMO_USERS):
+        if not organization_id:
+            continue
+
+        user_id = f"usr-{i+1}"
+        documents.append(dict(
+            id=f"mbr-{user_id}-{organization_id}",
+            user_id=user_id,
+            organization_id=organization_id,
+            role=roles[0],
+            status="active",
+            created_at=SEED_TIMESTAMP,
+            source="demo_seed_v5",
+        ))
+    return documents
+
+
+async def ensure_demo_memberships():
+    """Pastikan membership demo canonical tersedia secara idempotent.
+
+    Existing membership tidak diubah agar perubahan role/status yang sah
+    tidak diam-diam ditimpa ketika aplikasi restart.
+    """
+    created = 0
+    existing = 0
+
+    for document in demo_membership_documents():
+        result = await db.organization_members.update_one(
+            {
+                "user_id": document["user_id"],
+                "organization_id": document["organization_id"],
+            },
+            {"$setOnInsert": document},
+            upsert=True,
+        )
+        if result.upserted_id is not None:
+            created += 1
+        else:
+            existing += 1
+
+    return {
+        "created": created,
+        "existing": existing,
+        "total": created + existing,
+    }
+
+
 EVENT_ID = "evt-aruna-2026"
 EVENT_CODE = "EVT-MKS-2026-0001"
 
