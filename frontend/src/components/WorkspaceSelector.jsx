@@ -32,7 +32,10 @@ export default function WorkspaceSelector() {
 
   if (!user) return null;
 
-  const wsKey = (w) => (w?.organization_id ?? "__personal__");
+  const wsKey = (w) => {
+    if (!w) return "__none__";
+    return w.organization_id ?? "__personal__";
+  };
   const activeKey = wsKey(activeWorkspace);
   const hasOptions = (workspaces?.length || 0) > 0;
 

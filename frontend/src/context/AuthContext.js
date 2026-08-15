@@ -29,8 +29,50 @@ export function AuthProvider({ children }) {
           throw err;
         }),
       ]);
-      setWorkspaces(list?.items || []);
-      setActiveWorkspace(active?.data?.workspace || null);
+      const items = list?.items || [];
+      let resolvedActive = active?.data?.workspace || null;
+
+      // Default workspace hanya ditentukan ketika tidak ada active workspace
+      // server-side. Single-org account masuk langsung ke org workspace.
+      // Personal-only account masuk ke Personal.
+      // Multi-org account tidak ditebak: user harus memilih.
+      if (!resolvedActive) {
+        const organizationWorkspaces = items.filter(
+          (w) => w.organization_id != null
+        );
+        const personalWorkspace = items.find(
+          (w) => w.organization_id == null
+        );
+
+        let defaultWorkspace = null;
+
+        if (organizationWorkspaces.length === 1) {
+          defaultWorkspace = organizationWorkspaces[0];
+        } else if (
+          organizationWorkspaces.length === 0 &&
+          personalWorkspace
+        ) {
+          defaultWorkspace = personalWorkspace;
+        }
+
+        if (defaultWorkspace) {
+          try {
+            const { data: activated } = await api.post(
+              "/me/workspace/activate",
+              {
+                organization_id: defaultWorkspace.organization_id ?? null,
+                role: defaultWorkspace.role,
+              }
+            );
+            resolvedActive = activated?.workspace || null;
+          } catch {
+            resolvedActive = null;
+          }
+        }
+      }
+
+      setWorkspaces(items);
+      setActiveWorkspace(resolvedActive);
     } catch {
       setWorkspaces([]);
       setActiveWorkspace(null);
@@ -116,11 +158,24 @@ export function AuthProvider({ children }) {
     setWorkspaceVersion((v) => v + 1);
   };
 
+  // Active workspace adalah execution context frontend.
+  // Account roles tetap identitas global, bukan authority workspace.
+  const accountRoles = user?.roles || [];
+  const isPlatformAdmin =
+    accountRoles.includes("super_admin") ||
+    accountRoles.includes("platform_admin");
+
+  const effectiveRole =
+    activeWorkspace?.role ||
+    (isPlatformAdmin ? accountRoles[0] : "audience");
+
+  const effectiveWorkspaceKind =
+    activeWorkspace?.kind || (activeWorkspace ? "organization" : null);
+
   const hasRole = (...roles) => {
     if (!user) return false;
-    const r = user.roles || [];
-    if (r.includes("super_admin") || r.includes("platform_admin")) return true;
-    return roles.some((x) => r.includes(x));
+    if (isPlatformAdmin) return true;
+    return roles.includes(effectiveRole);
   };
 
   return (
@@ -129,6 +184,7 @@ export function AuthProvider({ children }) {
         user, org, loading, login, register, logout, refresh, hasRole,
         adoptSession, loginWithGoogle,
         workspaces, activeWorkspace, workspaceVersion,
+        effectiveRole, effectiveWorkspaceKind,
         refreshWorkspaces, switchWorkspace,
       }}
     >

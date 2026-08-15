@@ -8,39 +8,84 @@ import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
 
 export function Overview() {
-  const { user, hasRole, workspaceVersion } = useAuth();
+  const { user, hasRole, workspaceVersion, activeWorkspace, effectiveRole } = useAuth();
   const [events, setEvents] = useState([]);
   const [ripple, setRipple] = useState(null);
 
+  const organizerContext = hasRole(
+    "organizer",
+    "event_organizer",
+    "promoter",
+    "supervisor",
+    "finance_approver"
+  );
+
   useEffect(() => {
-    if (hasRole("organizer", "event_organizer", "promoter", "supervisor", "finance_approver")) {
-      // /api/events is scoped server-side to the caller's active
-      // workspace, so we refetch whenever workspaceVersion bumps
-      // (workspace switched via the header selector).
-      api.get("/events").then(({ data }) => setEvents(data.items)).catch(() => {});
-    }
-    api.get(`/events/${DEMO_EVENT_ID}/ripple`).then(({ data }) => setRipple(data.metrics)).catch(() => {});
+    // Hapus state workspace lama sebelum membaca workspace baru.
+    setEvents([]);
+    setRipple(null);
+
+    if (!organizerContext) return;
+
+    api.get("/events")
+      .then(({ data }) => setEvents(data.items || []))
+      .catch(() => setEvents([]));
+
+    api.get(`/events/${DEMO_EVENT_ID}/ripple`)
+      .then(({ data }) => setRipple(data.metrics))
+      .catch(() => setRipple(null));
+
     // eslint-disable-next-line
-  }, [workspaceVersion]);
+  }, [workspaceVersion, effectiveRole]);
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="editorial text-2xl sm:text-4xl">Selamat datang, {user.name}</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Peran aktif: {(user.roles || []).join(", ")}. OKKAX menghubungkan setiap komponen event pada satu Event ID.
+          Peran aktif: {effectiveRole || "audience"}. {activeWorkspace?.kind === "personal"
+            ? "Anda sedang menggunakan workspace personal."
+            : "OKKAX menghubungkan setiap komponen event pada satu Event ID."}
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Link to="/app/studio" data-testid="overview-studio-btn" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
-          <Plus size={15} /> Buat Event Brief
-        </Link>
+        {organizerContext && (
+          <>
+            <Link to="/app/studio" data-testid="overview-studio-btn" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
+              <Plus size={15} /> Buat Event Brief
+            </Link>
+            <Link to={`/app/events/${DEMO_EVENT_ID}/graph`} data-testid="overview-demoevent-btn" className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
+              Buka event demo
+            </Link>
+          </>
+        )}
+
+        {hasRole("sponsor") && (
+          <Link to="/app/sponsor" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
+            Lihat peluang sponsor
+          </Link>
+        )}
+
+        {hasRole("tenant") && (
+          <Link to="/app/tenant" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
+            Lihat peluang tenant
+          </Link>
+        )}
+
+        {hasRole("audience") && (
+          <>
+            <Link to="/discover" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
+              Jelajahi event
+            </Link>
+            <Link to="/app/tickets" className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
+              Tiket saya
+            </Link>
+          </>
+        )}
+
         <Link to="/demo" data-testid="overview-demo-btn" className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
           <Sparkles size={15} /> Demo Terpandu
-        </Link>
-        <Link to={`/app/events/${DEMO_EVENT_ID}/graph`} data-testid="overview-demoevent-btn" className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
-          Buka event demo
         </Link>
       </div>
 
