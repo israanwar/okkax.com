@@ -21,3 +21,26 @@
     background: var(--okx-bg);
   }
 }
+
+/* OVERVIEW COMMAND SURFACE — dedicated surgical fix */
+@media (min-width: 1024px) {
+  .okx-overview-command {
+    position: sticky;
+    top: -1.5rem;
+    z-index: 40;
+
+    margin-top: -1.5rem;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+
+    padding-top: 1.5rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+    padding-bottom: 1rem;
+
+    background: var(--okx-bg);
+    box-shadow: 0 1px 0 var(--okx-border);
+
+    isolation: isolate;
+  }
+}

@@ -40,53 +40,87 @@ export function Overview() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="editorial text-2xl sm:text-4xl">Selamat datang, {user.name}</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Peran aktif: {effectiveRole || "audience"}. {activeWorkspace?.kind === "personal"
-            ? "Anda sedang menggunakan workspace personal."
-            : "OKKAX menghubungkan setiap komponen event pada satu Event ID."}
-        </p>
-      </div>
+      <div
+        className="okx-overview-command"
+        data-testid="overview-command-surface"
+      >
+        <div>
+          <h1 className="editorial text-2xl sm:text-4xl">
+            Selamat datang, {user.name}
+          </h1>
+          <p className="mt-2 text-sm text-zinc-400">
+            Peran aktif: {effectiveRole || "audience"}.{" "}
+            {activeWorkspace?.kind === "personal"
+              ? "Anda sedang menggunakan workspace personal."
+              : "OKKAX menghubungkan setiap komponen event pada satu Event ID."}
+          </p>
+        </div>
 
-      <div className="flex flex-wrap gap-3">
-        {organizerContext && (
-          <>
-            <Link to="/app/studio" data-testid="overview-studio-btn" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
-              <Plus size={15} /> Buat Event Brief
-            </Link>
-            <Link to={`/app/events/${DEMO_EVENT_ID}/graph`} data-testid="overview-demoevent-btn" className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
-              Buka event demo
-            </Link>
-          </>
-        )}
+        <div className="mt-5 flex flex-wrap gap-3">
+          {organizerContext && (
+            <>
+              <Link
+                to="/app/studio"
+                data-testid="overview-studio-btn"
+                className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+              >
+                <Plus size={15} /> Buat Event Brief
+              </Link>
 
-        {hasRole("sponsor") && (
-          <Link to="/app/sponsor" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
-            Lihat peluang sponsor
+              <Link
+                to={`/app/events/${DEMO_EVENT_ID}/graph`}
+                data-testid="overview-demoevent-btn"
+                className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]"
+              >
+                Buka event demo
+              </Link>
+            </>
+          )}
+
+          {hasRole("sponsor") && (
+            <Link
+              to="/app/sponsor"
+              className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+            >
+              Lihat peluang sponsor
+            </Link>
+          )}
+
+          {hasRole("tenant") && (
+            <Link
+              to="/app/tenant"
+              className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+            >
+              Lihat peluang tenant
+            </Link>
+          )}
+
+          {hasRole("audience") && (
+            <>
+              <Link
+                to="/discover"
+                className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+              >
+                Jelajahi event
+              </Link>
+
+              <Link
+                to="/app/tickets"
+                className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]"
+              >
+                Tiket saya
+              </Link>
+            </>
+          )}
+
+          <Link
+            to="/demo"
+            data-testid="overview-demo-btn"
+            className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]"
+          >
+            <Sparkles size={15} /> Demo Terpandu
           </Link>
-        )}
-
-        {hasRole("tenant") && (
-          <Link to="/app/tenant" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
-            Lihat peluang tenant
-          </Link>
-        )}
-
-        {hasRole("audience") && (
-          <>
-            <Link to="/discover" className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">
-              Jelajahi event
-            </Link>
-            <Link to="/app/tickets" className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
-              Tiket saya
-            </Link>
-          </>
-        )}
-
-        <Link to="/demo" data-testid="overview-demo-btn" className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]">
-          <Sparkles size={15} /> Demo Terpandu
-        </Link>
+        </div>
       </div>
 
       {events.length > 0 && (
