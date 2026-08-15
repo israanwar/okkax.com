@@ -164,6 +164,7 @@ async def get_current_user(request: Request) -> dict:
 
 
 _ADMIN_ROLES_CORE = frozenset({"super_admin", "platform_admin"})
+_PERSONAL_WORKSPACE_ROLE_CORE = "audience"
 
 
 async def _resolve_workspace_ctx(user: dict, sid: Optional[str],
@@ -192,8 +193,14 @@ async def _resolve_workspace_ctx(user: dict, sid: Optional[str],
     """
     active = (session or {}).get("active_workspace") if session else None
     # Case A. session declared personal workspace (org_id = None).
+    # Phase 01 UX fix: personal workspace is now an EXPLICIT ctx (not
+    # `None`) so downstream authorization can distinguish "personal
+    # activated" (deny org authority + suppress legacy fallback + owner
+    # shortcut) from "no workspace activated yet" (transitional legacy
+    # fallback still in play).
     if active and active.get("organization_id") is None:
-        return None
+        return {"kind": "personal", "organization_id": None,
+                "role": _PERSONAL_WORKSPACE_ROLE_CORE, "source": "session"}
     # Case B. session activated an organization workspace.
     if active and active.get("organization_id") is not None:
         org_id = active["organization_id"]
@@ -203,14 +210,15 @@ async def _resolve_workspace_ctx(user: dict, sid: Optional[str],
         )
         if not membership or membership.get("role") in _ADMIN_ROLES_CORE:
             return None
-        return {"organization_id": org_id, "role": membership["role"], "source": "session"}
+        return {"kind": "org", "organization_id": org_id,
+                "role": membership["role"], "source": "session"}
     # Case C. no active workspace on this session. Fall back to the
     # single legacy scalar org, if any. This is the ONLY path that
     # preserves pre-Phase-01 seed accounts without a per-request
     # activation. It is single-org by construction (scalar field).
     legacy = user.get("org_id")
     if legacy:
-        return {"organization_id": legacy, "role": user.get("role"),
+        return {"kind": "org", "organization_id": legacy, "role": user.get("role"),
                 "source": "legacy"}
     return None
 
@@ -353,7 +361,10 @@ async def assert_event_access(event: dict, user: dict, write: bool = False):
     org_id = event.get("organizer_org_id")
     if org_id:
         ctx = user.get("_workspace_ctx") or {}
-        if ctx.get("organization_id") == org_id:
+        # Only ORG-kind ctx grants org private access. Personal-kind
+        # ctx explicitly holds no organization authority even when the
+        # user is a member elsewhere.
+        if ctx.get("kind") == "org" and ctx.get("organization_id") == org_id:
             return
     raise HTTPException(status_code=403, detail="You do not have access to this event's data")
 

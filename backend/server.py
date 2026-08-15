@@ -355,20 +355,28 @@ async def create_event(brief: BriefIn, user: dict = Depends(require_roles("organ
 async def list_events(user: dict = Depends(get_current_user)):
     f = {"deleted": {"$ne": True}}
     if not is_admin(user):
-        # Phase 01. Active Workspace Scope: return events the caller
-        # owns PLUS events belonging to the SINGLE organization they
-        # are currently operating in. Multi-org membership no longer
-        # grants simultaneous multi-org visibility; switching orgs
-        # requires `/me/workspace/activate` on the session. The
-        # workspace context (org id + resolved active membership OR
-        # legacy scalar fallback) is computed once per request in
-        # `get_current_user`. no per-endpoint N+1.
-        or_clauses: List[Dict[str, Any]] = [{"owner_user_id": user["id"]}]
+        # Phase 01 Active Workspace Scope, strict form:
+        # - Personal workspace activated: audience context, no operational
+        #   events. Ownership shortcut MUST NOT smuggle events belonging
+        #   to an organization into this list. Returns empty.
+        # - Organization workspace activated (session or legacy fallback):
+        #   only events whose `organizer_org_id` equals the active org.
+        #   Multi-org membership grants no simultaneous visibility;
+        #   ownership of events in ANOTHER org does not surface here
+        #   either (that org is not the caller's execution context on
+        #   this request).
+        # - No activation and no legacy org: fall back to owner-only so
+        #   a brand-new account has a minimum visible surface before
+        #   choosing a workspace.
         ctx = user.get("_workspace_ctx") or {}
+        kind = ctx.get("kind")
+        if kind == "personal":
+            return {"items": []}
         active_org_id = ctx.get("organization_id")
         if active_org_id:
-            or_clauses.append({"organizer_org_id": active_org_id})
-        f["$or"] = or_clauses
+            f["organizer_org_id"] = active_org_id
+        else:
+            f["owner_user_id"] = user["id"]
     rows = await db.events.find(f, {"_id": 0}).sort("created_at", -1).to_list(100)
     out = []
     for ev in rows:
