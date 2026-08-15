@@ -13,12 +13,15 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response, Query
+from pymongo.errors import DuplicateKeyError
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 
 from core import (db, nid, now_iso, hash_password, verify_password, create_access_token, clean,
-                  get_current_user, get_optional_user, require_roles, is_admin, audit, notify,
-                  get_event_or_404, assert_event_access, ROLES, ROLE_KEYS)
+                  get_current_user, get_optional_user, require_roles, is_admin, is_demo_mode,
+                  ensure_account_active, audit, notify, get_event_or_404, assert_event_access,
+                  assert_ticket_validator, user_has_active_membership, TICKET_VALIDATOR_ROLES,
+                  ROLES, ROLE_KEYS)
 from compiler import (compile_blueprint, _fallback as baseline_blueprint,
                       AI_ENGINES, DEFAULT_ENGINE, resolve_engine)
 import asyncio
@@ -173,6 +176,7 @@ async def login(payload: LoginIn):
             {"identifier": ident},
             {"$inc": {"count": 1}, "$set": {"last_at": datetime.now(timezone.utc).isoformat()}}, upsert=True)
         raise HTTPException(status_code=401, detail="Email atau kata sandi salah")
+    ensure_account_active(user)
     await db.login_attempts.delete_one({"identifier": ident})
     token = create_access_token(user["id"], email)
     await audit(None, clean(user), "auth.login")
@@ -270,6 +274,40 @@ async def catalog_workers(category: str = ""):
 
 
 # ---------------------------------------------------------------- events / studio
+
+# Statuses at which sub-resource endpoints (sponsor packages, tenant
+# zones, ticket tiers) may serve their contents to anonymous or non-
+# authorized callers. Anything else is treated as private and answered
+# with 404 to avoid enumerating draft-event ids.
+_PUBLIC_EVENT_STATUSES = frozenset({"published", "live"})
+
+
+async def _event_visible_to_public_caller(ev: dict, user: Optional[dict]) -> bool:
+    """Step 6C guardrail for the three public / optional-auth sub-
+    resource endpoints below.
+
+    Rules:
+    - Events whose `status` is in `_PUBLIC_EVENT_STATUSES` are visible
+      to anyone (existing marketplace behavior).
+    - Otherwise the caller must be authenticated AND pass
+      `assert_event_access` (admin / owner / active member of
+      `organizer_org_id` / legacy `user.org_id` match — the Step 6B
+      ladder).
+    - Any other case returns False; callers translate that to a 404
+      rather than a 403 so a draft event's existence is not disclosed
+      via response-code enumeration.
+    """
+    if ev.get("status") in _PUBLIC_EVENT_STATUSES:
+        return True
+    if not user:
+        return False
+    try:
+        await assert_event_access(ev, user)
+    except HTTPException:
+        return False
+    return True
+
+
 async def next_event_code(city: str) -> str:
     prefix = "".join([c for c in city.upper() if c.isalpha()])[:3] or "IDN"
     count = await db.events.count_documents({}) + 1
@@ -309,9 +347,24 @@ async def create_event(brief: BriefIn, user: dict = Depends(require_roles("organ
 async def list_events(user: dict = Depends(get_current_user)):
     f = {"deleted": {"$ne": True}}
     if not is_admin(user):
-        f["$or"] = [{"owner_user_id": user["id"]}]
-        if user.get("org_id"):
-            f["$or"].append({"organizer_org_id": user["org_id"]})
+        # Step 6C — resolve every organization the user is currently an
+        # ACTIVE member of (Step 4 collection) in one indexed query,
+        # then match every event whose `organizer_org_id` is in that
+        # set. Legacy scalar `user.org_id` remains a temporary fallback
+        # for accounts that have not yet been backfilled into
+        # organization_members. Ownership always passes independently.
+        memberships = await db.organization_members.find(
+            {"user_id": user["id"], "status": "active"},
+            {"_id": 0, "organization_id": 1},
+        ).to_list(200)
+        org_ids = {m["organization_id"] for m in memberships if m.get("organization_id")}
+        legacy_org_id = user.get("org_id")
+        if legacy_org_id:
+            org_ids.add(legacy_org_id)
+        or_clauses: List[Dict[str, Any]] = [{"owner_user_id": user["id"]}]
+        if org_ids:
+            or_clauses.append({"organizer_org_id": {"$in": list(org_ids)}})
+        f["$or"] = or_clauses
     rows = await db.events.find(f, {"_id": 0}).sort("created_at", -1).to_list(100)
     out = []
     for ev in rows:
@@ -659,6 +712,8 @@ async def worker_checkin(event_id: str, item_id: str, user: dict = Depends(get_c
 @api.get("/events/{event_id}/sponsor-packages")
 async def list_packages(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
     ev = await get_event_or_404(event_id)
+    if not await _event_visible_to_public_caller(ev, user):
+        raise HTTPException(status_code=404, detail="Event not found")
     rows = await db.sponsor_packages.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
     return {"items": rows}
 
@@ -776,6 +831,8 @@ async def decide_interest(interest_id: str, body: Dict[str, Any], user: dict = D
 @api.get("/events/{event_id}/tenant-zones")
 async def tenant_zones(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
     ev = await get_event_or_404(event_id)
+    if not await _event_visible_to_public_caller(ev, user):
+        raise HTTPException(status_code=404, detail="Event not found")
     zones = await db.tenant_zones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
     booths = await db.booth_slots.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
     return {"zones": zones, "booths": booths}
@@ -894,8 +951,13 @@ async def decide_application(app_id: str, body: Dict[str, Any], user: dict = Dep
 
 # ---------------------------------------------------------------- ticketing
 @api.get("/events/{event_id}/ticket-tiers")
-async def list_tiers(event_id: str):
+async def list_tiers(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
+    # Step 6C — was fully public. Now serves normally for published/live
+    # events (marketplace flow) but returns 404 for draft events unless
+    # the caller is authorized on that event (owner/admin/member).
     ev = await get_event_or_404(event_id)
+    if not await _event_visible_to_public_caller(ev, user):
+        raise HTTPException(status_code=404, detail="Event not found")
     return {"items": await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)}
 
 
@@ -1279,6 +1341,14 @@ class ValidateIn(BaseModel):
 
 @api.post("/tickets/validate")
 async def validate_ticket(payload: ValidateIn, user: dict = Depends(get_current_user)):
+    # Step 6B — role gate FIRST, before any DB read that could leak whether
+    # a QR is real. Audience, sponsor, tenant, talent, vendor, worker, and
+    # finance_approver never pass this line, so they cannot use the endpoint
+    # as an oracle either.
+    user_roles = set(user.get("roles", []))
+    if not is_admin(user) and not user_roles.intersection(TICKET_VALIDATOR_ROLES):
+        raise HTTPException(status_code=403, detail="Your role cannot validate tickets")
+
     t = await db.tickets.find_one({"qr_code": payload.qr_code.strip()}, {"_id": 0})
     if not t:
         t = await db.tickets.find_one({"ticket_number": payload.qr_code.strip()}, {"_id": 0})
@@ -1288,6 +1358,14 @@ async def validate_ticket(payload: ValidateIn, user: dict = Depends(get_current_
                                                 "result": result, "at": now_iso(), "by": user["id"],
                                                 "qr_code": payload.qr_code})
         return {"result": result, "message": "QR tidak dikenali oleh OKKAX."}
+    # Step 6B — event-scope gate. Authorize against the ticket's REAL
+    # event_id, not the client-supplied `payload.event_id`. An organizer
+    # of event A must not be able to validate tickets of event B by
+    # spoofing the event_id.
+    ev = await db.events.find_one({"id": t["event_id"], "deleted": {"$ne": True}}, {"_id": 0})
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event untuk tiket ini tidak ditemukan")
+    await assert_ticket_validator(ev, user)
     if t["status"] == "used":
         result = "Already Used"
         message = f"Tiket sudah digunakan pada {t.get('used_at')}"
@@ -1574,6 +1652,14 @@ async def event_graph(event_id: str, user: dict = Depends(get_current_user)):
 @api.get("/events/{event_id}/ripple")
 async def ripple(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
     ev = await get_event_or_404(event_id)
+    # Step 6B — non-demo events return economic ripple only for owner /
+    # admin / active organizer-org member. Landing page continues to
+    # display the demo event's aggregate ripple to unauthenticated
+    # visitors (marketing surface, explicitly labeled as demo data).
+    if not ev.get("is_demo"):
+        if not user:
+            raise HTTPException(status_code=401, detail="Authentication required")
+        await assert_event_access(ev, user)
     b = await compute_budget(ev["id"])
     talents = await db.event_talents.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)
     vendors = await db.event_vendors.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
@@ -1862,16 +1948,77 @@ async def admin_users(user: dict = Depends(require_roles("platform_admin"))):
     return {"items": await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(500)}
 
 
+_ADMIN_ROLES = frozenset({"super_admin", "platform_admin"})
+
+
+def _is_super_admin(user: dict) -> bool:
+    """Only `super_admin` may grant/revoke administrator roles or suspend
+    an existing administrator. `platform_admin` handles day-to-day user
+    admin but cannot mutate the admin tier itself."""
+    return "super_admin" in set(user.get("roles", []))
+
+
 @api.patch("/admin/users/{user_id}")
-async def admin_patch_user(user_id: str, body: Dict[str, Any], user: dict = Depends(require_roles("platform_admin"))):
-    allowed = {}
+async def admin_patch_user(user_id: str, body: Dict[str, Any],
+                            user: dict = Depends(require_roles("platform_admin"))):
+    """Update a user's roles or suspended flag with server-side hierarchy
+    validation. Client claims in the payload never authorize the change
+    on their own — every decision compares the actor's real roles (from
+    the JWT-verified account) against the target's current roles.
+
+    Hierarchy (Step 6C):
+    - `super_admin` may change any user's roles or suspension flag,
+      including granting/revoking `super_admin` and `platform_admin`.
+    - `platform_admin` may change non-administrator users only. Any
+      attempt to (a) grant an admin role, (b) modify an existing
+      administrator's roles, or (c) suspend an existing administrator
+      is 403.
+    """
+    target = await db.users.find_one({"id": user_id})
+    if not target:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+
+    actor_is_super = _is_super_admin(user)
+    target_current_roles = set(target.get("roles", []))
+    target_is_admin = bool(target_current_roles & _ADMIN_ROLES)
+
+    allowed: Dict[str, Any] = {}
+
     if "roles" in body:
         requested_roles = body["roles"] if isinstance(body["roles"], list) else []
+        # Step 3 constraint preserved: single canonical role via this endpoint.
+        # (Multi-role editing is out of Step 6C's P1 scope.)
         if len(requested_roles) != 1 or requested_roles[0] not in ROLE_KEYS:
-            raise HTTPException(status_code=400, detail="Satu akun hanya dapat memiliki satu peran yang valid")
-        allowed["roles"] = [requested_roles[0]]
+            raise HTTPException(status_code=400,
+                                detail="Satu akun hanya dapat memiliki satu peran yang valid")
+        new_role = requested_roles[0]
+        requested_is_admin = new_role in _ADMIN_ROLES
+
+        # Non-super_admin cannot grant an admin tier.
+        if requested_is_admin and not actor_is_super:
+            raise HTTPException(status_code=403,
+                                detail="Only super_admin may assign administrator roles")
+        # Non-super_admin cannot mutate an existing administrator's roles
+        # (blocks demoting/rotating peers or lateral swaps).
+        if target_is_admin and not actor_is_super:
+            raise HTTPException(status_code=403,
+                                detail="Only super_admin may change an administrator's roles")
+        allowed["roles"] = [new_role]
+
     if "suspended" in body:
-        allowed["suspended"] = bool(body["suspended"])
+        new_suspended = bool(body["suspended"])
+        # Non-super_admin cannot suspend an administrator. Un-suspending
+        # is allowed (accidental self-lockout recovery) — defense-in-depth,
+        # not a privilege pivot.
+        if new_suspended and target_is_admin and not actor_is_super:
+            raise HTTPException(status_code=403,
+                                detail="Only super_admin may suspend an administrator")
+        allowed["suspended"] = new_suspended
+
+    if not allowed:
+        raise HTTPException(status_code=400,
+                            detail="Tidak ada perubahan yang valid dalam payload")
+
     await db.users.update_one({"id": user_id}, {"$set": allowed})
     await audit(None, user, "admin.user.update", {"user_id": user_id, **allowed})
     return {"ok": True}
@@ -1904,9 +2051,23 @@ async def admin_events(user: dict = Depends(require_roles("platform_admin"))):
 
 
 @api.post("/demo/reset")
-async def demo_reset():
-    """Restore deterministic demo fixtures without deleting unrelated records."""
+async def demo_reset(user_opt: Optional[dict] = Depends(get_optional_user)):
+    """Restore deterministic demo fixtures without deleting unrelated records.
+
+    Gated dua lapis:
+    1. `OKKAX_DEMO_MODE` harus `true` (default true selama kompetisi). Kalau
+       demo mode dimatikan, endpoint ini merespons 404.
+    2. Pemanggil harus authenticated sebagai admin (`super_admin` atau
+       `platform_admin`). Kalau tanpa token -> 401, kalau role non-admin -> 403.
+    """
+    if not is_demo_mode():
+        raise HTTPException(status_code=404, detail="Not found")
+    if user_opt is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not is_admin(user_opt):
+        raise HTTPException(status_code=403, detail="Only administrators can reset demo data")
     res = await seed_data.seed(force=True)
+    await audit(None, user_opt, "demo.reset")
     return {"ok": True, **res, "demo_event_code": seed_data.EVENT_CODE, "demo_event_id": seed_data.EVENT_ID}
 
 
@@ -1924,6 +2085,57 @@ async def health():
     return {"status": "ok", "product": "OKKAX", "sandbox_notice": SANDBOX_NOTICE}
 
 
+# --- Step 5 endpoints: MUST be defined BEFORE app.include_router(api) so
+# FastAPI mounts them. Helpers referenced here are defined later in the
+# module; Python resolves them at request time, not decoration time.
+
+class WorkspaceValidateIn(BaseModel):
+    organization_id: Optional[str] = None
+    role: str
+
+
+@api.get("/me/workspaces")
+async def me_workspaces(user: dict = Depends(get_current_user)):
+    """Return available workspaces for the authenticated user.
+
+    Stateless, read-only wrapper around `list_available_workspaces`.
+    """
+    workspaces = await list_available_workspaces(user)
+    return {"items": workspaces}
+
+
+@api.post("/me/workspace/validate")
+async def validate_workspace(payload: WorkspaceValidateIn,
+                             user: dict = Depends(get_current_user)):
+    """Validate a client-claimed workspace. Stateless; no DB writes or tokens.
+
+    Returns 200 + resolved workspace when valid, otherwise raises 403 with a
+    generic message. Adds an audit entry for the attempt (success and
+    forbidden), never for the unauthenticated case (Depends handles that
+    with 401 before we get here).
+    """
+    try:
+        workspace = await resolve_active_workspace(
+            user,
+            organization_id=payload.organization_id,
+            role=payload.role,
+        )
+    except HTTPException as exc:
+        if exc.status_code == 403:
+            await audit(None, user, "workspace.validate", {
+                "organization_id": payload.organization_id,
+                "role": payload.role,
+                "result": "forbidden",
+            })
+        raise
+    await audit(None, user, "workspace.validate", {
+        "organization_id": payload.organization_id,
+        "role": payload.role,
+        "result": "ok",
+    })
+    return {"workspace": workspace}
+
+
 app.include_router(api)
 from extras import extras as extras_router  # noqa: E402
 app.include_router(extras_router)
@@ -1938,6 +2150,233 @@ app.add_middleware(
 )
 
 
+def _normalize_user_roles(account: dict) -> Optional[Dict[str, Any]]:
+    """Return the $set update needed to normalize this account, or None if
+    no write is required.
+
+    Behavior (STEP 3):
+    - Keeps every role that is present in ``ROLES``, deduplicated while
+      preserving original order. Roles not in ``ROLE_KEYS`` are dropped.
+    - Uses the legacy scalar ``role`` field as the primary hint when it is
+      valid; otherwise the first valid entry in ``roles`` becomes primary;
+      when nothing valid exists at all, primary falls back to ``"audience"``.
+    - The primary role is placed at the front of ``roles`` so any downstream
+      code that reads ``roles[0]`` sees the same value as ``role``.
+    - Never truncates ``roles`` to a single element. Multi-role users keep
+      every valid role they had.
+    - The scalar ``role`` field is preserved (only rewritten when it already
+      exists and differs from the derived primary). No mass backfill on
+      accounts that never had it.
+    - Idempotent: applying the returned update and re-running yields ``None``.
+    """
+    raw_roles = list(account.get("roles") or [])
+    legacy_role = account.get("role")
+    has_role_field = "role" in account
+
+    seen: set = set()
+    valid_roles: List[str] = []
+    for role in raw_roles:
+        if role in ROLE_KEYS and role not in seen:
+            seen.add(role)
+            valid_roles.append(role)
+
+    if isinstance(legacy_role, str) and legacy_role in ROLE_KEYS:
+        primary = legacy_role
+    elif valid_roles:
+        primary = valid_roles[0]
+    else:
+        primary = "audience"
+
+    if primary in valid_roles:
+        valid_roles = [primary] + [role for role in valid_roles if role != primary]
+    else:
+        valid_roles = [primary] + valid_roles
+
+    update: Dict[str, Any] = {}
+    if raw_roles != valid_roles:
+        update["roles"] = valid_roles
+    if has_role_field and legacy_role != primary:
+        update["role"] = primary
+    return update or None
+
+
+# ---------------------------------------------------------------- membership
+# Minimal foundation (STEP 4) untuk relasi user <-> organization. Additive only:
+# tidak menyentuh user.role / user.roles. Belum ada endpoint publik; helpers ini
+# dipakai oleh test dan siap dipakai step berikutnya (invitation, switcher).
+
+MEMBERSHIP_STATUSES = ("active",)  # sengaja minimal; state lain diperkenalkan di step selanjutnya
+
+
+def _validate_membership_input(role: str, status: str) -> None:
+    """Guard input untuk membership: role wajib salah satu ROLE_KEYS OKKAX,
+    status wajib salah satu MEMBERSHIP_STATUSES. Dipisah dari operasi DB
+    supaya bisa di-test murni tanpa I/O."""
+    if role not in ROLE_KEYS:
+        raise ValueError(
+            f"Invalid membership role: {role!r}. Must be one of {list(ROLE_KEYS)!r}."
+        )
+    if status not in MEMBERSHIP_STATUSES:
+        raise ValueError(
+            f"Invalid membership status: {status!r}. Must be one of {list(MEMBERSHIP_STATUSES)!r}."
+        )
+
+
+async def add_organization_member(
+    *, user_id: str, organization_id: str, role: str, status: str = "active",
+) -> Dict[str, Any]:
+    """Daftarkan user sebagai anggota organisasi dengan role tertentu.
+
+    - Role wajib valid (`ROLE_KEYS`).
+    - Duplikat pasangan (`user_id`, `organization_id`) dicegah di level DB
+      lewat compound unique index (dibuat di startup). Percobaan insert
+      duplikat diterjemahkan ke ValueError agar caller tidak perlu tahu
+      driver-specific exceptions.
+    - Bersifat additive: tidak menulis apa pun ke koleksi `users`. Legacy
+      `user.role` dan `user.roles` tetap utuh.
+    """
+    _validate_membership_input(role=role, status=status)
+    doc = {
+        "id": nid(),
+        "user_id": user_id,
+        "organization_id": organization_id,
+        "role": role,
+        "status": status,
+        "created_at": now_iso(),
+    }
+    try:
+        await db.organization_members.insert_one(dict(doc))
+    except DuplicateKeyError as exc:
+        raise ValueError(
+            f"User {user_id!r} already has membership in organization {organization_id!r}."
+        ) from exc
+    return doc
+
+
+async def list_user_memberships(user_id: str) -> List[Dict[str, Any]]:
+    """Semua membership milik satu user, terbaru dulu."""
+    return await db.organization_members.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+
+
+async def list_organization_members(organization_id: str) -> List[Dict[str, Any]]:
+    """Semua anggota satu organisasi, terbaru dulu."""
+    return await db.organization_members.find(
+        {"organization_id": organization_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(2000)
+
+
+# ---------------------------------------------------------------- workspaces
+# Step 5 — Multi-Workspace Identity. Workspace = (user_id, organization_id, role).
+# `organization_id=None + role=audience` = personal workspace (selalu ada untuk
+# setiap user login). Workspace organisasi berasal dari `organization_members`
+# dengan status='active' saja. Legacy `user.org_id` dan `user.roles` sengaja
+# TIDAK di-surface di sini; migrasi ke membership eksplisit menyusul di
+# step onboarding berikutnya.
+#
+# Admin (super_admin / platform_admin) sengaja tidak dapat diresolve lewat
+# jalur membership: identitas admin tetap terikat pada `user.roles`, tidak
+# per-organisasi. Ini mencegah privilege escalation lewat baris membership
+# yang ditulis manual.
+
+_PERSONAL_WORKSPACE_ROLE = "audience"
+_ADMIN_ROLES_BLOCKED_FROM_WORKSPACE = {"super_admin", "platform_admin"}
+
+
+def _personal_workspace(user: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "user_id": user["id"],
+        "organization_id": None,
+        "role": _PERSONAL_WORKSPACE_ROLE,
+        "membership_id": None,
+        "kind": "personal",
+        "label": "Personal · Audience",
+    }
+
+
+def _org_workspace(user_id: str, membership: Dict[str, Any], org_name: str) -> Dict[str, Any]:
+    return {
+        "user_id": user_id,
+        "organization_id": membership["organization_id"],
+        "role": membership["role"],
+        "membership_id": membership["id"],
+        "kind": "organization",
+        "label": f"{org_name} · {membership['role']}",
+    }
+
+
+async def list_available_workspaces(user: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Semua workspace yang dapat dimasuki user login.
+
+    - Selalu memasukkan personal workspace (audience, organization_id=None).
+    - Menambahkan satu workspace per membership `active` di
+      `organization_members`.
+    """
+    result: List[Dict[str, Any]] = [_personal_workspace(user)]
+    memberships = await db.organization_members.find(
+        {"user_id": user["id"], "status": "active"}, {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+    if not memberships:
+        return result
+    org_ids = list({m["organization_id"] for m in memberships})
+    org_docs = await db.organizations.find(
+        {"id": {"$in": org_ids}}, {"_id": 0, "id": 1, "name": 1}
+    ).to_list(500)
+    org_name_by_id = {doc["id"]: (doc.get("name") or doc["id"]) for doc in org_docs}
+    for membership in memberships:
+        org_name = org_name_by_id.get(membership["organization_id"], membership["organization_id"])
+        result.append(_org_workspace(user["id"], membership, org_name))
+    return result
+
+
+async def resolve_active_workspace(
+    user: Dict[str, Any],
+    *,
+    organization_id: Optional[str],
+    role: str,
+) -> Dict[str, Any]:
+    """Validasi klaim workspace dari client. Kembalikan dict workspace bila
+    valid, atau raise HTTPException(403) bila:
+
+    - klaim ke workspace organisasi orang lain;
+    - role yang tidak dimiliki di organisasi tersebut;
+    - membership yang tidak `active`;
+    - upaya privilege escalation ke role admin lewat baris membership.
+
+    Pesan error sengaja disamakan (`"Workspace not available for this account"`)
+    supaya tidak membocorkan apakah organisasi ada, apakah user pernah menjadi
+    anggota di sana, atau role apa yang sebenarnya dia pegang.
+    """
+    if organization_id is None:
+        if role != _PERSONAL_WORKSPACE_ROLE:
+            raise HTTPException(status_code=403, detail="Personal workspace is audience-only")
+        return _personal_workspace(user)
+
+    # Defense-in-depth: tolak role di luar ROLE_KEYS dan role admin, apa pun
+    # yang tertulis di membership.
+    if role not in ROLE_KEYS or role in _ADMIN_ROLES_BLOCKED_FROM_WORKSPACE:
+        raise HTTPException(status_code=403, detail="Workspace not available for this account")
+
+    membership = await db.organization_members.find_one(
+        {
+            "user_id": user["id"],
+            "organization_id": organization_id,
+            "role": role,
+            "status": "active",
+        },
+        {"_id": 0},
+    )
+    if not membership:
+        raise HTTPException(status_code=403, detail="Workspace not available for this account")
+
+    org = await db.organizations.find_one(
+        {"id": organization_id}, {"_id": 0, "id": 1, "name": 1}
+    )
+    org_name = (org or {}).get("name") or organization_id
+    return _org_workspace(user["id"], membership, org_name)
+
+
 @app.on_event("startup")
 async def startup():
     await db.users.create_index("email", unique=True)
@@ -1948,22 +2387,22 @@ async def startup():
     await db.calendar_entries.create_index([("resource_type", 1), ("resource_id", 1), ("start_at", 1)])
     await db.calendar_entries.create_index([("event_id", 1), ("start_at", 1)])
     await db.calendar_entries.create_index([("created_by", 1), ("start_at", 1)])
+    # STEP 4 — organization membership indexes
+    await db.organization_members.create_index(
+        [("user_id", 1), ("organization_id", 1)], unique=True, name="uniq_user_org"
+    )
+    await db.organization_members.create_index("user_id")
+    await db.organization_members.create_index("organization_id")
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
-    users = await db.users.find({}, {"_id": 0, "id": 1, "roles": 1}).to_list(10000)
+    users = await db.users.find({}, {"_id": 0, "id": 1, "roles": 1, "role": 1}).to_list(10000)
     normalized = 0
     for account in users:
-        current_roles = [role for role in (account.get("roles") or []) if role in ROLE_KEYS]
-        if "super_admin" in current_roles:
-            selected_role = "super_admin"
-        elif "platform_admin" in current_roles:
-            selected_role = "platform_admin"
-        else:
-            selected_role = current_roles[0] if current_roles else "audience"
-        if account.get("roles") != [selected_role]:
-            await db.users.update_one({"id": account["id"]}, {"$set": {"roles": [selected_role]}})
+        update = _normalize_user_roles(account)
+        if update:
+            await db.users.update_one({"id": account["id"]}, {"$set": update})
             normalized += 1
-    logger.info(f"OKKAX single-role normalization: {normalized} account(s) updated")
+    logger.info(f"OKKAX role normalization: {normalized} account(s) updated")
     # Katalog event demo multi-kota selalu di-upsert (idempotent) agar tidak hilang di DB lama/produksi.
     from seed_events import seed_extra_events
     extra = await seed_extra_events()
@@ -1974,3 +2413,8 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     pass
+
+
+
+
+

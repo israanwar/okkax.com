@@ -15,7 +15,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from core import (db, nid, now_iso, create_access_token, clean, get_current_user, is_admin,
-                  get_event_or_404, assert_event_access, audit, notify, ROLE_KEYS)
+                  is_demo_mode, ensure_account_active, get_event_or_404, assert_event_access,
+                  audit, notify, ROLE_KEYS)
 
 logger = logging.getLogger("okkax.extras")
 extras = APIRouter(prefix="/api")
@@ -53,6 +54,7 @@ async def google_session(request: Request, response: Response):
         await notify(user["id"], "Selamat datang di OKKAX",
                      "Akun Google Anda terhubung. Mulai dari Event Studio atau demo terpandu.", "success")
     else:
+        ensure_account_active(user)
         existing_roles = [role for role in (user.get("roles") or []) if role in ROLE_KEYS] or ["audience"]
         if "super_admin" in existing_roles:
             normalized_roles = ["super_admin"]
@@ -415,7 +417,13 @@ PERSONA_EMAILS = {
 
 @extras.post("/demo/persona-login")
 async def persona_login(body: Dict[str, Any], response: Response):
-    """Masuk sekali klik sebagai persona sandbox. Persona administrator tidak diizinkan."""
+    """Masuk sekali klik sebagai persona sandbox. Persona administrator tidak diizinkan.
+
+    Endpoint ini hanya aktif ketika `OKKAX_DEMO_MODE=true` (default true selama
+    kompetisi berjalan). Ketika demo mode dimatikan, endpoint mengembalikan 404
+    sehingga tidak dapat dieksploitasi untuk bypass password di produksi."""
+    if not is_demo_mode():
+        raise HTTPException(status_code=404, detail="Not found")
     email = PERSONA_EMAILS.get(body.get("label"))
     if not email:
         raise HTTPException(status_code=400, detail="Persona demo tidak dikenali")
@@ -424,6 +432,7 @@ async def persona_login(body: Dict[str, Any], response: Response):
         raise HTTPException(status_code=404, detail="Persona demo belum diseed. Jalankan reset data demo.")
     if {"super_admin", "platform_admin"}.intersection(set(user.get("roles", []))):
         raise HTTPException(status_code=403, detail="Persona administrator tidak tersedia pada mode demo")
+    ensure_account_active(user)
     user = clean(user)
     token = create_access_token(user["id"], email)
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none",
