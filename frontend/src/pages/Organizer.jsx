@@ -8,17 +8,20 @@ import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
 
 export function Overview() {
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, workspaceVersion } = useAuth();
   const [events, setEvents] = useState([]);
   const [ripple, setRipple] = useState(null);
 
   useEffect(() => {
     if (hasRole("organizer", "event_organizer", "promoter", "supervisor", "finance_approver")) {
+      // /api/events is scoped server-side to the caller's active
+      // workspace, so we refetch whenever workspaceVersion bumps
+      // (workspace switched via the header selector).
       api.get("/events").then(({ data }) => setEvents(data.items)).catch(() => {});
     }
     api.get(`/events/${DEMO_EVENT_ID}/ripple`).then(({ data }) => setRipple(data.metrics)).catch(() => {});
     // eslint-disable-next-line
-  }, []);
+  }, [workspaceVersion]);
 
   return (
     <div className="space-y-8">
@@ -98,10 +101,12 @@ export function Overview() {
 }
 
 export function EventsList() {
+  const { workspaceVersion } = useAuth();
   const [events, setEvents] = useState(null);
   useEffect(() => {
     api.get("/events").then(({ data }) => setEvents(data.items));
-  }, []);
+    // eslint-disable-next-line
+  }, [workspaceVersion]);
   if (!events) return <div className="text-sm text-zinc-500">Memuat event…</div>;
   return (
     <div className="space-y-4">

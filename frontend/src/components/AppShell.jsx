@@ -6,6 +6,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { Logo } from "@/components/PublicNav";
+import WorkspaceSelector from "@/components/WorkspaceSelector";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 
@@ -147,10 +148,7 @@ export default function AppShell({ children }) {
                 </div>
               )}
             </div>
-            <div className="hidden text-right sm:block">
-              <div className="text-sm font-medium">{user.name}</div>
-              <div className="text-[11px] text-zinc-500">{org?.name || user.roles?.join(", ")}</div>
-            </div>
+            <WorkspaceSelector />
             <button
               data-testid="shell-logout-btn"
               onClick={() => {
