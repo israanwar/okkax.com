@@ -32,6 +32,22 @@ export default function WorkspaceSelector() {
 
   if (!user) return null;
 
+  const isSuperAdmin = user.roles?.includes("super_admin");
+
+  if (isSuperAdmin) {
+    return (
+      <div
+        data-testid="platform-identity"
+        className="hidden px-2 py-1 text-right sm:block"
+      >
+        <div className="text-sm font-medium leading-tight">{user.name}</div>
+        <div className="text-[11px] leading-tight text-zinc-500">
+          Super Admin · Platform
+        </div>
+      </div>
+    );
+  }
+
   const wsKey = (w) => {
     if (!w) return "__none__";
     return w.organization_id ?? "__personal__";

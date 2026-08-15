@@ -15,12 +15,14 @@ import { MyTickets, MyOrders, Validator } from "@/pages/Tickets";
 import { Overview, EventsList, EventStudio } from "@/pages/Organizer";
 import EventWorkspace from "@/pages/EventWorkspace";
 import { SponsorPortal, TenantPortal, AdminPanel } from "@/pages/Portals";
+import MoneyMovement from "@/pages/MoneyMovement";
 import AuthCallback from "@/pages/AuthCallback";
 import RoleWorkspace from "@/pages/RoleWorkspace";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
 import JuriDemo from "@/pages/JuriDemo";
 import PresentationMode from "@/pages/PresentationMode";
 import { PublicCalendar, WorkspaceCalendar } from "@/pages/CalendarEngine";
+import ControlPlane from "@/pages/ControlPlane";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
@@ -58,6 +60,8 @@ function RouterBody() {
             <Route path="/app/sponsor" element={shell(<SponsorPortal />)} />
             <Route path="/app/tenant" element={shell(<TenantPortal />)} />
             <Route path="/app/admin" element={shell(<AdminPanel />)} />
+            <Route path="/app/admin/finance" element={shell(<MoneyMovement />)} />
+            <Route path="/app/admin/control" element={shell(<ControlPlane />)} />
             <Route path="/app/me" element={shell(<RoleWorkspace />)} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/cancel" element={<PaymentCancel />} />

@@ -43,8 +43,21 @@ const NAV = {
     ["/app/tickets", "My Tickets", Ticket],
     ["/app/orders", "Orders & Refunds", Wallet],
   ],
-  admin: [["/app/admin", "Admin Panel", ShieldCheck]],
+  admin: [
+    ["/app/admin", "Admin Panel", ShieldCheck],
+    ["/app/admin/control", "Control Plane", Activity],
+  ],
 };
+
+
+const SUPER_ADMIN_NAV = [
+  ["/app", "Overview", LayoutDashboard],
+  ["/app/admin/control", "Control Plane", Activity],
+  ["/app/admin/finance", "Pergerakan Dana", Wallet],
+  ["/app/admin", "Admin Panel", ShieldCheck],
+  ["/app/events", "Events", ListOrdered],
+  ["/app/calendar", "Calendar", CalendarDays],
+];
 
 export const EVENT_TABS = [
   ["blueprint", "Blueprint", Wand2],
@@ -83,7 +96,11 @@ export default function AppShell({ children }) {
   else if (hasRole("tenant")) links = NAV.tenant;
   else if (hasRole("talent", "talent_management", "venue_manager", "vendor", "worker")) links = NAV.role;
   else links = NAV.audience;
-  if (user.roles?.includes("super_admin") || user.roles?.includes("platform_admin")) links = [...NAV.organizer, ...NAV.admin];
+  if (user.roles?.includes("super_admin")) {
+    links = SUPER_ADMIN_NAV;
+  } else if (user.roles?.includes("platform_admin")) {
+    links = [...NAV.organizer, ...NAV.admin];
+  }
 
   const markRead = async () => {
     setShowNotif(!showNotif);
@@ -99,7 +116,7 @@ export default function AppShell({ children }) {
         <NavLink
           key={to + label}
           to={to}
-          end={to === "/app"}
+          end={to === "/app" || to === "/app/admin"}
           onClick={onClick}
           data-testid={`side-${label.toLowerCase().replace(/[^a-z]+/g, "-")}`}
           className={({ isActive }) =>
@@ -115,8 +132,8 @@ export default function AppShell({ children }) {
   );
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
-      <header className="sticky top-0 z-40 border-b border-[var(--okx-border)] bg-[#0a0a0aee] backdrop-blur-md">
+    <div className="flex h-screen flex-col overflow-hidden bg-[var(--okx-bg)]">
+      <header className="z-40 shrink-0 border-b border-[var(--okx-border)] bg-[#0a0a0aee] backdrop-blur-md">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <button data-testid="shell-drawer-toggle" onClick={() => setOpen(true)} className="p-1 text-zinc-300 lg:hidden" aria-label="Buka menu">
@@ -164,8 +181,8 @@ export default function AppShell({ children }) {
         </div>
       </header>
 
-      <div className="flex">
-        <aside className="hidden w-56 shrink-0 border-r border-[var(--okx-border)] py-4 lg:block">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="hidden h-full w-56 shrink-0 overflow-y-auto border-r border-[var(--okx-border)] py-4 lg:block">
           <SidebarLinks />
           <div className="mt-6 px-3 text-[11px] leading-relaxed text-zinc-600">
             Mode demo kompetisi. Pembayaran sandbox, tanpa uang nyata.
@@ -185,7 +202,11 @@ export default function AppShell({ children }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">{children}</main>
+        <main
+          className="okx-scroll-pane min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ from compiler import (compile_blueprint, _fallback as baseline_blueprint,
                       AI_ENGINES, DEFAULT_ENGINE, resolve_engine)
 import asyncio
 import seed_data
+from control_plane import router as control_router
 
 
 async def refine_blueprint(event_id: str, brief: dict, doc_id: str, engine: str | None = None):
@@ -1955,6 +1956,387 @@ async def admin_metrics(user: dict = Depends(require_roles("platform_admin"))):
             "tenant_applications": await db.tenant_applications.count_documents({})}
 
 
+
+@api.get("/admin/finance/overview")
+async def admin_finance_overview(
+    user: dict = Depends(require_roles("platform_admin")),
+):
+    """Ringkasan pergerakan dana seluruh jaringan OKKAX.
+
+    Seluruh nilai dibaca dari record ekonomi yang sudah ada.
+    Mode kompetisi tetap sandbox dan tidak merepresentasikan
+    penyimpanan uang nyata oleh OKKAX.
+    """
+
+    payments = await db.payments.find(
+        {}, {"_id": 0}
+    ).sort("created_at", -1).to_list(5000)
+
+    milestones = await db.payment_milestones.find(
+        {}, {"_id": 0}
+    ).sort("created_at", -1).to_list(5000)
+
+    refunds = await db.refunds.find(
+        {}, {"_id": 0}
+    ).sort("created_at", -1).to_list(2000)
+
+    orders = await db.ticket_orders.find(
+        {}, {"_id": 0}
+    ).sort("created_at", -1).to_list(5000)
+
+    events = await db.events.find(
+        {"deleted": {"$ne": True}},
+        {
+            "_id": 0,
+            "id": 1,
+            "event_code": 1,
+            "name": 1,
+            "city": 1,
+            "start_date": 1,
+            "status": 1,
+            "total_cost": 1,
+            "confirmed_funding": 1,
+            "funding_gap": 1,
+        },
+    ).to_list(2000)
+
+    event_name = {
+        e["id"]: e.get("name") or e.get("event_code") or e["id"]
+        for e in events
+        if e.get("id")
+    }
+
+    def money(row):
+        """Ambil nilai rupiah dari berbagai schema ekonomi lama."""
+        for key in (
+            "amount",
+            "gross",
+            "total",
+            "value",
+            "fee",
+            "payment_amount",
+            "refund_amount",
+        ):
+            value = row.get(key)
+            if isinstance(value, (int, float)):
+                return int(value)
+        return 0
+
+    def state(row):
+        return str(row.get("status") or "").strip().lower()
+
+    released_states = {
+        "paid",
+        "simulated paid",
+        "released",
+        "settled",
+        "completed",
+        "complete",
+        "success",
+        "successful",
+    }
+
+    pending_states = {
+        "pending",
+        "awaiting payment",
+        "awaiting",
+        "scheduled",
+        "protected",
+        "funded",
+        "held",
+    }
+
+    # --------------------------------------------------------
+    # TICKETING GMV
+    # --------------------------------------------------------
+
+    paid_orders = [
+        o for o in orders
+        if state(o) in {"paid", "completed", "success", "successful"}
+    ]
+
+    ticket_gmv = sum(money(o) for o in paid_orders)
+
+    # --------------------------------------------------------
+    # PAYMENT FLOW
+    # --------------------------------------------------------
+
+    successful_payments = [
+        p for p in payments
+        if state(p) in released_states
+    ]
+
+    payment_gross = sum(money(p) for p in successful_payments)
+
+    platform_fee = sum(
+        int(p.get("platform_fee") or 0)
+        for p in payments
+    )
+
+    gateway_fee = sum(
+        int(p.get("gateway_fee") or 0)
+        for p in payments
+    )
+
+    tax_estimate = sum(
+        int(p.get("tax_estimate") or 0)
+        for p in payments
+    )
+
+    # --------------------------------------------------------
+    # PROTECTED FULFILLMENT OBLIGATIONS
+    # --------------------------------------------------------
+
+    milestone_total = sum(money(m) for m in milestones)
+
+    released_total = sum(
+        money(m)
+        for m in milestones
+        if state(m) in released_states
+    )
+
+    protected_total = sum(
+        money(m)
+        for m in milestones
+        if state(m) in pending_states
+    )
+
+    # Legacy milestone yang belum memiliki canonical status
+    # tetap dihitung sebagai outstanding obligation.
+    classified_total = released_total + protected_total
+
+    if classified_total < milestone_total:
+        protected_total += milestone_total - classified_total
+
+    # --------------------------------------------------------
+    # REFUND
+    # --------------------------------------------------------
+
+    refund_total = sum(money(r) for r in refunds)
+
+    # --------------------------------------------------------
+    # NETWORK ECONOMIC VOLUME
+    # --------------------------------------------------------
+
+    network_gmv = max(
+        ticket_gmv,
+        payment_gross,
+        ticket_gmv + milestone_total,
+    )
+
+    pending_settlement = max(
+        0,
+        protected_total,
+    )
+
+    # --------------------------------------------------------
+    # EVENT FINANCIAL STATE
+    # --------------------------------------------------------
+
+    milestone_by_event = {}
+    released_by_event = {}
+    protected_by_event = {}
+
+    for m in milestones:
+        eid = m.get("event_id")
+        if not eid:
+            continue
+
+        amount = money(m)
+
+        milestone_by_event[eid] = (
+            milestone_by_event.get(eid, 0) + amount
+        )
+
+        if state(m) in released_states:
+            released_by_event[eid] = (
+                released_by_event.get(eid, 0) + amount
+            )
+        else:
+            protected_by_event[eid] = (
+                protected_by_event.get(eid, 0) + amount
+            )
+
+    ticket_by_event = {}
+
+    for order in paid_orders:
+        eid = order.get("event_id")
+        if not eid:
+            continue
+
+        ticket_by_event[eid] = (
+            ticket_by_event.get(eid, 0) + money(order)
+        )
+
+    event_finance = []
+
+    for event in events:
+        eid = event.get("id")
+        if not eid:
+            continue
+
+        secured = milestone_by_event.get(eid, 0)
+        released = released_by_event.get(eid, 0)
+        protected = protected_by_event.get(eid, 0)
+
+        budget = int(event.get("total_cost") or 0)
+        funding = int(event.get("confirmed_funding") or 0)
+
+        readiness = 0
+
+        if budget > 0:
+            readiness = min(
+                100,
+                round((funding / budget) * 100),
+            )
+
+        event_finance.append({
+            "event_id": eid,
+            "event_code": event.get("event_code"),
+            "name": event.get("name"),
+            "city": event.get("city"),
+            "start_date": event.get("start_date"),
+            "status": event.get("status"),
+            "budget": budget,
+            "confirmed_funding": funding,
+            "funding_gap": int(event.get("funding_gap") or 0),
+            "secured_obligations": secured,
+            "released": released,
+            "protected": protected,
+            "ticket_revenue": ticket_by_event.get(eid, 0),
+            "funding_readiness": readiness,
+        })
+
+    event_finance.sort(
+        key=lambda e: (
+            e["secured_obligations"]
+            + e["ticket_revenue"]
+            + e["budget"]
+        ),
+        reverse=True,
+    )
+
+    # --------------------------------------------------------
+    # FINANCIAL ACTIVITY STREAM
+    # --------------------------------------------------------
+
+    activity = []
+
+    for m in milestones:
+        amount = money(m)
+
+        activity.append({
+            "id": f"milestone:{m.get('id')}",
+            "type": "milestone",
+            "event_id": m.get("event_id"),
+            "event_name": event_name.get(m.get("event_id")),
+            "title": (
+                m.get("description")
+                or m.get("label")
+                or "Kewajiban pembayaran"
+            ),
+            "party": (
+                m.get("ref_name")
+                or m.get("party_name")
+                or m.get("ref_type")
+                or "Mitra event"
+            ),
+            "amount": amount,
+            "status": m.get("status") or "Pending",
+            "direction": (
+                "released"
+                if state(m) in released_states
+                else "protected"
+            ),
+            "created_at": (
+                m.get("paid_at")
+                or m.get("updated_at")
+                or m.get("created_at")
+            ),
+        })
+
+    for payment in payments:
+        activity.append({
+            "id": f"payment:{payment.get('id')}",
+            "type": "payment",
+            "event_id": payment.get("event_id"),
+            "event_name": event_name.get(payment.get("event_id")),
+            "title": "Pembayaran masuk",
+            "party": (
+                payment.get("payer_name")
+                or payment.get("provider")
+                or "Pembeli"
+            ),
+            "amount": money(payment),
+            "status": payment.get("status") or "Unknown",
+            "direction": "in",
+            "created_at": (
+                payment.get("paid_at")
+                or payment.get("updated_at")
+                or payment.get("created_at")
+            ),
+        })
+
+    for refund in refunds:
+        activity.append({
+            "id": f"refund:{refund.get('id')}",
+            "type": "refund",
+            "event_id": refund.get("event_id"),
+            "event_name": event_name.get(refund.get("event_id")),
+            "title": "Pengembalian dana",
+            "party": (
+                refund.get("customer_name")
+                or refund.get("buyer_name")
+                or "Pembeli"
+            ),
+            "amount": money(refund),
+            "status": refund.get("status") or "Processed",
+            "direction": "out",
+            "created_at": (
+                refund.get("processed_at")
+                or refund.get("processed_date")
+                or refund.get("updated_at")
+                or refund.get("created_at")
+            ),
+        })
+
+    activity.sort(
+        key=lambda row: str(row.get("created_at") or ""),
+        reverse=True,
+    )
+
+    return {
+        "summary": {
+            "network_gmv": network_gmv,
+            "ticket_gmv": ticket_gmv,
+            "payment_gross": payment_gross,
+            "secured_obligations": milestone_total,
+            "released": released_total,
+            "protected": protected_total,
+            "pending_settlement": pending_settlement,
+            "refund_exposure": refund_total,
+            "platform_fee": platform_fee,
+            "gateway_fee": gateway_fee,
+            "tax_estimate": tax_estimate,
+        },
+        "counts": {
+            "events": len(events),
+            "payments": len(payments),
+            "milestones": len(milestones),
+            "refunds": len(refunds),
+            "ticket_orders": len(orders),
+            "paid_ticket_orders": len(paid_orders),
+        },
+        "activity": activity[:100],
+        "events": event_finance[:100],
+        "notice": (
+            "Mode demo kompetisi. Seluruh pergerakan dana adalah "
+            "simulasi operasional dan tidak menunjukkan bahwa OKKAX "
+            "menyimpan dana nyata."
+        ),
+    }
+
+
 @api.get("/admin/users")
 async def admin_users(user: dict = Depends(require_roles("platform_admin"))):
     return {"items": await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(500)}
@@ -2097,7 +2479,8 @@ async def health():
     return {"status": "ok", "product": "OKKAX", "sandbox_notice": SANDBOX_NOTICE}
 
 
-# --- Step 5 endpoints: MUST be defined BEFORE app.include_router(api) so
+# --- Step 5 endpoints: MUST be defined BEFORE app.include_router(api)
+app.include_router(control_router)
 # FastAPI mounts them. Helpers referenced here are defined later in the
 # module; Python resolves them at request time, not decoration time.
 
@@ -2108,10 +2491,20 @@ class WorkspaceValidateIn(BaseModel):
 
 @api.get("/me/workspaces")
 async def me_workspaces(user: dict = Depends(get_current_user)):
-    """Return available workspaces for the authenticated user.
+    """Return available execution contexts for the authenticated user."""
 
-    Stateless, read-only wrapper around `list_available_workspaces`.
-    """
+    if "super_admin" in set(user.get("roles", [])):
+        return {
+            "items": [{
+                "kind": "platform",
+                "user_id": user["id"],
+                "organization_id": None,
+                "membership_id": None,
+                "role": "super_admin",
+                "label": "Super Admin · Platform",
+            }]
+        }
+
     workspaces = await list_available_workspaces(user)
     return {"items": workspaces}
 
@@ -2192,6 +2585,18 @@ async def activate_workspace(payload: WorkspaceValidateIn, request: Request,
 @api.get("/me/workspace/active")
 async def read_active_workspace(request: Request,
                                  user: dict = Depends(get_current_user)):
+    if "super_admin" in set(user.get("roles", [])):
+        return {
+            "workspace": {
+                "kind": "platform",
+                "user_id": user["id"],
+                "organization_id": None,
+                "membership_id": None,
+                "role": "super_admin",
+                "label": "Super Admin · Platform",
+            }
+        }
+
     """Return the workspace currently active on THIS session.
 
     Always re-derives from DB. if the underlying membership was
@@ -2491,6 +2896,13 @@ async def startup():
     # Phase 01. server-authoritative session registry indexes.
     await db.sessions.create_index("id", unique=True, name="uniq_session_id")
     await db.sessions.create_index([("user_id", 1), ("revoked_at", 1)])
+    # V5 Phase 02 Control Plane indexes.
+    await db.control_requests.create_index("id", unique=True, name="uniq_control_request_id")
+    await db.control_requests.create_index([("status", 1), ("created_at", -1)])
+    await db.control_requests.create_index([("risk", 1), ("created_at", -1)])
+    await db.control_evidence.create_index("id", unique=True, name="uniq_control_evidence_id")
+    await db.control_evidence.create_index([("request_id", 1), ("created_at", 1)])
+    await db.control_evidence.create_index([("risk", 1), ("created_at", -1)])
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
     memberships = await seed_data.ensure_demo_memberships()

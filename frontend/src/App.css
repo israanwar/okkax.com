@@ -2,3 +2,22 @@
 .App {
   min-height: 100vh;
 }
+
+
+/* OKKAX APP SHELL FIXED SURFACES */
+@media (min-width: 1024px) {
+  .okx-scroll-pane {
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .okx-scroll-pane > div > :first-child {
+    position: sticky;
+    top: -1.5rem;
+    z-index: 30;
+    margin-top: -1.5rem;
+    padding-top: 1.5rem;
+    padding-bottom: 1rem;
+    background: var(--okx-bg);
+  }
+}
