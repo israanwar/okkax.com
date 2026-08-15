@@ -45,13 +45,13 @@ _db = pymongo.MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
 SEED_EVENT_ID = "evt-aruna-2026"
 SEED_ORG_ID = "org-aruna"
 
-# Test fixtures — all prefixed to allow deterministic wipe.
+# Test fixtures. all prefixed to allow deterministic wipe.
 TEST_PREFIX = "test-step6b-"
 TEST_EVENT_ID = f"{TEST_PREFIX}evt-crossorg"
 TEST_FOREIGN_ORG_ID = f"{TEST_PREFIX}org-foreign"
 TEST_TICKET_ID = f"{TEST_PREFIX}ticket-crossorg"
 TEST_QR = f"{TEST_PREFIX}qr-crossorg"
-# Memberships this suite injects into seed orgs also need cleanup — mark
+# Memberships this suite injects into seed orgs also need cleanup. mark
 # every row we insert so we can wipe them without touching legitimate
 # rows a peer test suite may have created.
 TEST_MARKER = "_step6b_test_marker"
@@ -174,13 +174,21 @@ def test_admin_allowed_on_private_surface():
 
 def test_active_organizer_org_membership_grants_access():
     """A user with an active membership in `event.organizer_org_id`
-    passes even without being the owner. Uses the worker seed account
-    (usr-8) as a neutral subject — `user.org_id` is None so we prove
-    membership alone unlocks. worker@okkax.id is deliberately picked
-    because no other test suite touches its membership rows, avoiding
-    race with parallel xdist workers."""
+    passes even without being the owner. provided they ACTIVATE that
+    workspace on their session. Since Phase 01 Active Workspace Scope
+    Enforcement, holding a membership is necessary but no longer
+    sufficient: authority is bound to the currently-active workspace,
+    so multi-org members cannot exercise all their memberships
+    simultaneously."""
     _inject_membership("usr-8", SEED_ORG_ID, role="organizer")
     tok = _login("worker@okkax.id")
+    # Activate the workspace matching the event's organizer_org_id.
+    activate = requests.post(
+        f"{API}/me/workspace/activate",
+        json={"organization_id": SEED_ORG_ID, "role": "organizer"},
+        headers=_h(tok), timeout=10,
+    )
+    assert activate.status_code == 200, activate.text
     r = requests.get(f"{API}/events/{SEED_EVENT_ID}/brief", headers=_h(tok), timeout=10)
     assert r.status_code == 200, f"membership did not grant access: {r.text}"
 
@@ -231,13 +239,13 @@ def test_owner_can_validate_own_event_ticket():
     tok = _login("organizer@okkax.id")
     # Grab any ticket for the seed event
     doc = _db.tickets.find_one({"event_id": SEED_EVENT_ID}, {"_id": 0, "qr_code": 1})
-    assert doc, "seed ticket for evt-aruna-2026 missing — reseed backend"
+    assert doc, "seed ticket for evt-aruna-2026 missing. reseed backend"
     r = requests.post(f"{API}/tickets/validate",
                       json={"qr_code": doc["qr_code"], "event_id": SEED_EVENT_ID},
                       headers=_h(tok), timeout=10)
     assert r.status_code == 200, r.text
     body = r.json()
-    # "Valid" first time, "Already Used" on re-run — both are authorized outcomes.
+    # "Valid" first time, "Already Used" on re-run. both are authorized outcomes.
     assert body["result"] in ("Valid", "Already Used"), body
 
 
@@ -245,7 +253,7 @@ def test_operator_of_event_a_cannot_validate_event_b_ticket():
     """Organizer of evt-aruna-2026 tries to validate a ticket belonging
     to a foreign event (different owner + different organizer_org_id).
     Must be 403, regardless of what event_id the client claims in the
-    payload — authorization uses the ticket's REAL event_id."""
+    payload. authorization uses the ticket's REAL event_id."""
     _seed_foreign_event()
     tok = _login("organizer@okkax.id")
 
@@ -276,7 +284,7 @@ def test_admin_can_validate_any_ticket():
 # ------------------------------------------------------------ ripple (demo-safe)
 
 def test_ripple_public_for_demo_event():
-    """Landing page keeps calling this unauthenticated — must stay 200
+    """Landing page keeps calling this unauthenticated. must stay 200
     for events marked `is_demo=True`."""
     r = requests.get(f"{API}/events/{SEED_EVENT_ID}/ripple", timeout=10)
     assert r.status_code == 200, r.text

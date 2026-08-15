@@ -12,7 +12,7 @@ JWT_ALG = "HS256"
 # Sessions expire alongside the access token they were issued with, so a
 # stale token whose corresponding session has been revoked or has aged
 # out gets rejected at `get_current_user`. Same TTL keeps the two
-# lifetimes coupled — no refresh flow (deliberately out of scope).
+# lifetimes coupled. no refresh flow (deliberately out of scope).
 ACCESS_TOKEN_TTL_DAYS = 7
 SESSION_TTL_DAYS = 7
 
@@ -43,7 +43,7 @@ def create_access_token(user_id: str, email: str, sid: str) -> str:
     """Mint an access token bound to a server-side session.
 
     `sid` is required. Every request re-verifies the referenced session
-    against `db.sessions` — a token whose session was revoked or aged
+    against `db.sessions`. a token whose session was revoked or aged
     out is rejected even though the JWT signature is still valid. This
     is what makes revocation server-authoritative.
     """
@@ -74,7 +74,7 @@ async def create_session(user_id: str) -> dict:
 
 
 async def issue_access_token(user_id: str, email: str) -> tuple[str, dict]:
-    """Convenience wrapper — create a session and mint the JWT bound to
+    """Convenience wrapper. create a session and mint the JWT bound to
     it in one call. Every production JWT-issuance site (login, register,
     Google session, persona login) goes through this so the two are
     never out of sync."""
@@ -84,7 +84,7 @@ async def issue_access_token(user_id: str, email: str) -> tuple[str, dict]:
 
 
 async def revoke_session(sid: str) -> None:
-    """Idempotent — revoking a session that is already revoked (or
+    """Idempotent. revoking a session that is already revoked (or
     never existed) is a no-op. We only stamp `revoked_at` when the row
     exists and is currently active, keeping the first-revoke timestamp
     accurate for audit."""
@@ -121,7 +121,7 @@ async def get_current_user(request: Request) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    # Phase 01 — server-authoritative session gate. Any token minted
+    # Phase 01. server-authoritative session gate. Any token minted
     # before session tracking (missing `sid`) is rejected. Production
     # code never emits such tokens; test fixtures updated to seed a
     # session row + include the sid.
@@ -151,7 +151,68 @@ async def get_current_user(request: Request) -> dict:
     # authorized this request without leaking sid into any response
     # payload that whitelists user fields.
     request.state.session_id = sid
-    return clean(user)
+    cleaned = clean(user)
+    # Phase 01. resolve the active workspace context ONCE per request
+    # and stash it on the user dict. Authorization helpers such as
+    # `assert_event_access` and endpoints such as `list_events` read
+    # from this to enforce single-org-at-a-time authority. Prefixed
+    # with `_` so it never leaks into whitelisted user response
+    # payloads and never collides with a real user attribute.
+    cleaned["_workspace_ctx"] = await _resolve_workspace_ctx(cleaned, sid, session)
+    request.state.active_workspace_ctx = cleaned["_workspace_ctx"]
+    return cleaned
+
+
+_ADMIN_ROLES_CORE = frozenset({"super_admin", "platform_admin"})
+
+
+async def _resolve_workspace_ctx(user: dict, sid: Optional[str],
+                                  session: Optional[dict]) -> Optional[dict]:
+    """Single-org execution context for the current request.
+
+    Returns ``{organization_id, role, source}`` when the caller holds
+    org-operating authority for exactly one organization on this
+    request, or ``None`` when the caller has no organization authority
+    (personal workspace, admin without a workspace, or a session that
+    activated a workspace whose membership has since been revoked).
+
+    Sources:
+    - ``"session"``: `session.active_workspace.organization_id` was
+      activated and the underlying membership is still active. The
+      role is re-derived from the CURRENT membership. no snapshot.
+    - ``"legacy"``: no workspace was activated on this session; the
+      user carries a legacy scalar ``user.org_id``. Kept as a
+      backward-compat bridge so pre-membership seed accounts keep
+      working; will be removed once every account is backfilled into
+      memberships. NEVER unions with `"session"`. one or the other.
+
+    Admin roles are never returned via this path. admins bypass
+    through `is_admin(user)` elsewhere so their platform authority
+    stays separate from any organization workspace.
+    """
+    active = (session or {}).get("active_workspace") if session else None
+    # Case A. session declared personal workspace (org_id = None).
+    if active and active.get("organization_id") is None:
+        return None
+    # Case B. session activated an organization workspace.
+    if active and active.get("organization_id") is not None:
+        org_id = active["organization_id"]
+        membership = await db.organization_members.find_one(
+            {"user_id": user["id"], "organization_id": org_id, "status": "active"},
+            {"_id": 0, "role": 1},
+        )
+        if not membership or membership.get("role") in _ADMIN_ROLES_CORE:
+            return None
+        return {"organization_id": org_id, "role": membership["role"], "source": "session"}
+    # Case C. no active workspace on this session. Fall back to the
+    # single legacy scalar org, if any. This is the ONLY path that
+    # preserves pre-Phase-01 seed accounts without a per-request
+    # activation. It is single-org by construction (scalar field).
+    legacy = user.get("org_id")
+    if legacy:
+        return {"organization_id": legacy, "role": user.get("role"),
+                "source": "legacy"}
+    return None
 
 
 async def get_optional_user(request: Request) -> Optional[dict]:
@@ -245,7 +306,7 @@ async def user_has_active_membership(user_id: Optional[str], organization_id: Op
     `organization_id`. Step 4 collection is the authoritative source for
     org-scoped authorization from Step 6B onward.
 
-    Returns False on any missing id — never raises, so callers can compose
+    Returns False on any missing id. never raises, so callers can compose
     it into authorization ladders without special-casing anonymous inputs.
     """
     if not user_id or not organization_id:
@@ -261,23 +322,29 @@ async def assert_event_access(event: dict, user: dict, write: bool = False):
     """Enforce access to an event's PRIVATE data (brief, blueprint, budget,
     talents, vendors, workforce, command center, etc.).
 
-    Step 6B behavior:
-    1. Admin (`super_admin` / `platform_admin`) always passes.
-    2. Event owner (`event.owner_user_id == user.id`) always passes.
-    3. Active membership on `event.organizer_org_id` (Step 4 collection)
-       passes. This is the authoritative org-scope check.
-    4. Legacy scalar `user.org_id == event.organizer_org_id` still passes
-       as a backward-compatible fallback for seed/legacy accounts that
-       have not yet been migrated into memberships. Removal is scheduled
-       for a later step once onboarding backfills every legacy account.
-    5. Everything else is 403.
+    Phase 01. Active Workspace Scope Enforcement:
 
-    NOTE: unlike pre-Step-6B, `event.status == "published"` no longer
-    grants access to this private surface — published events remain
-    reachable via the dedicated public endpoints (`/api/public/events/*`,
-    `/api/discover/*`) which never invoke this function. The `write`
-    parameter is kept in the signature for source-code readability and
-    for potential future divergence, but it does NOT relax the check.
+    1. Admin (`super_admin` / `platform_admin`) always passes.
+    2. Event owner (`event.owner_user_id == user.id`) always passes ,
+       ownership is an explicit existing policy and is intentionally
+       not narrowed by workspace scope.
+    3. Otherwise the caller's ACTIVE WORKSPACE ORGANIZATION must equal
+       `event.organizer_org_id`. The active workspace is resolved once
+       per request in `get_current_user` (single membership lookup;
+       admin roles never returned via that path; legacy scalar
+       `user.org_id` remains the transitional single-org fallback for
+       accounts not yet backfilled into memberships).
+    4. Multi-org membership no longer grants simultaneous authority ,
+       a member of Org A and Org B who has activated Org B cannot see
+       Org A's private data on this request. Switching to Org A
+       requires an explicit `/me/workspace/activate`.
+    5. Anything else is 403.
+
+    NOTE: `event.status == "published"` does NOT bypass this. published
+    events remain reachable via `/api/public/events/*` and
+    `/api/discover/*` which never invoke this function. The `write`
+    parameter is kept in the signature for readability and future
+    divergence; it does NOT relax the check.
     """
     if is_admin(user):
         return
@@ -285,9 +352,8 @@ async def assert_event_access(event: dict, user: dict, write: bool = False):
         return
     org_id = event.get("organizer_org_id")
     if org_id:
-        if await user_has_active_membership(user.get("id"), org_id):
-            return
-        if user.get("org_id") and user.get("org_id") == org_id:
+        ctx = user.get("_workspace_ctx") or {}
+        if ctx.get("organization_id") == org_id:
             return
     raise HTTPException(status_code=403, detail="You do not have access to this event's data")
 

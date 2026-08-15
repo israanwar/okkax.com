@@ -194,7 +194,7 @@ async def me(user: dict = Depends(get_current_user)):
 async def logout(request: Request, user: dict = Depends(get_current_user)):
     """Revoke the session that authenticated THIS request. Idempotent
     (revoking a already-revoked session is a no-op) and scoped to a
-    single session — Phase 01 deliberately excludes logout-all."""
+    single session. Phase 01 deliberately excludes logout-all."""
     sid = getattr(request.state, "session_id", None)
     if sid:
         await revoke_session(sid)
@@ -299,7 +299,7 @@ async def _event_visible_to_public_caller(ev: dict, user: Optional[dict]) -> boo
       to anyone (existing marketplace behavior).
     - Otherwise the caller must be authenticated AND pass
       `assert_event_access` (admin / owner / active member of
-      `organizer_org_id` / legacy `user.org_id` match — the Step 6B
+      `organizer_org_id` / legacy `user.org_id` match. the Step 6B
       ladder).
     - Any other case returns False; callers translate that to a 404
       rather than a 403 so a draft event's existence is not disclosed
@@ -355,23 +355,19 @@ async def create_event(brief: BriefIn, user: dict = Depends(require_roles("organ
 async def list_events(user: dict = Depends(get_current_user)):
     f = {"deleted": {"$ne": True}}
     if not is_admin(user):
-        # Step 6C — resolve every organization the user is currently an
-        # ACTIVE member of (Step 4 collection) in one indexed query,
-        # then match every event whose `organizer_org_id` is in that
-        # set. Legacy scalar `user.org_id` remains a temporary fallback
-        # for accounts that have not yet been backfilled into
-        # organization_members. Ownership always passes independently.
-        memberships = await db.organization_members.find(
-            {"user_id": user["id"], "status": "active"},
-            {"_id": 0, "organization_id": 1},
-        ).to_list(200)
-        org_ids = {m["organization_id"] for m in memberships if m.get("organization_id")}
-        legacy_org_id = user.get("org_id")
-        if legacy_org_id:
-            org_ids.add(legacy_org_id)
+        # Phase 01. Active Workspace Scope: return events the caller
+        # owns PLUS events belonging to the SINGLE organization they
+        # are currently operating in. Multi-org membership no longer
+        # grants simultaneous multi-org visibility; switching orgs
+        # requires `/me/workspace/activate` on the session. The
+        # workspace context (org id + resolved active membership OR
+        # legacy scalar fallback) is computed once per request in
+        # `get_current_user`. no per-endpoint N+1.
         or_clauses: List[Dict[str, Any]] = [{"owner_user_id": user["id"]}]
-        if org_ids:
-            or_clauses.append({"organizer_org_id": {"$in": list(org_ids)}})
+        ctx = user.get("_workspace_ctx") or {}
+        active_org_id = ctx.get("organization_id")
+        if active_org_id:
+            or_clauses.append({"organizer_org_id": active_org_id})
         f["$or"] = or_clauses
     rows = await db.events.find(f, {"_id": 0}).sort("created_at", -1).to_list(100)
     out = []
@@ -960,7 +956,7 @@ async def decide_application(app_id: str, body: Dict[str, Any], user: dict = Dep
 # ---------------------------------------------------------------- ticketing
 @api.get("/events/{event_id}/ticket-tiers")
 async def list_tiers(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
-    # Step 6C — was fully public. Now serves normally for published/live
+    # Step 6C. was fully public. Now serves normally for published/live
     # events (marketplace flow) but returns 404 for draft events unless
     # the caller is authorized on that event (owner/admin/member).
     ev = await get_event_or_404(event_id)
@@ -1349,7 +1345,7 @@ class ValidateIn(BaseModel):
 
 @api.post("/tickets/validate")
 async def validate_ticket(payload: ValidateIn, user: dict = Depends(get_current_user)):
-    # Step 6B — role gate FIRST, before any DB read that could leak whether
+    # Step 6B. role gate FIRST, before any DB read that could leak whether
     # a QR is real. Audience, sponsor, tenant, talent, vendor, worker, and
     # finance_approver never pass this line, so they cannot use the endpoint
     # as an oracle either.
@@ -1366,7 +1362,7 @@ async def validate_ticket(payload: ValidateIn, user: dict = Depends(get_current_
                                                 "result": result, "at": now_iso(), "by": user["id"],
                                                 "qr_code": payload.qr_code})
         return {"result": result, "message": "QR tidak dikenali oleh OKKAX."}
-    # Step 6B — event-scope gate. Authorize against the ticket's REAL
+    # Step 6B. event-scope gate. Authorize against the ticket's REAL
     # event_id, not the client-supplied `payload.event_id`. An organizer
     # of event A must not be able to validate tickets of event B by
     # spoofing the event_id.
@@ -1434,7 +1430,7 @@ async def compute_budget(event_id: str) -> dict:
         funding_lines.append({"source": f["source"], "label": f["label"], "amount": f["amount"],
                               "state": f.get("state", "estimated"), "id": f["id"]})
     for c in await db.sponsor_commitments.find({"event_id": event_id, "status": "Confirmed"}, {"_id": 0}).to_list(100):
-        funding_lines.append({"source": "Sponsor Commitments", "label": f"{c['sponsor_name']} — {c['package_name']}",
+        funding_lines.append({"source": "Sponsor Commitments", "label": f"{c['sponsor_name']}. {c['package_name']}",
                               "amount": c["amount"], "state": "committed"})
     tenant_rev = 0
     for a in await db.tenant_applications.find({"event_id": event_id, "status": "approved"}, {"_id": 0}).to_list(300):
@@ -1660,7 +1656,7 @@ async def event_graph(event_id: str, user: dict = Depends(get_current_user)):
 @api.get("/events/{event_id}/ripple")
 async def ripple(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
     ev = await get_event_or_404(event_id)
-    # Step 6B — non-demo events return economic ripple only for owner /
+    # Step 6B. non-demo events return economic ripple only for owner /
     # admin / active organizer-org member. Landing page continues to
     # display the demo event's aggregate ripple to unauthenticated
     # visitors (marketing surface, explicitly labeled as demo data).
@@ -1971,7 +1967,7 @@ async def admin_patch_user(user_id: str, body: Dict[str, Any],
                             user: dict = Depends(require_roles("platform_admin"))):
     """Update a user's roles or suspended flag with server-side hierarchy
     validation. Client claims in the payload never authorize the change
-    on their own — every decision compares the actor's real roles (from
+    on their own. every decision compares the actor's real roles (from
     the JWT-verified account) against the target's current roles.
 
     Hierarchy (Step 6C):
@@ -2016,7 +2012,7 @@ async def admin_patch_user(user_id: str, body: Dict[str, Any],
     if "suspended" in body:
         new_suspended = bool(body["suspended"])
         # Non-super_admin cannot suspend an administrator. Un-suspending
-        # is allowed (accidental self-lockout recovery) — defense-in-depth,
+        # is allowed (accidental self-lockout recovery). defense-in-depth,
         # not a privilege pivot.
         if new_suspended and target_is_admin and not actor_is_super:
             raise HTTPException(status_code=403,
@@ -2142,6 +2138,89 @@ async def validate_workspace(payload: WorkspaceValidateIn,
         "result": "ok",
     })
     return {"workspace": workspace}
+
+
+@api.post("/me/workspace/activate")
+async def activate_workspace(payload: WorkspaceValidateIn, request: Request,
+                              user: dict = Depends(get_current_user)):
+    """Persist the caller's active workspace onto the CURRENT session.
+
+    The client's claim is validated by `resolve_active_workspace`
+    against live DB state (personal-audience-only, admin-role blocked,
+    active membership required. all the same guardrails as
+    `/me/workspace/validate`). Only `organization_id` is written to the
+    session row; the effective role is re-derived from the membership
+    on every read of `/me/workspace/active`, so a role change after
+    activation is reflected immediately and no permission snapshot
+    lives on the session.
+
+    Scoped to a single session by design. logging in from a second
+    browser gives that session its own independent active workspace.
+    """
+    workspace = await resolve_active_workspace(
+        user,
+        organization_id=payload.organization_id,
+        role=payload.role,
+    )
+    sid = getattr(request.state, "session_id", None)
+    if not sid:
+        # Belt-and-braces: get_current_user always sets this. If it did
+        # not, the session gate is broken. refuse rather than silently
+        # writing to a null sid.
+        raise HTTPException(status_code=401, detail="Session missing")
+    await db.sessions.update_one(
+        {"id": sid, "user_id": user["id"]},
+        {"$set": {"active_workspace": {
+            "organization_id": workspace["organization_id"],
+        }}},
+    )
+    await audit(None, user, "workspace.activate", {
+        "organization_id": workspace["organization_id"],
+        "role": workspace["role"],
+    })
+    return {"workspace": workspace}
+
+
+@api.get("/me/workspace/active")
+async def read_active_workspace(request: Request,
+                                 user: dict = Depends(get_current_user)):
+    """Return the workspace currently active on THIS session.
+
+    Always re-derives from DB. if the underlying membership was
+    revoked, the org was renamed, or the caller's role in that org
+    changed, this endpoint reflects that immediately. Returns 200 with
+    `workspace: null` when nothing has been activated yet, and 403
+    when a workspace WAS activated but is no longer valid (membership
+    revoked) so the caller can tell the two apart.
+    """
+    sid = getattr(request.state, "session_id", None)
+    session = await db.sessions.find_one({"id": sid}, {"_id": 0}) if sid else None
+    active = (session or {}).get("active_workspace")
+    if not active:
+        return {"workspace": None}
+    organization_id = active.get("organization_id")
+    # Personal workspace. audience only, always available.
+    if organization_id is None:
+        return {"workspace": _personal_workspace(user)}
+    # Organization workspace. re-resolve against current membership.
+    membership = await db.organization_members.find_one(
+        {"user_id": user["id"], "organization_id": organization_id, "status": "active"},
+        {"_id": 0},
+    )
+    if not membership:
+        # Membership was revoked (or role changed to admin, or org
+        # disabled) after activation. Do not silently downgrade. deny
+        # so the caller must re-activate.
+        raise HTTPException(status_code=403,
+                            detail="Active workspace is no longer available")
+    if membership.get("role") in _ADMIN_ROLES_BLOCKED_FROM_WORKSPACE:
+        raise HTTPException(status_code=403,
+                            detail="Active workspace is no longer available")
+    org = await db.organizations.find_one(
+        {"id": organization_id}, {"_id": 0, "id": 1, "name": 1}
+    )
+    org_name = (org or {}).get("name") or organization_id
+    return {"workspace": _org_workspace(user["id"], membership, org_name)}
 
 
 app.include_router(api)
@@ -2276,7 +2355,7 @@ async def list_organization_members(organization_id: str) -> List[Dict[str, Any]
 
 
 # ---------------------------------------------------------------- workspaces
-# Step 5 — Multi-Workspace Identity. Workspace = (user_id, organization_id, role).
+# Step 5. Multi-Workspace Identity. Workspace = (user_id, organization_id, role).
 # `organization_id=None + role=audience` = personal workspace (selalu ada untuk
 # setiap user login). Workspace organisasi berasal dari `organization_members`
 # dengan status='active' saja. Legacy `user.org_id` dan `user.roles` sengaja
@@ -2395,13 +2474,13 @@ async def startup():
     await db.calendar_entries.create_index([("resource_type", 1), ("resource_id", 1), ("start_at", 1)])
     await db.calendar_entries.create_index([("event_id", 1), ("start_at", 1)])
     await db.calendar_entries.create_index([("created_by", 1), ("start_at", 1)])
-    # STEP 4 — organization membership indexes
+    # STEP 4. organization membership indexes
     await db.organization_members.create_index(
         [("user_id", 1), ("organization_id", 1)], unique=True, name="uniq_user_org"
     )
     await db.organization_members.create_index("user_id")
     await db.organization_members.create_index("organization_id")
-    # Phase 01 — server-authoritative session registry indexes.
+    # Phase 01. server-authoritative session registry indexes.
     await db.sessions.create_index("id", unique=True, name="uniq_session_id")
     await db.sessions.create_index([("user_id", 1), ("revoked_at", 1)])
     res = await seed_data.seed(force=False)
