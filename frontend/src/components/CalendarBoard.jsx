@@ -2,11 +2,78 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleDot,
-  Clock3, Crosshair, List, MapPin, Plus, Search, Ticket, Trash2, Users, X, XCircle,
+  Clock3, Crosshair, LayoutGrid, List, MapPin, Plus, Search, Sun, Ticket, Trash2,
+  Users, X, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import OkxDropdown from "@/components/OkxDropdown";
+
+// Chip label -> entry_type value emitted by backend calendar_engine.
+// Chips act as scoped filters. Empty entry_type list means "all".
+const ORGANIZER_CATEGORY_MAP = {
+  "Persiapan": "preparation",
+  "Venue deadline": "venue_deadline",
+  "Talent hold": "talent_hold",
+  "Kontrak": "contract",
+  "DP & pelunasan": "payment",
+  "Perizinan": "permit",
+  "Penjualan tiket": "ticketing",
+  "Periode sponsor": "sponsor",
+  "Pendaftaran tenant": "tenant",
+  "Rekrutmen pekerja": "workforce",
+  "Produksi materi": "production",
+  "Perjalanan talent": "travel",
+  "Loading": "loading",
+  "Soundcheck": "soundcheck",
+  "Rehearsal": "rehearsal",
+  "Showtime": "showtime",
+  "Dismantling": "dismantling",
+  "Settlement": "settlement",
+  "Laporan pasca-event": "post_event_report",
+};
+
+// Fallback chip -> entry_type mapping for non-organizer role calendars.
+// Labels arrive from ROLE_CALENDARS on the backend; we translate to
+// entry_type via a lowercase-key lookup.
+const ROLE_CATEGORY_MAP = {
+  ...ORGANIZER_CATEGORY_MAP,
+  // talent
+  "confirmed": "booking", "travel day": "travel", "rehearsal": "rehearsal",
+  "performance": "performance", "rest day": "rest",
+  // venue
+  "site visit": "site_visit", "tentative hold": "tentative_hold",
+  "confirmed booking": "booking", "loading": "loading", "setup": "setup",
+  "event": "event", "dismantling": "dismantling",
+  // vendor
+  "jadwal kru": "crew", "mobilisasi": "mobilization",
+  "instalasi": "installation", "testing": "testing", "show": "show",
+  "pembongkaran": "dismantling", "pengembalian inventaris": "inventory_return",
+  // freelancer
+  "undangan kerja": "work_invitation", "shift": "shift",
+  "check-in": "check_in", "check-out": "check_out",
+  // partner
+  "batas pengajuan": "proposal_deadline", "negosiasi": "negotiation",
+  "pembayaran": "payment", "produksi materi": "material_production",
+  "instalasi booth": "booth_installation",
+};
+
+const RESOURCE_TYPE_OPTIONS = [
+  { value: "", label: "Semua resource" },
+  { value: "event", label: "Event" },
+  { value: "venue", label: "Venue" },
+  { value: "talent", label: "Talent" },
+  { value: "vendor", label: "Vendor" },
+  { value: "worker", label: "Worker" },
+  { value: "sponsor", label: "Sponsor" },
+  { value: "tenant", label: "Tenant" },
+];
+
+function chipToEntryType(chipLabel) {
+  const direct = ORGANIZER_CATEGORY_MAP[chipLabel] || ROLE_CATEGORY_MAP[chipLabel];
+  if (direct) return direct;
+  return ROLE_CATEGORY_MAP[chipLabel.toLowerCase()] || "";
+}
 
 // Helper: bangun options untuk OkxDropdown dengan placeholder "Semua X" sebagai
 // item pertama yang memilih nilai kosong (mereset filter).
@@ -137,6 +204,59 @@ function WeekView({ cursor, items, selected, onSelect }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function DayView({ cursor, items, selected, onSelect }) {
+  const key = isoDay(cursor);
+  const rows = items
+    .filter((item) => String(item.start_at).slice(0, 10) === key)
+    .sort((a, b) => String(a.start_at).localeCompare(String(b.start_at)));
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const grouped = useMemo(() => {
+    const map = {};
+    for (const item of rows) {
+      const hour = Number(String(item.start_at).slice(11, 13) || 0);
+      (map[hour] ||= []).push(item);
+    }
+    return map;
+  }, [rows]);
+  return (
+    <div className="border-t border-[var(--okx-border)]" data-testid="calendar-day-view">
+      <div className="border-b border-[var(--okx-border)] bg-[#0b0b0b] px-3 py-2 text-xs uppercase tracking-widest text-zinc-500">
+        {dateLabel(key)}
+      </div>
+      {rows.length === 0 && (
+        <div className="border-b border-dashed border-[var(--okx-border)] p-10 text-center text-sm text-zinc-500">
+          Tidak ada aktivitas pada hari ini dengan filter aktif.
+        </div>
+      )}
+      {rows.length > 0 && (
+        <div className="grid grid-cols-[70px_1fr]">
+          {hours.map((h) => {
+            const bucket = grouped[h] || [];
+            return (
+              <div key={h} className="contents">
+                <div className="num border-b border-r border-[var(--okx-border)] bg-[#0b0b0b] px-2 py-2 text-right text-[10px] text-zinc-500">
+                  {pad(h)}:00
+                </div>
+                <div className="min-h-[48px] border-b border-[var(--okx-border)] p-1.5">
+                  {bucket.length === 0 ? (
+                    <div className="h-full" />
+                  ) : (
+                    <div className="grid gap-1.5 md:grid-cols-2">
+                      {bucket.map((item) => (
+                        <EntryCard key={item.id} item={item} selected={selected?.id === item.id} onSelect={onSelect} dense />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -299,6 +419,14 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     max_price: "", min_capacity: "", age: "", sale_status: "", pricing: "", format: "", status: "",
     lat: "", lng: "", radius_km: "",
   });
+  // Internal-only operational filters. Category chips + event/resource/status
+  // narrow the visible entries; date_from/date_to and city stay on the shared
+  // filters object above (public API contract).
+  const [activeCategories, setActiveCategories] = useState(() => new Set());
+  const [eventFilter, setEventFilter] = useState("");
+  const [resourceFilter, setResourceFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [conflictOpen, setConflictOpen] = useState(false);
 
   const load = useCallback(async (nextFilters = filters) => {
     setBusy(true); setError("");
@@ -334,16 +462,84 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCity]);
 
-  const visible = useMemo(() => data.items.filter((item) => {
-    if (view === "list" || compact) return true;
+  // Client-side filter step: category chips + event + resource_type + status
+  // applied before the view window. Backend already scoped by auth, so this
+  // is pure UI narrowing over the returned dataset.
+  const activeEntryTypes = useMemo(() => {
+    const out = new Set();
+    for (const label of activeCategories) {
+      const key = chipToEntryType(label);
+      if (key) out.add(key);
+    }
+    return out;
+  }, [activeCategories]);
+
+  const filtered = useMemo(() => data.items.filter((item) => {
+    if (activeEntryTypes.size > 0 && !activeEntryTypes.has(item.entry_type)) return false;
+    if (eventFilter && item.event_id !== eventFilter) return false;
+    if (resourceFilter && item.resource_type !== resourceFilter) return false;
+    if (statusFilter && item.status !== statusFilter) return false;
+    return true;
+  }), [data.items, activeEntryTypes, eventFilter, resourceFilter, statusFilter]);
+
+  const visible = useMemo(() => filtered.filter((item) => {
+    if (view === "list" || view === "agenda" || compact) return true;
     const key = String(item.start_at).slice(0, 10);
+    if (view === "day") return key === isoDay(cursor);
     if (view === "week") {
       const start = addDays(cursor, -((cursor.getDay() + 6) % 7));
       const end = addDays(start, 7);
       return key >= isoDay(start) && key < isoDay(end);
     }
     return key.startsWith(`${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}`);
-  }), [compact, cursor, data.items, view]);
+  }), [compact, cursor, filtered, view]);
+
+  // Facet options built from the AUTHORISED result set so dropdowns never
+  // suggest an event/resource/status the caller cannot see.
+  const eventFacetOptions = useMemo(() => {
+    const map = new Map();
+    for (const it of data.items) {
+      if (it.event_id && !map.has(it.event_id)) {
+        map.set(it.event_id, it.event_name || it.event_code || it.event_id);
+      }
+    }
+    return [{ value: "", label: "Semua event" },
+            ...[...map.entries()].map(([v, l]) => ({ value: v, label: l }))];
+  }, [data.items]);
+
+  const statusFacetOptions = useMemo(() => {
+    const set = new Set();
+    for (const it of data.items) if (it.status) set.add(it.status);
+    return [{ value: "", label: "Semua status" },
+            ...[...set].sort().map((s) => ({ value: s, label: s }))];
+  }, [data.items]);
+
+  const toggleCategory = (label) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label); else next.add(label);
+      return next;
+    });
+  };
+
+  const resetOperational = () => {
+    setActiveCategories(new Set());
+    setEventFilter("");
+    setResourceFilter("");
+    setStatusFilter("");
+  };
+
+  const conflictCount = data.conflicts?.length || 0;
+  const conflictHigh = data.conflict_summary?.high || 0;
+  const conflictMedium = data.conflict_summary?.medium || 0;
+  const conflictLow = data.conflict_summary?.low || 0;
+  const topConflicts = (data.conflicts || [])
+    .slice()
+    .sort((a, b) => {
+      const rank = { high: 0, medium: 1, low: 2 };
+      return (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3);
+    })
+    .slice(0, 2);
 
   if (compact) {
     const today = isoDay(new Date());
@@ -371,35 +567,242 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     );
   }
 
-  // Header / calendar-type context / conflicts / view selector form
+  // Header / operational filters / conflict summary / view selector form
   // the persistent chrome for the internal (authenticated) calendar.
   // Only the calendar grid + status legend scroll.
+  const operationalFiltersActive =
+    activeCategories.size > 0 || !!eventFilter || !!resourceFilter || !!statusFilter;
+
   const chrome = (
     <>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-        <div><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] accent-text"><CalendarDays size={15} /> Calendar & Scheduling Engine</div><h1 className="editorial mt-3 text-3xl sm:text-4xl">{internal ? "Satu jadwal untuk seluruh ekosistem." : "Temukan event dan momentum pentingnya."}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">{internal ? "Ketersediaan, hold, deadline, perjalanan, produksi, shift, dan konflik dibaca dari komponen yang terhubung ke akun Anda." : "Lihat event, masa penjualan tiket, pembukaan tenant, peluang sponsor, dan rekrutmen workforce dalam satu kalender publik."}</p></div>
-        {internal && <button onClick={() => setCreateSeed(data.items[0] || {})} className="inline-flex shrink-0 items-center justify-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-[#080808]"><Plus size={15} /> Tambah aktivitas</button>}
+        <div><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] accent-text"><CalendarDays size={15} /> Calendar & Scheduling Engine</div><h1 className="editorial mt-3 text-2xl sm:text-3xl">{internal ? "Satu jadwal untuk seluruh ekosistem." : "Temukan event dan momentum pentingnya."}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">{internal ? "Kalender operasional lintas event, resource, dan pembayaran. Chip di bawah memfilter jadwal secara langsung." : "Lihat event, masa penjualan tiket, pembukaan tenant, peluang sponsor, dan rekrutmen workforce dalam satu kalender publik."}</p></div>
+        {internal && <button data-testid="calendar-add-btn" onClick={() => setCreateSeed(data.items[0] || {})} className="inline-flex shrink-0 items-center justify-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-white"><Plus size={15} /> Tambah aktivitas</button>}
       </div>
 
       {!internal && <PublicFilters filters={filters} setFilters={setFilters} facets={data.facets || {}} onApply={() => load(filters)} busy={busy} />}
 
       {internal && (
-        <div className="mt-5 grid gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4 lg:grid-cols-[1fr_auto]" data-testid="calendar-module-nav">
-          <div><div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Kalender {data.calendar_type || "peran"}</div><div className="mt-2 flex flex-wrap gap-1.5">{data.available_types?.map((label) => <span key={label} className="border border-[var(--okx-border)] px-2 py-1 text-[10px] text-zinc-400">{label}</span>)}</div></div>
-          <div className="flex items-start gap-5 text-xs"><div><div className="text-zinc-500">Aktivitas</div><div className="num mt-1 text-xl font-semibold">{num(data.total)}</div></div><div><div className="text-zinc-500">Konflik aktif</div><div className={`num mt-1 text-xl font-semibold ${data.conflicts?.length ? "text-red-300" : "text-emerald-300"}`}>{num(data.conflicts?.length)}</div></div></div>
+        <div
+          className="mt-4 grid gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]"
+          data-testid="calendar-filter-row"
+        >
+          <div className="min-w-0">
+            <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">Event</div>
+            <OkxDropdown
+              value={eventFilter}
+              onChange={setEventFilter}
+              options={eventFacetOptions}
+              searchable={eventFacetOptions.length >= 8}
+              testId="calendar-filter-event"
+              ariaLabel="Filter event"
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">Resource</div>
+            <OkxDropdown
+              value={resourceFilter}
+              onChange={setResourceFilter}
+              options={RESOURCE_TYPE_OPTIONS}
+              testId="calendar-filter-resource"
+              ariaLabel="Filter resource"
+            />
+          </div>
+          <div className="min-w-0">
+            <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">Status</div>
+            <OkxDropdown
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={statusFacetOptions}
+              testId="calendar-filter-status"
+              ariaLabel="Filter status"
+            />
+          </div>
         </div>
       )}
 
-      {internal && data.conflicts?.length > 0 && (
-        <section className="mt-4 border border-red-400/30 bg-red-400/5 p-4" data-testid="calendar-conflicts">
-          <div className="flex items-center gap-2 text-sm font-semibold text-red-200"><AlertTriangle size={16} /> Konflik yang perlu diselesaikan</div>
-          <div className="mt-3 grid gap-2 lg:grid-cols-2">{data.conflicts.slice(0, 8).map((conflict) => <div key={conflict.id} className="border border-red-400/20 bg-black/20 p-3"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-red-100">{conflict.title}</span><span className="text-[9px] uppercase tracking-wider text-red-300">{conflict.severity}</span></div><p className="mt-1 text-xs leading-5 text-zinc-400">{conflict.reason}</p><p className="mt-2 text-xs text-zinc-200"><span className="text-zinc-500">Tindakan:</span> {conflict.action}</p></div>)}</div>
-        </section>
+      {internal && (
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3"
+          data-testid="calendar-category-chips"
+        >
+          <div className="mr-1 text-[10px] uppercase tracking-wider text-zinc-500">
+            Kalender {data.calendar_type || "peran"}
+          </div>
+          {(data.available_types || []).map((label) => {
+            const active = activeCategories.has(label);
+            const key = chipToEntryType(label);
+            const known = !!key;
+            return (
+              <button
+                key={label}
+                type="button"
+                disabled={!known}
+                onClick={() => toggleCategory(label)}
+                data-testid={`calendar-chip-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] transition-colors ${
+                  active
+                    ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/15 text-[var(--okx-accent-soft)]"
+                    : known
+                      ? "border-[var(--okx-border)] text-zinc-300 hover:border-zinc-500 hover:text-white"
+                      : "border-[var(--okx-border)] text-zinc-600 opacity-60 cursor-not-allowed"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+          {operationalFiltersActive && (
+            <button
+              type="button"
+              onClick={resetOperational}
+              className="ml-auto inline-flex items-center gap-1 border border-[var(--okx-border)] px-2 py-1 text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-white"
+              data-testid="calendar-reset"
+            >
+              <X size={12} /> Reset
+            </button>
+          )}
+        </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-y border-[var(--okx-border)] py-3" data-testid="calendar-view-selector">
-        <div className="flex items-center gap-1"><button onClick={() => setCursor(view === "month" ? addMonths(cursor, -1) : addDays(cursor, -7))} aria-label="Periode sebelumnya" className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"><ChevronLeft size={16} /></button><button onClick={() => setCursor(startOfMonth(new Date()))} className="border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-zinc-500">Hari ini</button><button onClick={() => setCursor(view === "month" ? addMonths(cursor, 1) : addDays(cursor, 7))} aria-label="Periode berikutnya" className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"><ChevronRight size={16} /></button><span className="ml-2 text-sm font-semibold capitalize">{monthLabel(cursor)}</span></div>
-        <div className="flex gap-1">{[["month", "Bulan", CalendarDays], ["week", "Minggu", Clock3], ["list", "Daftar", List]].map(([key, label, Icon]) => <button key={key} onClick={() => setView(key)} data-testid={`calendar-view-${key}`} className={`inline-flex items-center gap-1.5 border px-3 py-2 text-xs ${view === key ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10 accent-text" : "border-[var(--okx-border)] text-zinc-400"}`}><Icon size={13} /> {label}</button>)}</div>
+      {internal && (
+        <div
+          className="mt-3 flex flex-wrap items-center gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3 text-xs"
+          data-testid="calendar-metrics"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-zinc-500">Aktivitas</span>
+            <span className="num text-sm font-semibold text-white">{num(filtered.length)}</span>
+            <span className="text-zinc-600">/ {num(data.total)}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-zinc-500">Konflik</span>
+            <span
+              className={`num text-sm font-semibold ${conflictCount ? "text-red-300" : "text-emerald-300"}`}
+              data-testid="calendar-conflict-count"
+            >
+              {num(conflictCount)}
+            </span>
+            {conflictHigh > 0 && (
+              <span className="border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 text-[10px] text-red-200">
+                High {conflictHigh}
+              </span>
+            )}
+            {conflictMedium > 0 && (
+              <span className="border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-200">
+                Medium {conflictMedium}
+              </span>
+            )}
+            {conflictLow > 0 && (
+              <span className="border border-zinc-500/40 bg-zinc-500/10 px-1.5 py-0.5 text-[10px] text-zinc-300">
+                Low {conflictLow}
+              </span>
+            )}
+          </div>
+          {conflictCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setConflictOpen(true)}
+              className="ml-auto inline-flex items-center gap-1.5 border border-red-400/40 bg-red-400/10 px-2.5 py-1 text-[11px] text-red-100 hover:border-red-300"
+              data-testid="calendar-conflicts-view-all"
+            >
+              <AlertTriangle size={12} /> View all conflicts
+            </button>
+          )}
+        </div>
+      )}
+
+      {internal && topConflicts.length > 0 && (
+        <div
+          className="mt-3 grid gap-2 lg:grid-cols-2"
+          data-testid="calendar-conflicts-top"
+        >
+          {topConflicts.map((conflict) => (
+            <div
+              key={conflict.id}
+              className="flex items-start justify-between gap-2 border border-red-400/25 bg-red-400/5 p-3"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-red-100 truncate">{conflict.title}</span>
+                  <span className="text-[9px] uppercase tracking-wider text-red-300">{conflict.severity}</span>
+                </div>
+                <p className="mt-1 line-clamp-2 text-xs text-zinc-400">{conflict.reason}</p>
+              </div>
+              {conflict.event_id && (
+                <Link
+                  to={`/app/events/${conflict.event_id}/blueprint`}
+                  className="shrink-0 border border-[var(--okx-border)] px-2 py-1 text-[10px] text-zinc-300 hover:border-[var(--okx-accent)]"
+                >
+                  Open event
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div
+        className="mt-3 flex flex-wrap items-center justify-between gap-3 border-y border-[var(--okx-border)] py-2"
+        data-testid="calendar-view-selector"
+      >
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setCursor(
+              view === "month" ? addMonths(cursor, -1)
+                : view === "week" ? addDays(cursor, -7)
+                : view === "day" ? addDays(cursor, -1)
+                : addDays(cursor, -7),
+            )}
+            aria-label="Periode sebelumnya"
+            className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => setCursor(view === "day" ? new Date() : startOfMonth(new Date()))}
+            className="border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-zinc-500"
+            data-testid="calendar-today-btn"
+          >
+            Hari ini
+          </button>
+          <button
+            onClick={() => setCursor(
+              view === "month" ? addMonths(cursor, 1)
+                : view === "week" ? addDays(cursor, 7)
+                : view === "day" ? addDays(cursor, 1)
+                : addDays(cursor, 7),
+            )}
+            aria-label="Periode berikutnya"
+            className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"
+          >
+            <ChevronRight size={16} />
+          </button>
+          <span className="ml-2 text-sm font-semibold capitalize">
+            {view === "day" ? dateLabel(isoDay(cursor)) : monthLabel(cursor)}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {[
+            ["month", "Bulan", CalendarDays],
+            ["week", "Minggu", LayoutGrid],
+            ["day", "Hari", Sun],
+            ["agenda", "Agenda", List],
+          ].map(([key, label, Icon]) => (
+            <button
+              key={key}
+              onClick={() => setView(key)}
+              data-testid={`calendar-view-${key}`}
+              className={`inline-flex items-center gap-1.5 border px-3 py-2 text-xs ${
+                view === key
+                  ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10 accent-text"
+                  : "border-[var(--okx-border)] text-zinc-400"
+              }`}
+            >
+              <Icon size={13} /> {label}
+            </button>
+          ))}
+        </div>
       </div>
     </>
   );
@@ -408,7 +811,20 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     <>
       {busy ? <div className="border border-[var(--okx-border)] p-12 text-center text-sm text-zinc-500">Menyusun kalender dan memeriksa konflik…</div> : error ? <div className="border border-red-400/30 p-6 text-sm text-red-300">{error}</div> : (
         <div className={`grid gap-5 ${selected ? "xl:grid-cols-[minmax(0,1fr)_320px]" : ""}`} data-testid="calendar-body">
-          <div className="min-w-0">{view === "month" ? <MonthView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} /> : view === "week" ? <WeekView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} /> : <ListView items={visible} selected={selected} onSelect={setSelected} />}</div>
+          <div className="min-w-0">
+            {view === "month" ? <MonthView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} />
+              : view === "week" ? <WeekView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} />
+              : view === "day" ? <DayView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} />
+              : <ListView items={visible} selected={selected} onSelect={setSelected} />}
+            {internal && visible.length === 0 && !busy && (
+              <div
+                data-testid="calendar-empty"
+                className="mt-4 border border-dashed border-[var(--okx-border)] p-10 text-center text-sm text-zinc-500"
+              >
+                Tidak ada aktivitas pada rentang + filter aktif.
+              </div>
+            )}
+          </div>
           <DetailPanel item={selected} onClose={() => setSelected(null)} internal={internal} onFollowUp={setCreateSeed} onDelete={removeEntry} deleting={deletingId === selected?.id} />
         </div>
       )}
@@ -419,11 +835,78 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     </>
   );
 
+  const conflictModal = internal && conflictOpen ? (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4"
+      data-testid="calendar-conflicts-modal"
+      onClick={() => setConflictOpen(false)}
+    >
+      <div
+        className="max-h-[92vh] w-full max-w-3xl overflow-auto border border-[var(--okx-border)] bg-[#111] p-5 okx-scroll"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest accent-text">Conflict Center</div>
+            <h3 className="editorial mt-1 text-xl">{num(conflictCount)} konflik terdeteksi</h3>
+            <p className="mt-1 text-xs text-zinc-500">
+              Sumber: overlap resource, overtime shift, dependency, travel buffer.
+              Actionable per baris.
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Tutup"
+            onClick={() => setConflictOpen(false)}
+            className="p-2 text-zinc-500 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="mt-4 grid gap-2">
+          {(data.conflicts || []).map((conflict) => (
+            <div
+              key={conflict.id}
+              className="border border-red-400/25 bg-black/30 p-3"
+              data-testid={`calendar-conflict-${conflict.id}`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-red-100">{conflict.title}</span>
+                <span className="text-[9px] uppercase tracking-wider text-red-300">{conflict.severity}</span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-zinc-400">{conflict.reason}</p>
+              <p className="mt-2 text-xs text-zinc-200"><span className="text-zinc-500">Tindakan:</span> {conflict.action}</p>
+              {conflict.event_id && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    to={`/app/events/${conflict.event_id}/blueprint`}
+                    className="border border-[var(--okx-border)] px-2.5 py-1 text-[11px] text-zinc-300 hover:border-[var(--okx-accent)]"
+                    onClick={() => setConflictOpen(false)}
+                  >
+                    Open event
+                  </Link>
+                  <Link
+                    to={`/app/events/${conflict.event_id}/calendar`}
+                    className="border border-[var(--okx-border)] px-2.5 py-1 text-[11px] text-zinc-300 hover:border-[var(--okx-accent)]"
+                    onClick={() => setConflictOpen(false)}
+                  >
+                    Buka kalender event
+                  </Link>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   if (internal) {
     return (
       <div className="okx-workspace-page" data-testid="internal-calendar-engine">
         <div className="okx-workspace-chrome" data-testid="calendar-chrome">{chrome}</div>
         <div className="okx-workspace-content">{body}</div>
+        {conflictModal}
         {createSeed !== null && <CreateEntry seed={createSeed} onClose={() => setCreateSeed(null)} onCreated={() => { setCreateSeed(null); load(filters); }} />}
       </div>
     );
