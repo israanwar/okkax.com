@@ -23,6 +23,7 @@ import JuriDemo from "@/pages/JuriDemo";
 import PresentationMode from "@/pages/PresentationMode";
 import { PublicCalendar, WorkspaceCalendar } from "@/pages/CalendarEngine";
 import ControlPlane from "@/pages/ControlPlane";
+import Network from "@/pages/Network";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
@@ -63,6 +64,7 @@ function RouterBody() {
             <Route path="/app/admin/finance" element={shell(<MoneyMovement />)} />
             <Route path="/app/admin/control" element={shell(<ControlPlane />)} />
             <Route path="/app/me" element={shell(<RoleWorkspace />)} />
+            <Route path="/app/network" element={shell(<Network />)} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/cancel" element={<PaymentCancel />} />
             <Route

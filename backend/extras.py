@@ -3,7 +3,7 @@ import os
 import io
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -455,9 +455,61 @@ async def confirm_assignment(body: Dict[str, Any], user: dict = Depends(get_curr
     doc = await db[coll].find_one({"id": item_id}, {"_id": 0})
     if not doc or doc.get(key) not in linked:
         raise HTTPException(status_code=403, detail="Penugasan ini bukan milik Anda")
+    # Phase F3. Double-booking guard: if the supply actor is being
+    # promoted to a confirmed-like status, reject when they already
+    # have another confirmed assignment on overlapping dates for the
+    # SAME resource. Non-confirming updates (Tentative/etc.) pass so
+    # the existing negotiation flow keeps working.
+    if str(status).lower() in ("confirmed", "signed"):
+        this_event = await db.events.find_one(
+            {"id": doc["event_id"], "deleted": {"$ne": True}},
+            {"_id": 0, "start_date": 1, "end_date": 1},
+        )
+        if this_event:
+            target_days = set(_confirm_date_range(this_event))
+            if target_days:
+                others = await db[coll].find(
+                    {key: doc[key], "id": {"$ne": item_id}},
+                    {"_id": 0, "event_id": 1, "status": 1},
+                ).to_list(500)
+                confirmed_conflicts = []
+                for o in others:
+                    if str(o.get("status", "")).lower() not in ("confirmed", "signed"):
+                        continue
+                    other_ev = await db.events.find_one(
+                        {"id": o["event_id"], "deleted": {"$ne": True}},
+                        {"_id": 0, "start_date": 1, "end_date": 1},
+                    )
+                    if other_ev and set(_confirm_date_range(other_ev)) & target_days:
+                        confirmed_conflicts.append(o["event_id"])
+                if confirmed_conflicts:
+                    raise HTTPException(
+                        status_code=409,
+                        detail={"error": "double_booking",
+                                "message": "Terdapat penugasan terkonfirmasi pada tanggal yang sama",
+                                "conflicting_event_ids": confirmed_conflicts},
+                    )
     await db[coll].update_one({"id": item_id}, {"$set": {"status": status}})
     await audit(doc["event_id"], user, f"{kind}.self_confirm", {"id": item_id, "status": status})
     return {"ok": True}
+
+
+def _confirm_date_range(ev: Dict[str, Any]) -> List[str]:
+    """Lightweight local mirror of the availability date helper. Kept
+    here rather than imported so extras.py stays self-contained (the
+    server module is the router owner, not the helper source)."""
+    try:
+        start = datetime.fromisoformat(ev["start_date"])
+        end = datetime.fromisoformat(ev.get("end_date") or ev["start_date"])
+    except Exception:
+        return []
+    if end < start:
+        return []
+    out, cur = [], start
+    while cur <= end:
+        out.append(cur.date().isoformat())
+        cur = cur + timedelta(days=1)
+    return out
 
 
 # ------------------------------------------------------------------ documents (PDF)

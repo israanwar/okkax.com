@@ -1,27 +1,76 @@
-import { ChevronDown } from "lucide-react";
+import React from "react";
+import OkxDropdown from "@/components/OkxDropdown";
+
+/*
+ * OKKAX compatibility adapter.
+ *
+ * PremiumSelect historically rendered a native <select>.
+ * It now delegates rendering to the canonical OkxDropdown while preserving
+ * the legacy children + event-shaped onChange API used throughout the app.
+ *
+ * New code should use OkxDropdown directly.
+ */
 
 export const premiumSelectClass = "okx-premium-select";
 
+function childrenToOptions(children) {
+  return React.Children.toArray(children)
+    .filter(React.isValidElement)
+    .map((child) => ({
+      value: String(child.props.value ?? ""),
+      label:
+        typeof child.props.children === "string" ||
+        typeof child.props.children === "number"
+          ? String(child.props.children)
+          : String(child.props.label ?? child.props.value ?? ""),
+      disabled: Boolean(child.props.disabled),
+    }));
+}
+
 export default function PremiumSelect({
   children,
+  value,
+  onChange,
   className = "",
   compact = false,
-  icon: Icon,
-  iconClassName = "",
-  ...props
+  icon,
+  disabled = false,
+  placeholder = "Pilih",
+  "data-testid": testId,
+  "aria-label": ariaLabel,
+  ...rest
 }) {
+  const options = childrenToOptions(children);
+
+  const handleChange = (nextValue) => {
+    /*
+     * Preserve legacy native-select contract:
+     * existing callers expect event.target.value.
+     */
+    onChange?.({
+      target: {
+        value: nextValue,
+        name: rest.name,
+      },
+      currentTarget: {
+        value: nextValue,
+        name: rest.name,
+      },
+    });
+  };
+
   return (
-    <span className={`okx-select-shell ${compact ? "okx-select-shell--compact" : ""} ${Icon ? "okx-select-shell--icon" : ""} ${className}`}>
-      {Icon && (
-        <Icon aria-hidden="true" size={compact ? 14 : 16} strokeWidth={1.7}
-          className={`okx-select-leading-icon ${iconClassName}`} />
-      )}
-      <select {...props} className={premiumSelectClass}>
-        {children}
-      </select>
-      <span aria-hidden="true" className="okx-select-divider" />
-      <ChevronDown aria-hidden="true" size={compact ? 14 : 16} strokeWidth={1.8}
-        className="okx-select-chevron" />
-    </span>
+    <OkxDropdown
+      value={value}
+      onChange={handleChange}
+      options={options}
+      placeholder={placeholder}
+      icon={icon}
+      disabled={disabled}
+      searchable={options.length >= 10}
+      className={className}
+      testId={testId}
+      ariaLabel={ariaLabel}
+    />
   );
 }

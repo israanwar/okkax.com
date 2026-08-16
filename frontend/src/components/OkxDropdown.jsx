@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 
 // Shared dropdown untuk seluruh OKKAX. Menggantikan native <select> dan
 // PremiumSelect lama karena native popup Chrome menempel di posisi trigger
@@ -72,7 +72,8 @@ export default function OkxDropdown({
     }
   }, [open, canSearch]);
 
-  const handleSelect = (nextValue) => {
+  const handleSelect = (nextValue, option) => {
+    if (option?.disabled) return;
     onChange?.(nextValue);
     setOpen(false);
   };
@@ -136,16 +137,26 @@ export default function OkxDropdown({
                       type="button"
                       role="option"
                       aria-selected={selected}
-                      onClick={() => handleSelect(opt.value)}
-                      className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition-colors hover:bg-white/[0.04] ${
-                        selected
-                          ? "bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
-                          : "text-zinc-300"
+                      aria-disabled={opt.disabled || undefined}
+                      disabled={opt.disabled}
+                      onClick={() => handleSelect(opt.value, opt)}
+                      className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-colors ${
+                        opt.disabled
+                          ? "cursor-not-allowed text-zinc-700"
+                          : selected
+                            ? "bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"
+                            : "text-zinc-300 hover:bg-white/[0.04] hover:text-white"
                       }`}
                     >
                       <span className="truncate">{opt.label}</span>
+
                       {selected && (
-                        <span aria-hidden="true" className="ml-3 inline-block h-1.5 w-1.5 bg-[var(--okx-accent)]" />
+                        <Check
+                          size={14}
+                          strokeWidth={2}
+                          className="shrink-0 text-[var(--okx-accent)]"
+                          aria-hidden="true"
+                        />
                       )}
                     </button>
                   </li>

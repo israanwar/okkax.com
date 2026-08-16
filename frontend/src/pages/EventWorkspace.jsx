@@ -53,7 +53,7 @@ export default function EventWorkspace() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="okx-event-workspace" data-testid="event-workspace">
       <div>
         <button onClick={() => nav("/app/events")} className="mb-3 inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white" data-testid="workspace-back-btn">
           <ArrowLeft size={14} /> Semua event
@@ -120,8 +120,8 @@ export default function EventWorkspace() {
         </div>
       )}
 
-      <div className="-mx-4 overflow-x-auto px-4 okx-scroll sm:mx-0 sm:px-0">
-        <div className="flex min-w-max gap-1 border-b border-[var(--okx-border)]">
+      <div className="okx-event-module-nav" data-testid="event-module-nav">
+        <div className="okx-event-module-nav-inner">
           {EVENT_TABS.map(([key, label, Icon]) => (
             <button
               key={key}
@@ -137,7 +137,7 @@ export default function EventWorkspace() {
         </div>
       </div>
 
-      <div className="fade-up">{TAB_MAP[tab] || TAB_MAP.blueprint}</div>
+      <div className="okx-event-workspace-content fade-up" data-testid="event-module-content">{TAB_MAP[tab] || TAB_MAP.blueprint}</div>
     </div>
   );
 }

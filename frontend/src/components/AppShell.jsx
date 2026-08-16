@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Wand2, Network, Mic2, Building2, Wrench, HardHat, Handshake, Store, Ticket,
   Wallet, Activity, LineChart, Bell, Menu, X, ShieldCheck, LogOut, ScanLine, ListOrdered, Settings,
-  CalendarDays,
+  CalendarDays, Globe2,
 } from "lucide-react";
 import { Logo } from "@/components/PublicNav";
 import WorkspaceSelector from "@/components/WorkspaceSelector";
@@ -15,6 +15,7 @@ const NAV = {
     ["/app", "Overview", LayoutDashboard],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/events", "Events", ListOrdered],
+    ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
     ["/app/me", "My Assignments", Settings],
     ["/app/validator", "Ticket Validator", ScanLine],
@@ -23,18 +24,21 @@ const NAV = {
   role: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/me", "My Assignments", Settings],
+    ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
     ["/app/tickets", "My Tickets", Ticket],
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/sponsor", "Opportunities", Handshake],
+    ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
     ["/app/tickets", "My Tickets", Ticket],
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/tenant", "Opportunities", Store],
+    ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
     ["/app/tickets", "My Tickets", Ticket],
   ],

@@ -242,44 +242,163 @@ async def meta_roles():
 
 
 # ---------------------------------------------------------------- catalog
+# Phase F3. Canonical supply catalog helpers. Sort keys are whitelisted so
+# a client cannot ask the DB to sort by an arbitrary field, and the
+# per-response cap stays small even when the caller passes a large limit.
+_CATALOG_HARD_CAP = 300
+
+
+def _catalog_sort_spec(sort: str, allowed: dict):
+    """Translate a sort token into a Mongo sort spec, or None to keep
+    insertion order. `allowed` maps public tokens to (field, direction)."""
+    if not sort:
+        return None
+    spec = allowed.get(sort)
+    if not spec:
+        return None
+    return [(spec[0], spec[1])]
+
+
+def _catalog_limit(limit: int) -> int:
+    if limit and limit > 0:
+        return min(limit, _CATALOG_HARD_CAP)
+    return _CATALOG_HARD_CAP
+
+
 @api.get("/catalog/talents")
-async def catalog_talents(q: str = "", category: str = "", city: str = ""):
-    f = {}
+async def catalog_talents(q: str = "", category: str = "", city: str = "",
+                          verified: Optional[bool] = None,
+                          min_price: int = 0, max_price: int = 0,
+                          sort: str = "", limit: int = 0):
+    """Discover talents. Legacy params (q, category, city) unchanged;
+    verified/min_price/max_price/sort/limit are additive."""
+    f: Dict[str, Any] = {}
     if q:
-        f["stage_name"] = {"$regex": q, "$options": "i"}
+        f["$or"] = [{"stage_name": {"$regex": q, "$options": "i"}},
+                    {"genre": {"$regex": q, "$options": "i"}}]
     if category:
         f["category"] = category
     if city:
         f["city"] = city
-    rows = await db.talents.find(f, {"_id": 0}).to_list(200)
-    return {"items": rows}
+    if verified is not None:
+        f["verified"] = bool(verified)
+    price_clause: Dict[str, Any] = {}
+    if min_price:
+        price_clause["$gte"] = int(min_price)
+    if max_price:
+        price_clause["$lte"] = int(max_price)
+    if price_clause:
+        f["base_fee"] = price_clause
+    cursor = db.talents.find(f, {"_id": 0})
+    spec = _catalog_sort_spec(sort, {
+        "price_asc": ("base_fee", 1), "price_desc": ("base_fee", -1),
+        "rating_desc": ("delivery_score", -1), "name_asc": ("stage_name", 1),
+    })
+    if spec:
+        cursor = cursor.sort(spec)
+    return {"items": await cursor.to_list(_catalog_limit(limit))}
 
 
 @api.get("/catalog/venues")
-async def catalog_venues(city: str = "", min_capacity: int = 0):
-    f = {}
+async def catalog_venues(city: str = "", min_capacity: int = 0,
+                         q: str = "", verified: Optional[bool] = None,
+                         indoor: Optional[bool] = None,
+                         min_price: int = 0, max_price: int = 0,
+                         sort: str = "", limit: int = 0):
+    """Discover venues. Legacy params (city, min_capacity) preserved."""
+    f: Dict[str, Any] = {}
+    if q:
+        f["name"] = {"$regex": q, "$options": "i"}
     if city:
         f["city"] = city
-    rows = await db.venues.find(f, {"_id": 0}).to_list(200)
+    if verified is not None:
+        f["verified"] = bool(verified)
+    if indoor is not None:
+        f["indoor"] = bool(indoor)
+    price_clause: Dict[str, Any] = {}
+    if min_price:
+        price_clause["$gte"] = int(min_price)
+    if max_price:
+        price_clause["$lte"] = int(max_price)
+    if price_clause:
+        f["event_day_price"] = price_clause
+    cursor = db.venues.find(f, {"_id": 0})
+    spec = _catalog_sort_spec(sort, {
+        "price_asc": ("event_day_price", 1), "price_desc": ("event_day_price", -1),
+        "capacity_desc": ("standing_capacity", -1), "name_asc": ("name", 1),
+    })
+    if spec:
+        cursor = cursor.sort(spec)
+    rows = await cursor.to_list(_catalog_limit(limit))
     if min_capacity:
-        rows = [r for r in rows if max(r["standing_capacity"], r["seated_capacity"]) >= min_capacity]
+        rows = [r for r in rows
+                if max(r.get("standing_capacity", 0), r.get("seated_capacity", 0)) >= min_capacity]
     return {"items": rows}
 
 
 @api.get("/catalog/vendors")
-async def catalog_vendors(category: str = "", city: str = ""):
-    f = {}
+async def catalog_vendors(category: str = "", city: str = "",
+                          q: str = "", verified: Optional[bool] = None,
+                          min_price: int = 0, max_price: int = 0,
+                          sort: str = "", limit: int = 0):
+    """Discover vendors. Legacy params (category, city) preserved.
+    `city` matches `service_cities` (existing semantic)."""
+    f: Dict[str, Any] = {}
+    if q:
+        f["name"] = {"$regex": q, "$options": "i"}
     if category:
         f["category"] = category
     if city:
         f["service_cities"] = city
-    return {"items": await db.vendors.find(f, {"_id": 0}).to_list(300)}
+    if verified is not None:
+        f["verified"] = bool(verified)
+    price_clause: Dict[str, Any] = {}
+    if min_price:
+        price_clause["$gte"] = int(min_price)
+    if max_price:
+        price_clause["$lte"] = int(max_price)
+    if price_clause:
+        f["price_min"] = price_clause
+    cursor = db.vendors.find(f, {"_id": 0})
+    spec = _catalog_sort_spec(sort, {
+        "price_asc": ("price_min", 1), "price_desc": ("price_max", -1),
+        "rating_desc": ("delivery_score", -1), "name_asc": ("name", 1),
+    })
+    if spec:
+        cursor = cursor.sort(spec)
+    return {"items": await cursor.to_list(_catalog_limit(limit))}
 
 
 @api.get("/catalog/workers")
-async def catalog_workers(category: str = ""):
-    f = {"category": category} if category else {}
-    return {"items": await db.workers.find(f, {"_id": 0}).to_list(300)}
+async def catalog_workers(category: str = "", q: str = "", city: str = "",
+                          verified: Optional[bool] = None,
+                          min_price: int = 0, max_price: int = 0,
+                          sort: str = "", limit: int = 0):
+    """Discover workforce. Legacy param (category) preserved."""
+    f: Dict[str, Any] = {}
+    if q:
+        f["name"] = {"$regex": q, "$options": "i"}
+    if category:
+        f["category"] = category
+    if city:
+        f["city"] = city
+    if verified is not None:
+        f["verified"] = bool(verified)
+    price_clause: Dict[str, Any] = {}
+    if min_price:
+        price_clause["$gte"] = int(min_price)
+    if max_price:
+        price_clause["$lte"] = int(max_price)
+    if price_clause:
+        f["rate_per_day"] = price_clause
+    cursor = db.workers.find(f, {"_id": 0})
+    spec = _catalog_sort_spec(sort, {
+        "price_asc": ("rate_per_day", 1), "price_desc": ("rate_per_day", -1),
+        "rating_desc": ("attendance_rate", -1), "name_asc": ("name", 1),
+    })
+    if spec:
+        cursor = cursor.sort(spec)
+    return {"items": await cursor.to_list(_catalog_limit(limit))}
 
 
 # ---------------------------------------------------------------- events / studio
@@ -577,12 +696,185 @@ def venue_score(ev: dict, v: dict) -> dict:
     return {"score": min(score, 100), "reasons": reasons, "estimated_total": total}
 
 
+# -------------------------------------------------- Phase F3 supply helpers
+def _date_range(ev: Dict[str, Any]) -> List[str]:
+    """Return the list of ISO date strings the event physically occupies
+    (start_date .. end_date inclusive). Returns [] on malformed input so
+    the availability helper degrades to 'Unknown' rather than crashing."""
+    try:
+        start = datetime.fromisoformat(ev["start_date"])
+        end = datetime.fromisoformat(ev.get("end_date") or ev["start_date"])
+    except Exception:
+        return []
+    if end < start:
+        return []
+    out = []
+    cur = start
+    while cur <= end:
+        out.append(cur.date().isoformat())
+        cur = cur + timedelta(days=1)
+    return out
+
+
+async def _resource_availability(resource_type: str, resource_id: str,
+                                 dates: List[str]) -> Dict[str, Any]:
+    """Deterministic availability signal derived from EXISTING event
+    assignments (event_talents/event_venues/event_vendors/event_workers)
+    plus `calendar_entries` exceptions. Returns:
+
+    - status: "Available" | "Tentative" | "Booked" | "Conflict" | "Unknown"
+    - conflicting_event_ids: [] (empty unless Booked/Conflict)
+
+    Never fabricates data. When there is no signal at all, returns
+    Unknown per V5 §4 rule.
+    """
+    if not dates:
+        return {"status": "Unknown", "conflicting_event_ids": []}
+    coll_key = {"talent": ("event_talents", "talent_id"),
+                "venue": ("event_venues", "venue_id"),
+                "vendor": ("event_vendors", "vendor_id"),
+                "worker": ("event_workers", "worker_id")}.get(resource_type)
+    if not coll_key:
+        return {"status": "Unknown", "conflicting_event_ids": []}
+    coll_name, key_field = coll_key
+    assignments = await db[coll_name].find(
+        {key_field: resource_id}, {"_id": 0, "event_id": 1, "status": 1}
+    ).to_list(500)
+    if not assignments:
+        return {"status": "Available", "conflicting_event_ids": []}
+    event_ids = [a["event_id"] for a in assignments]
+    events = await db.events.find(
+        {"id": {"$in": event_ids}, "deleted": {"$ne": True}},
+        {"_id": 0, "id": 1, "start_date": 1, "end_date": 1},
+    ).to_list(500)
+    ev_by_id = {e["id"]: e for e in events}
+    booked, tentative = [], []
+    target_days = set(dates)
+    for a in assignments:
+        ev = ev_by_id.get(a["event_id"])
+        if not ev:
+            continue
+        ev_days = set(_date_range(ev))
+        if not (ev_days & target_days):
+            continue
+        confirmed_like = str(a.get("status", "")).lower() in (
+            "confirmed", "signed", "paid", "in progress")
+        (booked if confirmed_like else tentative).append(a["event_id"])
+    if booked:
+        return {"status": "Booked", "conflicting_event_ids": booked}
+    if tentative:
+        return {"status": "Tentative", "conflicting_event_ids": tentative}
+    return {"status": "Available", "conflicting_event_ids": []}
+
+
+def talent_score(ev: Dict[str, Any], t: Dict[str, Any]) -> Dict[str, Any]:
+    """Deterministic talent match score, mirrors venue/vendor style."""
+    score = 0
+    reasons: List[str] = []
+    if t.get("city") == ev.get("city"):
+        score += 25
+        reasons.append(f"Berbasis di {t['city']} sesuai kota event")
+    elif t.get("city"):
+        reasons.append(f"Berbasis di {t['city']}, luar kota event")
+    genres = " ".join([t.get("genre") or "", t.get("category") or ""]).lower()
+    event_type = (ev.get("event_type") or "").lower()
+    if event_type and any(word in genres for word in event_type.split()):
+        score += 20
+        reasons.append(f"Genre selaras dengan tipe event {ev.get('event_type')}")
+    base_fee = int(t.get("base_fee") or 0)
+    budget = int(ev.get("budget") or 0)
+    if budget and base_fee:
+        if base_fee <= budget * 0.4:
+            score += 20
+            reasons.append(f"Fee Rp{base_fee:,} dalam 40% anggaran")
+        elif base_fee <= budget * 0.7:
+            score += 10
+            reasons.append(f"Fee Rp{base_fee:,} pada 40-70% anggaran")
+        else:
+            reasons.append(f"Fee Rp{base_fee:,} melebihi 70% anggaran")
+    if t.get("verified"):
+        score += 15
+        reasons.append("Talent terverifikasi")
+    delivery = int(t.get("delivery_score") or 0)
+    if delivery:
+        score += min(20, delivery // 5)
+        reasons.append(f"Delivery score {delivery}/100")
+    return {"score": min(score, 100), "reasons": reasons}
+
+
+def worker_score(ev: Dict[str, Any], w: Dict[str, Any],
+                  needed_roles: Optional[List[str]] = None) -> Dict[str, Any]:
+    score = 0
+    reasons: List[str] = []
+    cat = w.get("category", "")
+    if needed_roles and cat in needed_roles:
+        score += 35
+        reasons.append(f"Role {cat} sesuai kebutuhan blueprint")
+    elif needed_roles:
+        reasons.append(f"Role {cat} di luar daftar kebutuhan")
+    if w.get("city") == ev.get("city"):
+        score += 20
+        reasons.append(f"Berbasis di {w['city']} sesuai kota event")
+    elif w.get("city"):
+        reasons.append(f"Berbasis di {w['city']}, luar kota event")
+    if w.get("verified"):
+        score += 15
+        reasons.append("Pekerja terverifikasi")
+    attendance = int(w.get("attendance_rate") or 0)
+    if attendance:
+        score += min(20, attendance // 5)
+        reasons.append(f"Attendance rate {attendance}%")
+    completed = int(w.get("completed_events") or 0)
+    if completed:
+        score += min(10, completed)
+        reasons.append(f"{completed} event selesai")
+    return {"score": min(score, 100), "reasons": reasons}
+
+
+@api.get("/events/{event_id}/talent-matches")
+async def talent_matches(event_id: str, user: dict = Depends(get_current_user)):
+    """Phase F3 parity with venue-matches / vendor-matches. Authorized
+    org-scope only."""
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    talents = await db.talents.find({}, {"_id": 0}).to_list(300)
+    dates = _date_range(ev)
+    out = []
+    for t in talents:
+        avail = await _resource_availability("talent", t["id"], dates)
+        out.append({**t, "match": talent_score(ev, t), "availability": avail})
+    out.sort(key=lambda x: -x["match"]["score"])
+    return {"items": out}
+
+
+@api.get("/events/{event_id}/worker-matches")
+async def worker_matches(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    jobs = await db.event_jobs.find(
+        {"event_id": ev["id"]}, {"_id": 0, "role": 1}
+    ).to_list(100)
+    needed = [j["role"] for j in jobs] or None
+    workers = await db.workers.find({}, {"_id": 0}).to_list(300)
+    dates = _date_range(ev)
+    out = []
+    for w in workers:
+        avail = await _resource_availability("worker", w["id"], dates)
+        out.append({**w, "match": worker_score(ev, w, needed), "availability": avail})
+    out.sort(key=lambda x: -x["match"]["score"])
+    return {"items": out, "needed_roles": needed or []}
+
+
 @api.get("/events/{event_id}/venue-matches")
 async def venue_matches(event_id: str, user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user)
     venues = await db.venues.find({}, {"_id": 0}).to_list(200)
-    out = [{**v, "compatibility": venue_score(ev, v)} for v in venues]
+    dates = _date_range(ev)
+    out = []
+    for v in venues:
+        avail = await _resource_availability("venue", v["id"], dates)
+        out.append({**v, "compatibility": venue_score(ev, v), "availability": avail})
     out.sort(key=lambda x: -x["compatibility"]["score"])
     return {"items": out}
 
@@ -623,6 +915,7 @@ async def vendor_matches(event_id: str, user: dict = Depends(get_current_user)):
              ["Event Organizer", "Stage", "Sound", "Lighting", "LED", "Security", "Medical"]
     vendors = await db.vendors.find({}, {"_id": 0}).to_list(300)
     out = []
+    dates = _date_range(ev)
     for v in vendors:
         match = 40 if v["category"] in needed else 10
         reasons = [f"Kategori {v['category']}" + (" sesuai kebutuhan blueprint" if v["category"] in needed else " tidak pada daftar kebutuhan")]
@@ -634,7 +927,9 @@ async def vendor_matches(event_id: str, user: dict = Depends(get_current_user)):
             reasons.append("Dokumen bisnis terverifikasi")
         match += min(20, int(v.get("delivery_score", 0) / 5))
         reasons.append(f"Delivery record {v.get('delivery_score')}/100, respons ~{v.get('response_hours')} jam")
-        out.append({**v, "match": {"score": min(match, 100), "reasons": reasons}})
+        avail = await _resource_availability("vendor", v["id"], dates)
+        out.append({**v, "match": {"score": min(match, 100), "reasons": reasons},
+                    "availability": avail})
     out.sort(key=lambda x: -x["match"]["score"])
     return {"items": out, "needed_categories": needed}
 
