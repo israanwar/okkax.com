@@ -167,13 +167,30 @@ export default function Network() {
 
     const url = eventScoped ? MATCH[tab](eventId) : CATALOG[tab];
 
+    // Venue seed data does not carry a `category` string. The visible
+    // "Jenis venue" facet is derived from `indoor`. Translate the client
+    // selection back to the backend's `indoor` boolean so the filter
+    // actually narrows results.
+    const catParam =
+      tab === "venue"
+        ? {}
+        : appliedCategory
+          ? { category: appliedCategory }
+          : {};
+
+    const venueIndoorParam =
+      tab === "venue" && (appliedCategory === "Indoor" || appliedCategory === "Outdoor")
+        ? { indoor: appliedCategory === "Indoor" ? "true" : "false" }
+        : {};
+
     const config = eventScoped
       ? {}
       : {
           params: {
             ...(appliedQ ? { q: appliedQ } : {}),
             ...(appliedCity ? { city: appliedCity } : {}),
-            ...(appliedCategory ? { category: appliedCategory } : {}),
+            ...catParam,
+            ...venueIndoorParam,
             ...(appliedVerified ? { verified: "true" } : {}),
             limit: 300,
             sort: "rating_desc",
@@ -322,12 +339,17 @@ export default function Network() {
   const hasFilters = Boolean(q || city || category || verifiedOnly);
 
   return (
-    <div className="okx-network-page">
+    <div className="okx-workspace-page okx-network-page" data-testid="network-page">
       {/* ============================================================
           PERSISTENT PAGE COMMAND
           This entire area remains visible while results scroll.
+          Uses the shared .okx-workspace-chrome flex contract so
+          the surface never travels before locking.
          ============================================================ */}
-      <section className="okx-page-command okx-network-command">
+      <section
+        className="okx-workspace-chrome okx-network-command"
+        data-testid="network-chrome"
+      >
         <div className="okx-network-heading">
           <div>
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
@@ -549,7 +571,7 @@ export default function Network() {
           SCROLLING CONTENT
           Only this result surface is normal page content.
          ============================================================ */}
-      <section className="okx-page-content okx-network-results">
+      <section className="okx-workspace-content okx-network-results">
         {isGateway ? (
           <GatewayPanel kind={tab} />
         ) : (

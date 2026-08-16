@@ -46,8 +46,8 @@ export function MyTickets() {
       : items.filter((item) => item.status === statusFilter);
 
   return (
-    <div className="okx-ticket-page">
-      <section className="okx-page-command okx-tickets-command">
+    <div className="okx-workspace-page okx-ticket-page" data-testid="tickets-page">
+      <section className="okx-workspace-chrome okx-tickets-command" data-testid="tickets-chrome">
         <div className="okx-ticket-command-heading">
           <div>
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
@@ -118,7 +118,7 @@ export function MyTickets() {
         )}
       </section>
 
-      <section className="okx-ticket-content">
+      <section className="okx-workspace-content okx-ticket-content">
         {!items && (
           <div className="okx-ticket-state text-sm text-zinc-500">
             Memuat tiket…

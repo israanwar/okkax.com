@@ -371,8 +371,11 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     );
   }
 
-  return (
-    <div className="space-y-5" data-testid={internal ? "internal-calendar-engine" : "public-calendar-engine"}>
+  // Header / calendar-type context / conflicts / view selector form
+  // the persistent chrome for the internal (authenticated) calendar.
+  // Only the calendar grid + status legend scroll.
+  const chrome = (
+    <>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] accent-text"><CalendarDays size={15} /> Calendar & Scheduling Engine</div><h1 className="editorial mt-3 text-3xl sm:text-4xl">{internal ? "Satu jadwal untuk seluruh ekosistem." : "Temukan event dan momentum pentingnya."}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">{internal ? "Ketersediaan, hold, deadline, perjalanan, produksi, shift, dan konflik dibaca dari komponen yang terhubung ke akun Anda." : "Lihat event, masa penjualan tiket, pembukaan tenant, peluang sponsor, dan rekrutmen workforce dalam satu kalender publik."}</p></div>
         {internal && <button onClick={() => setCreateSeed(data.items[0] || {})} className="inline-flex shrink-0 items-center justify-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-[#080808]"><Plus size={15} /> Tambah aktivitas</button>}
@@ -381,34 +384,55 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
       {!internal && <PublicFilters filters={filters} setFilters={setFilters} facets={data.facets || {}} onApply={() => load(filters)} busy={busy} />}
 
       {internal && (
-        <div className="grid gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4 lg:grid-cols-[1fr_auto]">
+        <div className="mt-5 grid gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4 lg:grid-cols-[1fr_auto]" data-testid="calendar-module-nav">
           <div><div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Kalender {data.calendar_type || "peran"}</div><div className="mt-2 flex flex-wrap gap-1.5">{data.available_types?.map((label) => <span key={label} className="border border-[var(--okx-border)] px-2 py-1 text-[10px] text-zinc-400">{label}</span>)}</div></div>
           <div className="flex items-start gap-5 text-xs"><div><div className="text-zinc-500">Aktivitas</div><div className="num mt-1 text-xl font-semibold">{num(data.total)}</div></div><div><div className="text-zinc-500">Konflik aktif</div><div className={`num mt-1 text-xl font-semibold ${data.conflicts?.length ? "text-red-300" : "text-emerald-300"}`}>{num(data.conflicts?.length)}</div></div></div>
         </div>
       )}
 
       {internal && data.conflicts?.length > 0 && (
-        <section className="border border-red-400/30 bg-red-400/5 p-4" data-testid="calendar-conflicts">
+        <section className="mt-4 border border-red-400/30 bg-red-400/5 p-4" data-testid="calendar-conflicts">
           <div className="flex items-center gap-2 text-sm font-semibold text-red-200"><AlertTriangle size={16} /> Konflik yang perlu diselesaikan</div>
           <div className="mt-3 grid gap-2 lg:grid-cols-2">{data.conflicts.slice(0, 8).map((conflict) => <div key={conflict.id} className="border border-red-400/20 bg-black/20 p-3"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold text-red-100">{conflict.title}</span><span className="text-[9px] uppercase tracking-wider text-red-300">{conflict.severity}</span></div><p className="mt-1 text-xs leading-5 text-zinc-400">{conflict.reason}</p><p className="mt-2 text-xs text-zinc-200"><span className="text-zinc-500">Tindakan:</span> {conflict.action}</p></div>)}</div>
         </section>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y border-[var(--okx-border)] py-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-y border-[var(--okx-border)] py-3" data-testid="calendar-view-selector">
         <div className="flex items-center gap-1"><button onClick={() => setCursor(view === "month" ? addMonths(cursor, -1) : addDays(cursor, -7))} aria-label="Periode sebelumnya" className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"><ChevronLeft size={16} /></button><button onClick={() => setCursor(startOfMonth(new Date()))} className="border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-zinc-500">Hari ini</button><button onClick={() => setCursor(view === "month" ? addMonths(cursor, 1) : addDays(cursor, 7))} aria-label="Periode berikutnya" className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"><ChevronRight size={16} /></button><span className="ml-2 text-sm font-semibold capitalize">{monthLabel(cursor)}</span></div>
         <div className="flex gap-1">{[["month", "Bulan", CalendarDays], ["week", "Minggu", Clock3], ["list", "Daftar", List]].map(([key, label, Icon]) => <button key={key} onClick={() => setView(key)} data-testid={`calendar-view-${key}`} className={`inline-flex items-center gap-1.5 border px-3 py-2 text-xs ${view === key ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10 accent-text" : "border-[var(--okx-border)] text-zinc-400"}`}><Icon size={13} /> {label}</button>)}</div>
       </div>
+    </>
+  );
 
+  const body = (
+    <>
       {busy ? <div className="border border-[var(--okx-border)] p-12 text-center text-sm text-zinc-500">Menyusun kalender dan memeriksa konflik…</div> : error ? <div className="border border-red-400/30 p-6 text-sm text-red-300">{error}</div> : (
-        <div className={`grid gap-5 ${selected ? "xl:grid-cols-[minmax(0,1fr)_320px]" : ""}`}>
+        <div className={`grid gap-5 ${selected ? "xl:grid-cols-[minmax(0,1fr)_320px]" : ""}`} data-testid="calendar-body">
           <div className="min-w-0">{view === "month" ? <MonthView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} /> : view === "week" ? <WeekView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} /> : <ListView items={visible} selected={selected} onSelect={setSelected} />}</div>
           <DetailPanel item={selected} onClose={() => setSelected(null)} internal={internal} onFollowUp={setCreateSeed} onDelete={removeEntry} deleting={deletingId === selected?.id} />
         </div>
       )}
 
-      <div role="group" className="flex flex-wrap gap-2 border-t border-[var(--okx-border)] pt-4" aria-label="Legenda status">
+      <div role="group" className="mt-5 flex flex-wrap gap-2 border-t border-[var(--okx-border)] pt-4" aria-label="Legenda status">
         {Object.entries(PUBLIC_STATUSES).map(([status, [label, Icon, style]]) => <span key={status} title={`Status kalender: ${label}`} className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[10px] ${style}`}><Icon size={11} /> {label}</span>)}
       </div>
+    </>
+  );
+
+  if (internal) {
+    return (
+      <div className="okx-workspace-page" data-testid="internal-calendar-engine">
+        <div className="okx-workspace-chrome" data-testid="calendar-chrome">{chrome}</div>
+        <div className="okx-workspace-content">{body}</div>
+        {createSeed !== null && <CreateEntry seed={createSeed} onClose={() => setCreateSeed(null)} onCreated={() => { setCreateSeed(null); load(filters); }} />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5" data-testid="public-calendar-engine">
+      {chrome}
+      {body}
       {createSeed !== null && <CreateEntry seed={createSeed} onClose={() => setCreateSeed(null)} onCreated={() => { setCreateSeed(null); load(filters); }} />}
     </div>
   );

@@ -1,8 +1,154 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { ListOrdered, CalendarDays, Handshake, Store } from "lucide-react";
 import { api, apiError, idr, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import { useAuth } from "@/context/AuthContext";
+
+const ORGANIZER_ROLES = new Set([
+  "organizer",
+  "event_organizer",
+  "promoter",
+  "supervisor",
+  "finance_approver",
+]);
+
+const SPONSOR_ROLES = new Set(["sponsor"]);
+const TENANT_ROLES = new Set(["tenant"]);
+const AUDIENCE_ROLES = new Set(["audience"]);
+
+function EmptyStateGeneric({ roles }) {
+  const roleSet = new Set(roles || []);
+  const isOrganizer = [...roleSet].some((r) => ORGANIZER_ROLES.has(r));
+  const isSponsor = [...roleSet].some((r) => SPONSOR_ROLES.has(r));
+  const isTenant = [...roleSet].some((r) => TENANT_ROLES.has(r));
+  const isAudience = [...roleSet].some((r) => AUDIENCE_ROLES.has(r));
+
+  if (isOrganizer) {
+    return (
+      <div
+        data-testid="roleworkspace-empty-organizer"
+        className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+          Assignment scope
+        </div>
+        <h2 className="editorial mt-2 text-xl">Anda mengelola event, bukan dibooking oleh event.</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          My Assignments menampilkan penugasan operasional pada satu individu:
+          performance slot talent, booking venue, deliverable vendor, shift workforce,
+          dan persetujuan pembayaran finance. Peran penyelenggara tidak mengisi kolom
+          ini karena Anda adalah pemilik event.
+        </p>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          Untuk pekerjaan penyelenggara, gunakan surface berikut.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link
+            to="/app/events"
+            className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-[var(--okx-accent)]"
+          >
+            <ListOrdered size={14} /> Buka Events
+          </Link>
+          <Link
+            to="/app/calendar"
+            className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-[var(--okx-accent)]"
+          >
+            <CalendarDays size={14} /> Buka Calendar
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSponsor) {
+    return (
+      <div
+        data-testid="roleworkspace-empty-sponsor"
+        className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+          Assignment scope
+        </div>
+        <h2 className="editorial mt-2 text-xl">Sponsor bekerja melalui portal peluang.</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          Minat, komitmen, dan deliverable sponsor tinggal di Sponsor Opportunities.
+          Ketika minat Anda dikonfirmasi organizer, komitmen dan pemenuhan akan tampil di sana.
+        </p>
+        <div className="mt-5">
+          <Link
+            to="/app/sponsor"
+            className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-[var(--okx-accent)]"
+          >
+            <Handshake size={14} /> Buka Sponsor Opportunities
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isTenant) {
+    return (
+      <div
+        data-testid="roleworkspace-empty-tenant"
+        className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+          Assignment scope
+        </div>
+        <h2 className="editorial mt-2 text-xl">Tenant bekerja melalui portal peluang.</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          Aplikasi tenant dan penempatan booth dikelola di Tenant Opportunities.
+          Ketika aplikasi Anda diputuskan, statusnya akan tampil pada portal tersebut.
+        </p>
+        <div className="mt-5">
+          <Link
+            to="/app/tenant"
+            className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-[var(--okx-accent)]"
+          >
+            <Store size={14} /> Buka Tenant Opportunities
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAudience) {
+    return (
+      <div
+        data-testid="roleworkspace-empty-audience"
+        className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+          Assignment scope
+        </div>
+        <h2 className="editorial mt-2 text-xl">Belum ada penugasan operasional.</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+          My Assignments menampilkan penugasan produksi: booking talent, venue, vendor,
+          workforce, atau persetujuan pembayaran. Sebagai audiens, tiket dan pesanan Anda
+          tinggal di My Tickets.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="roleworkspace-empty"
+      className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8"
+    >
+      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+        Assignment scope
+      </div>
+      <h2 className="editorial mt-2 text-xl">Belum ada penugasan aktif untuk peran Anda.</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+        Ketika organizer menempatkan Anda pada sebuah event, penugasan akan otomatis muncul
+        di sini beserta status kesiapan dan jadwal pembayaran.
+      </p>
+    </div>
+  );
+}
 
 export default function RoleWorkspace() {
   const { user } = useAuth();
@@ -24,24 +170,28 @@ export default function RoleWorkspace() {
 
   if (!d) return <div className="text-sm text-zinc-500">Memuat dashboard peran…</div>;
 
+  const totalItems = d.sections.reduce((sum, s) => sum + (s.items?.length || 0), 0);
+  const summary = d.sections.length > 0
+    ? `${d.sections.length} kategori · ${totalItems} penugasan aktif`
+    : "Belum ada penugasan operasional.";
+
   return (
-    <div className="space-y-8">
-      <div>
+    <div className="okx-workspace-page" data-testid="roleworkspace-page">
+      <div className="okx-workspace-chrome" data-testid="roleworkspace-chrome">
+        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+          My Assignments
+        </div>
         <h1 className="editorial text-2xl sm:text-3xl">Dashboard peran saya</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          {user.name} · peran: {d.roles.join(", ")}. Menampilkan penugasan, kesiapan, dan pembayaran yang terkait
-          dengan Anda saja.
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
+          {user.name} · peran: {d.roles.join(", ") || "belum ada"}. {summary}
         </p>
       </div>
 
-      {d.sections.length === 0 && (
-        <div data-testid="roleworkspace-empty" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400">
-          Belum ada penugasan untuk peran Anda. Masuk sebagai talent@okkax.id, venue@okkax.id, vendor@okkax.id,
-          worker@okkax.id, atau finance@okkax.id untuk melihat contoh data.
-        </div>
-      )}
+      <div className="okx-workspace-content">
+        <div className="space-y-8">
+          {d.sections.length === 0 && <EmptyStateGeneric roles={d.roles} />}
 
-      {d.sections.map((s) => (
+          {d.sections.map((s) => (
         <section key={s.kind} data-testid={`role-section-${s.kind}`}>
           <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">{s.title}</h2>
           <div className="mt-3 space-y-3">
@@ -148,7 +298,7 @@ export default function RoleWorkspace() {
                 <div className="mt-3">
                   {f.milestones.map((m) => (
                     <div key={m.id} className="flex justify-between gap-3 border-b border-[var(--okx-border)] py-1.5 text-xs">
-                      <span>{m.ref_name} — {m.description}</span>
+                      <span>{m.ref_name} · {m.description}</span>
                       <span className="num">{idr(m.amount)} · {m.status}</span>
                     </div>
                   ))}
@@ -158,6 +308,8 @@ export default function RoleWorkspace() {
           </div>
         </section>
       ))}
+        </div>
+      </div>
     </div>
   );
 }

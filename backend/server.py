@@ -277,7 +277,14 @@ async def catalog_talents(q: str = "", category: str = "", city: str = "",
         f["$or"] = [{"stage_name": {"$regex": q, "$options": "i"}},
                     {"genre": {"$regex": q, "$options": "i"}}]
     if category:
-        f["category"] = category
+        # Talent facets in the client are keyed on `genre` (the visible
+        # category label), but historical seed data also uses `category`.
+        # Match either so the discovery UI dropdown behaves consistently
+        # regardless of which field the specific talent record populated.
+        f["$and"] = f.get("$and", []) + [{"$or": [
+            {"category": category},
+            {"genre": category},
+        ]}]
     if city:
         f["city"] = city
     if verified is not None:
@@ -379,7 +386,13 @@ async def catalog_workers(category: str = "", q: str = "", city: str = "",
     if q:
         f["name"] = {"$regex": q, "$options": "i"}
     if category:
-        f["category"] = category
+        # Workforce facets in the client are keyed on `role` (the visible
+        # peran label). Match either `role` or `category` so the dropdown
+        # filter selection resolves against the actual seed field used.
+        f["$and"] = f.get("$and", []) + [{"$or": [
+            {"category": category},
+            {"role": category},
+        ]}]
     if city:
         f["city"] = city
     if verified is not None:

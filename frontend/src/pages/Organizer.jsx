@@ -188,26 +188,44 @@ export function EventsList() {
   }, [workspaceVersion]);
   if (!events) return <div className="text-sm text-zinc-500">Memuat event…</div>;
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-base font-semibold md:text-lg">Events</h1>
-        <Link to="/app/studio" className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold" data-testid="events-new-btn">Event baru</Link>
-      </div>
-      <div className="border border-[var(--okx-border)]" data-testid="events-list">
-        {events.map((ev) => (
-          <Link key={ev.id} to={`/app/events/${ev.id}/blueprint`} className="flex flex-col gap-2 border-b border-[var(--okx-border)] p-4 last:border-0 hover:bg-[var(--okx-surface)] sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="num text-xs text-zinc-500">{ev.event_code}</div>
-              <div className="text-sm font-semibold">{ev.name}</div>
-              <div className="text-xs text-zinc-500">{ev.city} · {ev.start_date}</div>
+    <div className="okx-workspace-page" data-testid="events-page">
+      <div className="okx-workspace-chrome" data-testid="events-chrome">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+              Live Event Portfolio
             </div>
-            <div className="flex items-center gap-4">
-              <span className="num text-xs text-zinc-400">Gap {compact(ev.funding_gap)}</span>
-              <StatusBadge status={ev.status === "published" ? "Confirmed" : "Draft"} />
-            </div>
+            <h1 className="editorial text-2xl sm:text-3xl">Events</h1>
+            <p className="mt-1 text-xs text-zinc-500">
+              {events.length} event pada workspace ini.
+            </p>
+          </div>
+          <Link
+            to="/app/studio"
+            className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-white"
+            data-testid="events-new-btn"
+          >
+            <Plus size={15} /> Event baru
           </Link>
-        ))}
-        {events.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">Belum ada event. Mulai dari Event Studio.</div>}
+        </div>
+      </div>
+      <div className="okx-workspace-content">
+        <div className="border border-[var(--okx-border)]" data-testid="events-list">
+          {events.map((ev) => (
+            <Link key={ev.id} to={`/app/events/${ev.id}/blueprint`} className="flex flex-col gap-2 border-b border-[var(--okx-border)] p-4 last:border-0 hover:bg-[var(--okx-surface)] sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="num text-xs text-zinc-500">{ev.event_code}</div>
+                <div className="text-sm font-semibold">{ev.name}</div>
+                <div className="text-xs text-zinc-500">{ev.city} · {ev.start_date}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="num text-xs text-zinc-400">Gap {compact(ev.funding_gap)}</span>
+                <StatusBadge status={ev.status === "published" ? "Confirmed" : "Draft"} />
+              </div>
+            </Link>
+          ))}
+          {events.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">Belum ada event. Mulai dari Event Studio.</div>}
+        </div>
       </div>
     </div>
   );
