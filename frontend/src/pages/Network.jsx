@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   SlidersHorizontal,
   X,
+  Star,
+  Megaphone,
 } from "lucide-react";
 import { api, compact } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -679,6 +681,26 @@ function SupplyCard({ item, tab, eventScoped }) {
           <span className="inline-flex items-center gap-1">
             <MapPin size={12} />
             {cityOf(item)}
+          </span>
+        )}
+
+        {typeof item.rating === "number" && (
+          <span
+            className="inline-flex items-center gap-1 text-amber-300"
+            data-testid="network-card-rating"
+            title={`${item.review_count || 0} ulasan`}
+          >
+            <Star size={12} strokeWidth={2.2} />
+            <span className="num">{item.rating.toFixed(1)}</span>
+            {typeof item.review_count === "number" && (
+              <span className="text-zinc-500">({item.review_count})</span>
+            )}
+          </span>
+        )}
+
+        {typeof item.completed_events === "number" && item.completed_events > 0 && (
+          <span className="num text-zinc-500">
+            {item.completed_events} event
           </span>
         )}
 

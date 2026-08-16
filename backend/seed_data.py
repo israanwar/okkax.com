@@ -295,7 +295,11 @@ async def seed(force: bool = False):
     await seed_demo_event()
     from seed_events import seed_extra_events
     await seed_extra_events()
-    return {"seeded": True, "disclaimer": DISCLAIMER}
+    # Network catalog expansion runs LAST so it can enrich sponsor packages
+    # and tenant zones created by the event catalog step above.
+    from seed_network import seed_network_expansion
+    network_stats = await seed_network_expansion()
+    return {"seeded": True, "disclaimer": DISCLAIMER, "network": network_stats}
 
 
 async def seed_demo_event():

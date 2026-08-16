@@ -1185,17 +1185,168 @@ async def create_zone(event_id: str, body: Dict[str, Any], user: dict = Depends(
 
 
 @api.get("/tenant/opportunities")
-async def tenant_opportunities(city: str = ""):
-    f = {"status": "published", "deleted": {"$ne": True}}
+async def tenant_opportunities(city: str = "", category: str = "", limit: int = 0):
+    """Public list of tenant opportunities. Filters:
+       - city:       narrows to events in that city
+       - category:   matches the zone category (case-insensitive)
+       - limit:      cap on events returned (defaults to 100, hard cap 200)
+    """
+    f = {"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}}
     if city:
         f["city"] = city
-    events = await db.events.find(f, {"_id": 0}).to_list(100)
+    events = await db.events.find(f, {"_id": 0}).to_list(min(max(limit or 100, 1), 200))
     out = []
     for ev in events:
         booths = await db.booth_slots.find({"event_id": ev["id"], "status": "available"}, {"_id": 0}).to_list(500)
-        if booths:
-            out.append({"event": ev, "available_booths": len(booths), "booths": booths[:60]})
+        if not booths:
+            continue
+        zones = await db.tenant_zones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(20)
+        if category:
+            zones = [z for z in zones if category.lower() in str(z.get("category", "")).lower()
+                     or category.lower() in str(z.get("category_key", "")).lower()]
+            if not zones:
+                continue
+            zone_ids = {z["id"] for z in zones}
+            booths = [b for b in booths if b.get("zone_id") in zone_ids]
+            if not booths:
+                continue
+        out.append({"event": ev, "available_booths": len(booths),
+                    "booths": booths[:60], "zones": zones})
     return {"items": out}
+
+
+@api.post("/events/{event_id}/tenant-broadcast")
+async def broadcast_tenant_opportunity(
+    event_id: str,
+    body: Dict[str, Any],
+    user: dict = Depends(get_current_user),
+):
+    """Organizer broadcast of a tenant opportunity.
+
+    Fits the EXISTING tenant model: creates or updates a tenant_zone with
+    opportunity metadata (category, city coverage, booth requirements,
+    deadline, notes), (re)issues the booth_slots for that zone with the
+    requested pricing, marks the zone `broadcast` so it surfaces in
+    `/tenant/opportunities`, and notifies tenants seeded in the demo
+    catalog whose preferred category matches.
+
+    No parallel workflow. `POST /tenant-applications` is still the entry
+    point for tenants to apply; this endpoint only prepares the zone.
+    """
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+
+    name = str(body.get("name") or "Tenant Opportunity").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Nama zona wajib diisi")
+
+    category = str(body.get("category") or "Retail Pop-up").strip()
+    slots = max(1, min(int(body.get("slots") or 6), 60))
+    price = max(0, int(body.get("price") or 5000000))
+    deposit = int(body.get("deposit") or price * 0.2)
+    size = str(body.get("size") or "3m x 3m")
+    electricity_watt = max(0, int(body.get("electricity_watt") or 2000))
+    city_coverage = body.get("city_coverage")
+    if not isinstance(city_coverage, list) or not city_coverage:
+        city_coverage = [ev.get("city", "Indonesia")]
+    requirements = body.get("requirements") or []
+    if not isinstance(requirements, list):
+        requirements = [str(requirements)]
+    deadline = body.get("deadline") or ev.get("start_date")
+    description = str(body.get("description") or "").strip()
+    zone_id = str(body.get("zone_id") or nid())
+
+    zone_doc = {
+        "id": zone_id, "event_id": ev["id"], "name": name, "category": category,
+        "category_key": category, "area_sqm": max(30, slots * 12), "slots": slots,
+        "utilities": ["Electricity", "Water"], "operating_hours": "10:00 - 22:00",
+        "description": description or f"Broadcast tenant opportunity untuk {ev['name']}.",
+        "city_coverage": city_coverage, "requirements": requirements,
+        "power_per_booth_watt": electricity_watt, "staffing_required": int(body.get("staffing") or 2),
+        "deadline": deadline, "broadcast_status": "broadcast",
+        "provenance": "organizer_broadcast", "created_at": now_iso(),
+    }
+    await db.tenant_zones.update_one({"id": zone_id}, {"$set": zone_doc}, upsert=True)
+
+    # Reset booth_slots for the zone to match the broadcast (idempotent for
+    # a given zone_id: only untouched or previously broadcast booths are
+    # re-created; reserved/occupied booths are left alone).
+    prefix = "".join(ch for ch in name.upper() if ch.isalpha())[:3] or "TZ"
+    for i in range(slots):
+        code = f"{prefix}-{i+1:02d}"
+        existing = await db.booth_slots.find_one({"event_id": ev["id"], "zone_id": zone_id, "code": code}, {"_id": 0})
+        if existing and existing.get("status") in ("reserved", "occupied"):
+            continue
+        booth = {
+            "id": existing["id"] if existing else nid(),
+            "event_id": ev["id"], "zone_id": zone_id, "zone_name": name,
+            "code": code, "size": size, "price": price, "deposit": deposit,
+            "electricity_watt": electricity_watt, "furniture": "1 meja, 2 kursi",
+            "position": f"Row {chr(65 + i // 5)}-{i % 5 + 1}",
+            "status": "available", "tenant_name": None,
+            "tenant_application_id": None, "created_at": now_iso(),
+        }
+        await db.booth_slots.update_one({"id": booth["id"]}, {"$set": booth}, upsert=True)
+
+    # Notify demo tenants whose preferred category matches (best effort,
+    # capped so a large broadcast does not fan out too aggressively).
+    matching_tenants = await db.tenants.find(
+        {"preferred_event_categories": {"$in": [ev.get("event_type")]}},
+        {"_id": 0, "id": 1, "business_name": 1},
+    ).to_list(20)
+    notified = 0
+    for t in matching_tenants:
+        # Notify the tenant user account whose linked_tenant_id matches, if
+        # any. Falls back to a workspace-wide notification for the tenant
+        # persona which we always have.
+        tenant_user = await db.users.find_one(
+            {"linked_tenant_id": t["id"]}, {"_id": 0, "id": 1},
+        ) or await db.users.find_one(
+            {"email": "tenant@okkax.id"}, {"_id": 0, "id": 1},
+        )
+        if not tenant_user:
+            continue
+        await notify(tenant_user["id"], "Peluang tenant baru",
+                     f"{ev['name']}: {name} ({category}) menerima aplikasi hingga {deadline}.",
+                     "info", ev["id"])
+        notified += 1
+
+    await audit(ev["id"], user, "tenant_zone.broadcast", {
+        "zone": name, "slots": slots, "category": category, "notified": notified,
+    })
+    return {"ok": True, "zone_id": zone_id, "slots": slots,
+            "notified_tenants": notified, "zone": clean(zone_doc)}
+
+
+# Read-only tenant catalog (existing tenants that could be invited).
+@api.get("/catalog/tenants")
+async def catalog_tenants(city: str = "", category: str = "",
+                          verified: Optional[bool] = None,
+                          q: str = "", sort: str = "", limit: int = 0):
+    """Tenant catalog for discovery. Fully additive; the underlying
+    tenants collection is populated by seed_network_expansion()."""
+    f: Dict[str, Any] = {}
+    if q:
+        f["$or"] = [
+            {"business_name": {"$regex": q, "$options": "i"}},
+            {"description": {"$regex": q, "$options": "i"}},
+        ]
+    if city:
+        f["city"] = city
+    if category:
+        f["$and"] = f.get("$and", []) + [{"$or": [
+            {"product_category": category},
+            {"category": category},
+        ]}]
+    if verified is not None:
+        f["verified"] = bool(verified)
+    cursor = db.tenants.find(f, {"_id": 0})
+    spec = _catalog_sort_spec(sort, {
+        "rating_desc": ("rating", -1), "name_asc": ("business_name", 1),
+    })
+    if spec:
+        cursor = cursor.sort(spec)
+    return {"items": await cursor.to_list(_catalog_limit(limit))}
 
 
 @api.post("/tenant-applications")
@@ -3228,6 +3379,11 @@ async def startup():
     extra = await seed_extra_events()
     published = await db.events.count_documents({"status": {"$in": ["published", "live"]}})
     logger.info(f"OKKAX startup catalog upsert: {extra} · published events: {published}")
+    # Network catalog expansion — deterministic, upsert-safe. Runs on every
+    # startup so the demo database always converges to the current snapshot.
+    from seed_network import seed_network_expansion
+    network_stats = await seed_network_expansion()
+    logger.info(f"OKKAX startup network catalog: {network_stats}")
 
 
 @app.on_event("shutdown")

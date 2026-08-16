@@ -136,6 +136,12 @@ export function TenantsTab({ eventId, onChange }) {
   const [booths, setBooths] = useState([]);
   const [apps, setApps] = useState([]);
   const [form, setForm] = useState({ name: "", category: "Food and Beverage", slots: 6, price: 7500000 });
+  const [broadcast, setBroadcast] = useState({
+    open: false, name: "", category: "Food & Beverage", slots: 8, price: 6500000,
+    electricity_watt: 2000, city_coverage: "", requirements: "Halal, Reusable cup",
+    deadline: "", description: "",
+  });
+  const [broadcasting, setBroadcasting] = useState(false);
 
   const load = async () => {
     const [{ data: z }, { data: a }] = await Promise.all([
@@ -165,7 +171,7 @@ export function TenantsTab({ eventId, onChange }) {
   const decide = async (id, decision) => {
     try {
       await api.post(`/tenant-applications/${id}/decision`, { decision });
-      toast.success(decision === "approved" ? "Tenant disetujui — booth terisi & funding diperbarui" : "Aplikasi ditolak, booth dibuka kembali");
+      toast.success(decision === "approved" ? "Tenant disetujui, booth terisi & funding diperbarui" : "Aplikasi ditolak, booth dibuka kembali");
       load();
       onChange?.();
     } catch (e) {
@@ -173,9 +179,52 @@ export function TenantsTab({ eventId, onChange }) {
     }
   };
 
+  const sendBroadcast = async () => {
+    if (!broadcast.name.trim()) {
+      return toast.error("Nama tenant opportunity wajib diisi");
+    }
+    setBroadcasting(true);
+    try {
+      const payload = {
+        name: broadcast.name.trim(),
+        category: broadcast.category,
+        slots: Number(broadcast.slots) || 6,
+        price: Number(broadcast.price) || 0,
+        electricity_watt: Number(broadcast.electricity_watt) || 2000,
+        city_coverage: broadcast.city_coverage
+          ? broadcast.city_coverage.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+        requirements: broadcast.requirements
+          ? broadcast.requirements.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+        deadline: broadcast.deadline || undefined,
+        description: broadcast.description.trim() || undefined,
+      };
+      const { data } = await api.post(`/events/${eventId}/tenant-broadcast`, payload);
+      toast.success(`Broadcast terkirim ke ${data.notified_tenants} tenant terkait, ${data.slots} slot tersedia`);
+      setBroadcast({ ...broadcast, open: false, name: "" });
+      load();
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setBroadcasting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <h2 className="text-base font-semibold md:text-lg">Tenant Exchange</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-base font-semibold md:text-lg">Tenant Exchange</h2>
+        <button
+          type="button"
+          data-testid="tenant-broadcast-btn"
+          onClick={() => setBroadcast({ ...broadcast, open: true })}
+          className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-white"
+        >
+          Broadcast tenant opportunity
+        </button>
+      </div>
 
       <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4">
         <h3 className="text-sm font-semibold">Buat tenant zone</h3>
@@ -188,6 +237,154 @@ export function TenantsTab({ eventId, onChange }) {
           <button data-testid="create-zone-btn" onClick={createZone} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Buat zona</button>
         </div>
       </div>
+
+      {broadcast.open && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4"
+          data-testid="tenant-broadcast-modal"
+        >
+          <div className="max-h-[92vh] w-full max-w-2xl overflow-auto border border-[var(--okx-border)] bg-[#111] p-5 okx-scroll">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[10px] uppercase tracking-widest accent-text">
+                  Broadcast tenant opportunity
+                </div>
+                <h3 className="editorial mt-1 text-xl">Kirim peluang tenant ke jaringan OKKAX</h3>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Menyiapkan zona baru untuk event ini, membuka booth siap-apply,
+                  dan mengirim notifikasi ke tenant fiktif yang preferensinya cocok.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Tutup"
+                onClick={() => setBroadcast({ ...broadcast, open: false })}
+                className="p-2 text-zinc-500 hover:text-white"
+              >
+                Tutup
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span className="text-xs text-zinc-500">Nama zona / opportunity</span>
+                <input
+                  data-testid="broadcast-name-input"
+                  value={broadcast.name}
+                  onChange={(e) => setBroadcast({ ...broadcast, name: e.target.value })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                  placeholder="mis. Kuliner Nusantara Zone"
+                />
+              </label>
+              <label>
+                <span className="text-xs text-zinc-500">Kategori tenant</span>
+                <PremiumSelect
+                  data-testid="broadcast-category-select"
+                  value={broadcast.category}
+                  onChange={(e) => setBroadcast({ ...broadcast, category: e.target.value })}
+                  className="mt-1 w-full"
+                >
+                  {[
+                    "Food & Beverage", "Fashion", "Merchandise", "Beauty",
+                    "Craft / UMKM", "Technology", "Gaming", "Automotive",
+                    "Services", "Lifestyle", "Local Brand",
+                  ].map((c) => <option key={c}>{c}</option>)}
+                </PremiumSelect>
+              </label>
+              <label>
+                <span className="text-xs text-zinc-500">Kota / coverage (pisahkan koma)</span>
+                <input
+                  data-testid="broadcast-cities-input"
+                  value={broadcast.city_coverage}
+                  onChange={(e) => setBroadcast({ ...broadcast, city_coverage: e.target.value })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                  placeholder="Jakarta, Bandung"
+                />
+              </label>
+              <label>
+                <span className="text-xs text-zinc-500">Jumlah booth</span>
+                <input
+                  data-testid="broadcast-slots-input"
+                  type="number" min="1" max="60"
+                  value={broadcast.slots}
+                  onChange={(e) => setBroadcast({ ...broadcast, slots: Number(e.target.value) })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                />
+              </label>
+              <label>
+                <span className="text-xs text-zinc-500">Harga per booth (IDR)</span>
+                <input
+                  data-testid="broadcast-price-input"
+                  type="number" min="0"
+                  value={broadcast.price}
+                  onChange={(e) => setBroadcast({ ...broadcast, price: Number(e.target.value) })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                />
+              </label>
+              <label>
+                <span className="text-xs text-zinc-500">Daya per booth (Watt)</span>
+                <input
+                  data-testid="broadcast-watt-input"
+                  type="number" min="0"
+                  value={broadcast.electricity_watt}
+                  onChange={(e) => setBroadcast({ ...broadcast, electricity_watt: Number(e.target.value) })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                />
+              </label>
+              <label>
+                <span className="text-xs text-zinc-500">Deadline aplikasi (YYYY-MM-DD)</span>
+                <input
+                  data-testid="broadcast-deadline-input"
+                  type="date"
+                  value={broadcast.deadline}
+                  onChange={(e) => setBroadcast({ ...broadcast, deadline: e.target.value })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                />
+              </label>
+              <label className="sm:col-span-2">
+                <span className="text-xs text-zinc-500">Requirement (pisahkan koma)</span>
+                <input
+                  data-testid="broadcast-requirements-input"
+                  value={broadcast.requirements}
+                  onChange={(e) => setBroadcast({ ...broadcast, requirements: e.target.value })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                  placeholder="Halal, Reusable cup, BPOM basic"
+                />
+              </label>
+              <label className="sm:col-span-2">
+                <span className="text-xs text-zinc-500">Catatan operasional</span>
+                <textarea
+                  data-testid="broadcast-description-input"
+                  rows="3"
+                  value={broadcast.description}
+                  onChange={(e) => setBroadcast({ ...broadcast, description: e.target.value })}
+                  className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none"
+                  placeholder="Loading H-1, teardown H+1, briefing 09:00"
+                />
+              </label>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setBroadcast({ ...broadcast, open: false })}
+                className="border border-[var(--okx-border)] px-4 py-2 text-sm"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                data-testid="broadcast-submit-btn"
+                onClick={sendBroadcast}
+                disabled={broadcasting || !broadcast.name.trim()}
+                className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {broadcasting ? "Mengirim..." : "Kirim broadcast"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {zones.map((z) => {
         const zb = booths.filter((b) => b.zone_id === z.id);
