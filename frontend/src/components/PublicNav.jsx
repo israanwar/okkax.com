@@ -342,30 +342,30 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
             top: `${panelTop}px`,
             width: "min(780px, calc(100vw - 32px))",
           }}
-          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden border border-[var(--okx-border)] bg-[#080808f7] shadow-[0_32px_90px_-42px_rgba(0,0,0,0.95)] backdrop-blur-xl"
+          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-800/90 bg-[#0a0a0ff8] shadow-[0_32px_90px_rgba(0,0,0,0.95)] backdrop-blur-2xl"
           onMouseEnter={openNow}
           onMouseLeave={scheduleClose}
         >
-          <div className="grid lg:grid-cols-[150px_minmax(0,1fr)]">
-            <div className="border-b border-[var(--okx-border)] p-4 lg:border-b-0 lg:border-r">
-              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--okx-accent-soft)]">
+          <div className="grid lg:grid-cols-[155px_minmax(0,1fr)]">
+            <div className="border-b border-zinc-800/80 bg-zinc-950/50 p-4 lg:border-b-0 lg:border-r">
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--okx-accent-soft)]">
                 {meta.eyebrow}
               </div>
 
-              <div className="max-w-[130px] text-[15px] font-semibold leading-[1.25] text-[#f3eeeb]">
+              <div className="max-w-[135px] text-[15px] font-bold leading-[1.25] text-white font-gemini-display">
                 {meta.title}
               </div>
 
-              <p className="mt-2 max-w-[130px] text-[10px] leading-[1.45] text-zinc-500">
+              <p className="mt-2 max-w-[135px] text-[10px] leading-[1.45] text-zinc-400 font-gemini">
                 {meta.text}
               </p>
             </div>
 
-            <ul className={`grid ${gridClass}`}>
+            <ul className={`grid ${gridClass} bg-[#0b0b10]/80 divide-y divide-zinc-800/60 lg:divide-y-0`}>
               {item.children?.map((c) => (
                 <li
                   key={c.to}
-                  className="border-b border-[var(--okx-border)] lg:border-r"
+                  className="border-b border-zinc-800/60 lg:border-r last:border-r-0"
                 >
                   <Link
                     role="menuitem"
@@ -375,21 +375,21 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
                       onNavigate?.();
                     }}
                     data-testid={`nav-${item.id}-${slug(c.label)}`}
-                    className="group flex min-h-[68px] h-full flex-col justify-between p-3 transition-colors duration-150 hover:bg-[#100b0d]"
+                    className="group flex min-h-[72px] h-full flex-col justify-between p-3.5 transition-all duration-150 hover:bg-[#150d14]"
                   >
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="text-[13px] font-medium text-zinc-200 transition-colors group-hover:text-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-[13px] font-semibold text-zinc-200 transition-colors group-hover:text-white">
                         {c.label}
                       </span>
 
                       <ArrowUpRight
                         size={14}
-                        className="mt-0.5 text-zinc-700 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--okx-accent)]"
+                        className="mt-0.5 text-zinc-600 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--okx-accent)]"
                         aria-hidden="true"
                       />
                     </div>
 
-                    <span className="mt-1.5 max-w-[190px] text-[9.5px] leading-[1.45] text-zinc-500">
+                    <span className="mt-1.5 max-w-[190px] text-[10px] leading-[1.4] text-zinc-400 group-hover:text-zinc-300 transition-colors">
                       {c.note || MENU_NOTES[c.label] || ""}
                     </span>
                   </Link>
@@ -414,7 +414,7 @@ function QuickDemoGrid({ onDone, testidPrefix }) {
             disabled={busy === r.id}
             onClick={async () => { await enter(r); onDone?.(); }}
             data-testid={`${testidPrefix}-${r.id}`}
-            className="group flex w-full flex-col items-start border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-left text-[12.5px] text-zinc-200 transition-colors hover:border-[var(--okx-accent)] hover:bg-[#100609] disabled:opacity-60"
+            className="group flex w-full flex-col items-start rounded-lg border border-zinc-800 bg-[#0d0d12] px-3 py-2 text-left text-[12.5px] text-zinc-200 transition-all hover:border-[var(--okx-accent)] hover:bg-[#160a12] disabled:opacity-60"
           >
             <span className="font-semibold text-white">{r.label}</span>
             <span className="text-[10.5px] text-zinc-500">
@@ -444,10 +444,19 @@ export default function PublicNav() {
   };
 
   return (
-    <header className="okx-public-nav sticky top-0 z-40 border-b border-[var(--okx-border)] bg-[#0a0a0ae8] backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-6 xl:gap-8">
-          <Logo />
+    <header className="okx-public-nav sticky top-0 z-40 border-b border-zinc-800/80 bg-[#08080ce8] backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] transition-all">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
+        <div className="flex items-center gap-4 sm:gap-6 xl:gap-8">
+          <div className="flex items-center gap-3">
+            <Logo />
+            <div className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/20 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400 sm:flex">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </span>
+              <span>15 KOTA LIVE</span>
+            </div>
+          </div>
           <nav className="okx-nav-type hidden items-center gap-4 lg:flex xl:gap-6" aria-label="Navigasi utama">
             {NAV.map((item) =>
               item.children ? (
@@ -470,20 +479,20 @@ export default function PublicNav() {
             )}
           </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {user ? (
             <>
               <Link
                 to="/app"
                 data-testid="nav-workspace-btn"
-                className="hidden bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--okx-accent-hover)] sm:block"
+                className="hidden rounded-lg bg-[var(--okx-accent)] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[var(--okx-accent-hover)] hover:shadow-[0_0_16px_rgba(255,46,126,0.35)] sm:block"
               >
                 Workspace
               </Link>
               <button
                 data-testid="nav-logout-btn"
                 onClick={() => { logout(); nav("/"); }}
-                className="hidden border border-[var(--okx-border)] px-3 py-2 text-sm text-zinc-300 hover:text-white sm:block"
+                className="hidden rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-300 hover:text-white hover:border-zinc-700 sm:block transition-colors"
               >
                 Sign Out
               </button>
@@ -493,16 +502,16 @@ export default function PublicNav() {
               <Link
                 to="/login"
                 data-testid="nav-signin-btn"
-                className="okx-nav-type hidden px-3 py-2 text-[13px] font-medium tracking-[0.015em] text-zinc-300 hover:text-white sm:block"
+                className="okx-nav-type hidden px-3 py-2 text-[13px] font-medium tracking-[0.015em] text-zinc-300 hover:text-white sm:block transition-colors"
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
                 data-testid="nav-register-btn"
-                className="okx-nav-cta okx-nav-type bg-[var(--okx-accent)] px-4 py-2 text-[13px] font-semibold tracking-[0.01em] text-white hover:bg-[var(--okx-accent-hover)]"
+                className="okx-nav-cta okx-nav-type rounded-lg bg-gradient-to-r from-[#ff2e7e] to-[#ff3b88] px-4 py-2 text-[13px] font-bold tracking-[0.01em] text-white hover:shadow-[0_0_20px_rgba(255,46,126,0.45)] transition-all"
               >
-                Register
+                Build an Event
               </Link>
             </>
           )}
@@ -511,7 +520,7 @@ export default function PublicNav() {
             aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
-            className="p-2 text-zinc-300 lg:hidden"
+            className="p-2 text-zinc-300 lg:hidden rounded-lg hover:bg-zinc-800/60"
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>

@@ -1054,23 +1054,37 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-[#08080866]" />
         <div className="relative mx-auto flex min-h-[640px] max-w-[1440px] items-center px-4 py-16 sm:px-8 lg:min-h-[670px] lg:px-16">
           <div className="fade-up relative z-10 max-w-[760px] lg:w-[58%]">
-            <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
-              Live Event Operating Network
-            </span>
-            <h1 className="editorial mt-7 text-[clamp(3.35rem,6.15vw,5.8rem)] leading-[0.96] tracking-[-0.055em]">
+            {/* Live Network Telemetry Pill */}
+            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-700/80 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--okx-accent)] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--okx-accent)]" />
+              </span>
+              <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
+                <span className="text-[var(--okx-accent-soft)]">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
+              </span>
+            </div>
+
+            <div>
+              <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
+                Live Event Operating Network
+              </span>
+            </div>
+
+            <h1 className="editorial mt-5 text-[clamp(3.35rem,6.15vw,5.8rem)] leading-[0.96] tracking-[-0.055em]">
               One event.
               <br />
               <span className="accent-text xl:whitespace-nowrap">Every moving part.</span>
             </h1>
-            <p className="mt-7 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
+            <p className="mt-6 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
               Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
-              setiap detail di balik live event.
+              setiap detail di balik live event dalam satu koordinasi terpusat.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
                 to="/register"
                 data-testid="hero-compile-btn"
-                className="group inline-flex min-h-12 items-center justify-center gap-3 bg-[var(--okx-accent)] px-7 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-[var(--okx-accent-hover)] hover:shadow-[0_0_20px_rgba(255,46,126,0.35)]"
+                className="group inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#ff2e7e] to-[#ff3b88] px-7 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:shadow-[0_0_24px_rgba(255,46,126,0.5)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 Build an Event
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -1078,14 +1092,14 @@ export default function Landing() {
               <Link
                 to="/demo"
                 data-testid="hero-juri-btn"
-                className="inline-flex min-h-12 items-center justify-center border border-[var(--okx-border)] bg-zinc-900/60 backdrop-blur-sm px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white transition-colors"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/80 backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:text-white transition-all"
               >
                 Platform Demo — 3 menit <ArrowRight size={15} className="ml-2 text-[var(--okx-accent)]" />
               </Link>
               <Link
                 to="/okkax"
                 data-testid="hero-yoona-btn"
-                className="inline-flex min-h-12 items-center justify-center gap-2 border border-[var(--okx-accent)]/50 bg-[#170810]/80 backdrop-blur-sm px-5 py-3.5 text-sm font-semibold text-[var(--okx-accent-soft)] hover:bg-[var(--okx-accent)] hover:text-white transition-all"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--okx-accent)]/50 bg-[#1a0b14]/80 backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-[var(--okx-accent-soft)] hover:bg-[var(--okx-accent)] hover:text-white transition-all shadow-[0_0_15px_rgba(255,46,126,0.2)]"
               >
                 <Layers size={16} className="text-[var(--okx-accent-soft)]" />
                 OKKAX Copilot
