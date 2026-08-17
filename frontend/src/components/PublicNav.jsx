@@ -55,6 +55,7 @@ const links = [
   { to: "/discover", label: "Discover" },
   { to: "/calendar", label: "Calendar" },
   { to: "/peta", label: "Live Event Map" },
+  { to: "/pricing", label: "Pricing" },
   { to: "/for/organizers", label: "For Organizers" },
   { to: "/for/sponsors", label: "For Sponsors" },
   { to: "/for/tenants", label: "For Tenants" },
@@ -231,7 +232,7 @@ export function Footer() {
           </div>
           <FooterLinks title="Explore" links={[["Discover Events", "/discover"], ["Event Calendar", "/calendar"], ["Live Event Map", "/peta"], ["Platform Demo", "/juri"]]} />
           <FooterLinks title="Network" links={[["For Organizers", "/for/organizers"], ["For Sponsors", "/for/sponsors"], ["For Tenants", "/for/tenants"], ["Ticket Validator", "/validator"]]} />
-          <FooterLinks title="Access" links={[["Build an Event", "/register"], ["Sign In", "/login"]]} />
+          <FooterLinks title="Access" links={[["Pricing", "/pricing"], ["Build an Event", "/register"], ["Sign In", "/login"]]} />
         </div>
 
         <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] py-8 sm:flex-row sm:items-center">

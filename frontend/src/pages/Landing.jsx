@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
+import { PLAN_META, PLAN_ORDER, priceFor } from "@/lib/pricing";
 import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
 
@@ -283,6 +284,86 @@ function buildPreviewNodes(summary, catalogEvent) {
       nextAction: fundingGap !== null && fundingGap > 0 ? "Konfirmasi sponsor, tenant, ticketing, atau sesuaikan biaya prioritas." : "Tinjau anggaran dan sumber pendanaan pada Event ID.",
     },
   ];
+}
+
+// Compact homepage teaser for Free/Pro/Max. The full role selector and
+// billing toggle live on /pricing to keep this section lightweight.
+// Anchors on Organizer pricing per doc 33 section 6.
+function PricingPreview() {
+  return (
+    <section
+      aria-labelledby="landing-pricing-heading"
+      data-testid="landing-pricing-preview"
+      className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24"
+    >
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div className="max-w-2xl">
+            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+              Subscription
+            </div>
+            <h2 id="landing-pricing-heading" className="editorial mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] text-[#f4efec]">
+              Start free. Scale with intelligence.
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-zinc-400 sm:text-base">
+              Free gets you into the network. Pro helps you operate professionally. Max gives you the deepest OKKAX Intelligence for optimization and scale.
+            </p>
+          </div>
+          <Link
+            to="/pricing"
+            data-testid="landing-pricing-see-all"
+            className="group inline-flex items-center gap-2 border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-900"
+          >
+            See all plans and roles
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {PLAN_ORDER.map((planId) => {
+            const meta = PLAN_META[planId];
+            const price = priceFor("organizer", planId, "monthly");
+            const isMax = planId === "max";
+            return (
+              <div
+                key={planId}
+                data-testid={`landing-pricing-${planId}`}
+                className={[
+                  "flex h-full flex-col border p-6",
+                  isMax
+                    ? "border-[var(--okx-accent)] bg-[#100609]"
+                    : "border-[var(--okx-border)] bg-[#0c0c0c]",
+                ].join(" ")}
+              >
+                <div className="flex items-baseline justify-between">
+                  <h3 className="text-lg font-semibold text-white">{meta.label}</h3>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    {meta.intelligence}
+                  </span>
+                </div>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-2xl font-semibold text-white">{price.label}</span>
+                  <span className="text-xs text-zinc-500">
+                    {planId === "free" ? "forever" : "per month, Organizer"}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm text-zinc-400">{meta.positioning}</p>
+                {meta.inherits && (
+                  <div className="mt-3 border-l-2 border-[var(--okx-accent)] pl-3 text-[10px] uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">
+                    {meta.inherits}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 text-xs text-zinc-500">
+          Anchored on Organizer pricing. Talent, Venue, Vendor, Workforce, Sponsor, and Tenant have role-specific prices on the full pricing page.
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function StatusPill({ status, testId, tooltipAlign = "center" }) {
@@ -1150,6 +1231,8 @@ export default function Landing() {
           </p>
         </div>
       </section>
+
+      <PricingPreview />
 
       <section className="px-4 py-20 sm:px-6 sm:py-28">
         <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 border border-[var(--okx-accent)] bg-[#140700] p-8 sm:p-14">

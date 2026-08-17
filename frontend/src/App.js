@@ -24,6 +24,7 @@ import PresentationMode from "@/pages/PresentationMode";
 import { PublicCalendar, WorkspaceCalendar } from "@/pages/CalendarEngine";
 import ControlPlane from "@/pages/ControlPlane";
 import Network from "@/pages/Network";
+import Pricing from "@/pages/Pricing";
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
@@ -40,6 +41,8 @@ function RouterBody() {
             <Route path="/calendar" element={<PublicCalendar />} />
             <Route path="/events/:id" element={<PublicEvent />} />
             <Route path="/for/:audience" element={<ForPage />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/plans" element={<Pricing />} />
             <Route path="/demo" element={<GuidedDemo />} />
             <Route path="/juri" element={<JuriDemo />} />
             <Route path="/judges" element={<JuriDemo />} />
