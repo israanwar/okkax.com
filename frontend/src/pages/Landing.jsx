@@ -1055,13 +1055,13 @@ export default function Landing() {
         <div className="relative mx-auto flex min-h-[640px] max-w-[1440px] items-center px-4 py-16 sm:px-8 lg:min-h-[670px] lg:px-16">
           <div className="fade-up relative z-10 max-w-[760px] lg:w-[58%]">
             {/* Live Network Telemetry Pill */}
-            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-700/80 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
+            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--okx-accent)] opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--okx-accent)]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
-                <span className="text-[var(--okx-accent-soft)]">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
+                <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
               </span>
             </div>
 

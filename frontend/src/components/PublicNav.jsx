@@ -447,16 +447,7 @@ export default function PublicNav() {
     <header className="okx-public-nav sticky top-0 z-40 border-b border-zinc-800/80 bg-[#08080ce8] backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] transition-all">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
         <div className="flex items-center gap-4 sm:gap-6 xl:gap-8">
-          <div className="flex items-center gap-3">
-            <Logo />
-            <div className="hidden items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/20 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400 sm:flex">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              <span>15 KOTA LIVE</span>
-            </div>
-          </div>
+          <Logo />
           <nav className="okx-nav-type hidden items-center gap-4 lg:flex xl:gap-6" aria-label="Navigasi utama">
             {NAV.map((item) =>
               item.children ? (
