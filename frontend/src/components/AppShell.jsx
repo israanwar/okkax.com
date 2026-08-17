@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 const NAV = {
   organizer: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/yoona", "Yoona Copilot", Layers],
+    ["/app/okkax", "OKKAX Copilot", Layers],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/events", "Events", ListOrdered],
     ["/app/network", "Network", Globe2],
@@ -24,7 +24,7 @@ const NAV = {
   ],
   role: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/yoona", "Yoona Copilot", Layers],
+    ["/app/okkax", "OKKAX Copilot", Layers],
     ["/app/me", "My Assignments", Settings],
     ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -32,7 +32,7 @@ const NAV = {
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/yoona", "Yoona Copilot", Layers],
+    ["/app/okkax", "OKKAX Copilot", Layers],
     ["/app/sponsor", "Opportunities", Handshake],
     ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -40,7 +40,7 @@ const NAV = {
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/yoona", "Yoona Copilot", Layers],
+    ["/app/okkax", "OKKAX Copilot", Layers],
     ["/app/tenant", "Opportunities", Store],
     ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -48,14 +48,14 @@ const NAV = {
   ],
   audience: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/yoona", "Yoona Copilot", Layers],
+    ["/app/okkax", "OKKAX Copilot", Layers],
     ["/app/tickets", "My Tickets", Ticket],
     ["/app/orders", "Orders & Refunds", Wallet],
   ],
   admin: [
     ["/app/admin", "Admin Panel", ShieldCheck],
     ["/app/admin/control", "Control Plane", Activity],
-    ["/app/yoona", "Yoona Copilot", Layers],
+    ["/app/okkax", "OKKAX Copilot", Layers],
   ],
 };
 

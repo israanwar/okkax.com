@@ -215,7 +215,7 @@ export default function YoonaChat() {
     {
       role: "assistant",
       content:
-        "### Halo! Saya Yoona — Principal Event Intelligence & Copilot Resmi OKKAX.\n\nSaya menguasai seluruh aspek operasional live event, kalkulasi budget, arsitektur Event Graph, monetisasi sponsor/tenant, hingga SOP gate scanner di 15+ kota Indonesia.\n\nPilih modul skenario di atas atau tanyakan langsung rencana acara Anda.",
+        "### Halo! Saya OKKAX Copilot — Principal Event Intelligence & Copilot Resmi OKKAX.\n\nSaya menguasai seluruh aspek operasional live event, kalkulasi budget, arsitektur Event Graph, monetisasi sponsor/tenant, hingga SOP gate scanner di 15+ kota Indonesia.\n\nPilih modul skenario di atas atau tanyakan langsung rencana acara Anda.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -234,7 +234,7 @@ export default function YoonaChat() {
   useEffect(() => {
     const role = user?.roles?.[0] || "audience";
     api
-      .get(`/yoona/suggestions?route=${encodeURIComponent(location.pathname)}&role=${role}`)
+      .get(`/okkax/suggestions?route=${encodeURIComponent(location.pathname)}&role=${role}`)
       .then(({ data }) => {
         if (data?.suggestions?.length > 0) {
           setSuggestions(data.suggestions);
@@ -271,7 +271,7 @@ export default function YoonaChat() {
         role: user?.roles?.[0] || "organizer",
       };
 
-      const res = await api.post("/yoona/chat", payload);
+      const res = await api.post("/okkax/chat", payload);
       const data = res.data;
 
       const aiMsg = {
@@ -291,7 +291,7 @@ export default function YoonaChat() {
         {
           role: "assistant",
           content:
-            "Maaf, terjadi kendala koneksi ke mesin inteligensi Yoona. Pastikan backend server aktif.",
+            "Maaf, terjadi kendala koneksi ke mesin inteligensi OKKAX Copilot. Pastikan backend server aktif.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -317,7 +317,7 @@ export default function YoonaChat() {
     setMessages([
       {
         role: "assistant",
-        content: "Percakapan telah direset. Ada rencana acara atau analisis teknis baru yang ingin kita bahas?",
+        content: "Percakapan telah direset. Ada rencana acara atau analisis teknis baru yang ingin kita bahas bersama OKKAX Copilot?",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
@@ -334,14 +334,14 @@ export default function YoonaChat() {
           }}
           data-testid="yoona-chat-trigger"
           className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-full border border-[var(--okx-accent)]/60 bg-[#0c060a]/95 backdrop-blur-md px-4 py-3 text-white shadow-[0_8px_32px_rgba(255,46,126,0.3)] transition-all duration-300 hover:scale-105 hover:border-[var(--okx-accent)] hover:shadow-[0_12px_40px_rgba(255,46,126,0.5)] active:scale-95"
-          aria-label="Buka Yoona Copilot"
+          aria-label="Buka OKKAX Copilot"
         >
           <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[var(--okx-accent)] text-white shadow-[0_0_12px_rgba(255,46,126,0.5)]">
             <Layers className="h-4 w-4" />
           </div>
           <div className="flex flex-col text-left">
             <div className="flex items-center gap-1.5 font-gemini-display">
-              <span className="text-xs font-bold tracking-wide text-white">Yoona</span>
+              <span className="text-xs font-bold tracking-wide text-white">OKKAX</span>
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </div>
             <span className="text-[10px] leading-tight text-zinc-400 font-gemini-mono">Event Copilot</span>
@@ -372,7 +372,7 @@ export default function YoonaChat() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-bold tracking-wide text-white font-gemini-display">Yoona Copilot</h3>
+                  <h3 className="text-xs font-bold tracking-wide text-white font-gemini-display">OKKAX Copilot</h3>
                   <span className="rounded bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/30 px-1.5 py-0.2 text-[9px] font-semibold text-[var(--okx-accent-soft)] font-gemini">
                     Principal Intelligence
                   </span>
@@ -514,7 +514,7 @@ export default function YoonaChat() {
                     <div className="rounded-lg bg-[#141414] border border-zinc-800 px-4 py-3 text-xs text-zinc-300">
                       <div className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)] animate-pulse" />
-                        <span className="text-[11px] font-mono text-zinc-400">Yoona sedang memproses data event…</span>
+                        <span className="text-[11px] font-mono text-zinc-400">OKKAX Copilot sedang memproses data event…</span>
                       </div>
                     </div>
                   </div>
@@ -552,7 +552,7 @@ export default function YoonaChat() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Tanya Yoona seputar kalkulasi budget, brief, atau strategi acara…"
+                    placeholder="Tanya OKKAX Copilot seputar kalkulasi budget, brief, atau strategi acara…"
                     rows={1}
                     data-testid="yoona-chat-input"
                     className="w-full resize-none rounded-lg border border-zinc-800 bg-[#080808] px-3.5 py-2.5 pr-11 text-xs text-white placeholder:text-zinc-500 focus:border-[var(--okx-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--okx-accent)]"
@@ -569,7 +569,7 @@ export default function YoonaChat() {
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-[9px] text-zinc-500">
                   <span className="font-mono">Enter kirim · Shift+Enter baris baru</span>
-                  <Link to="/yoona" className="font-semibold text-[var(--okx-accent)] hover:text-white transition-colors">
+                  <Link to="/okkax" className="font-semibold text-[var(--okx-accent)] hover:text-white transition-colors">
                     Command Center Layar Penuh →
                   </Link>
                 </div>

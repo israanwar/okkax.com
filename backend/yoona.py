@@ -7,18 +7,18 @@ from datetime import datetime, timezone
 
 from core import db
 
-logger = logging.getLogger("okkax.yoona")
+logger = logging.getLogger("okkax.copilot")
 
-YOONA_SYSTEM_PROMPT = """Kamu adalah "Yoona", Principal Event Intelligence & Copilot Operasional Resmi untuk platform OKKAX (Live Event Operating Network di Indonesia).
+YOONA_SYSTEM_PROMPT = """Kamu adalah "OKKAX Copilot" (atau "OKKAX AI"), Principal Event Intelligence & Copilot Operasional Resmi untuk platform OKKAX (Live Event Operating Network di Indonesia).
 
-IDENTITAS & KARAKTER YOONA:
-- Nama: Yoona
+IDENTITAS & KARAKTER OKKAX COPILOT:
+- Nama: OKKAX Copilot (OKKAX AI)
 - Peran: OKKAX Principal Event Intelligence & Autonomous Operations Copilot
 - Karakter: Sangat cerdas, berwibawa, tajam dalam kalkulasi data & finansial, profesional, hangat, serta menguasai seluruh aspek operasional live event di Indonesia dari level makro hingga teknis lapangan.
 - Gaya Bahasa: Bahasa Indonesia yang elegan, profesional, berbasis data industri, dan terstruktur rapi dengan markdown, bullet points, dan tabel angka Rupiah berformat jelas.
 - PANTANGAN BESAR: DILARANG KERAS menggunakan emoji apapun (seperti kilat, robot, bintang, api, sparkles, otak, dan sejenisnya) dalam seluruh teks jawaban atau judul. Gunakan tipografi teks dan penomoran editorial murni.
 
-PENGETAHUAN TINGKAT LANJUT & LUAR BIASA YOONA:
+PENGETAHUAN TINGKAT LANJUT & LUAR BIASA OKKAX COPILOT:
 
 1. STANDAR & FORMULA KALKULASI EVENT INDUSTRI INDONESIA:
    - Alokasi Anggaran Standar Konser/Festival:
@@ -144,15 +144,15 @@ def calculate_advanced_event_model(budget: int, capacity: int, event_type: str =
 
 
 def deterministic_yoona_brain(query: str, history: List[Dict[str, str]] = None, current_route: str = "", role: str = "") -> str:
-    """Mesin inferensi dan pengetahuan tingkat tinggi Yoona untuk respon cepat & berbobot tinggi."""
+    """Mesin inferensi dan pengetahuan tingkat tinggi OKKAX Copilot untuk respon cepat & berbobot tinggi."""
     q = query.lower()
     
-    # 1. Pertanyaan tentang Identitas Yoona & OKKAX
-    if any(k in q for k in ["siapa kamu", "tentang yoona", "apa itu yoona", "kenalan", "yoona"]):
+    # 1. Pertanyaan tentang Identitas OKKAX Copilot & Platform OKKAX
+    if any(k in q for k in ["siapa kamu", "tentang yoona", "apa itu yoona", "kenalan", "yoona", "okkax copilot", "siapa okkax"]):
         return (
-            "### Halo! Saya Yoona — Principal Event Intelligence & Copilot Operasional Resmi OKKAX.\n\n"
+            "### Halo! Saya OKKAX Copilot — Principal Event Intelligence & Copilot Operasional Resmi OKKAX.\n\n"
             "Saya memandu promotor, brand sponsor, tenant, pengelola venue, dan pekerja kreatif dalam merancang serta mengoperasikan live event berskala profesional di seluruh Indonesia.\n\n"
-            "#### Ruang Lingkup Konsultasi Yoona:\n"
+            "#### Ruang Lingkup Konsultasi OKKAX Copilot:\n"
             "1. **Komputasi Finansial & Alokasi Anggaran**: Kalkulasi alokasi pos biaya, target break-even, hingga proyeksi dana cadangan.\n"
             "2. **Penyusunan Brief & Technical Blueprint**: Menghasilkan workstreams, timeline W-8, technical rider panggung, dan spesifikasi daya sound system.\n"
             "3. **Event Graph & Dependency Analytics**: Menemukan potensi blocker antara kontrak artis, kesiapan vendor, dan pencairan sponsor.\n"
@@ -277,7 +277,7 @@ def deterministic_yoona_brain(query: str, history: List[Dict[str, str]] = None, 
 
     # Default respon berpengetahuan luas
     return (
-        f"### Rekomendasi Strategis Yoona untuk: *\"{query}\"*\n\n"
+        f"### Rekomendasi Strategis OKKAX Copilot untuk: *\"{query}\"*\n\n"
         "Dalam manajemen acara profesional berbasis ekosistem OKKAX, berikut rekomendasi langkah operasional terbaik:\n\n"
         "1. **Kunci Parameter Kritis Terlebih Dahulu**: Pastikan estimasi kapasitas penonton dan tanggal acara telah diselaraskan dengan ketersediaan venue di [Event Studio](/app/studio).\n"
         "2. **Monitor Rantai Pasok pada Event Graph**: Cek dependensi antara rider artis dengan kapabilitas vendor panggung & sound system di [Workspace](/app/events).\n"
@@ -294,7 +294,7 @@ async def ask_yoona(
     event_id: str = "",
     role: str = ""
 ) -> Dict[str, Any]:
-    """Fungsi eksekusi utama Yoona dengan dual-engine (LLM + High-Performance Deterministic Knowledge)."""
+    """Fungsi eksekusi utama OKKAX Copilot dengan dual-engine (LLM + High-Performance Deterministic Knowledge)."""
     key = os.environ.get("EMERGENT_LLM_KEY") or os.environ.get("OPENAI_API_KEY")
     history = history or []
 
@@ -318,7 +318,7 @@ async def ask_yoona(
             
             chat = LlmChat(
                 api_key=key,
-                session_id=f"yoona-session-{role or 'user'}",
+                session_id=f"okkax-copilot-session-{role or 'user'}",
                 system_message=full_system,
             ).with_model("openai", "gpt-5.4").with_params(max_tokens=4500)
             
@@ -326,7 +326,7 @@ async def ask_yoona(
             if history:
                 formatted_prompt += "Riwayat percakapan sebelumnya:\n"
                 for h in history[-4:]:
-                    sender = "Pengguna" if h.get("role") == "user" else "Yoona"
+                    sender = "Pengguna" if h.get("role") == "user" else "OKKAX Copilot"
                     formatted_prompt += f"{sender}: {h.get('content', '')}\n"
                 formatted_prompt += "\nPertanyaan terbaru pengguna:\n"
             
@@ -338,19 +338,19 @@ async def ask_yoona(
             
             return {
                 "reply": reply.strip(),
-                "engine": "gpt-5.4 (Yoona Neural)",
+                "engine": "gpt-5.4 (OKKAX Neural)",
                 "source": "emergent_llm",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "suggestions": get_smart_suggestions(current_route, role)
             }
         except Exception as e:
-            logger.warning(f"Yoona LLM execution fallback to internal knowledge brain: {e}")
+            logger.warning(f"OKKAX Copilot LLM execution fallback to internal knowledge brain: {e}")
 
-    # 2. Jalankan Mesin Pengetahuan Internal Yoona
+    # 2. Jalankan Mesin Pengetahuan Internal OKKAX Copilot
     reply = deterministic_yoona_brain(message, history, current_route, role)
     return {
         "reply": reply,
-        "engine": "yoona-core-intelligence-v2",
+        "engine": "okkax-intelligence-core-v2",
         "source": "internal_knowledge_brain",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "suggestions": get_smart_suggestions(current_route, role)

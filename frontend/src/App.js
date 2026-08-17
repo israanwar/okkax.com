@@ -41,6 +41,7 @@ function RouterBody() {
     <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
+            <Route path="/okkax" element={<YoonaPage />} />
             <Route path="/yoona" element={<YoonaPage />} />
             <Route path="/okkaji" element={<YoonaPage />} />
             <Route path="/peta" element={<EconomyMap />} />
@@ -61,6 +62,7 @@ function RouterBody() {
             <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
             <Route path="/validator" element={shell(<Validator />)} />
             <Route path="/app" element={shell(<Overview />)} />
+            <Route path="/app/okkax" element={shell(<YoonaPage />)} />
             <Route path="/app/yoona" element={shell(<YoonaPage />)} />
             <Route path="/app/okkaji" element={shell(<YoonaPage />)} />
             <Route path="/app/studio" element={shell(<EventStudio />)} />

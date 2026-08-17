@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, Sparkles, Shield, UserCheck, Check } from "lucide-react";
 import { Logo } from "@/components/PublicNav";
 import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
@@ -10,7 +10,7 @@ import { useCatalogCities } from "@/lib/cities";
 
 const GOOGLE_MARK_URL = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 const AUTH_BACKGROUND_URL = "/assets/okkax-concert-hero-v2.png";
-const inputClass = "mt-1.5 h-10 w-full border border-zinc-700 bg-[#111111cc] px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-[var(--okx-accent)]";
+const inputClass = "mt-1.5 h-11 w-full rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 transition-all duration-200 hover:border-zinc-700 focus:border-[var(--okx-accent)] focus:ring-1 focus:ring-[var(--okx-accent)]/40 font-gemini";
 
 const ROLE_OPTIONS = [
   ["organizer", "Event Organizer"],
@@ -38,42 +38,70 @@ function Shell({ title, subtitle, children }) {
   return (
     <div
       data-testid="auth-shell"
-      className="okx-auth-shell relative h-[100dvh] overflow-hidden bg-cover bg-center"
+      className="okx-auth-shell relative min-h-[100dvh] w-full overflow-y-auto bg-cover bg-center font-gemini"
       style={{ backgroundImage: `url(${AUTH_BACKGROUND_URL})`, backgroundPosition: "78% center" }}
     >
-      <div className="absolute inset-0 bg-black/55" aria-hidden="true" />
-      <div className="okx-aurora-field" data-testid="auth-aurora" aria-hidden="true">
+      <div className="fixed inset-0 bg-black/65 backdrop-blur-[1px]" aria-hidden="true" />
+      <div className="okx-aurora-field fixed inset-0 pointer-events-none" data-testid="auth-aurora" aria-hidden="true">
         <div className="okx-aurora-blob" />
       </div>
-      <div className="relative z-10 grid h-full lg:grid-cols-[0.92fr_1.08fr]">
-        <aside className="hidden h-full flex-col justify-between border-r border-white/10 bg-black/25 p-8 backdrop-blur-[2px] lg:flex xl:p-10">
+
+      <div className="relative z-10 grid min-h-[100dvh] lg:grid-cols-[0.88fr_1.12fr]">
+        {/* Left Branding Column */}
+        <aside className="hidden h-full flex-col justify-between border-r border-white/10 bg-black/40 p-8 backdrop-blur-md lg:flex xl:p-12">
           <Logo />
           <div>
-            <div className="mb-6 h-px w-14 bg-[var(--okx-accent)]" />
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">Live Event Operating Network</div>
-            <h2 className="editorial mt-5 max-w-xl text-[clamp(2.8rem,5vw,5.4rem)] leading-[0.9] text-[#f5f0ed]">
+            <div className="mb-6 h-px w-14 bg-[var(--okx-accent)] shadow-[0_0_12px_var(--okx-accent)]" />
+            <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+              <Sparkles size={13} className="text-[var(--okx-accent)]" />
+              <span>Live Event Operating Network</span>
+            </div>
+            <h2 className="editorial mt-5 max-w-xl text-[clamp(2.8rem,4.5vw,5.2rem)] leading-[0.92] text-[#f5f0ed]">
               One event.<br /><span className="accent-text">Every moving part.</span>
             </h2>
-            <p className="mt-6 max-w-md text-sm leading-6 text-zinc-300">
-              Setiap pihak, proses, dan pembayaran di balik panggung bekerja sebagai satu pengalaman live yang utuh.
+            <p className="mt-6 max-w-md text-sm leading-relaxed text-zinc-300">
+              Setiap talent, vendor, tiket, panggung, dan pembayaran di balik layar bekerja sebagai satu kesatuan pengalaman live.
             </p>
+
+            <div className="mt-8 grid grid-cols-2 gap-2.5 max-w-md">
+              {[
+                "Event Blueprint Compiler",
+                "15+ Kota Verified Network",
+                "Anti-Scalp Dynamic LivePass",
+                "OKKAX Copilot Intelligence",
+              ].map((feat, idx) => (
+                <div key={idx} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-300">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)] shrink-0" />
+                  <span className="truncate">{feat}</span>
+                </div>
+              ))}
+            </div>
           </div>
+
           <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-            <span className="h-2 w-2 bg-[var(--okx-accent)]" /> Built for live operations
+            <span className="h-2 w-2 rounded-full bg-[var(--okx-accent)] shadow-[0_0_8px_var(--okx-accent)]" /> Built for live operations • 15+ Kota
           </div>
         </aside>
 
-        <main className="flex h-full min-h-0 items-center overflow-hidden bg-[#090909a8] px-5 py-4 backdrop-blur-md sm:px-10 lg:px-12">
-          <div className="mx-auto w-full max-w-[620px]">
-            <div className="mb-5 lg:hidden"><Logo /></div>
-            <div className="flex items-end justify-between gap-5">
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">OKKAX Access</div>
-                <h1 className="editorial mt-2 text-3xl text-[#f5f0ed] sm:text-4xl">{title}</h1>
-                <p className="mt-1.5 text-sm text-zinc-400">{subtitle}</p>
-              </div>
-              <Link to="/" className="hidden shrink-0 text-xs text-zinc-500 hover:text-white sm:block">Back to network</Link>
+        {/* Right Form Column */}
+        <main className="flex min-h-full items-center justify-center px-4 py-8 sm:px-8 lg:px-12">
+          <div className="w-full max-w-[580px] rounded-2xl border border-zinc-800/80 bg-[#0d0d12]/95 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_24px_64px_rgba(0,0,0,0.85)]">
+            <div className="mb-6 lg:hidden flex justify-between items-center">
+              <Logo />
+              <Link to="/" className="text-xs text-zinc-400 hover:text-white">← Kembali</Link>
             </div>
+
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">OKKAX Access</div>
+                <h1 className="editorial mt-1.5 text-2xl sm:text-3xl text-[#f5f0ed]">{title}</h1>
+                <p className="mt-1 text-xs sm:text-sm text-zinc-400">{subtitle}</p>
+              </div>
+              <Link to="/" className="hidden shrink-0 text-xs font-medium text-zinc-400 hover:text-white transition-colors sm:block">
+                Back to network →
+              </Link>
+            </div>
+
             {children}
           </div>
         </main>
@@ -89,7 +117,7 @@ function GoogleButton({ mode, onClick }) {
       type="button"
       data-testid={isRegister ? "google-register-btn" : "google-login-btn"}
       onClick={onClick}
-      className="mt-5 flex h-11 w-full items-center justify-center gap-3 border border-zinc-300 bg-white px-4 text-sm font-semibold text-[#141414] hover:bg-zinc-100"
+      className="mt-5 flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-zinc-800 bg-[#141419] px-4 text-sm font-semibold text-zinc-100 shadow-sm transition-all duration-200 hover:border-zinc-600 hover:bg-[#1a1a22] active:scale-[0.99]"
     >
       <img src={GOOGLE_MARK_URL} alt="" aria-hidden="true" className="h-[18px] w-[18px]" />
       {isRegister ? "Daftar dengan Google" : "Masuk dengan Google"}
@@ -99,22 +127,21 @@ function GoogleButton({ mode, onClick }) {
 
 function Divider({ children }) {
   return (
-    <div className="my-3 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
-      <span className="h-px flex-1 bg-zinc-800" /> {children} <span className="h-px flex-1 bg-zinc-800" />
+    <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+      <span className="h-px flex-1 bg-zinc-800" />
+      <span>{children}</span>
+      <span className="h-px flex-1 bg-zinc-800" />
     </div>
   );
 }
 
 // -----------------------------------------------------------------------------
 // Password helpers.
-//
-// suggestStrongPassword: 14-char mix of upper, lower, digits, and safe symbols.
-// scorePassword: 0..4 heuristic covering length + character class diversity.
 // -----------------------------------------------------------------------------
-const PWD_UPPER  = "ABCDEFGHJKLMNPQRSTUVWXYZ";  // no I/O to avoid look-alike
-const PWD_LOWER  = "abcdefghjkmnpqrstuvwxyz";   // no i/l/o
-const PWD_DIGIT  = "23456789";                   // no 0/1
-const PWD_SYMBOL = "!@#$%&*?-";                  // no ambiguous glyphs
+const PWD_UPPER  = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const PWD_LOWER  = "abcdefghjkmnpqrstuvwxyz";
+const PWD_DIGIT  = "23456789";
+const PWD_SYMBOL = "!@#$%&*?-";
 
 function pickRandom(source, count) {
   const arr = new Uint32Array(count);
@@ -125,14 +152,12 @@ function pickRandom(source, count) {
 }
 
 function suggestStrongPassword() {
-  // 4 required + 10 mixed = 14 chars total, then shuffled.
   const required =
     pickRandom(PWD_UPPER, 2) +
     pickRandom(PWD_LOWER, 4) +
     pickRandom(PWD_DIGIT, 4) +
     pickRandom(PWD_SYMBOL, 2);
   const chars = required.split("");
-  // Fisher-Yates with crypto entropy.
   const rand = new Uint32Array(chars.length);
   crypto.getRandomValues(rand);
   for (let i = chars.length - 1; i > 0; i--) {
@@ -159,8 +184,8 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
   const [visible, setVisible] = useState(false);
   const { score, label } = useMemo(() => scorePassword(value), [value]);
   const strengthTone =
-    score >= 4 ? "bg-emerald-400"
-    : score === 3 ? "bg-lime-400"
+    score >= 4 ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+    : score === 3 ? "bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.5)]"
     : score === 2 ? "bg-amber-400"
     : score === 1 ? "bg-orange-500"
     : "bg-zinc-800";
@@ -183,8 +208,8 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
   };
 
   return (
-    <div className="mt-1.5 flex flex-col gap-1.5">
-      <div className="relative">
+    <div className="mt-1.5 flex flex-col gap-1.5 font-gemini">
+      <div className="relative flex items-center">
         <input
           data-testid={testId}
           type={visible ? "text" : "password"}
@@ -196,7 +221,7 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
           placeholder={placeholder}
           className={`${inputClass} mt-0 pr-24`}
         />
-        <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+        <div className="absolute right-1.5 flex items-center gap-1">
           {showSuggestions && (
             <button
               type="button"
@@ -204,9 +229,9 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
               title="Sarankan kata sandi kuat"
               aria-label="Sarankan kata sandi kuat"
               data-testid={`${testId}-suggest`}
-              className="rounded-none border border-zinc-700 bg-black/40 p-1.5 text-zinc-300 transition-colors hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)]"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/90 text-zinc-400 hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)] transition-colors"
             >
-              <RefreshCw size={13} strokeWidth={1.7} aria-hidden="true" />
+              <RefreshCw size={13} strokeWidth={1.8} aria-hidden="true" />
             </button>
           )}
           {showSuggestions && value && (
@@ -216,9 +241,9 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
               title="Salin kata sandi"
               aria-label="Salin kata sandi"
               data-testid={`${testId}-copy`}
-              className="rounded-none border border-zinc-700 bg-black/40 p-1.5 text-zinc-300 transition-colors hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)]"
+              className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/90 text-zinc-400 hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)] transition-colors"
             >
-              <Copy size={13} strokeWidth={1.7} aria-hidden="true" />
+              <Copy size={13} strokeWidth={1.8} aria-hidden="true" />
             </button>
           )}
           <button
@@ -227,27 +252,39 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
             title={visible ? "Sembunyikan" : "Tampilkan"}
             aria-label={visible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
             data-testid={`${testId}-toggle`}
-            className="rounded-none border border-zinc-700 bg-black/40 p-1.5 text-zinc-300 transition-colors hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)]"
+            className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/90 text-zinc-400 hover:border-zinc-600 hover:text-white transition-colors"
           >
-            {visible ? <EyeOff size={13} strokeWidth={1.7} aria-hidden="true" /> : <Eye size={13} strokeWidth={1.7} aria-hidden="true" />}
+            {visible ? <EyeOff size={13} strokeWidth={1.8} aria-hidden="true" /> : <Eye size={13} strokeWidth={1.8} aria-hidden="true" />}
           </button>
         </div>
       </div>
       {showSuggestions && (
-        <div className="flex items-center gap-2" data-testid={`${testId}-strength`}>
+        <div className="flex items-center gap-2 pt-0.5" data-testid={`${testId}-strength`}>
           <div className="flex flex-1 gap-1">
             {[0, 1, 2, 3].map((i) => (
               <span
                 key={i}
-                className={`h-1 flex-1 transition-colors ${i < score ? strengthTone : "bg-zinc-800"}`}
+                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i < score ? strengthTone : "bg-zinc-800/80"}`}
               />
             ))}
           </div>
-          <span className={`min-w-[76px] text-right text-[10px] uppercase tracking-[0.14em] ${strengthText}`}>
+          <span className={`min-w-[76px] text-right text-[10px] font-bold uppercase tracking-[0.14em] ${strengthText}`}>
             {label || "Belum diisi"}
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+function FieldLabel({ label, hint, children }) {
+  return (
+    <div className="flex flex-col min-w-0 font-gemini">
+      <div className="flex h-5 items-center justify-between gap-2 text-[12px] font-medium tracking-tight text-zinc-300">
+        <span className="truncate">{label}</span>
+        {hint && <span className="shrink-0 text-[10px] text-zinc-500 uppercase tracking-wider">{hint}</span>}
+      </div>
+      {children}
     </div>
   );
 }
@@ -296,58 +333,75 @@ export function Login() {
       <GoogleButton mode="login" onClick={loginWithGoogle} />
       <Divider>atau email</Divider>
 
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block">
-          <span className="text-xs uppercase tracking-wider text-zinc-500">Email</span>
+      <form onSubmit={submit} className="space-y-3.5">
+        <FieldLabel label="Email">
           <input
             data-testid="login-email-input"
             type="email"
             required
+            autoComplete="email"
+            placeholder="nama@domain.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
           />
-        </label>
-        <label className="block">
-          <span className="text-xs uppercase tracking-wider text-zinc-500">Kata sandi</span>
-          <input
-            data-testid="login-password-input"
-            type="password"
-            required
+        </FieldLabel>
+
+        <FieldLabel label="Kata sandi">
+          <PasswordField
+            testId="login-password-input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={inputClass}
+            placeholder="Masukkan kata sandi"
+            autoComplete="current-password"
           />
-        </label>
-        {error && <div data-testid="login-error" className="border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</div>}
+        </FieldLabel>
+
+        {error && (
+          <div data-testid="login-error" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <button
           data-testid="login-submit-btn"
           disabled={busy}
-          className="h-11 w-full bg-[var(--okx-accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)] disabled:opacity-60"
+          className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini"
         >
           {busy ? "Memproses…" : "Sign In"}
         </button>
-        <div className="flex justify-between text-xs">
-          <Link to="/forgot-password" className="text-zinc-400 underline">Lupa kata sandi?</Link>
-          <Link to="/register" className="accent-text underline">Buat akun</Link>
+
+        <div className="flex justify-between text-xs pt-1">
+          <Link to="/forgot-password" className="text-zinc-400 hover:text-white transition-colors">
+            Lupa kata sandi?
+          </Link>
+          <Link to="/register" className="text-[var(--okx-accent-soft)] hover:underline font-semibold">
+            Belum punya akun? Buat akun →
+          </Link>
         </div>
-        <div className="border border-zinc-800 bg-black/30 px-3 py-2.5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="shrink-0 text-[11px] text-zinc-500">Akses cepat demo</div>
-            <div className="flex flex-wrap justify-end gap-1.5">
-              {DEMO_ACCOUNTS.map(([emailAddress, persona]) => (
-                <button
-                  key={emailAddress}
-                  type="button"
-                  data-testid={`quickfill-${emailAddress.split("@")[0]}`}
-                  disabled={busy}
-                  onClick={() => loginAsPersona(persona)}
-                  className="border border-zinc-700 px-2 py-1 text-[10px] text-zinc-300 hover:border-[var(--okx-accent)]"
-                >
-                  {emailAddress.split("@")[0]}
-                </button>
-              ))}
+
+        <div className="mt-4 rounded-xl border border-zinc-800/90 bg-black/40 p-3.5">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+              <UserCheck size={13} className="text-[var(--okx-accent)]" />
+              <span>Akses Cepat Demo Persona</span>
             </div>
+            <span className="text-[10px] text-zinc-500">1-Klik Sign In</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {DEMO_ACCOUNTS.map(([emailAddress, persona]) => (
+              <button
+                key={emailAddress}
+                type="button"
+                data-testid={`quickfill-${emailAddress.split("@")[0]}`}
+                disabled={busy}
+                onClick={() => loginAsPersona(persona)}
+                className="rounded-lg border border-zinc-800 bg-[#141418] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10 transition-all active:scale-[0.98]"
+              >
+                {persona}
+              </button>
+            ))}
           </div>
         </div>
       </form>
@@ -355,31 +409,16 @@ export function Login() {
   );
 }
 
-// Field label with sentence-case (first word capitalised, rest lowercase),
-// optional right-side hint. Replaces the previous ALL-CAPS pattern that made
-// the register form feel shouty.
-function FieldLabel({ label, hint, children }) {
-  return (
-    <label className="block min-w-0">
-      <span className="flex items-baseline justify-between gap-2 text-[13px] font-medium tracking-tight text-zinc-300">
-        <span className="truncate">{label}</span>
-        {hint && <span className="shrink-0 text-[11px] text-zinc-500">{hint}</span>}
-      </span>
-      {children}
-    </label>
-  );
-}
-
 export function Register() {
   const [form, setForm] = useState({
     name: "", email: "", password: "", role: "organizer", organization_name: "",
-    organization_type: "Corporate Brand", city: "", terms_accepted: false,
+    organization_type: "Corporate Brand", city: "Jakarta", terms_accepted: false,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { register, loginWithGoogle } = useAuth();
   const nav = useNavigate();
-  const { cities, loading: citiesLoading } = useCatalogCities();
+  const { cities } = useCatalogCities();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -388,7 +427,7 @@ export function Register() {
     setError("");
     try {
       await register(form);
-      toast.success("Akun OKKAX dibuat");
+      toast.success("Akun OKKAX berhasil dibuat");
       nav("/app");
     } catch (err) {
       setError(apiError(err));
@@ -402,8 +441,9 @@ export function Register() {
       <GoogleButton mode="register" onClick={loginWithGoogle} />
       <Divider>atau isi formulir</Divider>
 
-      <form onSubmit={submit} className="space-y-3">
+      <form onSubmit={submit} className="space-y-3.5">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Row 1: Nama & Email */}
           <FieldLabel label="Nama lengkap">
             <input
               data-testid="register-name-input"
@@ -416,6 +456,7 @@ export function Register() {
               className={inputClass}
             />
           </FieldLabel>
+
           <FieldLabel label="Email">
             <input
               data-testid="register-email-input"
@@ -428,28 +469,8 @@ export function Register() {
               className={inputClass}
             />
           </FieldLabel>
-          <FieldLabel label="Kata sandi (min 6)">
-            <PasswordField
-              testId="register-password-input"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Minimal 6 karakter"
-              autoComplete="new-password"
-              showSuggestions
-            />
-          </FieldLabel>
-          <FieldLabel label="Kota">
-            <PremiumSelect
-              data-testid="register-city-select"
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              placeholder={citiesLoading ? "Memuat kota..." : "Pilih kota"}
-              disabled={citiesLoading}
-              className="mt-1.5 w-full"
-            >
-              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
-            </PremiumSelect>
-          </FieldLabel>
+
+          {/* Row 2: Nama Organisasi & Tipe Organisasi */}
           <FieldLabel label="Nama organisasi (opsional)">
             <input
               data-testid="register-org-input"
@@ -459,6 +480,7 @@ export function Register() {
               className={inputClass}
             />
           </FieldLabel>
+
           <FieldLabel label="Tipe organisasi">
             <PremiumSelect
               data-testid="register-orgtype-select"
@@ -471,37 +493,78 @@ export function Register() {
               ))}
             </PremiumSelect>
           </FieldLabel>
+
+          {/* Row 3: Kota Operasional & Peran Utama */}
+          <FieldLabel label="Kota operasional">
+            <PremiumSelect
+              data-testid="register-city-select"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder="Pilih kota"
+              className="mt-1.5 w-full"
+            >
+              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+            </PremiumSelect>
+          </FieldLabel>
+
+          <FieldLabel label="Peran utama" hint="1 akun = 1 peran">
+            <PremiumSelect
+              data-testid="register-role-select"
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              className="mt-1.5 w-full"
+            >
+              {ROLE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </PremiumSelect>
+          </FieldLabel>
         </div>
-        <FieldLabel label="Peran utama" hint="1 akun = 1 peran">
-          <PremiumSelect
-            data-testid="register-role-select"
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            className="mt-1.5 w-full"
-          >
-            {ROLE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </PremiumSelect>
+
+        {/* Row 4: Kata Sandi Full-Width */}
+        <FieldLabel label="Kata sandi (min 6)">
+          <PasswordField
+            testId="register-password-input"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="Minimal 6 karakter"
+            autoComplete="new-password"
+            showSuggestions
+          />
         </FieldLabel>
-        <label className="flex items-start gap-2 text-[11px] leading-4 text-zinc-400">
+
+        {/* Terms and conditions */}
+        <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer pt-1">
           <input
             data-testid="register-terms-checkbox"
             type="checkbox"
             checked={form.terms_accepted}
             onChange={(e) => setForm({ ...form, terms_accepted: e.target.checked })}
-            className="mt-0.5 accent-[var(--okx-accent)]"
+            className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-[var(--okx-accent)] accent-[var(--okx-accent)] shrink-0"
           />
-          Saya menyetujui Terms of Service OKKAX dan telah membaca Privacy Notice. Data sensitif tidak ditampilkan publik.
+          <span className="leading-snug">
+            Saya menyetujui <span className="text-zinc-200">Terms of Service</span> OKKAX dan telah membaca <span className="text-zinc-200">Privacy Notice</span>. Data sensitif tidak ditampilkan publik.
+          </span>
         </label>
-        {error && <div data-testid="register-error" className="border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</div>}
+
+        {error && (
+          <div data-testid="register-error" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <button
           data-testid="register-submit-btn"
           disabled={busy}
-          className="h-11 w-full bg-[var(--okx-accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)] disabled:opacity-60"
+          className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini"
         >
-          {busy ? "Memproses…" : "Buat akun"}
+          {busy ? "Memproses…" : "Buat Akun"}
         </button>
-        <div className="text-xs text-zinc-400">
-          Sudah punya akun? <Link to="/login" className="accent-text underline">Sign in</Link>
+
+        <div className="text-center text-xs text-zinc-400 pt-2">
+          Sudah punya akun?{" "}
+          <Link to="/login" className="text-[var(--okx-accent-soft)] hover:underline font-semibold">
+            Sign in di sini →
+          </Link>
         </div>
       </form>
     </Shell>
@@ -526,26 +589,35 @@ export function ForgotPassword() {
   return (
     <Shell title="Reset kata sandi" subtitle="Masukkan email akun OKKAX Anda.">
       {!submitted ? (
-        <form onSubmit={request} className="mt-6 space-y-3">
-          <input
-            data-testid="forgot-email-input"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@domain.com"
-            className={inputClass}
-          />
-          <button data-testid="forgot-submit-btn" className="h-11 w-full bg-[var(--okx-accent)] px-4 text-sm font-semibold">
-            Kirim tautan reset
+        <form onSubmit={request} className="mt-6 space-y-4">
+          <FieldLabel label="Email Terdaftar">
+            <input
+              data-testid="forgot-email-input"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@domain.com"
+              className={inputClass}
+            />
+          </FieldLabel>
+          <button
+            data-testid="forgot-submit-btn"
+            className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] active:scale-[0.99] flex items-center justify-center font-gemini"
+          >
+            Kirim Tautan Reset
           </button>
         </form>
       ) : (
-        <div className="mt-6 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4 text-sm text-zinc-300">
-          Jika email terdaftar, instruksi reset akan dikirim. Token reset tidak pernah ditampilkan di aplikasi.
+        <div className="mt-6 rounded-xl border border-zinc-800 bg-[#121216] p-4 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+          Jika email terdaftar di sistem kami, instruksi reset akan dikirimkan. Token reset tidak pernah ditampilkan langsung di aplikasi demi keamanan.
         </div>
       )}
-      <Link to="/login" className="mt-4 inline-block text-sm text-zinc-400 underline">Kembali ke Sign in</Link>
+      <div className="mt-4 text-center">
+        <Link to="/login" className="text-xs text-zinc-400 hover:text-white underline">
+          Kembali ke Sign in
+        </Link>
+      </div>
     </Shell>
   );
 }

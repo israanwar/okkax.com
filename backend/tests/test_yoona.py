@@ -8,8 +8,8 @@ API = f"{BASE}/api"
 
 
 def test_yoona_suggestions():
-    """Menguji saran kontekstual cerdas dari Yoona."""
-    r = httpx.get(f"{API}/yoona/suggestions?route=/studio", timeout=30)
+    """Menguji saran kontekstual cerdas dari OKKAX Copilot."""
+    r = httpx.get(f"{API}/okkax/suggestions?route=/studio", timeout=30)
     assert r.status_code == 200
     data = r.json()
     assert "suggestions" in data
@@ -17,18 +17,18 @@ def test_yoona_suggestions():
 
 
 def test_yoona_identity_and_intro():
-    """Menguji perkenalan dan identitas Yoona."""
+    """Menguji perkenalan dan identitas OKKAX Copilot."""
     payload = {
         "message": "Siapa kamu dan apa kemampuanmu di OKKAX?",
         "history": [],
         "current_route": "/",
         "role": "organizer"
     }
-    r = httpx.post(f"{API}/yoona/chat", json=payload, timeout=60)
+    r = httpx.post(f"{API}/okkax/chat", json=payload, timeout=60)
     assert r.status_code == 200
     reply = r.json()["reply"]
-    assert "Yoona" in reply
     assert "OKKAX" in reply
+    assert "Copilot" in reply or "Intelligence" in reply
 
 
 def test_yoona_mega_scale_budget_and_tech_specs():

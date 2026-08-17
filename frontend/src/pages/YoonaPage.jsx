@@ -258,7 +258,7 @@ export default function YoonaPage() {
     {
       role: "assistant",
       content:
-        "### Selamat Datang di Yoona Event Intelligence Command Center!\n\nSaya adalah asisten operasional resmi OKKAX yang menguasai seluruh spektrum operasional, arsitektur data, dan komputasi ekonomi live event di Indonesia.\n\n#### Ruang Lingkup Konsultasi Yoona:\n- **Komputasi Finansial & Alokasi Anggaran**: Perhitungan pos biaya (Talent 28%, Produksi 24%, Venue 14%, Marketing 8%, Kru 6%, Contingency 5%).\n- **Analisis Ketergantungan Event Graph**: Mendeteksi potensi blocker antara rider talent, venue, dan vendor teknis.\n- **Valuasi Sponsorship & Zonasi Tenant**: Perancangan hak eksklusif brand & monetisasi booth kuliner.\n- **SOP Gate Management & Validator Scanner**: Prosedur validasi tiket QR cepat anti-duplikasi.\n- **Simulasi Multiplier Effect Regional**: Analisis perputaran ekonomi lokal di 15+ kota besar.\n\nPilih salah satu modul konsultasi di panel kiri atau ketik langsung pertanyaan Anda di bawah.",
+        "### Selamat Datang di OKKAX Event Intelligence Command Center!\n\nSaya adalah asisten operasional resmi OKKAX yang menguasai seluruh spektrum operasional, arsitektur data, dan komputasi ekonomi live event di Indonesia.\n\n#### Ruang Lingkup Konsultasi OKKAX Copilot:\n- **Komputasi Finansial & Alokasi Anggaran**: Perhitungan pos biaya (Talent 28%, Produksi 24%, Venue 14%, Marketing 8%, Kru 6%, Contingency 5%).\n- **Analisis Ketergantungan Event Graph**: Mendeteksi potensi blocker antara rider talent, venue, dan vendor teknis.\n- **Valuasi Sponsorship & Zonasi Tenant**: Perancangan hak eksklusif brand & monetisasi booth kuliner.\n- **SOP Gate Management & Validator Scanner**: Prosedur validasi tiket QR cepat anti-duplikasi.\n- **Simulasi Multiplier Effect Regional**: Analisis perputaran ekonomi lokal di 15+ kota besar.\n\nPilih salah satu modul konsultasi di panel kiri atau ketik langsung pertanyaan Anda di bawah.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -296,7 +296,7 @@ export default function YoonaPage() {
         role: user?.roles?.[0] || "organizer",
       };
 
-      const res = await api.post("/yoona/chat", payload);
+      const res = await api.post("/okkax/chat", payload);
       const data = res.data;
 
       setMessages((prev) => [
@@ -314,7 +314,7 @@ export default function YoonaPage() {
         {
           role: "assistant",
           content:
-            "Maaf, terjadi kendala saat menghubungkan ke mesin AI Yoona. Pastikan backend server aktif.",
+            "Maaf, terjadi kendala saat menghubungkan ke mesin AI OKKAX Copilot. Pastikan backend server aktif.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -338,13 +338,13 @@ export default function YoonaPage() {
 
   const exportTranscript = () => {
     const transcriptText = messages
-      .map((m) => `[${m.timestamp}] ${m.role === "user" ? "Pengguna" : "Yoona"}:\n${m.content}\n`)
+      .map((m) => `[${m.timestamp}] ${m.role === "user" ? "Pengguna" : "OKKAX Copilot"}:\n${m.content}\n`)
       .join("\n---\n\n");
     const blob = new Blob([transcriptText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `okkax-yoona-session-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `okkax-copilot-session-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -353,7 +353,7 @@ export default function YoonaPage() {
     setMessages([
       {
         role: "assistant",
-        content: "Percakapan telah direset. Silakan ajukan rencana atau pertanyaan event baru!",
+        content: "Percakapan telah direset. Silakan ajukan rencana atau pertanyaan event baru bersama OKKAX Copilot!",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
@@ -369,7 +369,7 @@ export default function YoonaPage() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold font-gemini">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              Yoona Operations Engine · Online
+              OKKAX Operations Engine · Online
             </span>
             <span className="hidden sm:inline text-zinc-600">|</span>
             <span className="hidden sm:inline text-zinc-300 font-gemini">Live Event Operating Network</span>
@@ -385,14 +385,14 @@ export default function YoonaPage() {
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 flex flex-col lg:flex-row gap-6">
         {/* Left Panel: Mission Control & Scenarios */}
         <aside className="w-full lg:w-84 shrink-0 flex flex-col gap-4">
-          {/* Yoona Identity Card */}
+          {/* OKKAX Copilot Identity Card */}
           <div className="rounded-xl border border-[var(--okx-border)] bg-[#121212] p-5 shadow-lg relative overflow-hidden">
             <div className="flex items-center gap-3.5">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--okx-accent)] text-white shadow-[0_0_12px_rgba(255,46,126,0.4)]">
                 <Layers className="h-5 w-5" />
               </div>
               <div>
-                <h1 className="text-base font-bold tracking-wide text-white font-gemini-display">Yoona Copilot</h1>
+                <h1 className="text-base font-bold tracking-wide text-white font-gemini-display">OKKAX Copilot</h1>
                 <p className="text-xs font-gemini-mono text-[var(--okx-accent-soft)]">Principal Event Intelligence</p>
               </div>
             </div>
@@ -544,7 +544,7 @@ export default function YoonaPage() {
                 <div className="rounded-xl bg-[#141414] border border-zinc-800 px-5 py-4 text-xs text-zinc-300">
                   <div className="flex items-center gap-2.5">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)] animate-pulse" />
-                    <span className="font-mono text-zinc-400">Yoona sedang memproses dan mengompilasi model data…</span>
+                    <span className="font-mono text-zinc-400">OKKAX Copilot sedang memproses dan mengompilasi model data…</span>
                   </div>
                 </div>
               </div>

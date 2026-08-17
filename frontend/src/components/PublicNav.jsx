@@ -47,7 +47,7 @@ export const NAV = [
     label: "Products",
     children: [
       { label: "Event Studio",       to: "/products/event-studio",       note: "Compile brief menjadi Event Blueprint." },
-      { label: "Yoona Copilot",      to: "/yoona",                       note: "Principal Event Intelligence & Operations Copilot." },
+      { label: "OKKAX Copilot",      to: "/okkax",                       note: "Principal Event Intelligence & Operations Copilot." },
       { label: "Network",            to: "/products/network",            note: "Talent, Venue, Vendor, Workforce, Sponsor, Tenant." },
       { label: "OKKAX Intelligence", to: "/products/intelligence",       note: "Observe. Understand. Optimize." },
       { label: "Ticket Studio",      to: "/products/ticket-studio",      note: "Inventory, seating, ticket products." },

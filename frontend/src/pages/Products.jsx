@@ -10,7 +10,7 @@
 // Protected detail and actions remain gated behind sign-in and role.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, Navigate } from "react-router-dom";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -1385,11 +1385,14 @@ function CtaRow({ primary, secondary }) {
 // ROUTE SWITCH
 // ============================================================================
 const PRODUCT_ROUTES = {
-  "event-studio":     EventStudioProduct,
-  network:            NetworkProduct,
-  intelligence:       IntelligenceProduct,
-  "ticket-studio":    TicketStudioProduct,
-  livepass:           LivePassProduct,
+  "event-studio":      EventStudioProduct,
+  okkax:               () => <Navigate to="/okkax" replace />,
+  yoona:               () => <Navigate to="/okkax" replace />,
+  okkaji:              () => <Navigate to="/okkax" replace />,
+  network:             NetworkProduct,
+  intelligence:        IntelligenceProduct,
+  "ticket-studio":     TicketStudioProduct,
+  livepass:            LivePassProduct,
   "protected-payment": ProtectedPaymentProduct,
 };
 

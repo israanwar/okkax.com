@@ -17,14 +17,32 @@ const CATALOG_ENDPOINTS = [
   "/catalog/tenants",
 ];
 
-let cachedCities = null;
+const CANONICAL_DEFAULT_CITIES = [
+  "Jakarta",
+  "Surabaya",
+  "Bandung",
+  "Medan",
+  "Bali",
+  "Semarang",
+  "Yogyakarta",
+  "Makassar",
+  "Balikpapan",
+  "Palembang",
+  "Malang",
+  "Batam",
+  "Padang",
+  "Pontianak",
+  "Manado",
+];
+
+let cachedCities = CANONICAL_DEFAULT_CITIES;
 let inflightPromise = null;
 
 async function fetchCatalogCities() {
   const responses = await Promise.all(
     CATALOG_ENDPOINTS.map((url) => api.get(url).catch(() => ({ data: { items: [] } })))
   );
-  const set = new Set();
+  const set = new Set(CANONICAL_DEFAULT_CITIES);
   for (const { data } of responses) {
     const items = data?.items || data || [];
     for (const item of items) {
@@ -34,12 +52,9 @@ async function fetchCatalogCities() {
   return Array.from(set).sort((a, b) => a.localeCompare(b, "id"));
 }
 
-// Hook: returns { cities, loading }. Fetches once per session (module-level
-// cache) so switching between Login/Register or revisiting the form does
-// not re-hit the network every time.
 export function useCatalogCities() {
-  const [cities, setCities] = useState(cachedCities || []);
-  const [loading, setLoading] = useState(!cachedCities);
+  const [cities, setCities] = useState(cachedCities || CANONICAL_DEFAULT_CITIES);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (cachedCities) {

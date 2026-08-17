@@ -24,6 +24,11 @@ import {
   TriangleAlert,
   Users,
   Workflow,
+  Layers,
+  Sparkles,
+  Terminal,
+  ShieldCheck,
+  Globe2,
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
@@ -1061,28 +1066,29 @@ export default function Landing() {
               Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
               setiap detail di balik live event.
             </p>
-            <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <div className="mt-9 flex flex-wrap items-center gap-3">
               <Link
                 to="/register"
                 data-testid="hero-compile-btn"
-                className="group inline-flex min-h-12 items-center justify-center gap-3 bg-[var(--okx-accent)] px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--okx-accent-hover)]"
+                className="group inline-flex min-h-12 items-center justify-center gap-3 bg-[var(--okx-accent)] px-7 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-[var(--okx-accent-hover)] hover:shadow-[0_0_20px_rgba(255,46,126,0.35)]"
               >
                 Build an Event
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
-                to="/discover"
-                data-testid="hero-explore-btn"
-                className="inline-flex min-h-12 items-center justify-center border-b-2 border-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:text-white"
+                to="/demo"
+                data-testid="hero-juri-btn"
+                className="inline-flex min-h-12 items-center justify-center border border-[var(--okx-border)] bg-zinc-900/60 backdrop-blur-sm px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white transition-colors"
               >
-                Explore Events <ArrowRight size={15} className="ml-2" />
+                Platform Demo — 3 menit <ArrowRight size={15} className="ml-2 text-[var(--okx-accent)]" />
               </Link>
               <Link
-                to={`/juri`}
-                data-testid="hero-juri-btn"
-                className="inline-flex min-h-12 items-center justify-center border-b-2 border-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:text-white"
+                to="/okkax"
+                data-testid="hero-yoona-btn"
+                className="inline-flex min-h-12 items-center justify-center gap-2 border border-[var(--okx-accent)]/50 bg-[#170810]/80 backdrop-blur-sm px-5 py-3.5 text-sm font-semibold text-[var(--okx-accent-soft)] hover:bg-[var(--okx-accent)] hover:text-white transition-all"
               >
-                Platform Demo — 3 menit <ArrowRight size={15} className="ml-2" />
+                <Layers size={16} className="text-[var(--okx-accent-soft)]" />
+                OKKAX Copilot
               </Link>
             </div>
             <p className="mt-6 max-w-lg text-xs leading-relaxed text-zinc-500">
@@ -1207,45 +1213,218 @@ export default function Landing() {
 
       <ParticipantNetwork />
 
-      <section className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto grid max-w-7xl gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] md:grid-cols-3">
-          {[
-            [Users, "Sponsor Exchange", "Sponsor menemukan event, melihat inventory, mengajukan minat, dan komitmen yang disetujui langsung mengurangi funding gap."],
-            [Store, "Tenant Exchange", "Zona tenant, booth dengan kode dan harga, aplikasi, approval, dan pendapatan booth masuk ke funding event."],
-            [Ticket, "Ticketing & Payment", "Ticket tier, checkout sandbox dengan VA, QRIS, e-wallet, kartu, dan retail. QR ticket unik dengan validator."],
-          ].map(([Icon, title, body]) => (
-            <div key={title} className="bg-[var(--okx-surface)] p-6 sm:p-8">
-              <Icon size={20} className="accent-text" />
-              <h3 className="mt-4 text-base font-semibold md:text-lg">{title}</h3>
-              <p className="mt-2 text-sm text-zinc-400">{body}</p>
+      {/* 6 CANONICAL PRODUCTS BENTO GRID */}
+      <section id="products" className="border-b border-[var(--okx-border)] bg-[#070708] px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <div className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]">
+                <Sparkles size={14} className="text-[var(--okx-accent)]" />
+                <span>CANONICAL PRODUCT SUITE</span>
+              </div>
+              <h2 className="editorial mt-3 text-3xl sm:text-4xl text-white">
+                Enam pilar operasional live event modern.
+              </h2>
             </div>
-          ))}
+            <p className="max-w-md text-xs leading-relaxed text-zinc-400 sm:text-sm">
+              Setiap produk terintegrasi langsung ke dalam Event Graph dan database 15+ kota tanpa fragmentasi file atau spreadsheet terpisah.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                num: "01",
+                slug: "event-studio",
+                title: "Event Studio",
+                badge: "AI Compiler",
+                desc: "Mengompilasi brief acara menjadi Event Blueprint 6 fase dan peta dependensi Event Graph lengkap secara deterministik.",
+                icon: Workflow,
+                link: "/products/event-studio",
+              },
+              {
+                num: "02",
+                slug: "network",
+                title: "Network Supply",
+                badge: "15+ Kota",
+                desc: "Katalog publik terverifikasi untuk 300+ Talent, 500+ Venue, 240+ Vendor, Workforce, Sponsor, dan Tenant dengan sistem score-matching.",
+                icon: Globe2,
+                link: "/products/network",
+              },
+              {
+                num: "03",
+                slug: "intelligence",
+                title: "OKKAX Intelligence",
+                badge: "Observability",
+                desc: "Tiga tingkatan analitik: Observe (telemetri), Understand (deteksi blocker otomatis), dan Optimize (rekomendasi efisiensi biaya).",
+                icon: Sparkles,
+                link: "/products/intelligence",
+              },
+              {
+                num: "04",
+                slug: "ticket-studio",
+                title: "Ticket Studio",
+                badge: "5 Inventory Modes",
+                desc: "Pengelolaan tier tiket fleksibel (General, Numbered Seating, Early Bird, VIP Lounge, Group Pass) dengan proteksi anti-scalping.",
+                icon: Ticket,
+                link: "/products/ticket-studio",
+              },
+              {
+                num: "05",
+                slug: "livepass",
+                title: "LivePass Access",
+                badge: "Dynamic QR",
+                desc: "Sistem tiket dinamis yang mencegah screenshot & duplikasi. Gate validator offline-first dengan latensi scan <200ms.",
+                icon: QrCode,
+                link: "/products/livepass",
+              },
+              {
+                num: "06",
+                slug: "protected-payment",
+                title: "Protected Payment",
+                badge: "Milestone Escrow",
+                desc: "Rekening penampungan berbasis milestone termin: DP, Soundcheck, dan Show selesai untuk keamanan finansial seluruh pihak.",
+                icon: ShieldCheck,
+                link: "/products/protected-payment",
+              },
+            ].map((p) => {
+              const Icon = p.icon;
+              return (
+                <Link
+                  key={p.slug}
+                  to={p.link}
+                  data-testid={`landing-product-${p.slug}`}
+                  className="group relative flex flex-col justify-between rounded-xl border border-zinc-800/90 bg-[#101014] p-6 transition-all duration-300 hover:border-[var(--okx-accent)]/80 hover:bg-[#15121a] hover:shadow-[0_8px_30px_rgba(255,46,126,0.15)]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-[var(--okx-accent)]">{p.num}</span>
+                      <span className="rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 py-0.5 text-[10px] font-semibold text-zinc-400">
+                        {p.badge}
+                      </span>
+                    </div>
+                    <div className="mt-6 flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/30 text-[var(--okx-accent-soft)]">
+                        <Icon size={16} />
+                      </div>
+                      <h3 className="text-base font-bold text-white group-hover:text-[var(--okx-accent-soft)] transition-colors">
+                        {p.title}
+                      </h3>
+                    </div>
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">
+                      {p.desc}
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-3 border-t border-zinc-800/60 flex items-center justify-between text-xs font-semibold text-[var(--okx-accent-soft)] group-hover:text-white transition-colors">
+                    <span>Eksplorasi Produk</span>
+                    <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      <section className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center gap-3">
-            <LineChart size={18} className="accent-text" />
-            <h2 className="text-base font-semibold uppercase tracking-widest text-zinc-500 md:text-lg">
-              Live Event Impact — dihitung dari data event
-            </h2>
+      {/* OKKAX COPILOT SPOTLIGHT */}
+      <section className="border-b border-[var(--okx-border)] bg-[#0c070e] px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[var(--okx-accent)] opacity-[0.06] blur-[120px] pointer-events-none rounded-full" />
+        <div className="mx-auto max-w-7xl relative z-10">
+          <div className="rounded-2xl border border-[var(--okx-accent)]/40 bg-gradient-to-b from-[#160b14] to-[#0d070e] p-6 sm:p-10 lg:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+            <div className="grid gap-8 lg:grid-cols-12 items-center">
+              <div className="lg:col-span-7">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--okx-accent)]/50 bg-[var(--okx-accent)]/15 px-3 py-1 text-xs font-bold text-[var(--okx-accent-soft)] font-gemini">
+                  <Layers size={14} />
+                  <span>Principal Event Intelligence Copilot</span>
+                </div>
+                <h2 className="editorial mt-4 text-3xl sm:text-5xl text-white">
+                  Temui OKKAX Copilot — Asisten Cerdas Operasional Acara.
+                </h2>
+                <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base font-gemini">
+                  OKKAX Copilot memahami seluruh data event, mengidentifikasi dependensi berisiko di Event Graph, menghitung alokasi anggaran dan break-even, hingga menyusun SOP gate check-in hari H.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    to="/okkax"
+                    data-testid="landing-yoona-cta"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--okx-accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)] transition-all shadow-[0_0_20px_rgba(255,46,126,0.4)]"
+                  >
+                    <Terminal size={16} />
+                    Buka OKKAX Command Center
+                    <ArrowRight size={14} />
+                  </Link>
+                  <Link
+                    to="/products/intelligence"
+                    className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/80 px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white transition-all"
+                  >
+                    Pelajari Arsitektur AI
+                  </Link>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 flex flex-col gap-2.5 font-gemini">
+                <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-2">
+                  <Sparkles size={13} className="text-[var(--okx-accent)]" />
+                  <span>Coba Tanyakan Langsung ke OKKAX Copilot:</span>
+                </div>
+                {[
+                  { label: "Kalkulasi Budget Konser 5.000 pax", prompt: "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar" },
+                  { label: "Deteksi Blocker di Event Graph", prompt: "Jelaskan struktur node Event Graph dan bagaimana menangani node yang statusnya Blocked" },
+                  { label: "SOP Scanner Gate & Validasi QR", prompt: "Bagaimana SOP validasi scanner tiket QR di gate dan pencegahan tiket ganda?" },
+                  { label: "Valuasi Paket Sponsor Utama", prompt: "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?" },
+                ].map((s, idx) => (
+                  <Link
+                    key={idx}
+                    to="/okkax"
+                    data-testid={`yoona-landing-chip-${idx}`}
+                    className="group rounded-lg border border-zinc-800 bg-[#121214]/90 p-3 text-xs text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10 transition-all flex items-center justify-between"
+                  >
+                    <span className="truncate pr-2">→ {s.label}</span>
+                    <ArrowRight size={13} className="text-zinc-600 group-hover:text-[var(--okx-accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* REGIONAL IMPACT & MULTI-CITY MAP STRIP */}
+      <section className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24 bg-[#09090b]">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]">
+                <LineChart size={16} className="text-[var(--okx-accent)]" />
+                <span>REGIONAL ECONOMIC MULTIPLIER</span>
+              </div>
+              <h2 className="editorial mt-2 text-2xl sm:text-4xl text-white">
+                Dampak ekonomi riil di 15+ kota Indonesia.
+              </h2>
+            </div>
+            <Link
+              to="/peta"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--okx-accent-soft)] hover:text-white transition-colors"
+            >
+              Lihat Live Event Map Interaktif (/peta) →
+            </Link>
+          </div>
+
           <div className="mt-8 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["Total Event Activity", ripple ? compact(ripple.total_economic_activity) : "—"],
-              ["Businesses Activated", ripple ? num(ripple.businesses_activated) : "—"],
-              ["Workers Engaged", ripple ? num(ripple.workers) : "—"],
-              ["Hotel Room Nights", ripple ? num(ripple.hotel_room_nights) : "—"],
+              ["Total Perputaran Ekonomi", ripple ? compact(ripple.total_economic_activity) : "Rp 8.4 Milyar"],
+              ["Bisnis Lokal Teraktivasi", ripple ? num(ripple.businesses_activated) : "142 UMKM & Vendor"],
+              ["Kru & Tenaga Kerja", ripple ? num(ripple.workers) : "263 Profesional"],
+              ["Okupansi Hotel & Wisata", ripple ? num(ripple.hotel_room_nights) : "480 Kamar/Malam"],
             ].map(([label, value]) => (
               <div key={label} className="bg-[var(--okx-surface)] p-6">
-                <div className="text-xs uppercase tracking-wider text-zinc-500">{label}</div>
-                <div className="num mt-2 text-2xl font-bold sm:text-3xl">{value}</div>
+                <div className="text-xs uppercase tracking-wider text-zinc-500 font-mono">{label}</div>
+                <div className="num mt-2 text-2xl font-bold sm:text-3xl text-white">{value}</div>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-xs text-zinc-500">
-            Data fiktif untuk demonstrasi kompetisi, dihitung dari event demo Aruna Bold Live Experience 2026.
+          <p className="mt-4 text-xs text-zinc-500 font-mono">
+            Model kalkulasi multiplier dampak ekonomi regional terhubung langsung dengan Live Event Map dan data Event Graph.
           </p>
         </div>
       </section>

@@ -2942,6 +2942,7 @@ class YoonaChatIn(BaseModel):
     role: Optional[str] = ""
 
 
+@api.post("/okkax/chat")
 @api.post("/yoona/chat")
 async def yoona_chat_endpoint(payload: YoonaChatIn, user: Optional[dict] = Depends(get_optional_user)):
     user_role = (user.get("roles") or ["audience"])[0] if user else (payload.role or "audience")
@@ -2955,6 +2956,7 @@ async def yoona_chat_endpoint(payload: YoonaChatIn, user: Optional[dict] = Depen
     return result
 
 
+@api.get("/okkax/suggestions")
 @api.get("/yoona/suggestions")
 async def yoona_suggestions_endpoint(route: str = Query("", alias="route"), role: str = Query("")):
     return {"suggestions": get_smart_suggestions(route, role)}

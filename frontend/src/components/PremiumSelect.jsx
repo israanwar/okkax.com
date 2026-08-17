@@ -67,7 +67,7 @@ export default function PremiumSelect({
       placeholder={placeholder}
       icon={icon}
       disabled={disabled}
-      searchable={options.length >= 10}
+      searchable={rest.searchable ?? false}
       className={className}
       testId={testId}
       ariaLabel={ariaLabel}
