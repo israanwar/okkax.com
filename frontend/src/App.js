@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import "@/App.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -8,7 +8,7 @@ import Discover from "@/pages/Discover";
 import EconomyMap from "@/pages/EconomyMap";
 import PublicEvent from "@/pages/PublicEvent";
 import ForPage from "@/pages/ForPage";
-import GuidedDemo from "@/pages/GuidedDemo";
+import Demo from "@/pages/Demo";
 import Checkout from "@/pages/Checkout";
 import { Login, Register, ForgotPassword } from "@/pages/Auth";
 import { MyTickets, MyOrders, Validator } from "@/pages/Tickets";
@@ -19,13 +19,16 @@ import MoneyMovement from "@/pages/MoneyMovement";
 import AuthCallback from "@/pages/AuthCallback";
 import RoleWorkspace from "@/pages/RoleWorkspace";
 import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
-import JuriDemo from "@/pages/JuriDemo";
 import PresentationMode from "@/pages/PresentationMode";
 import { PublicCalendar, WorkspaceCalendar } from "@/pages/CalendarEngine";
 import ControlPlane from "@/pages/ControlPlane";
 import Network from "@/pages/Network";
 import Pricing from "@/pages/Pricing";
 
+import Products from "@/pages/Products";
+import { About, HowItWorks, Contact, Terms, Privacy } from "@/pages/Company";
+
+import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
 const shell = (el) => <AppShell>{el}</AppShell>;
 
 function RouterBody() {
@@ -43,9 +46,9 @@ function RouterBody() {
             <Route path="/for/:audience" element={<ForPage />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/plans" element={<Pricing />} />
-            <Route path="/demo" element={<GuidedDemo />} />
-            <Route path="/juri" element={<JuriDemo />} />
-            <Route path="/judges" element={<JuriDemo />} />
+            <Route path="/demo" element={<Demo />} />
+            <Route path="/juri" element={<Navigate to="/demo" replace />} />
+            <Route path="/judges" element={<Navigate to="/demo" replace />} />
             <Route path="/present" element={<PresentationMode />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -80,6 +83,13 @@ function RouterBody() {
                 </div>
               }
             />
+            <Route path="/products/:slug" element={<Products />} />
+            <Route path="/products" element={<Navigate to="/products/event-studio" replace />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
     </Routes>
   );
 }
@@ -88,6 +98,7 @@ function App() {
   return (
     <div className="App">
       <BrowserRouter>
+      <GlobalScrollRestoration />
         <AuthProvider>
           <Toaster theme="dark" position="top-right" />
           <RouterBody />

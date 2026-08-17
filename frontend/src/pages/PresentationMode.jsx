@@ -227,7 +227,7 @@ export default function PresentationMode() {
       else if (e.key === "ArrowLeft") prev();
       else if (e.key === "Escape") {
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-        else nav("/juri");
+        else nav("/demo");
       }
     };
     window.addEventListener("keydown", onKey);
@@ -294,7 +294,7 @@ export default function PresentationMode() {
           <button data-testid="present-reset-btn" onClick={resetDemo} className="hidden items-center gap-1.5 border border-[var(--okx-border)] px-3 py-2 text-xs text-zinc-300 sm:flex" title="Reset data demo">
             <RotateCcw size={13} /> Reset Demo
           </button>
-          <Link data-testid="present-exit-btn" to="/juri" className="border border-[var(--okx-border)] p-2 text-zinc-300" aria-label="Keluar presentasi">
+          <Link data-testid="present-exit-btn" to="/demo" className="border border-[var(--okx-border)] p-2 text-zinc-300" aria-label="Keluar presentasi">
             <X size={15} />
           </Link>
         </div>
@@ -331,7 +331,7 @@ export default function PresentationMode() {
             ))}
             <span className="num text-[10px] text-zinc-600 sm:text-xs">Data demonstrasi fiktif · pembayaran sandbox</span>
             {!user && (
-              <Link to="/juri" data-testid="present-login-hint" className="text-[10px] text-[var(--okx-accent-soft)] underline sm:text-xs">
+              <Link to="/demo" data-testid="present-login-hint" className="text-[10px] text-[var(--okx-accent-soft)] underline sm:text-xs">
                 Masuk sebagai persona demo agar tombol detail langsung terbuka
               </Link>
             )}

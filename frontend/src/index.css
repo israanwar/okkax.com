@@ -528,6 +528,68 @@ button:active:not(:disabled) {
         transform: translateX(0);
     }
 }
+/* Aurora background for auth surfaces. Three blur-hazed radial blobs drift on
+   their own timing so the composite never repeats. Compositor-only (transform
+   + opacity) so it stays cheap on the GPU. */
+.okx-aurora-field {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+.okx-aurora-field::before,
+.okx-aurora-field::after,
+.okx-aurora-field > .okx-aurora-blob {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.55;
+    mix-blend-mode: screen;
+    will-change: transform, opacity;
+}
+.okx-aurora-field::before {
+    width: 55vw;
+    height: 55vw;
+    left: -10vw;
+    top: -15vw;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 46, 126, 0.7), rgba(255, 46, 126, 0) 65%);
+    animation: okxAuroraDriftA 18s ease-in-out infinite alternate;
+}
+.okx-aurora-field::after {
+    width: 60vw;
+    height: 60vw;
+    right: -18vw;
+    bottom: -20vw;
+    background: radial-gradient(circle at 60% 40%, rgba(244, 122, 176, 0.55), rgba(244, 122, 176, 0) 65%);
+    animation: okxAuroraDriftB 22s ease-in-out infinite alternate;
+}
+.okx-aurora-field > .okx-aurora-blob {
+    width: 45vw;
+    height: 45vw;
+    left: 30vw;
+    top: 25vh;
+    background: radial-gradient(circle at 50% 50%, rgba(224, 31, 104, 0.5), rgba(224, 31, 104, 0) 60%);
+    animation: okxAuroraDriftC 26s ease-in-out infinite alternate;
+    opacity: 0.4;
+}
+@keyframes okxAuroraDriftA {
+    0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 0.45; }
+    50%  { transform: translate3d(6vw, 4vh, 0) scale(1.08); opacity: 0.6; }
+    100% { transform: translate3d(-4vw, 6vh, 0) scale(0.95); opacity: 0.5; }
+}
+@keyframes okxAuroraDriftB {
+    0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 0.4; }
+    50%  { transform: translate3d(-8vw, -5vh, 0) scale(1.1); opacity: 0.55; }
+    100% { transform: translate3d(5vw, -3vh, 0) scale(0.94); opacity: 0.45; }
+}
+@keyframes okxAuroraDriftC {
+    0%   { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); opacity: 0.35; }
+    50%  { transform: translate3d(-6vw, 8vh, 0) scale(1.12) rotate(6deg); opacity: 0.5; }
+    100% { transform: translate3d(4vw, -6vh, 0) scale(0.9) rotate(-4deg); opacity: 0.38; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -535,6 +597,11 @@ button:active:not(:disabled) {
         animation-duration: 0.001ms !important;
         transition-duration: 0.001ms !important;
         scroll-behavior: auto !important;
+    }
+    .okx-aurora-field::before,
+    .okx-aurora-field::after,
+    .okx-aurora-field > .okx-aurora-blob {
+        animation: none !important;
     }
 }
 

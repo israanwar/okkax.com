@@ -1,13 +1,104 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { ArrowUpRight, Instagram, Mail, MapPinned, Menu, Radio, ShieldCheck, Waypoints, X } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { LOGO_URL } from "@/lib/api";
-import LiveTicker from "@/components/LiveTicker";
+// OKKAX Public Navigation and Footer.
+//
+// Single source of truth for the public taxonomy. Header, mobile drawer,
+// and footer all render from the same NAV constant so labels and routes
+// cannot drift apart.
+//
+// Design principles:
+//   - one concept = one canonical name = one canonical destination
+//   - Event Studio contains Event Graph internally; Event Graph is not
+//     a separate Products entry
+//   - Desktop: premium compact dropdown/mega-menu on hover or click
+//   - Mobile: drawer with accordion sections
+//   - No em-dash, no emoji, brand palette (black + white + OKKAX pink)
 
-// Brand-accurate marks untuk platform yang tidak ada di lucide (X, WhatsApp).
-// Semua icon (termasuk Instagram/Mail dari lucide) mewarisi currentColor supaya
-// mengikuti tema OKKAX: zinc-500 default, --okx-accent saat hover.
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  Instagram,
+  Mail,
+  Menu,
+  Sparkles,
+  X,
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { api, apiError, LOGO_URL } from "@/lib/api";
+
+// -----------------------------------------------------------------------------
+// Canonical navigation taxonomy. Everything downstream (header, mobile drawer,
+// footer, structured data if any) reads from this.
+// -----------------------------------------------------------------------------
+export const NAV = [
+  { id: "home", label: "Home", to: "/" },
+  {
+    id: "explore",
+    label: "Explore",
+    children: [
+      { label: "Discover Events", to: "/discover", note: "Cari event berdasarkan kota, kategori, dan tanggal." },
+      { label: "Event Calendar",  to: "/calendar", note: "Jadwal event pada satu kalender." },
+      { label: "Live Event Map",  to: "/peta",     note: "Peta interaktif event yang sedang atau akan berlangsung." },
+    ],
+  },
+  {
+    id: "products",
+    label: "Products",
+    children: [
+      { label: "Event Studio",       to: "/products/event-studio",       note: "Compile brief menjadi Event Blueprint." },
+      { label: "Network",            to: "/products/network",            note: "Talent, Venue, Vendor, Workforce, Sponsor, Tenant." },
+      { label: "OKKAX Intelligence", to: "/products/intelligence",       note: "Observe. Understand. Optimize." },
+      { label: "Ticket Studio",      to: "/products/ticket-studio",      note: "Inventory, seating, ticket products." },
+      { label: "LivePass",           to: "/products/livepass",           note: "Live access entitlement, not a file." },
+      { label: "Protected Payment",  to: "/products/protected-payment",  note: "Funding aman, protected balance, settlement." },
+    ],
+  },
+  {
+    id: "solutions",
+    label: "Solutions",
+    children: [
+      { label: "Organizers", to: "/for/organizers" },
+      { label: "Promoters",  to: "/for/promoters"  },
+      { label: "Talent",     to: "/for/talent"     },
+      { label: "Venues",     to: "/for/venues"     },
+      { label: "Vendors",    to: "/for/vendors"    },
+      { label: "Workforce",  to: "/for/workforce"  },
+      { label: "Sponsors",   to: "/for/sponsors"   },
+      { label: "Tenants",    to: "/for/tenants"    },
+      { label: "Attendees",  to: "/for/attendees"  },
+    ],
+  },
+  { id: "pricing", label: "Pricing", to: "/pricing" },
+  {
+    id: "company",
+    label: "Company",
+    children: [
+      { label: "About OKKAX",         to: "/about"         },
+      { label: "How It Works",        to: "/how-it-works"  },
+      { label: "Contact",             to: "/contact"       },
+      { label: "Terms & Conditions",  to: "/terms"         },
+      { label: "Privacy Policy",      to: "/privacy"       },
+    ],
+  },
+  { id: "demo", label: "Demo", to: "/demo", mega: "quick-demo" },
+];
+
+// Six quick-demo roles per the canonical spec. Supervisor is intentionally
+// removed. Roles that do not have a live persona map to a friendly
+// register redirect so the button is honest.
+export const QUICK_DEMO_ROLES = [
+  { id: "organizer", label: "Organizer", persona: "Penyelenggara", destination: "/app" },
+  { id: "promoter",  label: "Promoter",  persona: "Penyelenggara", destination: "/app" },
+  { id: "vendor",    label: "Vendor",    persona: null,             destination: "/register?role=vendor" },
+  { id: "sponsor",   label: "Sponsor",   persona: "Sponsor",        destination: "/app/sponsor" },
+  { id: "tenant",    label: "Tenant",    persona: "Tenant",         destination: "/app/tenant" },
+  { id: "audience",  label: "Audience",  persona: "Pengunjung",     destination: "/app" },
+];
+
+// -----------------------------------------------------------------------------
+// Custom SVG marks for platforms lucide-react does not cover (X, WhatsApp).
+// -----------------------------------------------------------------------------
 function XMark({ size = 17 }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
@@ -15,7 +106,6 @@ function XMark({ size = 17 }) {
     </svg>
   );
 }
-
 function WhatsAppMark({ size = 17 }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden="true">
@@ -25,17 +115,20 @@ function WhatsAppMark({ size = 17 }) {
 }
 
 const SOCIAL_LINKS = [
-  { label: "Instagram Isra Anwar", href: "https://www.instagram.com/okkarhys", Icon: Instagram },
-  { label: "X (Twitter) Isra Anwar", href: "https://x.com/Okkarhys_twit", Icon: XMark },
-  { label: "Email Isra Anwar", href: "mailto:israanwarr@gmail.com", Icon: Mail },
-  { label: "WhatsApp Isra Anwar", href: "https://wa.me/6282189594190", Icon: WhatsAppMark },
+  { label: "Instagram Isra Anwar",   href: "https://www.instagram.com/okkarhys",  Icon: Instagram },
+  { label: "X (Twitter) Isra Anwar", href: "https://x.com/Okkarhys_twit",         Icon: XMark },
+  { label: "Email Isra Anwar",       href: "mailto:israanwarr@gmail.com",         Icon: Mail },
+  { label: "WhatsApp Isra Anwar",    href: "https://wa.me/6282189594190",         Icon: WhatsAppMark },
 ];
 
+// -----------------------------------------------------------------------------
+// Logo. Also acts as the Home link since it points to "/".
+// -----------------------------------------------------------------------------
 export const Logo = ({ small }) => (
   <Link
     to="/"
     data-testid="okkax-logo"
-    aria-label="OKKAX — Live Event Operating Network"
+    aria-label="OKKAX Home"
     className={`okkax-logo group inline-flex shrink-0 flex-col items-start ${small ? "w-[82px]" : "w-[132px]"}`}
   >
     <img
@@ -51,42 +144,329 @@ export const Logo = ({ small }) => (
   </Link>
 );
 
-const links = [
-  { to: "/discover", label: "Discover" },
-  { to: "/calendar", label: "Calendar" },
-  { to: "/peta", label: "Live Event Map" },
-  { to: "/pricing", label: "Pricing" },
-  { to: "/for/organizers", label: "For Organizers" },
-  { to: "/for/sponsors", label: "For Sponsors" },
-  { to: "/for/tenants", label: "For Tenants" },
-  { to: "/juri", label: "Platform Demo" },
-];
+// -----------------------------------------------------------------------------
+// Persona login hook used by Quick Demo Roles both in the header dropdown and
+// the mobile drawer. Handles the "persona not live" fallback by redirecting
+// to the appropriate register route.
+// -----------------------------------------------------------------------------
+function useQuickPersonaLogin() {
+  const { adoptSession } = useAuth();
+  const nav = useNavigate();
+  const [busy, setBusy] = useState("");
+  const enter = async (role) => {
+    if (!role.persona) {
+      nav(role.destination);
+      return;
+    }
+    setBusy(role.id);
+    try {
+      const { data } = await api.post("/demo/persona-login", { label: role.persona });
+      await adoptSession(data.token);
+      toast.success("Masuk sebagai " + role.label);
+      nav(role.destination);
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setBusy("");
+    }
+  };
+  return { enter, busy };
+}
 
-export default function PublicNav() {
+// -----------------------------------------------------------------------------
+// Desktop dropdown menu. Opens on hover or click, closes on Escape, mouseleave
+// with grace period, or outside click. Renders premium compact panel.
+// -----------------------------------------------------------------------------
+const MENU_META = {
+  explore: {
+    eyebrow: "EXPLORE",
+    title: "Temukan apa yang sedang terjadi.",
+    text: "Jelajahi event melalui daftar, kalender, dan peta live-event.",
+  },
+  products: {
+    eyebrow: "PRODUCTS",
+    title: "Satu sistem. Banyak kemampuan.",
+    text: "Produk inti OKKAX untuk merancang, menghubungkan, mengakses, dan mengoperasikan live event.",
+  },
+  solutions: {
+    eyebrow: "SOLUTIONS",
+    title: "Dibangun untuk seluruh ekosistem.",
+    text: "Pengalaman yang relevan untuk setiap pelaku dalam ekonomi live event.",
+  },
+  company: {
+    eyebrow: "COMPANY",
+    title: "Kenali OKKAX lebih dalam.",
+    text: "Tentang OKKAX, cara kerja platform, kontak, dan informasi legal.",
+  },
+};
+
+const MENU_NOTES = {
+  Organizers: "Rancang dan kendalikan seluruh siklus event.",
+  Promoters: "Bangun, biayai, promosikan, dan jalankan event.",
+  Talent: "Kelola peluang, booking, jadwal, dan performa.",
+  Venues: "Kelola availability, booking, dan utilisasi venue.",
+  Vendors: "Temukan project dan kelola layanan event.",
+  Workforce: "Bangun reputasi dan temukan pekerjaan event.",
+  Sponsors: "Temukan event dan kelola peluang sponsorship.",
+  Tenants: "Temukan peluang booth dan partisipasi event.",
+  Attendees: "Temukan event, akses LivePass, dan pengalaman event.",
+  "About OKKAX": "Visi, positioning, dan alasan OKKAX dibangun.",
+  "How It Works": "Lihat bagaimana seluruh sistem OKKAX terhubung.",
+  Contact: "Hubungi tim OKKAX.",
+  "Terms & Conditions": "Ketentuan penggunaan platform.",
+  "Privacy Policy": "Cara OKKAX mengelola dan melindungi data.",
+};
+
+function DesktopDropdown({ item, isActive, onNavigate }) {
   const [open, setOpen] = useState(false);
+  const [panelTop, setPanelTop] = useState(72);
+  const closeTimer = useRef(null);
+  const wrapRef = useRef(null);
+
+  const openNow = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    setOpen(true);
+  };
+
+  const scheduleClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setOpen(false), 160);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const header = wrapRef.current
+        ?.closest("header")
+        ?.getBoundingClientRect();
+
+      if (header) setPanelTop(header.bottom);
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onDocClick = (e) => {
+      if (!wrapRef.current?.contains(e.target)) setOpen(false);
+    };
+
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const meta = MENU_META[item.id] || {
+    eyebrow: item.label.toUpperCase(),
+    title: item.label,
+    text: "",
+  };
+
+  const gridClass =
+    item.id === "solutions"
+      ? "lg:grid-cols-3"
+      : item.id === "products"
+      ? "lg:grid-cols-3"
+      : item.id === "explore"
+      ? "lg:grid-cols-3"
+      : "lg:grid-cols-3";
+
+  return (
+    <div
+      ref={wrapRef}
+      className="relative"
+      onMouseEnter={openNow}
+      onMouseLeave={scheduleClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        data-testid={`nav-${item.id}`}
+        onClick={() => setOpen((v) => !v)}
+        onFocus={openNow}
+        className={[
+          "okx-nav-link relative inline-flex items-center gap-1.5 py-2 text-[13px] font-medium tracking-[0.015em] transition-colors",
+          isActive
+            ? "is-active text-[#f0e9e5]"
+            : "text-zinc-400 hover:text-white",
+          open ? "text-white" : "",
+        ].join(" ")}
+      >
+        {item.label}
+
+        <ChevronDown
+          size={12}
+          className={
+            "opacity-60 transition-transform duration-200 " +
+            (open ? "rotate-180" : "")
+          }
+          aria-hidden="true"
+        />
+
+        {open && !isActive && (
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 -bottom-[13px] h-px bg-[var(--okx-accent)]"
+          />
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          data-testid={`nav-${item.id}-panel`}
+          style={{
+            top: `${panelTop}px`,
+            width: "min(780px, calc(100vw - 32px))",
+          }}
+          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden border border-[var(--okx-border)] bg-[#080808f7] shadow-[0_32px_90px_-42px_rgba(0,0,0,0.95)] backdrop-blur-xl"
+          onMouseEnter={openNow}
+          onMouseLeave={scheduleClose}
+        >
+          <div className="grid lg:grid-cols-[150px_minmax(0,1fr)]">
+            <div className="border-b border-[var(--okx-border)] p-4 lg:border-b-0 lg:border-r">
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.25em] text-[var(--okx-accent-soft)]">
+                {meta.eyebrow}
+              </div>
+
+              <div className="max-w-[130px] text-[15px] font-semibold leading-[1.25] text-[#f3eeeb]">
+                {meta.title}
+              </div>
+
+              <p className="mt-2 max-w-[130px] text-[10px] leading-[1.45] text-zinc-500">
+                {meta.text}
+              </p>
+            </div>
+
+            <ul className={`grid ${gridClass}`}>
+              {item.children?.map((c) => (
+                <li
+                  key={c.to}
+                  className="border-b border-[var(--okx-border)] lg:border-r"
+                >
+                  <Link
+                    role="menuitem"
+                    to={c.to}
+                    onClick={() => {
+                      setOpen(false);
+                      onNavigate?.();
+                    }}
+                    data-testid={`nav-${item.id}-${slug(c.label)}`}
+                    className="group flex min-h-[68px] h-full flex-col justify-between p-3 transition-colors duration-150 hover:bg-[#100b0d]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-[13px] font-medium text-zinc-200 transition-colors group-hover:text-white">
+                        {c.label}
+                      </span>
+
+                      <ArrowUpRight
+                        size={14}
+                        className="mt-0.5 text-zinc-700 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--okx-accent)]"
+                        aria-hidden="true"
+                      />
+                    </div>
+
+                    <span className="mt-1.5 max-w-[190px] text-[9.5px] leading-[1.45] text-zinc-500">
+                      {c.note || MENU_NOTES[c.label] || ""}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuickDemoGrid({ onDone, testidPrefix }) {
+  const { enter, busy } = useQuickPersonaLogin();
+  return (
+    <ul className="grid grid-cols-2 gap-1.5 px-1 sm:grid-cols-3">
+      {QUICK_DEMO_ROLES.map((r) => (
+        <li key={r.id}>
+          <button
+            type="button"
+            disabled={busy === r.id}
+            onClick={async () => { await enter(r); onDone?.(); }}
+            data-testid={`${testidPrefix}-${r.id}`}
+            className="group flex w-full flex-col items-start border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-left text-[12.5px] text-zinc-200 transition-colors hover:border-[var(--okx-accent)] hover:bg-[#100609] disabled:opacity-60"
+          >
+            <span className="font-semibold text-white">{r.label}</span>
+            <span className="text-[10.5px] text-zinc-500">
+              {r.persona ? (busy === r.id ? "Masuk..." : "Masuk sekali klik") : "Daftar dulu"}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Header
+// -----------------------------------------------------------------------------
+export default function PublicNav() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth();
   const nav = useNavigate();
+  const loc = useLocation();
+
+  // Best-effort active state for top-level items.
+  const isItemActive = (item) => {
+    if (item.to) return loc.pathname === item.to;
+    if (item.children) return item.children.some((c) => loc.pathname === c.to || loc.pathname.startsWith(c.to + "/"));
+    return false;
+  };
+
   return (
     <header className="okx-public-nav sticky top-0 z-40 border-b border-[var(--okx-border)] bg-[#0a0a0ae8] backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <div className="flex items-center gap-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-6 xl:gap-8">
           <Logo />
-          <nav className="okx-nav-type hidden items-center gap-6 lg:flex" aria-label="Navigasi utama">
-            {links.map((l, index) => (
-              <NavLink
-                key={l.label}
-                to={l.to}
-                data-testid={`nav-${l.label.toLowerCase().replace(/ /g, "-")}`}
-                style={{ "--nav-delay": `${120 + index * 55}ms` }}
-                className={({ isActive }) =>
-                  `okx-nav-link relative py-2 text-[13px] font-medium tracking-[0.015em] ${
-                    isActive ? "is-active text-[#f0e9e5]" : "text-zinc-400"
-                  }`
-                }
-              >
-                {l.label}
-              </NavLink>
-            ))}
+          <nav className="okx-nav-type hidden items-center gap-4 lg:flex xl:gap-6" aria-label="Navigasi utama">
+            {NAV.map((item) =>
+              item.children ? (
+                <DesktopDropdown key={item.id} item={item} isActive={isItemActive(item)} />
+              ) : (
+                <NavLink
+                  key={item.id}
+                  to={item.to}
+                  end={item.to === "/"}
+                  data-testid={`nav-${item.id}`}
+                  className={({ isActive }) =>
+                    `okx-nav-link relative py-2 text-[13px] font-medium tracking-[0.015em] ${
+                      isActive ? "is-active text-[#f0e9e5]" : "text-zinc-400 hover:text-white"
+                    }`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              )
+            )}
           </nav>
         </div>
         <div className="flex items-center gap-2">
@@ -101,10 +481,7 @@ export default function PublicNav() {
               </Link>
               <button
                 data-testid="nav-logout-btn"
-                onClick={() => {
-                  logout();
-                  nav("/");
-                }}
+                onClick={() => { logout(); nav("/"); }}
                 className="hidden border border-[var(--okx-border)] px-3 py-2 text-sm text-zinc-300 hover:text-white sm:block"
               >
                 Sign Out
@@ -121,176 +498,249 @@ export default function PublicNav() {
               </Link>
               <Link
                 to="/register"
-                data-testid="nav-getstarted-btn"
+                data-testid="nav-register-btn"
                 className="okx-nav-cta okx-nav-type bg-[var(--okx-accent)] px-4 py-2 text-[13px] font-semibold tracking-[0.01em] text-white hover:bg-[var(--okx-accent-hover)]"
               >
-                Build an Event
+                Register
               </Link>
             </>
           )}
           <button
             data-testid="nav-mobile-toggle"
-            aria-label="Menu"
-            onClick={() => setOpen(!open)}
+            aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpen((v) => !v)}
             className="p-2 text-zinc-300 lg:hidden"
           >
-            {open ? <X size={20} /> : <Menu size={20} />}
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
-      <LiveTicker />
-      {open && (
-        <div className="okx-mobile-menu border-t border-[var(--okx-border)] bg-[var(--okx-surface)] px-4 py-3 lg:hidden">
-          <nav className="okx-nav-type flex flex-col gap-1">
-            {links.map((l, index) => (
-              <Link
-                key={l.label}
-                to={l.to}
-                onClick={() => setOpen(false)}
-                className="okx-mobile-link py-2.5 text-sm text-zinc-300"
-                style={{ "--mobile-delay": `${index * 45}ms` }}
-                data-testid={`mnav-${l.label.toLowerCase().replace(/ /g, "-")}`}
-              >
-                {l.label}
-              </Link>
-            ))}
-            {user ? (
-              <>
-                <Link to="/app" onClick={() => setOpen(false)} className="py-2.5 text-sm accent-text">
-                  Workspace
-                </Link>
-                <button
-                  onClick={() => {
-                    logout();
-                    setOpen(false);
-                  }}
-                  className="py-2.5 text-left text-sm text-zinc-300"
-                >
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <Link to="/login" onClick={() => setOpen(false)} className="py-2.5 text-sm accent-text">
-                Sign In
-              </Link>
-            )}
-          </nav>
-        </div>
-      )}
+      {mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} isItemActive={isItemActive} />}
     </header>
   );
 }
 
+// -----------------------------------------------------------------------------
+// Mobile drawer with accordion sections.
+// -----------------------------------------------------------------------------
+function MobileMenu({ onClose, isItemActive }) {
+  return (
+    <div
+      data-testid="mobile-menu"
+      className="okx-mobile-menu max-h-[calc(100vh-6rem)] overflow-y-auto border-t border-[var(--okx-border)] bg-[var(--okx-surface)] px-4 py-3 lg:hidden"
+    >
+      <nav className="okx-nav-type flex flex-col gap-1" aria-label="Navigasi mobile">
+        {NAV.map((item) =>
+          item.children ? (
+            <MobileAccordion key={item.id} item={item} onNavigate={onClose} />
+          ) : (
+            <Link
+              key={item.id}
+              to={item.to}
+              onClick={onClose}
+              data-testid={`mnav-${item.id}`}
+              className={
+                "okx-mobile-link border-b border-[var(--okx-border)]/40 py-3 text-sm " +
+                (isItemActive(item) ? "text-white" : "text-zinc-300")
+              }
+            >
+              {item.label}
+            </Link>
+          )
+        )}
+        {/* Extra mega section for Demo: quick roles beneath Demo link */}
+        <div className="border-b border-[var(--okx-border)]/40 py-3">
+          <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+            <Sparkles size={11} aria-hidden="true" /> Quick Demo Login
+          </div>
+          <QuickDemoGrid onDone={onClose} testidPrefix="mnav-demo-quick" />
+        </div>
+        <div className="mt-3 flex flex-col gap-2 pt-2">
+          <Link
+            to="/login"
+            onClick={onClose}
+            data-testid="mnav-signin"
+            className="border border-[var(--okx-border)] px-4 py-2.5 text-center text-sm font-semibold text-zinc-100"
+          >
+            Sign In
+          </Link>
+          <Link
+            to="/register"
+            onClick={onClose}
+            data-testid="mnav-register"
+            className="bg-[var(--okx-accent)] px-4 py-2.5 text-center text-sm font-semibold text-white"
+          >
+            Register
+          </Link>
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+function MobileAccordion({ item, onNavigate }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-[var(--okx-border)]/40 py-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        data-testid={`mnav-${item.id}-toggle`}
+        className="flex w-full items-center justify-between py-2.5 text-left text-sm text-zinc-200"
+      >
+        <span>{item.label}</span>
+        <ChevronDown size={16} className={"text-zinc-500 transition-transform " + (open ? "rotate-180" : "")} aria-hidden="true" />
+      </button>
+      {open && (
+        <ul className="mb-2 flex flex-col gap-1 pl-2">
+          {item.children.map((c) => (
+            <li key={c.to}>
+              <Link
+                to={c.to}
+                onClick={onNavigate}
+                data-testid={`mnav-${item.id}-${slug(c.label)}`}
+                className="block py-1.5 text-[13px] text-zinc-400 hover:text-white"
+              >
+                {c.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Footer. Mirrors the header taxonomy so users get the same map at the bottom.
+// -----------------------------------------------------------------------------
 export function Footer() {
   return (
     <footer data-testid="public-footer" className="okx-footer border-t border-[var(--okx-border)] bg-[#070707] px-4 sm:px-6">
       <div className="mx-auto max-w-7xl py-14 sm:py-20">
-        <div className="grid items-end gap-9 lg:grid-cols-[minmax(0,1fr)_auto]">
-          <div>
-            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-              <Radio size={15} aria-hidden="true" /> Live Event Operating Network
-            </div>
-            <h2 className="editorial mt-5 max-w-4xl text-[clamp(2.5rem,6vw,5.9rem)] leading-[0.92] text-[#f4efec]">
-              Every moving part,<br /><span className="accent-text">working as one.</span>
-            </h2>
-            <p className="mt-6 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-              Dari ide pertama hingga showtime, setiap partner, produksi, ticketing, dan pembayaran bekerja sebagai satu pertunjukan.
-            </p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-            <Link to="/register" className="group flex min-w-52 items-center justify-between bg-[var(--okx-accent)] px-5 py-4 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
-              Build an Event <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
-            <Link to="/discover" className="group flex min-w-52 items-center justify-between border border-zinc-700 px-5 py-4 text-sm font-semibold text-zinc-200 hover:border-zinc-500 hover:bg-zinc-900">
-              Discover Events <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-14 grid border-y border-[var(--okx-border)] sm:grid-cols-3">
-          {[
-            [Waypoints, "One connected network", "People, partners, process, and payment"],
-            [MapPinned, "Built for live operations", "From the first brief to show day"],
-            [ShieldCheck, "Competition demo", "Secure sandbox — no real payment"],
-          ].map(([Icon, title, copy], index) => (
-            <div key={title} className={`flex gap-4 py-6 ${index ? "sm:border-l sm:border-[var(--okx-border)] sm:pl-6" : ""} ${index < 2 ? "border-b border-[var(--okx-border)] sm:border-b-0 sm:pr-6" : ""}`}>
-              <Icon size={21} strokeWidth={1.6} className="mt-0.5 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
-              <div>
-                <div className="text-sm font-semibold text-zinc-100">{title}</div>
-                <div className="mt-1 text-xs leading-5 text-zinc-500">{copy}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid gap-10 py-12 md:grid-cols-12">
-          <div className="md:col-span-5">
-            <Logo />
-            <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-500">
-              Orkestrasi Koneksi, Kolaborasi, Aktivasi &amp; eXperience. Seluruh pihak dan proses di balik live event, terhubung dalam satu sistem.
-            </p>
-          </div>
-          <FooterLinks title="Explore" links={[["Discover Events", "/discover"], ["Event Calendar", "/calendar"], ["Live Event Map", "/peta"], ["Platform Demo", "/juri"]]} />
-          <FooterLinks title="Network" links={[["For Organizers", "/for/organizers"], ["For Sponsors", "/for/sponsors"], ["For Tenants", "/for/tenants"], ["Ticket Validator", "/validator"]]} />
-          <FooterLinks title="Access" links={[["Pricing", "/pricing"], ["Build an Event", "/register"], ["Sign In", "/login"]]} />
-        </div>
-
-        <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] py-8 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 text-sm text-zinc-500">
-            <span>Dibuat oleh</span>
-            <a
-              href="https://www.instagram.com/okkarhys"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium tracking-tight text-zinc-200 transition-colors hover:text-[var(--okx-accent)]"
-              data-testid="footer-creator-link"
-            >
-              Isra Anwar
-            </a>
-          </div>
-          <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2.5">
-            {SOCIAL_LINKS.map(({ label, href, Icon }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={label}
-                title={label}
-                data-testid={`footer-social-${label.split(" ")[0].toLowerCase()}`}
-                className="okx-social-tile inline-flex h-10 w-10 items-center justify-center border border-[var(--okx-border)] text-zinc-400"
-              >
-                <Icon size={18} />
-              </a>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] pt-6 text-xs leading-5 text-zinc-600 lg:flex-row lg:items-end">
-          <div className="max-w-4xl">
-            Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk demonstrasi kompetisi. Pembayaran bersifat sandbox; tidak ada uang nyata yang ditagihkan.
-          </div>
-          <div className="shrink-0 lg:text-right">
-            <div>© 2026 OKKAX</div>
-            <div className="mt-1 text-zinc-500">One event. Every moving part.</div>
-          </div>
-        </div>
+        <FooterHeadline />
+        <FooterColumns />
+        <FooterMeta />
       </div>
     </footer>
   );
 }
 
-function FooterLinks({ title, links }) {
+function FooterHeadline() {
   return (
-    <div className="md:col-span-2 last:md:col-span-3">
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-600">{title}</h3>
+    <div className="grid items-end gap-9 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <div>
+        <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+          Live Event Operating Network
+        </div>
+        <h2 className="editorial mt-5 max-w-4xl text-[clamp(2.5rem,6vw,5.9rem)] leading-[0.92] text-[#f4efec]">
+          Every moving part,<br /><span className="accent-text">working as one.</span>
+        </h2>
+        <p className="mt-6 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
+          Dari ide pertama hingga showtime, setiap partner, produksi, ticketing, dan pembayaran bekerja sebagai satu pertunjukan.
+        </p>
+      </div>
+      <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+        <Link to="/register" data-testid="footer-hero-primary" className="group flex min-w-52 items-center justify-between bg-[var(--okx-accent)] px-5 py-4 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
+          Register
+          <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+        </Link>
+        </div>
+    </div>
+  );
+}
+
+function FooterColumns() {
+  const explore  = NAV.find((n) => n.id === "explore");
+  const products = NAV.find((n) => n.id === "products");
+  const solutions = NAV.find((n) => n.id === "solutions");
+  const company  = NAV.find((n) => n.id === "company");
+  return (
+    <div className="mt-14 grid gap-10 border-t border-[var(--okx-border)] py-12 md:grid-cols-12">
+      <div className="md:col-span-3">
+        <Logo />
+        <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-500">
+          Orkestrasi Koneksi, Kolaborasi, Aktivasi &amp; eXperience. Satu Event ID mengikat brief, jaringan, ticketing, hingga settlement.
+        </p>
+        <div className="mt-6 flex flex-col gap-2 text-sm">
+          </div>
+      </div>
+      <FooterColumn title="Explore"   items={explore.children}   testid="footer-explore" />
+      <FooterColumn title="Products"  items={products.children}  testid="footer-products" />
+      <FooterColumn title="Solutions" items={solutions.children} testid="footer-solutions" />
+      <FooterColumn title="Company"   items={company.children}   testid="footer-company" />
+    </div>
+  );
+}
+
+function FooterColumn({ title, items, testid }) {
+  return (
+    <div className="md:col-span-2" data-testid={testid}>
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{title}</h3>
       <ul className="mt-4 space-y-3 text-sm text-zinc-400">
-        {links.map(([label, to]) => (
-          <li key={to}>
-            <Link className="inline-flex items-center gap-1.5 hover:text-white" to={to}>{label}</Link>
+        {items.map((c) => (
+          <li key={c.to}>
+            <Link className="inline-flex items-center gap-1.5 hover:text-white" to={c.to}>
+              {c.label}
+            </Link>
           </li>
         ))}
       </ul>
     </div>
   );
+}
+
+function FooterMeta() {
+  return (
+    <>
+      <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] py-8 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <span>Dibuat oleh</span>
+          <a
+            href="https://www.instagram.com/okkarhys"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium tracking-tight text-zinc-200 transition-colors hover:text-[var(--okx-accent)]"
+            data-testid="footer-creator-link"
+          >
+            Isra Anwar
+          </a>
+        </div>
+        <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2.5">
+          {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={label}
+              title={label}
+              data-testid={`footer-social-${label.split(" ")[0].toLowerCase()}`}
+              className="okx-social-tile inline-flex h-10 w-10 items-center justify-center border border-[var(--okx-border)] text-zinc-400"
+            >
+              <Icon size={18} />
+            </a>
+          ))}
+        </nav>
+      </div>
+      <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] pt-6 text-xs leading-5 text-zinc-600 lg:flex-row lg:items-end">
+        <div className="max-w-4xl">
+          Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk demonstrasi kompetisi. Pembayaran bersifat sandbox; tidak ada uang nyata yang ditagihkan.
+        </div>
+        <div className="shrink-0 lg:text-right">
+          <div>© 2026 OKKAX</div>
+          <div className="mt-1 text-zinc-500">One event. Every moving part.</div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Small utilities
+// -----------------------------------------------------------------------------
+function slug(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }

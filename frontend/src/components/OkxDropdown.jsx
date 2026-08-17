@@ -24,7 +24,9 @@ export default function OkxDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [flipUp, setFlipUp] = useState(false);
   const shellRef = useRef(null);
+  const triggerRef = useRef(null);
   const searchRef = useRef(null);
 
   // Normalisasi options: string -> { value, label }.
@@ -72,6 +74,20 @@ export default function OkxDropdown({
     }
   }, [open, canSearch]);
 
+  // Flip dropdown ke atas ketika ruang bawah tidak cukup. Dipakai form yang
+  // di-render di container overflow-hidden (auth shell, modal) supaya menu
+  // dropdown tidak pernah terpotong batas layout.
+  useEffect(() => {
+    if (!open) return;
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    // Estimasi tinggi menu: header search (48) + ~40 per baris, max 320.
+    const estimated = Math.min(320, (canSearch ? 48 : 0) + normalized.length * 40 + 16);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    setFlipUp(spaceBelow < estimated && spaceAbove > spaceBelow);
+  }, [open, canSearch, normalized.length]);
+
   const handleSelect = (nextValue, option) => {
     if (option?.disabled) return;
     onChange?.(nextValue);
@@ -85,6 +101,7 @@ export default function OkxDropdown({
       data-testid={testId ? `${testId}-shell` : undefined}
     >
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && setOpen((prev) => !prev)}
         aria-haspopup="listbox"
@@ -108,7 +125,9 @@ export default function OkxDropdown({
       {open && (
         <div
           role="listbox"
-          className="absolute left-0 right-0 top-full z-50 mt-1 border border-zinc-700 bg-[#0d0d0f] shadow-2xl"
+          className={`absolute left-0 right-0 z-50 border border-zinc-700 bg-[#0d0d0f] shadow-2xl ${
+            flipUp ? "bottom-full mb-1" : "top-full mt-1"
+          }`}
           data-testid={testId ? `${testId}-menu` : undefined}
         >
           {canSearch && (

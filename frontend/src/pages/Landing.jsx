@@ -30,6 +30,7 @@ import OkxDropdown from "@/components/OkxDropdown";
 import { PLAN_META, PLAN_ORDER, priceFor } from "@/lib/pricing";
 import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
+import LiveTicker from "@/components/LiveTicker";
 
 const HERO = "/assets/okkax-concert-hero-v2.png";
 
@@ -1089,11 +1090,28 @@ export default function Landing() {
             </p>
             <div className="mt-9 flex items-center gap-2 text-xs text-zinc-400">
               <CalendarDays size={15} className="accent-text" aria-hidden="true" />
-              <span>13 August 2026</span>
+              <a
+                  href={`/calendar?date=${[
+                    new Date().getFullYear(),
+                    String(new Date().getMonth() + 1).padStart(2, "0"),
+                    String(new Date().getDate()).padStart(2, "0"),
+                  ].join("-")}`}
+                  data-testid="hero-today-calendar-link"
+                  title="Open today's events"
+                  className="transition-colors hover:text-white"
+                >
+                  {new Intl.DateTimeFormat("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  }).format(new Date())}
+                </a>
             </div>
           </div>
         </div>
       </section>
+
+      <LiveTicker />
 
       <section className="border-b border-[var(--okx-border)] bg-[#0d0d0d] px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
@@ -1243,7 +1261,7 @@ export default function Landing() {
             budget, sponsor, tenant, tiket, publish, sandbox payment, QR ticket, validasi, hingga Live Event Impact.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link to="/juri" data-testid="cta-juri-btn" className="bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
+            <Link to="/demo" data-testid="cta-juri-btn" className="bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
               Platform Demo
             </Link>
             <Link to="/demo" data-testid="cta-demo-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">

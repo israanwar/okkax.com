@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { Logo } from "@/components/PublicNav";
 import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
 import { api, apiError } from "@/lib/api";
+import { useCatalogCities } from "@/lib/cities";
 
 const GOOGLE_MARK_URL = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 const AUTH_BACKGROUND_URL = "/assets/okkax-concert-hero-v2.png";
@@ -39,8 +41,11 @@ function Shell({ title, subtitle, children }) {
       className="okx-auth-shell relative h-[100dvh] overflow-hidden bg-cover bg-center"
       style={{ backgroundImage: `url(${AUTH_BACKGROUND_URL})`, backgroundPosition: "78% center" }}
     >
-      <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-      <div className="relative grid h-full lg:grid-cols-[0.92fr_1.08fr]">
+      <div className="absolute inset-0 bg-black/55" aria-hidden="true" />
+      <div className="okx-aurora-field" data-testid="auth-aurora" aria-hidden="true">
+        <div className="okx-aurora-blob" />
+      </div>
+      <div className="relative z-10 grid h-full lg:grid-cols-[0.92fr_1.08fr]">
         <aside className="hidden h-full flex-col justify-between border-r border-white/10 bg-black/25 p-8 backdrop-blur-[2px] lg:flex xl:p-10">
           <Logo />
           <div>
@@ -96,6 +101,153 @@ function Divider({ children }) {
   return (
     <div className="my-3 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
       <span className="h-px flex-1 bg-zinc-800" /> {children} <span className="h-px flex-1 bg-zinc-800" />
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Password helpers.
+//
+// suggestStrongPassword: 14-char mix of upper, lower, digits, and safe symbols.
+// scorePassword: 0..4 heuristic covering length + character class diversity.
+// -----------------------------------------------------------------------------
+const PWD_UPPER  = "ABCDEFGHJKLMNPQRSTUVWXYZ";  // no I/O to avoid look-alike
+const PWD_LOWER  = "abcdefghjkmnpqrstuvwxyz";   // no i/l/o
+const PWD_DIGIT  = "23456789";                   // no 0/1
+const PWD_SYMBOL = "!@#$%&*?-";                  // no ambiguous glyphs
+
+function pickRandom(source, count) {
+  const arr = new Uint32Array(count);
+  crypto.getRandomValues(arr);
+  let out = "";
+  for (let i = 0; i < count; i++) out += source[arr[i] % source.length];
+  return out;
+}
+
+function suggestStrongPassword() {
+  // 4 required + 10 mixed = 14 chars total, then shuffled.
+  const required =
+    pickRandom(PWD_UPPER, 2) +
+    pickRandom(PWD_LOWER, 4) +
+    pickRandom(PWD_DIGIT, 4) +
+    pickRandom(PWD_SYMBOL, 2);
+  const chars = required.split("");
+  // Fisher-Yates with crypto entropy.
+  const rand = new Uint32Array(chars.length);
+  crypto.getRandomValues(rand);
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = rand[i] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
+
+function scorePassword(pwd) {
+  if (!pwd) return { score: 0, label: "" };
+  let score = 0;
+  if (pwd.length >= 6) score += 1;
+  if (pwd.length >= 10) score += 1;
+  const classes = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((rx) => rx.test(pwd)).length;
+  if (classes >= 2) score += 1;
+  if (classes >= 3) score += 1;
+  if (classes >= 4 && pwd.length >= 12) score = 4;
+  const label = ["", "Lemah", "Cukup", "Kuat", "Sangat kuat"][score] || "";
+  return { score, label };
+}
+
+function PasswordField({ testId, value, onChange, placeholder, autoComplete, showSuggestions = false }) {
+  const [visible, setVisible] = useState(false);
+  const { score, label } = useMemo(() => scorePassword(value), [value]);
+  const strengthTone =
+    score >= 4 ? "bg-emerald-400"
+    : score === 3 ? "bg-lime-400"
+    : score === 2 ? "bg-amber-400"
+    : score === 1 ? "bg-orange-500"
+    : "bg-zinc-800";
+  const strengthText =
+    score >= 4 ? "text-emerald-300"
+    : score === 3 ? "text-lime-300"
+    : score === 2 ? "text-amber-300"
+    : score === 1 ? "text-orange-300"
+    : "text-zinc-500";
+
+  const generate = () => onChange({ target: { value: suggestStrongPassword() } });
+  const copy = async () => {
+    if (!value) return;
+    try {
+      await navigator.clipboard?.writeText(value);
+      toast.success("Kata sandi disalin ke clipboard");
+    } catch {
+      toast.error("Tidak bisa menyalin, silakan pilih dan salin manual");
+    }
+  };
+
+  return (
+    <div className="mt-1.5 flex flex-col gap-1.5">
+      <div className="relative">
+        <input
+          data-testid={testId}
+          type={visible ? "text" : "password"}
+          required
+          minLength={6}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`${inputClass} mt-0 pr-24`}
+        />
+        <div className="absolute inset-y-0 right-2 flex items-center gap-1">
+          {showSuggestions && (
+            <button
+              type="button"
+              onClick={generate}
+              title="Sarankan kata sandi kuat"
+              aria-label="Sarankan kata sandi kuat"
+              data-testid={`${testId}-suggest`}
+              className="rounded-none border border-zinc-700 bg-black/40 p-1.5 text-zinc-300 transition-colors hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)]"
+            >
+              <RefreshCw size={13} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+          )}
+          {showSuggestions && value && (
+            <button
+              type="button"
+              onClick={copy}
+              title="Salin kata sandi"
+              aria-label="Salin kata sandi"
+              data-testid={`${testId}-copy`}
+              className="rounded-none border border-zinc-700 bg-black/40 p-1.5 text-zinc-300 transition-colors hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)]"
+            >
+              <Copy size={13} strokeWidth={1.7} aria-hidden="true" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setVisible((prev) => !prev)}
+            title={visible ? "Sembunyikan" : "Tampilkan"}
+            aria-label={visible ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+            data-testid={`${testId}-toggle`}
+            className="rounded-none border border-zinc-700 bg-black/40 p-1.5 text-zinc-300 transition-colors hover:border-[var(--okx-accent)] hover:text-[var(--okx-accent-soft)]"
+          >
+            {visible ? <EyeOff size={13} strokeWidth={1.7} aria-hidden="true" /> : <Eye size={13} strokeWidth={1.7} aria-hidden="true" />}
+          </button>
+        </div>
+      </div>
+      {showSuggestions && (
+        <div className="flex items-center gap-2" data-testid={`${testId}-strength`}>
+          <div className="flex flex-1 gap-1">
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className={`h-1 flex-1 transition-colors ${i < score ? strengthTone : "bg-zinc-800"}`}
+              />
+            ))}
+          </div>
+          <span className={`min-w-[76px] text-right text-[10px] uppercase tracking-[0.14em] ${strengthText}`}>
+            {label || "Belum diisi"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -203,15 +355,31 @@ export function Login() {
   );
 }
 
+// Field label with sentence-case (first word capitalised, rest lowercase),
+// optional right-side hint. Replaces the previous ALL-CAPS pattern that made
+// the register form feel shouty.
+function FieldLabel({ label, hint, children }) {
+  return (
+    <label className="block min-w-0">
+      <span className="flex items-baseline justify-between gap-2 text-[13px] font-medium tracking-tight text-zinc-300">
+        <span className="truncate">{label}</span>
+        {hint && <span className="shrink-0 text-[11px] text-zinc-500">{hint}</span>}
+      </span>
+      {children}
+    </label>
+  );
+}
+
 export function Register() {
   const [form, setForm] = useState({
     name: "", email: "", password: "", role: "organizer", organization_name: "",
-    organization_type: "Corporate Brand", city: "Makassar", terms_accepted: false,
+    organization_type: "Corporate Brand", city: "", terms_accepted: false,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { register, loginWithGoogle } = useAuth();
   const nav = useNavigate();
+  const { cities, loading: citiesLoading } = useCatalogCities();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -235,33 +403,63 @@ export function Register() {
       <Divider>atau isi formulir</Divider>
 
       <form onSubmit={submit} className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          {[["name", "Nama lengkap", "text"], ["email", "Email", "email"], ["password", "Kata sandi (min 6)", "password"], ["city", "Kota", "text"]].map(([key, label, type]) => (
-            <label key={key} className="block min-w-0">
-              <span className="block truncate text-xs uppercase tracking-wider text-zinc-500">{label}</span>
-              <input
-                data-testid={`register-${key}-input`}
-                type={type}
-                required={key !== "city"}
-                value={form[key]}
-                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                className={inputClass}
-              />
-            </label>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block min-w-0">
-            <span className="block truncate text-xs uppercase tracking-wider text-zinc-500">Nama organisasi (opsional)</span>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <FieldLabel label="Nama lengkap">
+            <input
+              data-testid="register-name-input"
+              type="text"
+              required
+              autoComplete="name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Nama Anda"
+              className={inputClass}
+            />
+          </FieldLabel>
+          <FieldLabel label="Email">
+            <input
+              data-testid="register-email-input"
+              type="email"
+              required
+              autoComplete="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="nama@email.com"
+              className={inputClass}
+            />
+          </FieldLabel>
+          <FieldLabel label="Kata sandi (min 6)">
+            <PasswordField
+              testId="register-password-input"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="Minimal 6 karakter"
+              autoComplete="new-password"
+              showSuggestions
+            />
+          </FieldLabel>
+          <FieldLabel label="Kota">
+            <PremiumSelect
+              data-testid="register-city-select"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder={citiesLoading ? "Memuat kota..." : "Pilih kota"}
+              disabled={citiesLoading}
+              className="mt-1.5 w-full"
+            >
+              {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+            </PremiumSelect>
+          </FieldLabel>
+          <FieldLabel label="Nama organisasi (opsional)">
             <input
               data-testid="register-org-input"
               value={form.organization_name}
               onChange={(e) => setForm({ ...form, organization_name: e.target.value })}
+              placeholder="Nama organisasi Anda"
               className={inputClass}
             />
-          </label>
-          <label className="block min-w-0">
-            <span className="block truncate text-xs uppercase tracking-wider text-zinc-500">Tipe organisasi</span>
+          </FieldLabel>
+          <FieldLabel label="Tipe organisasi">
             <PremiumSelect
               data-testid="register-orgtype-select"
               value={form.organization_type}
@@ -272,12 +470,9 @@ export function Register() {
                 <option key={option}>{option}</option>
               ))}
             </PremiumSelect>
-          </label>
+          </FieldLabel>
         </div>
-        <label className="block">
-          <span className="flex items-center justify-between text-xs uppercase tracking-wider text-zinc-500">
-            Peran utama <span className="normal-case tracking-normal text-zinc-600">1 akun = 1 peran</span>
-          </span>
+        <FieldLabel label="Peran utama" hint="1 akun = 1 peran">
           <PremiumSelect
             data-testid="register-role-select"
             value={form.role}
@@ -286,7 +481,7 @@ export function Register() {
           >
             {ROLE_OPTIONS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </PremiumSelect>
-        </label>
+        </FieldLabel>
         <label className="flex items-start gap-2 text-[11px] leading-4 text-zinc-400">
           <input
             data-testid="register-terms-checkbox"
