@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Wand2, Network, Mic2, Building2, Wrench, HardHat, Handshake, Store, Ticket,
   Wallet, Activity, LineChart, Bell, Menu, X, ShieldCheck, LogOut, ScanLine, ListOrdered, Settings,
-  CalendarDays, Globe2,
+  CalendarDays, Globe2, Layers,
 } from "lucide-react";
 import { Logo } from "@/components/PublicNav";
 import WorkspaceSelector from "@/components/WorkspaceSelector";
@@ -13,6 +13,7 @@ import { api } from "@/lib/api";
 const NAV = {
   organizer: [
     ["/app", "Overview", LayoutDashboard],
+    ["/app/yoona", "Yoona Copilot", Layers],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/events", "Events", ListOrdered],
     ["/app/network", "Network", Globe2],
@@ -23,6 +24,7 @@ const NAV = {
   ],
   role: [
     ["/app", "Overview", LayoutDashboard],
+    ["/app/yoona", "Yoona Copilot", Layers],
     ["/app/me", "My Assignments", Settings],
     ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -30,6 +32,7 @@ const NAV = {
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
+    ["/app/yoona", "Yoona Copilot", Layers],
     ["/app/sponsor", "Opportunities", Handshake],
     ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -37,6 +40,7 @@ const NAV = {
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
+    ["/app/yoona", "Yoona Copilot", Layers],
     ["/app/tenant", "Opportunities", Store],
     ["/app/network", "Network", Globe2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -44,12 +48,14 @@ const NAV = {
   ],
   audience: [
     ["/app", "Overview", LayoutDashboard],
+    ["/app/yoona", "Yoona Copilot", Layers],
     ["/app/tickets", "My Tickets", Ticket],
     ["/app/orders", "Orders & Refunds", Wallet],
   ],
   admin: [
     ["/app/admin", "Admin Panel", ShieldCheck],
     ["/app/admin/control", "Control Plane", Activity],
+    ["/app/yoona", "Yoona Copilot", Layers],
   ],
 };
 

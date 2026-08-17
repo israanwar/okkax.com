@@ -25,6 +25,7 @@ from core import (db, nid, now_iso, hash_password, verify_password, create_acces
                   ROLES, ROLE_KEYS)
 from compiler import (compile_blueprint, _fallback as baseline_blueprint,
                       AI_ENGINES, DEFAULT_ENGINE, resolve_engine)
+from yoona import ask_yoona, get_smart_suggestions
 import asyncio
 import seed_data
 from control_plane import router as control_router
@@ -2931,6 +2932,43 @@ async def demo_state():
             "accounts": [{"email": e, "name": n, "roles": r} for e, n, r, _ in seed_data.DEMO_USERS] +
                         [{"email": os.environ.get("ADMIN_EMAIL"), "name": "OKKAX Super Admin",
                           "roles": ["super_admin"]}]}
+
+
+class YoonaChatIn(BaseModel):
+    message: str
+    history: Optional[List[Dict[str, str]]] = None
+    current_route: Optional[str] = ""
+    event_id: Optional[str] = ""
+    role: Optional[str] = ""
+
+
+@api.post("/yoona/chat")
+async def yoona_chat_endpoint(payload: YoonaChatIn, user: Optional[dict] = Depends(get_optional_user)):
+    user_role = (user.get("roles") or ["audience"])[0] if user else (payload.role or "audience")
+    result = await ask_yoona(
+        message=payload.message,
+        history=payload.history,
+        current_route=payload.current_route or "",
+        event_id=payload.event_id or "",
+        role=user_role
+    )
+    return result
+
+
+@api.get("/yoona/suggestions")
+async def yoona_suggestions_endpoint(route: str = Query("", alias="route"), role: str = Query("")):
+    return {"suggestions": get_smart_suggestions(route, role)}
+
+
+# Legacy backward-compatibility endpoints
+@api.post("/okkaji/chat")
+async def okkaji_legacy_chat(payload: YoonaChatIn, user: Optional[dict] = Depends(get_optional_user)):
+    return await yoona_chat_endpoint(payload, user)
+
+
+@api.get("/okkaji/suggestions")
+async def okkaji_legacy_suggestions(route: str = Query("", alias="route"), role: str = Query("")):
+    return {"suggestions": get_smart_suggestions(route, role)}
 
 
 @api.get("/health")

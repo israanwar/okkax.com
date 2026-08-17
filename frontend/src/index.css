@@ -1,6 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Google+Sans+Text:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Google+Sans+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.font-gemini {
+    font-family: "Google Sans Text", "Google Sans", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif !important;
+}
+
+.font-gemini-display {
+    font-family: "Google Sans", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif !important;
+}
+
+.font-gemini-mono {
+    font-family: "Google Sans Mono", "Spline Sans Mono", monospace !important;
+}
 
 :root {
     --okx-bg: #0a0a0a;

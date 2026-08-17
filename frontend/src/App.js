@@ -27,6 +27,8 @@ import Pricing from "@/pages/Pricing";
 
 import Products from "@/pages/Products";
 import { About, HowItWorks, Contact, Terms, Privacy } from "@/pages/Company";
+import YoonaPage from "@/pages/YoonaPage";
+import YoonaChat from "@/components/YoonaChat";
 
 import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
 const shell = (el) => <AppShell>{el}</AppShell>;
@@ -39,6 +41,8 @@ function RouterBody() {
     <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
+            <Route path="/yoona" element={<YoonaPage />} />
+            <Route path="/okkaji" element={<YoonaPage />} />
             <Route path="/peta" element={<EconomyMap />} />
             <Route path="/map" element={<EconomyMap />} />
             <Route path="/calendar" element={<PublicCalendar />} />
@@ -57,6 +61,8 @@ function RouterBody() {
             <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
             <Route path="/validator" element={shell(<Validator />)} />
             <Route path="/app" element={shell(<Overview />)} />
+            <Route path="/app/yoona" element={shell(<YoonaPage />)} />
+            <Route path="/app/okkaji" element={shell(<YoonaPage />)} />
             <Route path="/app/studio" element={shell(<EventStudio />)} />
             <Route path="/app/events" element={shell(<EventsList />)} />
             <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
@@ -73,6 +79,13 @@ function RouterBody() {
             <Route path="/app/network" element={shell(<Network />)} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/cancel" element={<PaymentCancel />} />
+            <Route path="/products/:slug" element={<Products />} />
+            <Route path="/products" element={<Navigate to="/products/event-studio" replace />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route
               path="*"
               element={
@@ -83,13 +96,6 @@ function RouterBody() {
                 </div>
               }
             />
-            <Route path="/products/:slug" element={<Products />} />
-            <Route path="/products" element={<Navigate to="/products/event-studio" replace />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
     </Routes>
   );
 }
@@ -102,6 +108,7 @@ function App() {
         <AuthProvider>
           <Toaster theme="dark" position="top-right" />
           <RouterBody />
+          <YoonaChat />
         </AuthProvider>
       </BrowserRouter>
     </div>
