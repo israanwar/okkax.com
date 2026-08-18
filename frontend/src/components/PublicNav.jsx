@@ -497,7 +497,7 @@ export default function PublicNav() {
               <Link
                 to="/register"
                 data-testid="nav-register-btn"
-                className="rounded-xl bg-white hover:bg-zinc-200 px-5 py-2.5 text-xs sm:text-[13px] font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98]"
+                className="rounded-xl bg-white hover:bg-zinc-200 px-3 sm:px-5 py-2 sm:py-2.5 text-[11.5px] sm:text-[13px] font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] whitespace-nowrap"
               >
                 Build an Event
               </Link>
@@ -508,9 +508,9 @@ export default function PublicNav() {
             aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
-            className="p-2.5 text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
+            className="p-2 sm:p-2.5 text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer shrink-0"
           >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>

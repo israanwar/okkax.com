@@ -104,7 +104,7 @@ function RouterBody() {
 
 function App() {
   return (
-    <div className="App min-h-screen bg-black text-white relative">
+    <div className="App min-h-screen bg-black text-white relative w-full overflow-x-hidden">
       {/* Global High-Precision Architectural Dot-Matrix Canvas */}
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-100 stitch-grid-canvas"

@@ -1003,11 +1003,11 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen bg-transparent w-full overflow-x-hidden">
       <ScrollProgressBar />
       <PublicNav />
 
-      <StitchAuroraBackground className="min-h-[90vh] flex flex-col justify-center pt-8 pb-20 sm:pb-28">
+      <StitchAuroraBackground className="min-h-[85vh] lg:min-h-[720px] flex flex-col justify-center pt-8 pb-16 sm:pb-24">
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
           {/* Live Network Telemetry Pill */}
           <motion.div
@@ -1020,8 +1020,8 @@ export default function Landing() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
-              <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
+            <span className="font-mono text-[10.5px] sm:text-[11px] font-semibold tracking-wide text-zinc-300">
+              <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF <span className="hidden sm:inline">· RP 4.8M GMV TERPROTEKSI</span>
             </span>
           </motion.div>
 
@@ -1039,7 +1039,7 @@ export default function Landing() {
 
           {/* Main Hero Headline */}
           <MaskReveal delay={0.15}>
-            <h1 className="editorial mt-6 text-[clamp(2.85rem,6vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
+            <h1 className="editorial mt-6 text-[clamp(2.15rem,6.5vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
               Every moving part,
               <br />
               <span className="text-zinc-300 font-normal">working as one.</span>
