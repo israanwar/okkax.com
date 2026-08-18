@@ -1116,16 +1116,6 @@ export default function Landing() {
       <PublicNav />
 
       <StitchAuroraBackground className="min-h-[90vh] flex flex-col justify-center pt-8 pb-20 sm:pb-28">
-        {/* Subtle Ambient Concert Stage Glow in background */}
-        <div className="pointer-events-none absolute inset-0 z-0 opacity-15 mix-blend-screen overflow-hidden">
-          <img
-            src={HERO}
-            alt="Panggung konser OKKAX"
-            className="h-full w-full object-cover object-center filter grayscale contrast-125"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#030306]/80 via-transparent to-[#030306]" />
-        </div>
-
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
           {/* Live Network Telemetry Pill */}
           <motion.div
