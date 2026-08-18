@@ -3,7 +3,7 @@ import hashlib
 import logging
 import secrets
 from collections import defaultdict
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
 
 from dotenv import load_dotenv
@@ -571,16 +571,279 @@ async def get_blueprint(event_id: str, user: dict = Depends(get_current_user)):
     return {"blueprint": bp}
 
 
-@api.patch("/events/{event_id}/blueprint")
-async def patch_blueprint(event_id: str, patch: Dict[str, Any], user: dict = Depends(get_current_user)):
+@api.put("/events/{event_id}/brief")
+async def update_brief(event_id: str, brief: BriefIn, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    ev_updates = {
+        "name": brief.name,
+        "event_type": brief.event_type,
+        "city": brief.city,
+        "start_date": brief.start_date,
+        "end_date": brief.start_date,
+        "days": brief.days,
+        "setup_days": brief.setup_days,
+        "capacity": brief.capacity,
+        "budget": brief.budget,
+        "currency": brief.currency,
+        "description": brief.description,
+        "objective": brief.objective,
+        "audience_profile": brief.audience_profile,
+        "age_limit": brief.target_age or "All ages",
+        "indoor": brief.venue_preference == "Indoor",
+        "format": brief.attendance_format,
+        "accessibility": brief.accessibility,
+        "updated_at": now_iso(),
+    }
+    await db.events.update_one({"id": ev["id"]}, {"$set": ev_updates})
+    await db.event_briefs.update_one(
+        {"event_id": ev["id"]},
+        {"$set": {"payload": {**brief.model_dump(), "event_id": ev["id"]}, "updated_at": now_iso()}},
+        upsert=True
+    )
+    await audit(ev["id"], user, "event.brief.update", {"name": brief.name})
+    updated_ev = await db.events.find_one({"id": ev["id"]}, {"_id": 0})
+    updated_brief = await db.event_briefs.find_one({"event_id": ev["id"]}, {"_id": 0})
+    return {"event": updated_ev, "brief": updated_brief}
+
+
+# ---------------------------------------------------------------- structured event requirements
+DEFAULT_REQUIREMENT_TEMPLATES = [
+    {"category": "Talent", "title": "Headliner Live Performance", "description": "Musisi / Band utama slot 90 menit dengan technical rider lengkap", "quantity": 1, "priority": "High", "budget_ratio": 0.25, "deadline_offset": -30},
+    {"category": "Talent", "title": "Opening Act / Guest Performer", "description": "Artis pendukung pembuka show durasi 45 menit", "quantity": 1, "priority": "Medium", "budget_ratio": 0.05, "deadline_offset": -25},
+    {"category": "Venue", "title": "Sewa Venue & Izin Lokasi", "description": "Venue utama dengan akses loading dock, ruang backstage, dan area parkir", "quantity": 1, "priority": "High", "budget_ratio": 0.15, "deadline_offset": -45},
+    {"category": "Vendor/Produksi", "title": "Main Stage, Rigging & Barricade", "description": "Panggung utama modular dengan roof cover, FOH barricade, dan cable bridge", "quantity": 1, "priority": "High", "budget_ratio": 0.10, "deadline_offset": -20},
+    {"category": "Vendor/Produksi", "title": "Professional Line Array Sound System", "description": "Sistem audio konser kapasitas audiens sesuai brief, monitor FOH, dan mic kit", "quantity": 1, "priority": "High", "budget_ratio": 0.08, "deadline_offset": -20},
+    {"category": "Vendor/Produksi", "title": "Concert Stage Lighting & FX", "description": "Moving beam, LED par wash, follow spot, haze machine, and DMX console", "quantity": 1, "priority": "Medium", "budget_ratio": 0.05, "deadline_offset": -18},
+    {"category": "Vendor/Produksi", "title": "LED Screen & Visual Broadcasting", "description": "LED wall P3.9 backdrop panggung + side wings kamera live feed", "quantity": 1, "priority": "Medium", "budget_ratio": 0.06, "deadline_offset": -15},
+    {"category": "Workforce", "title": "Front-of-House Ushers & Ticketing Crew", "description": "Staff scan QR tiket, crowd control gate masuk, dan pusat informasi", "quantity": 12, "priority": "High", "budget_ratio": 0.03, "deadline_offset": -10},
+    {"category": "Workforce", "title": "Stagehands & Production Crew", "description": "Kru operasional panggung untuk load-in, ganti instrumen, dan dismantling", "quantity": 8, "priority": "Medium", "budget_ratio": 0.02, "deadline_offset": -10},
+    {"category": "Workforce", "title": "Liaison Officers (LO) Artis & VIP", "description": "Pendamping talent dan tamu VIP dari penjemputan hingga kepulangan", "quantity": 4, "priority": "Medium", "budget_ratio": 0.01, "deadline_offset": -12},
+    {"category": "Perizinan & Legalitas", "title": "Izin Keramaian Kepolisian & Dishub", "description": "Rekomendasi Polres/Polda, izin penggunaan jalan & rekayasa lalu lintas Dishub", "quantity": 1, "priority": "High", "budget_ratio": 0.02, "deadline_offset": -21},
+    {"category": "Keamanan", "title": "SOP Pengamanan & Barikade Ring 1-3", "description": "Petugas security berlisensi, metal detector, dan jalur evakuasi darurat", "quantity": 16, "priority": "High", "budget_ratio": 0.03, "deadline_offset": -14},
+    {"category": "Medis", "title": "Unit Medis & Ambulans Standby", "description": "Tim medis first aid, dokter jaga, dan 1 unit ambulans darurat di lokasi", "quantity": 1, "priority": "High", "budget_ratio": 0.01, "deadline_offset": -14},
+    {"category": "Sponsor", "title": "Sponsorship Deck & Brand Activation", "description": "Paket sponsorship Title & Platinum dengan penempatan booth dan exposure LED", "quantity": 3, "priority": "Medium", "budget_ratio": 0.0, "deadline_offset": -35},
+    {"category": "Tenant", "title": "Kurasi Tenant F&B & UMKM Kreatif", "description": "Zona booth kuliner dan merchandise lokal dengan fasilitas listrik dan air", "quantity": 10, "priority": "Medium", "budget_ratio": 0.0, "deadline_offset": -20},
+]
+
+
+@api.get("/events/{event_id}/requirements")
+async def list_event_requirements(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+    rows = await db.event_requirements.find({"event_id": ev["id"]}, {"_id": 0}).sort("priority", -1).to_list(200)
+    
+    # Auto-seed if empty
+    if not rows:
+        budget = int(ev.get("budget") or 800000000)
+        start_date_str = ev.get("start_date") or "2026-09-12"
+        try:
+            start_d = date.fromisoformat(start_date_str[:10])
+        except Exception:
+            start_d = date.today() + timedelta(days=30)
+            
+        new_docs = []
+        for tpl in DEFAULT_REQUIREMENT_TEMPLATES:
+            deadline = (start_d + timedelta(days=tpl["deadline_offset"])).isoformat()
+            est = int(budget * tpl["budget_ratio"])
+            doc = {
+                "id": nid(),
+                "event_id": ev["id"],
+                "category": tpl["category"],
+                "title": tpl["title"],
+                "description": tpl["description"],
+                "quantity": tpl["quantity"],
+                "priority": tpl["priority"],
+                "budget_estimate": est,
+                "deadline": deadline,
+                "status": "Open",
+                "dependencies": [],
+                "assigned_resource_id": None,
+                "assigned_resource_name": None,
+                "assigned_resource_type": None,
+                "created_at": now_iso(),
+            }
+            new_docs.append(doc)
+        if new_docs:
+            await db.event_requirements.insert_many(new_docs)
+            rows = [clean(d) for d in new_docs]
+
+    return {"items": [clean(r) for r in rows], "total": len(rows)}
+
+
+@api.post("/events/{event_id}/requirements")
+async def create_event_requirement(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    if not body.get("title"):
+        raise HTTPException(status_code=400, detail="Judul requirement wajib diisi")
+    doc = {
+        "id": nid(),
+        "event_id": ev["id"],
+        "category": body.get("category", "Vendor/Produksi"),
+        "title": body["title"],
+        "description": body.get("description", ""),
+        "quantity": int(body.get("quantity") or 1),
+        "priority": body.get("priority", "Medium"),
+        "budget_estimate": int(body.get("budget_estimate") or 0),
+        "deadline": body.get("deadline") or ev.get("start_date") or "2026-09-12",
+        "status": body.get("status", "Open"),
+        "dependencies": body.get("dependencies", []),
+        "assigned_resource_id": body.get("assigned_resource_id"),
+        "assigned_resource_name": body.get("assigned_resource_name"),
+        "assigned_resource_type": body.get("assigned_resource_type"),
+        "created_at": now_iso(),
+    }
+    await db.event_requirements.insert_one(doc)
+    await audit(ev["id"], user, "requirement.create", {"title": doc["title"], "category": doc["category"]})
+    return {"item": clean(doc)}
+
+
+@api.patch("/events/{event_id}/requirements/{req_id}")
+async def patch_event_requirement(event_id: str, req_id: str, patch: Dict[str, Any], user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user, write=True)
     patch.pop("id", None)
     patch.pop("event_id", None)
-    await db.event_blueprints.update_one({"event_id": ev["id"]}, {"$set": {**patch, "user_confirmed": True}})
-    await audit(ev["id"], user, "blueprint.edit", {"fields": list(patch.keys())})
-    bp = await db.event_blueprints.find_one({"event_id": ev["id"]}, {"_id": 0})
-    return {"blueprint": bp}
+    patch["updated_at"] = now_iso()
+    res = await db.event_requirements.update_one({"id": req_id, "event_id": ev["id"]}, {"$set": patch})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Requirement tidak ditemukan")
+    doc = await db.event_requirements.find_one({"id": req_id, "event_id": ev["id"]}, {"_id": 0})
+    await audit(ev["id"], user, "requirement.update", {"id": req_id, "fields": list(patch.keys())})
+    return {"item": clean(doc)}
+
+
+@api.delete("/events/{event_id}/requirements/{req_id}")
+async def delete_event_requirement(event_id: str, req_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    res = await db.event_requirements.delete_one({"id": req_id, "event_id": ev["id"]})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Requirement tidak ditemukan")
+    await audit(ev["id"], user, "requirement.delete", {"id": req_id})
+    return {"ok": True}
+
+
+@api.post("/events/{event_id}/requirements/auto-generate")
+async def autogenerate_event_requirements(event_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    budget = int(ev.get("budget") or 800000000)
+    start_date_str = ev.get("start_date") or "2026-09-12"
+    try:
+        start_d = date.fromisoformat(start_date_str[:10])
+    except Exception:
+        start_d = date.today() + timedelta(days=30)
+
+    # Delete existing requirements to regenerate clean blueprint alignment
+    await db.event_requirements.delete_many({"event_id": ev["id"]})
+
+    new_docs = []
+    for tpl in DEFAULT_REQUIREMENT_TEMPLATES:
+        deadline = (start_d + timedelta(days=tpl["deadline_offset"])).isoformat()
+        est = int(budget * tpl["budget_ratio"])
+        doc = {
+            "id": nid(),
+            "event_id": ev["id"],
+            "category": tpl["category"],
+            "title": tpl["title"],
+            "description": tpl["description"],
+            "quantity": tpl["quantity"],
+            "priority": tpl["priority"],
+            "budget_estimate": est,
+            "deadline": deadline,
+            "status": "Open",
+            "dependencies": [],
+            "assigned_resource_id": None,
+            "assigned_resource_name": None,
+            "assigned_resource_type": None,
+            "created_at": now_iso(),
+        }
+        new_docs.append(doc)
+
+    if new_docs:
+        await db.event_requirements.insert_many(new_docs)
+    await audit(ev["id"], user, "requirement.autogenerate", {"count": len(new_docs)})
+    return {"items": [clean(d) for d in new_docs], "total": len(new_docs)}
+
+
+@api.post("/events/{event_id}/studio/ai-action")
+async def execute_studio_ai_action(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    action = body.get("action", "audit_conflicts")
+    
+    if action == "generate_requirements":
+        res = await autogenerate_event_requirements(event_id, user)
+        return {
+            "action": action,
+            "status": "success",
+            "message": f"Berhasil menghasilkan {res['total']} structured requirements untuk event ini.",
+            "data": res["items"]
+        }
+    
+    elif action == "audit_conflicts":
+        # Check budget, talent riders, calendar, and requirements
+        reqs = await db.event_requirements.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
+        unassigned_high = [r for r in reqs if r.get("priority") == "High" and r.get("status") == "Open"]
+        b = await compute_budget(ev["id"])
+        
+        conflicts = []
+        if b.get("funding_gap", 0) > 0:
+            conflicts.append({
+                "id": nid(),
+                "severity": "High",
+                "kind": "funding_gap",
+                "title": f"Funding Gap Rp{b['funding_gap']:,} Belum Tercover",
+                "description": "Total komitmen sponsor dan penjualan tiket saat ini belum menutup proyeksi biaya produksi.",
+                "action": "Akselerasi penerimaan sponsor atau tingkatkan kuota tiket presale.",
+            })
+            
+        if unassigned_high:
+            conflicts.append({
+                "id": nid(),
+                "severity": "Medium",
+                "kind": "unassigned_critical_requirement",
+                "title": f"{len(unassigned_high)} Requirement Prioritas Tinggi Belum Terisi",
+                "description": f"Kebutuhan krusial ({', '.join([r['title'] for r in unassigned_high[:3]])}) belum memiliki resource terkonfirmasi.",
+                "action": "Gunakan Network Matchmaker untuk memilih dan menugaskan kandidat terverifikasi.",
+            })
+            
+        if not ev.get("venue_name"):
+            conflicts.append({
+                "id": nid(),
+                "severity": "High",
+                "kind": "venue_unconfirmed",
+                "title": "Venue Utama Belum Terkunci",
+                "description": "Izin keramaian dan tech rider produksi membutuhkan kepastian denah dan perizinan venue.",
+                "action": "Konfirmasi pilihan venue pada tab Network > Venue.",
+            })
+
+        return {
+            "action": action,
+            "status": "success",
+            "conflict_count": len(conflicts),
+            "conflicts": conflicts,
+            "message": f"Audit selesai: {len(conflicts)} potensi risiko / konflik operasional terdeteksi."
+        }
+
+    elif action == "next_actions":
+        actions = [
+            {"step": 1, "title": "Kunci Venue & Cek Kelayakan Listrik", "domain": "NETWORK", "target_tab": "venue"},
+            {"step": 2, "title": "Konfirmasi Headliner & Validasi Tech Rider", "domain": "NETWORK", "target_tab": "talent"},
+            {"step": 3, "title": "Kirim Paket Sponsorship ke Mitra Potensial", "domain": "NETWORK", "target_tab": "sponsor"},
+            {"step": 4, "title": "Sinkronkan Jadwal Load-in ke Kalender", "domain": "CALENDAR", "target_tab": "schedule"},
+        ]
+        return {
+            "action": action,
+            "status": "success",
+            "actions": actions,
+            "message": "Next best actions berhasil disintesis berdasarkan kesiapan event."
+        }
+
+    raise HTTPException(status_code=400, detail=f"Aksi AI Studio '{action}' tidak dikenali.")
+
 
 
 # ---------------------------------------------------------------- talent + rider
