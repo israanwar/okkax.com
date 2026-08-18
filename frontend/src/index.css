@@ -21,10 +21,11 @@
     --okx-surface: #141414;
     --okx-surface-2: #1b1b1b;
     --okx-ivory: #fdfbf7;
-    --okx-accent: #ff2e7e;
-    --okx-accent-hover: #e01f68;
-    --okx-accent-soft: #ff7ab0;
-    --okx-accent-tint: #1b0711;
+    --okx-accent: #ffffff;
+    --okx-accent-hover: #e4e4e7;
+    --okx-accent-soft: #f4f4f6;
+    --okx-accent-tint: #18181b;
+    --okx-pink-glow: #ff2e7e;
     --okx-border: #27272a;
     --okx-muted: #a1a1aa;
 }
@@ -37,19 +38,19 @@
         --card-foreground: 0 0% 100%;
         --popover: 0 0% 8%;
         --popover-foreground: 0 0% 100%;
-        --primary: 338 100% 59%;
-        --primary-foreground: 0 0% 100%;
+        --primary: 0 0% 100%;
+        --primary-foreground: 0 0% 0%;
         --secondary: 0 0% 11%;
         --secondary-foreground: 0 0% 100%;
         --muted: 0 0% 11%;
         --muted-foreground: 240 5% 65%;
-        --accent: 338 100% 59%;
-        --accent-foreground: 0 0% 100%;
+        --accent: 0 0% 100%;
+        --accent-foreground: 0 0% 0%;
         --destructive: 0 84% 60%;
         --destructive-foreground: 0 0% 100%;
         --border: 240 4% 16%;
         --input: 240 4% 16%;
-        --ring: 338 100% 59%;
+        --ring: 0 0% 100%;
         --radius: 0.25rem;
     }
 }
@@ -82,11 +83,11 @@
         letter-spacing: -0.012em;
     }
     ::selection {
-        background: var(--okx-accent);
-        color: #fff;
+        background: #ffffff;
+        color: #000000;
     }
     :focus-visible {
-        outline: 2px solid var(--okx-accent);
+        outline: 2px solid rgba(255, 255, 255, 0.4);
         outline-offset: 2px;
     }
 }
@@ -328,7 +329,10 @@ button:active:not(:disabled) {
     border-bottom: 1px solid var(--okx-border);
 }
 .accent-text {
-    color: var(--okx-accent);
+    color: #fdfbf7;
+    background: linear-gradient(135deg, #ffffff 40%, #d4d4d8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 .okx-select-shell {
     position: relative;

@@ -20,6 +20,7 @@ import {
 import { api, compact } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import OkxDropdown from "@/components/OkxDropdown";
+import { SpotlightCard } from "@/components/MotionPrimitives";
 
 const TABS = [
   { key: "talent", label: "Talent", Icon: Mic2 },
@@ -651,109 +652,111 @@ function SupplyCard({ item, tab, eventScoped }) {
   const availability = item.availability;
 
   return (
-    <article
-      data-testid={`network-card-${item.id}`}
-      className="okx-network-card"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-base font-semibold text-white">
-            {name}
-          </h2>
+    <SpotlightCard className="h-full">
+      <article
+        data-testid={`network-card-${item.id}`}
+        className="flex flex-col h-full p-5"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold text-white">
+              {name}
+            </h2>
 
-          {category && (
-            <div className="mt-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
-              {category}
-            </div>
-          )}
-        </div>
-
-        {item.verified && (
-          <span className="inline-flex shrink-0 items-center gap-1 border border-[var(--okx-border)] px-2 py-1 text-[10px] text-zinc-300">
-            <ShieldCheck size={11} />
-            Verified
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-400">
-        {cityOf(item) && (
-          <span className="inline-flex items-center gap-1">
-            <MapPin size={12} />
-            {cityOf(item)}
-          </span>
-        )}
-
-        {typeof item.rating === "number" && (
-          <span
-            className="inline-flex items-center gap-1 text-amber-300"
-            data-testid="network-card-rating"
-            title={`${item.review_count || 0} ulasan`}
-          >
-            <Star size={12} strokeWidth={2.2} />
-            <span className="num">{item.rating.toFixed(1)}</span>
-            {typeof item.review_count === "number" && (
-              <span className="text-zinc-500">({item.review_count})</span>
-            )}
-          </span>
-        )}
-
-        {typeof item.completed_events === "number" && item.completed_events > 0 && (
-          <span className="num text-zinc-500">
-            {item.completed_events} event
-          </span>
-        )}
-
-        {price != null && (
-          <span className="num text-zinc-200">
-            {compact(price)}
-          </span>
-        )}
-      </div>
-
-      {eventScoped && (
-        <div className="mt-auto border-t border-[var(--okx-border)] pt-3 text-xs">
-          <div className="flex items-center justify-between gap-3">
-            {score != null && (
-              <span
-                data-testid="network-match-score"
-                className="font-semibold accent-text"
-              >
-                Match {score}/100
-              </span>
-            )}
-
-            {availability && (
-              <span
-                data-testid="network-availability"
-                className={
-                  availability.status === "Available"
-                    ? "text-emerald-400"
-                    : availability.status === "Booked" ||
-                        availability.status === "Conflict"
-                      ? "text-red-400"
-                      : availability.status === "Tentative"
-                        ? "text-amber-400"
-                        : "text-zinc-500"
-                }
-              >
-                {availability.status}
-              </span>
+            {category && (
+              <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 font-gemini-mono">
+                {category}
+              </div>
             )}
           </div>
 
-          {reasons.length > 0 && (
-            <ul className="mt-2 space-y-1 text-zinc-500">
-              {reasons.slice(0, 3).map((reason, index) => (
-                <li key={index} className="line-clamp-1">
-                  · {reason}
-                </li>
-              ))}
-            </ul>
+          {item.verified && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-950/40 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+              <ShieldCheck size={11} />
+              Verified
+            </span>
           )}
         </div>
-      )}
-    </article>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-400 font-gemini">
+          {cityOf(item) && (
+            <span className="inline-flex items-center gap-1">
+              <MapPin size={12} className="text-zinc-500" />
+              {cityOf(item)}
+            </span>
+          )}
+
+          {typeof item.rating === "number" && (
+            <span
+              className="inline-flex items-center gap-1 text-amber-300"
+              data-testid="network-card-rating"
+              title={`${item.review_count || 0} ulasan`}
+            >
+              <Star size={12} strokeWidth={2.2} />
+              <span className="font-mono font-bold">{item.rating.toFixed(1)}</span>
+              {typeof item.review_count === "number" && (
+                <span className="text-zinc-500">({item.review_count})</span>
+              )}
+            </span>
+          )}
+
+          {typeof item.completed_events === "number" && item.completed_events > 0 && (
+            <span className="font-mono text-zinc-400">
+              {item.completed_events} event
+            </span>
+          )}
+
+          {price != null && (
+            <span className="font-mono font-semibold text-white">
+              {compact(price)}
+            </span>
+          )}
+        </div>
+
+        {eventScoped && (
+          <div className="mt-auto border-t border-white/[0.08] pt-3 text-xs">
+            <div className="flex items-center justify-between gap-3">
+              {score != null && (
+                <span
+                  data-testid="network-match-score"
+                  className="font-bold text-emerald-400 font-gemini-mono"
+                >
+                  Match {score}/100
+                </span>
+              )}
+
+              {availability && (
+                <span
+                  data-testid="network-availability"
+                  className={
+                    availability.status === "Available"
+                      ? "text-emerald-400 font-semibold"
+                      : availability.status === "Booked" ||
+                          availability.status === "Conflict"
+                        ? "text-rose-400 font-semibold"
+                        : availability.status === "Tentative"
+                          ? "text-amber-400 font-semibold"
+                          : "text-zinc-500"
+                  }
+                >
+                  {availability.status}
+                </span>
+              )}
+            </div>
+
+            {reasons.length > 0 && (
+              <ul className="mt-2 space-y-1 text-zinc-400 font-gemini text-[11px]">
+                {reasons.slice(0, 3).map((reason, index) => (
+                  <li key={index} className="line-clamp-1">
+                    · {reason}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </article>
+    </SpotlightCard>
   );
 }
 

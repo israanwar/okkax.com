@@ -29,6 +29,7 @@ import {
   Terminal,
   ShieldCheck,
   Globe2,
+  Waypoints,
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
@@ -36,17 +37,28 @@ import { PLAN_META, PLAN_ORDER, priceFor } from "@/lib/pricing";
 import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
 import LiveTicker from "@/components/LiveTicker";
+import {
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  MaskReveal,
+  ScrollProgressBar,
+  HeroStageDepth,
+  SpotlightCard,
+  CounterNumber,
+  ProcessCableRail,
+} from "@/components/MotionPrimitives";
 
 const HERO = "/assets/okkax-concert-hero-v2.png";
 
 const PREVIEW_TONE = { get: (k) => PREVIEW_COLOR(k) };
 
 const STATUS_META = {
-  Confirmed: { color: "#f4f4f5", Icon: CheckCircle2, tooltip: "Sudah siap dan telah dikonfirmasi." },
-  Pending: { color: "#ff7ab0", Icon: Clock3, tooltip: "Sedang menunggu keputusan atau penyelesaian." },
-  "At Risk": { color: "#ff2e7e", Icon: TriangleAlert, tooltip: "Memerlukan perhatian karena dapat menghambat event." },
-  Missing: { color: "#a1a1aa", Icon: CircleOff, tooltip: "Komponen wajib belum tersedia." },
-  Completed: { color: "#ffd1e2", Icon: BadgeCheck, tooltip: "Target komponen telah selesai dipenuhi." },
+  Confirmed: { color: "#34d399", Icon: CheckCircle2, tooltip: "Sudah siap dan telah dikonfirmasi." },
+  Pending: { color: "#a1a1aa", Icon: Clock3, tooltip: "Sedang menunggu keputusan atau penyelesaian." },
+  "At Risk": { color: "#fbbf24", Icon: TriangleAlert, tooltip: "Memerlukan perhatian karena dapat menghambat event." },
+  Missing: { color: "#71717a", Icon: CircleOff, tooltip: "Komponen wajib belum tersedia." },
+  Completed: { color: "#ffffff", Icon: BadgeCheck, tooltip: "Target komponen telah selesai dipenuhi." },
 };
 const STATUS_ORDER = ["Confirmed", "Pending", "At Risk", "Missing", "Completed"];
 
@@ -292,21 +304,18 @@ function buildPreviewNodes(summary, catalogEvent) {
   ];
 }
 
-// Compact homepage teaser for Free/Pro/Max. The full role selector and
-// billing toggle live on /pricing to keep this section lightweight.
-// Anchors on Organizer pricing per doc 33 section 6.
 function PricingPreview() {
   return (
     <section
       aria-labelledby="landing-pricing-heading"
       data-testid="landing-pricing-preview"
-      className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24"
+      className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 font-gemini"
     >
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-              Subscription
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+              <span>Subscription Plans</span>
             </div>
             <h2 id="landing-pricing-heading" className="editorial mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] text-[#f4efec]">
               Start free. Scale with intelligence.
@@ -318,14 +327,14 @@ function PricingPreview() {
           <Link
             to="/pricing"
             data-testid="landing-pricing-see-all"
-            className="group inline-flex items-center gap-2 border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-900"
+            className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.04] px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
           >
-            See all plans and roles
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            <span>See all plans and roles</span>
+            <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {PLAN_ORDER.map((planId) => {
             const meta = PLAN_META[planId];
             const price = priceFor("organizer", planId, "monthly");
@@ -335,27 +344,27 @@ function PricingPreview() {
                 key={planId}
                 data-testid={`landing-pricing-${planId}`}
                 className={[
-                  "flex h-full flex-col border p-6",
+                  "flex h-full flex-col rounded-2xl border p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.8)]",
                   isMax
-                    ? "border-[var(--okx-accent)] bg-[#100609]"
-                    : "border-[var(--okx-border)] bg-[#0c0c0c]",
+                    ? "border-white/[0.22] bg-gradient-to-b from-[#181824]/90 to-[#0e0e15]/90 shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                    : "border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl shadow-md hover:border-white/25",
                 ].join(" ")}
               >
                 <div className="flex items-baseline justify-between">
-                  <h3 className="text-lg font-semibold text-white">{meta.label}</h3>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  <h3 className="text-lg font-bold text-white">{meta.label}</h3>
+                  <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
                     {meta.intelligence}
                   </span>
                 </div>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold text-white">{price.label}</span>
-                  <span className="text-xs text-zinc-500">
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="font-gemini-mono text-2xl sm:text-3xl font-bold text-white">{price.label}</span>
+                  <span className="text-xs text-zinc-400">
                     {planId === "free" ? "forever" : "per month, Organizer"}
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-zinc-400">{meta.positioning}</p>
+                <p className="mt-3.5 text-sm text-zinc-400 leading-relaxed">{meta.positioning}</p>
                 {meta.inherits && (
-                  <div className="mt-3 border-l-2 border-[var(--okx-accent)] pl-3 text-[10px] uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">
+                  <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-zinc-300 font-medium">
                     {meta.inherits}
                   </div>
                 )}
@@ -722,6 +731,19 @@ function GraphPreview() {
                       markerEnd={highlighted ? "url(#graphArrowActive)" : "url(#graphArrow)"}
                       style={{ transition: "stroke .25s ease, stroke-opacity .25s ease, stroke-width .25s ease" }}
                     />
+                    {highlighted && (
+                      <path
+                        d={path}
+                        fill="none"
+                        stroke="#ff2e7e"
+                        strokeWidth="2.4"
+                        strokeDasharray="8 14"
+                        strokeLinecap="round"
+                        pointerEvents="none"
+                      >
+                        <animate attributeName="stroke-dashoffset" values="44;0" dur="1.2s" repeatCount="indefinite" />
+                      </path>
+                    )}
                   </g>
                 );
               })}
@@ -1008,27 +1030,27 @@ function ParticipantNetwork() {
           </Link>
         </div>
 
-        <div className="mt-11 grid gap-px border border-[#2a292d] bg-[#2a292d] sm:grid-cols-2 lg:grid-cols-3">
+        <RevealGroup stagger={0.08} className="mt-11 grid gap-px border border-[#2a292d] bg-[#2a292d] sm:grid-cols-2 lg:grid-cols-3">
           {PARTICIPANT_GROUPS.map(([index, title, detail], i) => (
-            <article
-              key={title}
-              data-testid={`participant-group-${i + 1}`}
-              className="participant-card group relative min-h-[148px] overflow-hidden bg-[#101014] p-5 sm:p-6"
-              style={{ "--participant-delay": `${i * 70}ms` }}
-            >
-              <div className="flex items-start justify-between gap-5">
-                <span className="num text-[11px] font-semibold text-[var(--okx-accent)]">{index}</span>
-                <ArrowRight
-                  size={15}
-                  aria-hidden="true"
-                  className="text-[#504c51] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--okx-accent)]"
-                />
-              </div>
-              <h3 className="participant-title mt-7 text-base font-semibold text-[#e6ded9] sm:text-lg">{title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#888188] sm:text-sm">{detail}</p>
-            </article>
+            <RevealItem key={title}>
+              <article
+                data-testid={`participant-group-${i + 1}`}
+                className="participant-card group relative min-h-[148px] h-full overflow-hidden bg-[#101014] p-5 sm:p-6 transition-all duration-300 hover:bg-[#16121a]"
+              >
+                <div className="flex items-start justify-between gap-5">
+                  <span className="num text-[11px] font-semibold text-[var(--okx-accent)]">{index}</span>
+                  <ArrowRight
+                    size={15}
+                    aria-hidden="true"
+                    className="text-[#504c51] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--okx-accent)]"
+                  />
+                </div>
+                <h3 className="participant-title mt-7 text-base font-semibold text-[#e6ded9] sm:text-lg">{title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-[#888188] sm:text-sm">{detail}</p>
+              </article>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
       </div>
     </section>
   );
@@ -1042,49 +1064,47 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[var(--okx-bg)]">
+      <ScrollProgressBar />
       <PublicNav />
 
-      <section className="relative min-h-[640px] overflow-hidden border-b border-[var(--okx-border)] lg:min-h-[670px]">
-        <img
-          src={HERO}
-          alt="Panggung konser OKKAX dengan penonton"
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-[0.86]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-[#080808e8] via-[46%] to-[#08080822]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-[#08080866]" />
-        <div className="relative mx-auto flex min-h-[640px] max-w-[1440px] items-center px-4 py-16 sm:px-8 lg:min-h-[670px] lg:px-16">
-          <div className="fade-up relative z-10 max-w-[760px] lg:w-[58%]">
-            {/* Live Network Telemetry Pill */}
-            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
-                <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
-              </span>
-            </div>
+      <HeroStageDepth imageSrc={HERO} alt="Panggung konser OKKAX dengan penonton">
+        <div className="fade-up relative z-10 max-w-[760px] lg:w-[58%]">
+          {/* Live Network Telemetry Pill */}
+          <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
+              <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
+            </span>
+          </div>
 
-            <div>
-              <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
-                Live Event Operating Network
-              </span>
-            </div>
+          <div>
+            <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
+              Live Event Operating Network
+            </span>
+          </div>
 
+          <MaskReveal delay={0.05}>
             <h1 className="editorial mt-5 text-[clamp(3.35rem,6.15vw,5.8rem)] leading-[0.96] tracking-[-0.055em]">
               One event.
               <br />
               <span className="accent-text xl:whitespace-nowrap">Every moving part.</span>
             </h1>
+          </MaskReveal>
+          <Reveal delay={0.2} y={12}>
             <p className="mt-6 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
               Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
               setiap detail di balik live event dalam satu koordinasi terpusat.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+          </Reveal>
+          <Reveal delay={0.3} y={14}>
+            <div className="mt-8 flex flex-wrap items-center gap-3.5">
               <Link
                 to="/register"
                 data-testid="hero-compile-btn"
-                className="group inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#ff2e7e] to-[#ff3b88] px-7 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:shadow-[0_0_24px_rgba(255,46,126,0.5)] hover:scale-[1.02] active:scale-[0.98]"
+                className="group inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-200 px-7 py-3.5 text-sm font-bold text-black transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.18)] active:scale-[0.98]"
               >
                 Build an Event
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
@@ -1092,81 +1112,59 @@ export default function Landing() {
               <Link
                 to="/demo"
                 data-testid="hero-juri-btn"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/80 backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:text-white transition-all"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/[0.15] bg-white/[0.04] backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] hover:text-white transition-all"
               >
-                Platform Demo — 3 menit <ArrowRight size={15} className="ml-2 text-[var(--okx-accent)]" />
-              </Link>
-              <Link
-                to="/okkax"
-                data-testid="hero-yoona-btn"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--okx-accent)]/50 bg-[#1a0b14]/80 backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-[var(--okx-accent-soft)] hover:bg-[var(--okx-accent)] hover:text-white transition-all shadow-[0_0_15px_rgba(255,46,126,0.2)]"
-              >
-                <Layers size={16} className="text-[var(--okx-accent-soft)]" />
-                OKKAX Copilot
+                Platform Demo — 3 menit <ArrowRight size={15} className="ml-2 text-zinc-400" />
               </Link>
             </div>
-            <p className="mt-6 max-w-lg text-xs leading-relaxed text-zinc-500">
-              From one idea to a live experience. Mode demo kompetisi — pembayaran sandbox, tanpa uang nyata.
-            </p>
-            <div className="mt-9 flex items-center gap-2 text-xs text-zinc-400">
-              <CalendarDays size={15} className="accent-text" aria-hidden="true" />
-              <a
-                  href={`/calendar?date=${[
-                    new Date().getFullYear(),
-                    String(new Date().getMonth() + 1).padStart(2, "0"),
-                    String(new Date().getDate()).padStart(2, "0"),
-                  ].join("-")}`}
-                  data-testid="hero-today-calendar-link"
-                  title="Open today's events"
-                  className="transition-colors hover:text-white"
-                >
-                  {new Intl.DateTimeFormat("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  }).format(new Date())}
-                </a>
-            </div>
+          </Reveal>
+          <p className="mt-6 max-w-lg text-xs leading-relaxed text-zinc-500">
+            From one idea to a live experience. Mode demo kompetisi — pembayaran sandbox, tanpa uang nyata.
+          </p>
+          <div className="mt-9 flex items-center gap-2 text-xs text-zinc-400">
+            <CalendarDays size={15} className="accent-text" aria-hidden="true" />
+            <a
+                href={`/calendar?date=${[
+                  new Date().getFullYear(),
+                  String(new Date().getMonth() + 1).padStart(2, "0"),
+                  String(new Date().getDate()).padStart(2, "0"),
+                ].join("-")}`}
+                data-testid="hero-today-calendar-link"
+                title="Open today's events"
+                className="transition-colors hover:text-white"
+              >
+                {new Intl.DateTimeFormat("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }).format(new Date())}
+              </a>
           </div>
         </div>
-      </section>
+      </HeroStageDepth>
 
       <LiveTicker />
 
       <section className="border-b border-[var(--okx-border)] bg-[#0d0d0d] px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
-          <h2 className="editorial mt-4 text-3xl sm:text-4xl">Dari ide menjadi panggung yang hidup.</h2>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
-            {PROCESS_STEPS.map(([Icon, title, body], i) => (
-              <div key={title} className="relative border-t border-zinc-700 pt-7 lg:border-t-0 lg:pt-0">
-                <div className="flex items-center justify-between">
-                  <span className="num text-xs font-semibold accent-text">0{i + 1}</span>
-                  <Icon size={25} strokeWidth={1.6} className="accent-text" aria-hidden="true" />
-                </div>
-                <div className="mt-5 flex items-center gap-3">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[var(--okx-accent)] bg-[#0d0d0d]" />
-                  <span className="h-px flex-1 bg-[var(--okx-accent)]" />
-                  {i < PROCESS_STEPS.length - 1 && <ArrowRight size={16} className="-ml-2 hidden accent-text lg:block" />}
-                </div>
-                <h3 className="mt-5 text-base font-semibold md:text-lg">{title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-400">{body}</p>
-              </div>
-            ))}
-          </div>
+          <Reveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
+            <h2 className="editorial mt-4 text-3xl sm:text-4xl">Dari ide menjadi panggung yang hidup.</h2>
+          </Reveal>
+          <ProcessCableRail steps={PROCESS_STEPS} />
         </div>
       </section>
 
       <section
         data-testid="home-event-graph"
-        className="border-b border-[var(--okx-border)] bg-[#09090a] px-4 py-16 sm:px-6 sm:py-24"
+        className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 font-gemini"
       >
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent)]">EVENT GRAPH</span>
-                <span className="h-px w-14 bg-[var(--okx-accent)]" aria-hidden="true" />
+            <Reveal>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+                <Waypoints size={13} className="text-zinc-400" />
+                <span>Event Graph Core</span>
               </div>
               <h2 className="editorial mt-5 max-w-2xl text-3xl leading-[1.02] text-white sm:text-5xl">
                 Satu pusat kendali untuk seluruh komponen event.
@@ -1175,68 +1173,73 @@ export default function Landing() {
                 Event Graph adalah peta operasional interaktif yang menyatukan seluruh pihak, kebutuhan, status,
                 biaya, dan ketergantungan sebuah event dalam satu Event ID.
               </p>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500 sm:text-base">
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
                 Organizer dapat melihat komponen yang sudah siap, masih menunggu, berisiko, atau belum tersedia.
                 Ketika satu keputusan berubah, OKKAX menunjukkan komponen lain yang terdampak dan tindakan yang
                 harus diselesaikan berikutnya.
               </p>
-            </div>
+            </Reveal>
 
-            <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)]">
+            <RevealGroup stagger={0.1} className="grid gap-4">
               {[
                 [Network, "Lihat seluruh komponen", "Talent, rider, venue, vendor, sponsor, tenant, workforce, ticketing, dan pendanaan."],
                 [Workflow, "Pahami setiap ketergantungan", "Ketahui siapa membutuhkan apa, komponen yang terdampak, dan alasan di balik setiap hubungan."],
                 [ListChecks, "Tentukan tindakan berikutnya", "Temukan kebutuhan yang belum terpenuhi, risiko, dan keputusan yang perlu dikonfirmasi."],
               ].map(([Icon, title, description], index) => (
-                <article key={title} data-testid={`graph-benefit-${index + 1}`} className="group bg-[#101012] p-5 sm:p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10">
-                      <Icon size={18} className="text-[var(--okx-accent)]" aria-hidden="true" />
+                <RevealItem key={title}>
+                  <article
+                    data-testid={`graph-benefit-${index + 1}`}
+                    className="group rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-5 sm:p-6 shadow-md transition-all duration-300 hover:border-white/25 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)]"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04] text-white">
+                        <Icon size={18} aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-gemini-mono mb-1.5 text-[11px] font-bold text-zinc-500">0{index + 1}</div>
+                        <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-zinc-100 transition-colors">{title}</h3>
+                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-zinc-400">{description}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="num mb-2 text-[10px] font-semibold text-[var(--okx-accent)]">0{index + 1}</div>
-                      <h3 className="text-sm font-semibold text-zinc-100 sm:text-base">{title}</h3>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500 sm:text-sm sm:leading-6">{description}</p>
-                    </div>
-                  </div>
-                </article>
+                  </article>
+                </RevealItem>
               ))}
-            </div>
+            </RevealGroup>
           </div>
 
-          <div className="mt-12 sm:mt-16">
+          <Reveal delay={0.15} className="mt-12 sm:mt-16">
             <GraphPreview />
-          </div>
+          </Reveal>
 
-          <div className="mt-6 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] md:grid-cols-2" data-testid="graph-before-after">
-            <div className="bg-[#0c0c0d] p-5 sm:p-6">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Sebelum OKKAX</div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Data event tersebar di WhatsApp, spreadsheet, PDF rider, invoice, email, dan dokumen vendor.
+          <Reveal delay={0.2} className="mt-8 grid gap-4 md:grid-cols-2" data-testid="graph-before-after">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-xl p-6 shadow-md">
+              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-500">Sebelum OKKAX</div>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                Data event tersebar di WhatsApp, spreadsheet, PDF rider, invoice, email, dan dokumen vendor tanpa visibilitas ketergantungan.
               </p>
             </div>
-            <div className="bg-[#120a0e] p-5 sm:p-6">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">Dengan Event Graph</div>
-              <p className="mt-3 text-sm leading-6 text-zinc-200">
-                Seluruh komponen, status, ketergantungan, biaya, risiko, dan tindakan berikutnya berada dalam satu Event ID.
+            <div className="rounded-2xl border border-white/[0.18] bg-gradient-to-b from-[#151522]/90 to-[#0c0c12]/90 backdrop-blur-xl p-6 shadow-lg">
+              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-white">Dengan Event Graph</div>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-200">
+                Seluruh komponen, status, ketergantungan, biaya, risiko, dan tindakan berikutnya terpusat dan tersinkronisasi dalam satu Event ID.
               </p>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       <ParticipantNetwork />
 
       {/* 6 CANONICAL PRODUCTS BENTO GRID */}
-      <section id="products" className="border-b border-[var(--okx-border)] bg-[#070708] px-4 py-16 sm:px-6 sm:py-24">
+      <section id="products" className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 font-gemini">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]">
-                <Sparkles size={14} className="text-[var(--okx-accent)]" />
-                <span>CANONICAL PRODUCT SUITE</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+                <Sparkles size={13} className="text-zinc-400" />
+                <span>Canonical Product Suite</span>
               </div>
-              <h2 className="editorial mt-3 text-3xl sm:text-4xl text-white">
+              <h2 className="editorial mt-4 text-3xl sm:text-4xl text-white">
                 Enam pilar operasional live event modern.
               </h2>
             </div>
@@ -1245,7 +1248,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <RevealGroup stagger={0.08} className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 num: "01",
@@ -1304,81 +1307,83 @@ export default function Landing() {
             ].map((p) => {
               const Icon = p.icon;
               return (
-                <Link
-                  key={p.slug}
-                  to={p.link}
-                  data-testid={`landing-product-${p.slug}`}
-                  className="group relative flex flex-col justify-between rounded-xl border border-zinc-800/90 bg-[#101014] p-6 transition-all duration-300 hover:border-[var(--okx-accent)]/80 hover:bg-[#15121a] hover:shadow-[0_8px_30px_rgba(255,46,126,0.15)]"
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[var(--okx-accent)]">{p.num}</span>
-                      <span className="rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 py-0.5 text-[10px] font-semibold text-zinc-400">
-                        {p.badge}
-                      </span>
-                    </div>
-                    <div className="mt-6 flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/30 text-[var(--okx-accent-soft)]">
-                        <Icon size={16} />
+                <RevealItem key={p.slug}>
+                  <div className="h-full rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl shadow-md transition-all duration-300 hover:border-white/25 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden">
+                    <Link
+                      to={p.link}
+                      data-testid={`landing-product-${p.slug}`}
+                      className="group relative flex h-full flex-col justify-between p-6 sm:p-7"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-gemini-mono text-xs font-bold text-zinc-500">{p.num}</span>
+                          <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[10.5px] font-semibold text-zinc-300">
+                            {p.badge}
+                          </span>
+                        </div>
+                        <div className="mt-6 flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.1] text-white">
+                            <Icon size={17} />
+                          </div>
+                          <h3 className="text-base font-bold text-white group-hover:text-zinc-100 transition-colors">
+                            {p.title}
+                          </h3>
+                        </div>
+                        <p className="mt-3.5 text-xs leading-relaxed text-zinc-400">
+                          {p.desc}
+                        </p>
                       </div>
-                      <h3 className="text-base font-bold text-white group-hover:text-[var(--okx-accent-soft)] transition-colors">
-                        {p.title}
-                      </h3>
-                    </div>
-                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">
-                      {p.desc}
-                    </p>
+                      <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors">
+                        <span>Eksplorasi Produk</span>
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </Link>
                   </div>
-                  <div className="mt-6 pt-3 border-t border-zinc-800/60 flex items-center justify-between text-xs font-semibold text-[var(--okx-accent-soft)] group-hover:text-white transition-colors">
-                    <span>Eksplorasi Produk</span>
-                    <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                  </div>
-                </Link>
+                </RevealItem>
               );
             })}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* OKKAX COPILOT SPOTLIGHT */}
-      <section className="border-b border-[var(--okx-border)] bg-[#0c070e] px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[var(--okx-accent)] opacity-[0.06] blur-[120px] pointer-events-none rounded-full" />
+      <Reveal as="section" className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden font-gemini">
         <div className="mx-auto max-w-7xl relative z-10">
-          <div className="rounded-2xl border border-[var(--okx-accent)]/40 bg-gradient-to-b from-[#160b14] to-[#0d070e] p-6 sm:p-10 lg:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
-            <div className="grid gap-8 lg:grid-cols-12 items-center">
+          <div className="rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-12 lg:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="grid gap-10 lg:grid-cols-12 items-center">
               <div className="lg:col-span-7">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--okx-accent)]/50 bg-[var(--okx-accent)]/15 px-3 py-1 text-xs font-bold text-[var(--okx-accent-soft)] font-gemini">
-                  <Layers size={14} />
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-xs font-bold text-zinc-300">
+                  <Layers size={14} className="text-zinc-400" />
                   <span>Principal Event Intelligence Copilot</span>
                 </div>
-                <h2 className="editorial mt-4 text-3xl sm:text-5xl text-white">
+                <h2 className="editorial mt-5 text-3xl sm:text-5xl text-white leading-tight">
                   Temui OKKAX Copilot — Asisten Cerdas Operasional Acara.
                 </h2>
-                <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base font-gemini">
+                <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
                   OKKAX Copilot memahami seluruh data event, mengidentifikasi dependensi berisiko di Event Graph, menghitung alokasi anggaran dan break-even, hingga menyusun SOP gate check-in hari H.
                 </p>
-                <div className="mt-6 flex flex-wrap gap-3">
+                <div className="mt-8 flex flex-wrap gap-3.5">
                   <Link
                     to="/okkax"
                     data-testid="landing-yoona-cta"
-                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--okx-accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)] transition-all shadow-[0_0_20px_rgba(255,46,126,0.4)]"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white hover:bg-zinc-200 px-6 py-3.5 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
                   >
                     <Terminal size={16} />
-                    Buka OKKAX Command Center
+                    <span>Buka OKKAX Command Center</span>
                     <ArrowRight size={14} />
                   </Link>
                   <Link
                     to="/products/intelligence"
-                    className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/80 px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white transition-all"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.04] px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:border-white/[0.3] hover:text-white transition-all"
                   >
                     Pelajari Arsitektur AI
                   </Link>
                 </div>
               </div>
 
-              <div className="lg:col-span-5 flex flex-col gap-2.5 font-gemini">
-                <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-2">
-                  <Sparkles size={13} className="text-[var(--okx-accent)]" />
+              <div className="lg:col-span-5 flex flex-col gap-2.5">
+                <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-2 font-gemini-mono">
+                  <Sparkles size={13} className="text-zinc-400" />
                   <span>Coba Tanyakan Langsung ke OKKAX Copilot:</span>
                 </div>
                 {[
@@ -1391,81 +1396,109 @@ export default function Landing() {
                     key={idx}
                     to="/okkax"
                     data-testid={`yoona-landing-chip-${idx}`}
-                    className="group rounded-lg border border-zinc-800 bg-[#121214]/90 p-3 text-xs text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10 transition-all flex items-center justify-between"
+                    className="group rounded-xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-md p-3.5 text-xs text-zinc-300 hover:border-white/25 hover:text-white hover:bg-white/[0.04] transition-all flex items-center justify-between"
                   >
-                    <span className="truncate pr-2">→ {s.label}</span>
-                    <ArrowRight size={13} className="text-zinc-600 group-hover:text-[var(--okx-accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <span className="truncate pr-2 font-medium">→ {s.label}</span>
+                    <ArrowRight size={13} className="text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
                   </Link>
                 ))}
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* REGIONAL IMPACT & MULTI-CITY MAP STRIP */}
-      <section className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24 bg-[#09090b]">
+      <Reveal as="section" className="border-b border-white/[0.06] px-4 py-16 sm:px-6 sm:py-24 bg-[#07070a] font-gemini">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]">
-                <LineChart size={16} className="text-[var(--okx-accent)]" />
-                <span>REGIONAL ECONOMIC MULTIPLIER</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+                <LineChart size={14} className="text-zinc-400" />
+                <span>Regional Economic Multiplier</span>
               </div>
-              <h2 className="editorial mt-2 text-2xl sm:text-4xl text-white">
+              <h2 className="editorial mt-3 text-2xl sm:text-4xl text-white">
                 Dampak ekonomi riil di 15+ kota Indonesia.
               </h2>
             </div>
             <Link
               to="/peta"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--okx-accent-soft)] hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
             >
-              Lihat Live Event Map Interaktif (/peta) →
+              <span>Lihat Live Event Map Interaktif (/peta)</span>
+              <ArrowRight size={13} />
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["Total Perputaran Ekonomi", ripple ? compact(ripple.total_economic_activity) : "Rp 8.4 Milyar"],
-              ["Bisnis Lokal Teraktivasi", ripple ? num(ripple.businesses_activated) : "142 UMKM & Vendor"],
-              ["Kru & Tenaga Kerja", ripple ? num(ripple.workers) : "263 Profesional"],
-              ["Okupansi Hotel & Wisata", ripple ? num(ripple.hotel_room_nights) : "480 Kamar/Malam"],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-[var(--okx-surface)] p-6">
-                <div className="text-xs uppercase tracking-wider text-zinc-500 font-mono">{label}</div>
-                <div className="num mt-2 text-2xl font-bold sm:text-3xl text-white">{value}</div>
+          <RevealGroup stagger={0.08} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Total Perputaran Ekonomi</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber prefix="Rp " value={8.4} decimals={1} suffix=" Milyar" />
               </div>
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-zinc-500 font-mono">
+            </RevealItem>
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Bisnis Lokal Teraktivasi</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber value={142} suffix=" UMKM & Vendor" />
+              </div>
+            </RevealItem>
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Kru & Tenaga Kerja</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber value={263} suffix=" Profesional" />
+              </div>
+            </RevealItem>
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Okupansi Hotel & Wisata</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber value={480} suffix=" Kamar/Malam" />
+              </div>
+            </RevealItem>
+          </RevealGroup>
+          <p className="mt-4 text-xs text-zinc-500 font-gemini-mono">
             Model kalkulasi multiplier dampak ekonomi regional terhubung langsung dengan Live Event Map dan data Event Graph.
           </p>
         </div>
-      </section>
+      </Reveal>
 
-      <PricingPreview />
+      <Reveal>
+        <PricingPreview />
+      </Reveal>
 
-      <section className="px-4 py-20 sm:px-6 sm:py-28">
-        <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 border border-[var(--okx-accent)] bg-[#140700] p-8 sm:p-14">
-          <QrCode size={22} className="accent-text" />
-          <h2 className="editorial text-3xl sm:text-5xl">Everything behind a live event, working as one.</h2>
-          <p className="max-w-2xl text-sm text-zinc-300 sm:text-base">
+      <Reveal as="section" className="px-4 py-20 sm:px-6 sm:py-28 bg-[#050507] font-gemini">
+        <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
+          <QrCode size={24} className="text-white" />
+          <h2 className="editorial text-3xl sm:text-5xl text-white leading-tight">Everything behind a live event, working as one.</h2>
+          <p className="max-w-2xl text-sm text-zinc-300 sm:text-base leading-relaxed">
             Jalankan demo terpandu 16 langkah: brief, blueprint, event graph, talent & rider, venue, vendor,
             budget, sponsor, tenant, tiket, publish, sandbox payment, QR ticket, validasi, hingga Live Event Impact.
           </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link to="/demo" data-testid="cta-juri-btn" className="bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
+          <div className="flex flex-col gap-3.5 sm:flex-row mt-2">
+            <Link
+              to="/demo"
+              data-testid="cta-juri-btn"
+              className="inline-flex items-center justify-center rounded-xl bg-white hover:bg-zinc-200 px-6 py-4 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
+            >
               Platform Demo
             </Link>
-            <Link to="/demo" data-testid="cta-demo-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">
+            <Link
+              to="/demo"
+              data-testid="cta-demo-btn"
+              className="inline-flex items-center justify-center rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
+            >
               Mulai Demo Terpandu
             </Link>
-            <Link to="/discover" data-testid="cta-discover-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">
+            <Link
+              to="/discover"
+              data-testid="cta-discover-btn"
+              className="inline-flex items-center justify-center rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
+            >
               Explore Events
             </Link>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       <Footer />
     </div>

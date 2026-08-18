@@ -13,25 +13,27 @@ const AUTH_BACKGROUND_URL = "/assets/okkax-concert-hero-v2.png";
 const inputClass = "mt-1.5 h-11 w-full rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 transition-all duration-200 hover:border-zinc-700 focus:border-[var(--okx-accent)] focus:ring-1 focus:ring-[var(--okx-accent)]/40 font-gemini";
 
 const ROLE_OPTIONS = [
-  ["organizer", "Event Organizer"],
+  ["organizer", "Organizer"],
   ["promoter", "Promotor"],
   ["sponsor", "Sponsor"],
-  ["tenant", "Tenant & Exhibitor"],
-  ["talent_management", "Talent Management"],
-  ["venue_manager", "Venue Management"],
-  ["vendor", "Production Vendor"],
-  ["worker", "Event Crew"],
-  ["audience", "Attendee"],
-  ["finance_approver", "Finance Approver"],
-  ["supervisor", "Event Supervisor"],
+  ["tenant", "Tenant"],
+  ["talent_management", "Talent"],
+  ["vendor", "Vendor"],
+  ["worker", "Workforce"],
+  ["audience", "Audience"],
+  ["venue_manager", "Venue"],
+  ["finance_approver", "Finance"],
 ];
 
 const DEMO_ACCOUNTS = [
-  ["organizer@okkax.id", "Penyelenggara"],
-  ["sponsor@okkax.id", "Sponsor"],
-  ["tenant@okkax.id", "Tenant"],
-  ["audience@okkax.id", "Pengunjung"],
-  ["supervisor@okkax.id", "Supervisor"],
+  { key: "organizer", label: "Organizer", roleName: "Organizer", email: "organizer@okkax.id", defaultNext: "/app" },
+  { key: "promotor", label: "Promotor", roleName: "Promotor", email: "organizer@okkax.id", defaultNext: "/app/events" },
+  { key: "sponsor", label: "Sponsor", roleName: "Sponsor", email: "sponsor@okkax.id", defaultNext: "/app/sponsor" },
+  { key: "tenant", label: "Tenant", roleName: "Tenant", email: "tenant@okkax.id", defaultNext: "/app/tenant" },
+  { key: "audience", label: "Audience", roleName: "Audience", email: "audience@okkax.id", defaultNext: "/app/tickets" },
+  { key: "talent", label: "Talent", roleName: "Talent", email: "talent@okkax.id", defaultNext: "/app/me" },
+  { key: "vendor", label: "Vendor", roleName: "Vendor", email: "vendor@okkax.id", defaultNext: "/app/me" },
+  { key: "workforce", label: "Workforce", roleName: "Workforce", email: "worker@okkax.id", defaultNext: "/app/me" },
 ];
 
 function Shell({ title, subtitle, children }) {
@@ -290,13 +292,40 @@ function FieldLabel({ label, hint, children }) {
 }
 
 export function Login() {
+  const [sp] = useSearchParams();
+  const rawRoleParam = (sp.get("role") || sp.get("persona") || "").toLowerCase().trim();
+
+  // Normalize role key aliases:
+  const targetRole = useMemo(() => {
+    if (!rawRoleParam) return null;
+    if (rawRoleParam.startsWith("organiz")) return "organizer";
+    if (rawRoleParam.startsWith("promot")) return "promotor";
+    if (rawRoleParam.startsWith("spons")) return "sponsor";
+    if (rawRoleParam.startsWith("tenan")) return "tenant";
+    if (rawRoleParam.startsWith("audien")) return "audience";
+    if (rawRoleParam.startsWith("talen")) return "talent";
+    if (rawRoleParam.startsWith("vendor")) return "vendor";
+    if (rawRoleParam.startsWith("work") || rawRoleParam === "crew") return "workforce";
+    return rawRoleParam;
+  }, [rawRoleParam]);
+
+  // Filter demo accounts: If a specific role is passed, ONLY that role is visible; others are hidden!
+  const visibleDemoAccounts = useMemo(() => {
+    if (!targetRole) return DEMO_ACCOUNTS;
+    const filtered = DEMO_ACCOUNTS.filter(
+      (a) => a.key === targetRole || a.roleName.toLowerCase() === targetRole || a.label.toLowerCase() === targetRole
+    );
+    return filtered.length > 0 ? filtered : DEMO_ACCOUNTS;
+  }, [targetRole]);
+
+  const matchingPersona = visibleDemoAccounts.length === 1 ? visibleDemoAccounts[0] : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { login, loginWithGoogle, adoptSession } = useAuth();
   const nav = useNavigate();
-  const [sp] = useSearchParams();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -305,7 +334,7 @@ export function Login() {
     try {
       await login(email, password);
       toast.success("Berhasil masuk ke OKKAX");
-      nav(sp.get("next") || "/app");
+      nav(sp.get("next") || (matchingPersona ? matchingPersona.defaultNext : "/app"));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -313,14 +342,14 @@ export function Login() {
     }
   };
 
-  const loginAsPersona = async (label) => {
+  const loginAsPersona = async (item) => {
     setBusy(true);
     setError("");
     try {
-      const { data } = await api.post("/demo/persona-login", { label });
+      const { data } = await api.post("/demo/persona-login", { label: item.key || item.label });
       await adoptSession(data.token);
-      toast.success(`Masuk sebagai ${label}`);
-      nav(sp.get("next") || "/app");
+      toast.success(`Masuk langsung sebagai ${item.roleName || item.label}`);
+      nav(sp.get("next") || item.defaultNext || "/app");
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -329,7 +358,10 @@ export function Login() {
   };
 
   return (
-    <Shell title="Sign in" subtitle="Masuk ke OKKAX workspace Anda.">
+    <Shell
+      title="Sign in"
+      subtitle={matchingPersona ? `Masuk ke OKKAX workspace ${matchingPersona.roleName} Anda.` : "Masuk ke OKKAX workspace Anda."}
+    >
       <GoogleButton mode="login" onClick={loginWithGoogle} />
       <Divider>atau email</Divider>
 
@@ -340,7 +372,7 @@ export function Login() {
             type="email"
             required
             autoComplete="email"
-            placeholder="nama@domain.com"
+            placeholder={matchingPersona ? matchingPersona.email : "nama@domain.com"}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
@@ -367,7 +399,7 @@ export function Login() {
         <button
           data-testid="login-submit-btn"
           disabled={busy}
-          className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini"
+          className="h-[52px] w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-5 text-[15px] font-bold tracking-wide transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini cursor-pointer"
         >
           {busy ? "Memproses…" : "Sign In"}
         </button>
@@ -376,7 +408,10 @@ export function Login() {
           <Link to="/forgot-password" className="text-zinc-400 hover:text-white transition-colors">
             Lupa kata sandi?
           </Link>
-          <Link to="/register" className="text-[var(--okx-accent-soft)] hover:underline font-semibold">
+          <Link
+            to={targetRole ? `/register?role=${targetRole}` : "/register"}
+            className="text-[var(--okx-accent-soft)] hover:underline font-semibold"
+          >
             Belum punya akun? Buat akun →
           </Link>
         </div>
@@ -385,21 +420,27 @@ export function Login() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <UserCheck size={13} className="text-[var(--okx-accent)]" />
-              <span>Akses Cepat Demo Persona</span>
+              <span>
+                {matchingPersona ? `Akses Cepat Demo Persona (${matchingPersona.roleName})` : "Akses Cepat Demo Persona"}
+              </span>
             </div>
             <span className="text-[10px] text-zinc-500">1-Klik Sign In</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {DEMO_ACCOUNTS.map(([emailAddress, persona]) => (
+            {visibleDemoAccounts.map((item) => (
               <button
-                key={emailAddress}
+                key={item.key}
                 type="button"
-                data-testid={`quickfill-${emailAddress.split("@")[0]}`}
+                data-testid={`quickfill-${item.key}`}
                 disabled={busy}
-                onClick={() => loginAsPersona(persona)}
-                className="rounded-lg border border-zinc-800 bg-[#141418] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10 transition-all active:scale-[0.98]"
+                onClick={() => loginAsPersona(item)}
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 ${
+                  matchingPersona
+                    ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/15 text-white shadow-[0_0_12px_rgba(255,46,126,0.35)]"
+                    : "border-zinc-800 bg-[#141418] text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10"
+                }`}
               >
-                {persona}
+                <span>{matchingPersona ? `1-Klik Masuk sebagai ${item.roleName}` : item.label}</span>
               </button>
             ))}
           </div>
@@ -410,9 +451,28 @@ export function Login() {
 }
 
 export function Register() {
+  const [sp] = useSearchParams();
+  const rawRoleParam = (sp.get("role") || sp.get("persona") || "").toLowerCase().trim();
+
+  const initialRole = useMemo(() => {
+    if (rawRoleParam.startsWith("talent")) return "talent_management";
+    if (rawRoleParam.startsWith("promot")) return "promoter";
+    if (rawRoleParam.startsWith("spons")) return "sponsor";
+    if (rawRoleParam.startsWith("tenan")) return "tenant";
+    if (rawRoleParam.startsWith("audien") || rawRoleParam === "pengunjung") return "audience";
+    if (rawRoleParam.startsWith("organiz")) return "organizer";
+    return "organizer";
+  }, [rawRoleParam]);
+
   const [form, setForm] = useState({
-    name: "", email: "", password: "", role: "organizer", organization_name: "",
-    organization_type: "Corporate Brand", city: "Jakarta", terms_accepted: false,
+    name: "",
+    email: "",
+    password: "",
+    role: initialRole,
+    organization_name: "",
+    organization_type: "Corporate Brand",
+    city: "Jakarta",
+    terms_accepted: false,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -437,7 +497,10 @@ export function Register() {
   };
 
   return (
-    <Shell title="Build an Event" subtitle="Daftarkan akun dan organisasi Anda. Satu pengguna, satu peran operasional.">
+    <Shell
+      title="Build an Event"
+      subtitle="Daftarkan akun dan organisasi Anda. Satu pengguna, satu peran operasional."
+    >
       <GoogleButton mode="register" onClick={loginWithGoogle} />
       <Divider>atau isi formulir</Divider>
 
@@ -555,7 +618,7 @@ export function Register() {
         <button
           data-testid="register-submit-btn"
           disabled={busy}
-          className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini"
+          className="h-[52px] w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-5 text-[15px] font-bold tracking-wide transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini cursor-pointer"
         >
           {busy ? "Memproses…" : "Buat Akun"}
         </button>
@@ -603,7 +666,7 @@ export function ForgotPassword() {
           </FieldLabel>
           <button
             data-testid="forgot-submit-btn"
-            className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] active:scale-[0.99] flex items-center justify-center font-gemini"
+            className="h-[52px] w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-5 text-[15px] font-bold tracking-wide transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.99] flex items-center justify-center font-gemini cursor-pointer"
           >
             Kirim Tautan Reset
           </button>

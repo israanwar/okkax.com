@@ -14,6 +14,15 @@ import { ArrowUpRight, Lock, MapPin, ShieldCheck, Sparkles } from "lucide-react"
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, apiError, compact, idr, num } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  MaskReveal,
+  ScrollProgressBar,
+  CounterNumber,
+  SpotlightCard,
+} from "@/components/MotionPrimitives";
 
 // ---------------------------------------------------------------------------
 // Talking points and CTA are still declarative per audience.
@@ -260,16 +269,18 @@ function LiveSlice({ source, label, explain, ctaHref, ctaLabel }) {
       ) : items.length === 0 ? (
         <div className="mt-6 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 text-sm text-zinc-500">Belum ada entri publik pada catalog.</div>
       ) : (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid={`for-live-${source}-list`}>
+        <RevealGroup stagger={0.06} as="ul" className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid={`for-live-${source}-list`}>
           {items.map((it) => (
-            <li key={it.id} className="border border-[var(--okx-border)] bg-[#0a0a0a] p-5">
-              {renderCard(source, it)}
-              <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
-                <Lock size={10} aria-hidden="true" /> Detail penuh gated
-              </div>
-            </li>
+            <RevealItem as="li" key={it.id}>
+              <SpotlightCard className="p-5 h-full">
+                {renderCard(source, it)}
+                <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
+                  <Lock size={10} aria-hidden="true" /> Detail penuh gated
+                </div>
+              </SpotlightCard>
+            </RevealItem>
           ))}
-        </ul>
+        </RevealGroup>
       )}
       <div className="mt-6 text-xs text-zinc-600">
         Data ini publik dari catalog OKKAX. Detail komersial, kontak, dan action tetap terkunci hingga sign in dan role authorization backend.
@@ -286,22 +297,34 @@ export default function ForPage() {
   const c = AUDIENCES[audience] || AUDIENCES.organizers;
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-100">
+      <ScrollProgressBar />
       <PublicNav />
       <main data-testid={`for-${audience || "organizers"}`} className="mx-auto max-w-5xl px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
-        <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-          <Sparkles size={12} aria-hidden="true" /> Solutions · {audience || "organizers"}
-        </div>
-        <h1 className="editorial mt-5 text-4xl leading-[0.98] sm:text-5xl lg:text-6xl">{c.title}</h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-300 sm:text-lg">{c.tagline}</p>
+        <Reveal delay={0.05}>
+          <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+            <Sparkles size={12} aria-hidden="true" /> Solutions · {audience || "organizers"}
+          </div>
+        </Reveal>
+        <MaskReveal delay={0.1}>
+          <h1 className="editorial mt-5 text-4xl leading-[0.98] sm:text-5xl lg:text-6xl">{c.title}</h1>
+        </MaskReveal>
+        <Reveal delay={0.2}>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-300 sm:text-lg">{c.tagline}</p>
+        </Reveal>
 
-        <div className="mt-10 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2">
-          {c.points.map(([t, b]) => (
-            <div key={t} className="bg-[#0a0a0a] p-6">
-              <h2 className="text-base font-semibold text-white md:text-lg">{t}</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">{b}</p>
-            </div>
+        <RevealGroup stagger={0.08} as="ul" className="mt-10 grid gap-3 sm:grid-cols-2" data-testid="for-points">
+          {c.points.map(([t, b], i) => (
+            <RevealItem as="li" key={t}>
+              <SpotlightCard className="p-6 h-full">
+                <span className="font-mono text-[10px] font-semibold tracking-[0.2em] text-[var(--okx-accent)]">
+                  0{i + 1}
+                </span>
+                <h2 className="mt-4 text-base font-semibold text-white">{t}</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">{b}</p>
+              </SpotlightCard>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
 
         <LiveSlice
           source={c.live.source}
@@ -309,16 +332,16 @@ export default function ForPage() {
           explain={c.live.explain}
         />
 
-        <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-          <Link to={c.cta[1]} data-testid="for-cta-btn" className="inline-flex items-center justify-between gap-3 bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
-            {c.cta[0]}
+        <Reveal delay={0.1} className="mt-12 flex flex-col gap-3.5 sm:flex-row">
+          <Link to={c.cta[1]} data-testid="for-cta-btn" className="inline-flex items-center justify-between gap-3 rounded-xl bg-white hover:bg-zinc-200 text-black px-6 py-3.5 text-sm font-bold shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition-all active:scale-[0.98]">
+            <span>{c.cta[0]}</span>
             <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
-          <Link to="/products/network" className="inline-flex items-center justify-between gap-3 border border-zinc-800 px-6 py-3.5 text-sm font-semibold text-zinc-200 hover:border-zinc-600">
-            Explore Network
+          <Link to="/products/network" className="inline-flex items-center justify-between gap-3 rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/30 hover:bg-white/[0.08] transition-all">
+            <span>Explore Network</span>
             <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
-        </div>
+        </Reveal>
       </main>
       <Footer />
     </div>

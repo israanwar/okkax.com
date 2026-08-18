@@ -407,11 +407,31 @@ async def my_workspace(user: dict = Depends(get_current_user)):
 
 
 PERSONA_EMAILS = {
-    "Penyelenggara": "organizer@okkax.id",
+    "organizer": "organizer@okkax.id",
+    "Organizer": "organizer@okkax.id",
+    "promoter": "organizer@okkax.id",
+    "promotor": "organizer@okkax.id",
+    "Promotor": "organizer@okkax.id",
+    "Promoter": "organizer@okkax.id",
     "Sponsor": "sponsor@okkax.id",
+    "sponsor": "sponsor@okkax.id",
     "Tenant": "tenant@okkax.id",
-    "Pengunjung": "audience@okkax.id",
-    "Supervisor": "supervisor@okkax.id",
+    "tenant": "tenant@okkax.id",
+    "audience": "audience@okkax.id",
+    "Audience": "audience@okkax.id",
+    "Talent": "talent@okkax.id",
+    "talent": "talent@okkax.id",
+    "talent_management": "talent@okkax.id",
+    "Venue": "venue@okkax.id",
+    "venue": "venue@okkax.id",
+    "Vendor": "vendor@okkax.id",
+    "vendor": "vendor@okkax.id",
+    "Workforce": "worker@okkax.id",
+    "workforce": "worker@okkax.id",
+    "Worker": "worker@okkax.id",
+    "worker": "worker@okkax.id",
+    "Finance": "finance@okkax.id",
+    "finance": "finance@okkax.id",
 }
 
 

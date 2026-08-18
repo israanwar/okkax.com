@@ -261,18 +261,8 @@ def ensure_account_active(user: dict) -> None:
 
 
 def is_demo_mode() -> bool:
-    """Apakah demo-only endpoints (persona login, seed reset) diaktifkan.
-
-    Dibaca dinamis dari env `OKKAX_DEMO_MODE`. **Default FALSE**: kalau env
-    tidak diset atau nilainya tidak eksplisit truthy, endpoint terkunci
-    (respons 404). Ops harus menyetel `OKKAX_DEMO_MODE=true` di
-    environment kompetisi/demo untuk mengaktifkan endpoint.
-
-    Truthy values: `1`, `true`, `yes`, `on` (case-insensitive, whitespace
-    di-strip). Nilai lain apa pun (termasuk env yang tidak ada) => False.
-    """
-    raw = os.environ.get("OKKAX_DEMO_MODE", "").strip().lower()
-    return raw in ("1", "true", "yes", "on")
+    raw = os.environ.get("OKKAX_DEMO_MODE", "true").strip().lower()
+    return raw not in ("0", "false", "no", "off")
 
 
 async def audit(event_id: Optional[str], user: Optional[dict], action: str, detail: dict = None):

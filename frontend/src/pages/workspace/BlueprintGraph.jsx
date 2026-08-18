@@ -188,7 +188,7 @@ const KIND_META = {
   Risk: { icon: "alert", tone: "accent", r: 15, ring: 1 },
   Payment: { icon: "card", tone: "soft", r: 14, ring: 2 },
 };
-const TONE = { core: "#ffffff", accent: "#ff2e7e", soft: "#ff7ab0", neutral: "#e4e4e7" };
+const TONE = { core: "#ffffff", accent: "#ffffff", soft: "#d4d4d8", neutral: "#a1a1aa" };
 const metaOf = (k) => KIND_META[k] || { icon: "dot", tone: "neutral", r: 13, ring: 2 };
 export const colorOf = (k) => TONE[metaOf(k).tone];
 
@@ -387,19 +387,19 @@ export function Graph({ eventId }) {
                     onClick={() => setActive(n)}
                     style={{ cursor: "pointer", opacity: faded ? 0.2 : 1, transition: "opacity .25s ease" }}>
                     {(isFocus || crit || isCore) && (
-                      <circle r={m.r + 8} fill="none" stroke={crit ? "#ff2e7e" : isCore ? "#ff7ab0" : "#ffffff"} strokeOpacity="0.4">
+                      <circle r={m.r + 8} fill="none" stroke={crit ? "#fbbf24" : isCore ? "#ffffff" : "#ffffff"} strokeOpacity="0.4">
                         <animate attributeName="r" values={`${m.r + 5};${m.r + 17};${m.r + 5}`} dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
                         <animate attributeName="stroke-opacity" values="0.45;0;0.45" dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
                       </circle>
                     )}
-                    <circle r={m.r} fill={isCore ? "#ff2e7e" : "#0f0f11"} fillOpacity={isCore ? 1 : 0.92}
+                    <circle r={m.r} fill={isCore ? "#ffffff" : "#0f0f11"} fillOpacity={isCore ? 1 : 0.92}
                       stroke={isCore ? "#ffffff" : col} strokeOpacity={isCore ? 0.85 : isFocus ? 1 : 0.6}
                       strokeWidth={isFocus || isCore ? 2 : 1.2}
                       style={{ transition: "stroke-opacity .2s ease, stroke-width .2s ease" }} />
                     <NodeIcon kind={n.kind} size={isCore ? 22 : 15} color={isCore ? "#0a0a0a" : col}
                       opacity={isCore ? 1 : isFocus ? 1 : 0.85} />
                     {crit && !isCore && (
-                      <circle cx={m.r * 0.72} cy={-m.r * 0.72} r="3.4" fill="#ff2e7e" stroke="#0a0a0a" strokeWidth="1" />
+                      <circle cx={m.r * 0.72} cy={-m.r * 0.72} r="3.4" fill="#fbbf24" stroke="#0a0a0a" strokeWidth="1" />
                     )}
                     {showLabel && (
                       <>

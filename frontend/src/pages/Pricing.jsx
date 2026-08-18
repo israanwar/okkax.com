@@ -90,8 +90,8 @@ function Hero() {
 
 function RoleSelector({ value, onChange }) {
   return (
-    <section aria-labelledby="pricing-role-heading" className="mt-10">
-      <h2 id="pricing-role-heading" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+    <section aria-labelledby="pricing-role-heading" className="mt-10 font-gemini">
+      <h2 id="pricing-role-heading" className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500 font-gemini-mono">
         Choose your role
       </h2>
       <div
@@ -110,10 +110,10 @@ function RoleSelector({ value, onChange }) {
               data-testid={`pricing-role-${r.id}`}
               onClick={() => onChange(r.id)}
               className={[
-                "shrink-0 border px-4 py-2 text-sm font-medium transition-colors",
+                "shrink-0 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-[0.98]",
                 active
-                  ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)] text-white"
-                  : "border-[var(--okx-border)] bg-transparent text-zinc-400 hover:border-zinc-500 hover:text-zinc-100",
+                  ? "border-white/[0.22] bg-[#1a1a24] text-white shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                  : "border-white/[0.08] bg-[#0c0c11]/80 text-zinc-400 hover:border-white/25 hover:text-zinc-100 hover:bg-white/[0.04]",
               ].join(" ")}
             >
               {r.label}
@@ -129,14 +129,14 @@ function RoleSelector({ value, onChange }) {
 
 function BillingToggle({ value, onChange }) {
   return (
-    <section aria-labelledby="pricing-billing-heading" className="mt-8 flex flex-wrap items-center gap-4">
+    <section aria-labelledby="pricing-billing-heading" className="mt-8 flex flex-wrap items-center gap-4 font-gemini">
       <h2 id="pricing-billing-heading" className="sr-only">
         Billing period
       </h2>
       <div
         role="tablist"
         aria-label="Billing period"
-        className="inline-flex border border-[var(--okx-border)] bg-[#0b0b0b]"
+        className="inline-flex rounded-xl border border-white/[0.1] bg-[#0b0b10] p-1 shadow-inner"
       >
         {BILLING_TABS.map((b) => {
           const active = value === b.id;
@@ -149,8 +149,8 @@ function BillingToggle({ value, onChange }) {
               data-testid={`pricing-billing-${b.id}`}
               onClick={() => onChange(b.id)}
               className={[
-                "px-4 py-2 text-sm font-semibold transition-colors",
-                active ? "bg-[var(--okx-accent)] text-white" : "text-zinc-400 hover:text-zinc-100",
+                "rounded-lg px-4 py-2 text-xs font-bold transition-all cursor-pointer",
+                active ? "bg-white text-black shadow-md" : "text-zinc-400 hover:text-white",
               ].join(" ")}
             >
               {b.label}
@@ -159,12 +159,12 @@ function BillingToggle({ value, onChange }) {
         })}
       </div>
       {value === "yearly" ? (
-        <span className="inline-flex items-center gap-2 text-xs text-zinc-500">
+        <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
           <Info size={13} aria-hidden="true" />
           Pay 10 months, use 12. Billed annually.
         </span>
       ) : (
-        <span className="inline-flex items-center gap-2 text-xs text-zinc-500">
+        <span className="inline-flex items-center gap-2 text-xs text-zinc-400">
           <Info size={13} aria-hidden="true" />
           Switch to Yearly to pay 10 months and use 12.
         </span>
@@ -177,14 +177,14 @@ function BillingToggle({ value, onChange }) {
 
 function PlanGrid({ role, activeRole, billing }) {
   return (
-    <section aria-labelledby="pricing-plans-heading" className="mt-10">
+    <section aria-labelledby="pricing-plans-heading" className="mt-10 font-gemini">
       <h2 id="pricing-plans-heading" className="sr-only">
         Plans for {activeRole.longLabel}
       </h2>
-      <div className="mb-4 text-sm text-zinc-500">
-        Pricing for <span className="font-semibold text-zinc-200">{activeRole.longLabel}</span>. {activeRole.tagline}
+      <div className="mb-4 text-sm text-zinc-400">
+        Pricing for <span className="font-bold text-white">{activeRole.longLabel}</span>. {activeRole.tagline}
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-3">
         {PLAN_ORDER.map((planId) => (
           <PlanCard key={planId} planId={planId} role={role} billing={billing} />
         ))}
@@ -203,53 +203,53 @@ function PlanCard({ planId, role, billing }) {
     <article
       data-testid={`pricing-plan-${planId}`}
       className={[
-        "relative flex h-full flex-col border p-6 sm:p-7",
+        "relative flex h-full flex-col rounded-2xl border p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.8)]",
         isMax
-          ? "border-[var(--okx-accent)] bg-[#100609]"
-          : "border-[var(--okx-border)] bg-[#0c0c0c]",
+          ? "border-white/[0.22] bg-gradient-to-b from-[#181824]/90 to-[#0e0e15]/90 shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]"
+          : "border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl shadow-md hover:border-white/25",
       ].join(" ")}
     >
       {isMax && (
         <span
           aria-hidden="true"
-          className="absolute -top-3 left-6 border border-[var(--okx-accent)] bg-[#050505] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]"
+          className="absolute -top-3 left-6 rounded-full border border-white/[0.2] bg-[#1a1a26] px-3 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-white shadow-md font-gemini-mono"
         >
           Recommended for scale
         </span>
       )}
       <div className="flex items-baseline justify-between">
-        <h3 className="text-xl font-semibold text-white">{meta.label}</h3>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+        <h3 className="text-xl font-bold text-white">{meta.label}</h3>
+        <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
           {meta.intelligence}
         </span>
       </div>
-      <p className="mt-2 text-sm text-zinc-400">{meta.positioning}</p>
+      <p className="mt-2.5 text-sm text-zinc-400 leading-relaxed">{meta.positioning}</p>
 
       <div className="mt-6">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold text-white sm:text-4xl">{price.label}</span>
-          <span className="text-xs text-zinc-500">{price.sublabel}</span>
+          <span className="font-gemini-mono text-3xl font-bold text-white sm:text-4xl">{price.label}</span>
+          <span className="text-xs text-zinc-400">{price.sublabel}</span>
         </div>
         {planId !== "free" && billing === "yearly" && (
-          <div className="mt-1 text-[11px] text-zinc-500">
+          <div className="mt-1 text-[11px] text-zinc-400">
             Equivalent to {formatIDR(Math.round(price.amount / 12))} per month, billed yearly.
           </div>
         )}
         {planId === "free" && (
-          <div className="mt-1 text-[11px] text-zinc-500">No card required.</div>
+          <div className="mt-1 text-[11px] text-zinc-400">No card required.</div>
         )}
       </div>
 
       {meta.inherits && (
-        <div className="mt-5 border-l-2 border-[var(--okx-accent)] pl-3 text-xs uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">
+        <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-xs text-zinc-300 font-medium">
           {meta.inherits}
         </div>
       )}
 
-      <ul className="mt-5 space-y-2.5 text-sm text-zinc-300">
+      <ul className="mt-6 space-y-2.5 text-sm text-zinc-300">
         {bullets.map((b) => (
-          <li key={b} className="flex gap-2">
-            <Check size={16} className="mt-0.5 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
+          <li key={b} className="flex gap-2.5 items-start">
+            <Check size={16} className="mt-0.5 shrink-0 text-zinc-300" aria-hidden="true" />
             <span>{b}</span>
           </li>
         ))}
@@ -260,22 +260,22 @@ function PlanCard({ planId, role, billing }) {
           to={meta.ctaHref}
           data-testid={`pricing-cta-${planId}`}
           className={[
-            "group inline-flex w-full items-center justify-between px-5 py-3 text-sm font-semibold transition-colors",
+            "group inline-flex w-full items-center justify-between rounded-xl px-5 py-3.5 text-sm font-bold transition-all shadow-md active:scale-[0.98]",
             isMax
-              ? "bg-[var(--okx-accent)] text-white hover:bg-[var(--okx-accent-hover)]"
+              ? "bg-white text-black hover:bg-zinc-200"
               : isFree
-              ? "border border-zinc-700 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-900"
+              ? "border border-white/[0.15] bg-white/[0.04] text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08]"
               : "bg-white text-black hover:bg-zinc-200",
           ].join(" ")}
         >
-          {meta.cta}
+          <span>{meta.cta}</span>
           <ArrowUpRight
             size={16}
             className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             aria-hidden="true"
           />
         </Link>
-        <div className="mt-2 text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+        <div className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500 font-gemini-mono">
           Event Graph: {meta.eventGraph}
         </div>
       </div>
@@ -289,10 +289,11 @@ function IntelligenceTiers() {
   return (
     <section
       aria-labelledby="pricing-intel-heading"
-      className="mt-16 border-t border-[var(--okx-border)] pt-14"
+      className="mt-16 border-t border-white/[0.06] pt-14 font-gemini"
     >
-      <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-        <Sparkles size={14} aria-hidden="true" /> OKKAX Intelligence
+      <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+        <Sparkles size={13} className="text-zinc-400" aria-hidden="true" />
+        <span>OKKAX Intelligence</span>
       </div>
       <h2 id="pricing-intel-heading" className="editorial mt-4 max-w-3xl text-[clamp(1.8rem,3.5vw,2.8rem)] leading-tight text-[#f4efec]">
         Observe. Understand. Optimize.
@@ -300,7 +301,7 @@ function IntelligenceTiers() {
       <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
         Intelligence is grounded in your authorized event state. Each plan reveals more of the same operating truth.
       </p>
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
+      <div className="mt-8 grid gap-5 md:grid-cols-3">
         {INTELLIGENCE_DEMOS.map((demo) => (
           <IntelligenceCard key={demo.plan} {...demo} />
         ))}
@@ -348,37 +349,37 @@ function IntelligenceCard({ plan, tier, prompt, body, narrative, path, steps, fo
   return (
     <div
       data-testid={`pricing-intel-${plan}`}
-      className="flex h-full flex-col border border-[var(--okx-border)] bg-[#0b0b0b] p-5"
+      className="flex h-full flex-col rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 shadow-md transition-all duration-300 hover:border-white/20 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)]"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400 font-gemini-mono">
           {PLAN_META[plan].label}
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+        <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
           {tier}
         </span>
       </div>
       <div className="mt-3 text-xs italic text-zinc-500">Q. {prompt}</div>
       <div className="mt-4 flex-1 text-sm">
         {body && (
-          <dl className="space-y-1.5 font-mono text-[12.5px] text-zinc-300">
+          <dl className="space-y-1.5 font-gemini-mono text-[12.5px] text-zinc-300">
             {body.map((row) => (
-              <div key={row.label} className="flex justify-between border-b border-dashed border-zinc-800 py-1">
+              <div key={row.label} className="flex justify-between border-b border-white/[0.06] py-1.5">
                 <dt className="text-zinc-500">{row.label}</dt>
-                <dd className="text-zinc-100">{row.value}</dd>
+                <dd className="text-zinc-100 font-semibold">{row.value}</dd>
               </div>
             ))}
           </dl>
         )}
         {narrative && (
-          <div className="text-zinc-200">
+          <div className="text-zinc-200 leading-relaxed">
             <p>{narrative}</p>
             {path && (
-              <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11.5px] text-zinc-500">
+              <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-gemini-mono text-[11.5px] text-zinc-500">
                 {path.map((step, i) => (
                   <li key={step} className="flex items-center gap-2">
-                    {i > 0 && <span className="text-[var(--okx-accent)]" aria-hidden="true">/</span>}
-                    <span className={i === path.length - 1 ? "text-zinc-200" : ""}>{step}</span>
+                    {i > 0 && <span className="text-zinc-600" aria-hidden="true">/</span>}
+                    <span className={i === path.length - 1 ? "text-zinc-100 font-semibold" : ""}>{step}</span>
                   </li>
                 ))}
               </ol>
@@ -386,10 +387,10 @@ function IntelligenceCard({ plan, tier, prompt, body, narrative, path, steps, fo
           </div>
         )}
         {steps && (
-          <ol className="space-y-1.5 text-zinc-200">
+          <ol className="space-y-2 text-zinc-200">
             {steps.map((step, i) => (
-              <li key={step} className="flex gap-2">
-                <span className="w-5 shrink-0 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--okx-accent)]">
+              <li key={step} className="flex gap-2.5 items-center">
+                <span className="w-5 shrink-0 font-gemini-mono text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span>{step}</span>
@@ -411,10 +412,11 @@ function EventGraphTiers() {
   return (
     <section
       aria-labelledby="pricing-graph-heading"
-      className="mt-14 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 sm:p-8"
+      className="mt-14 rounded-3xl border border-white/[0.08] bg-[#09090e]/95 p-6 sm:p-8 shadow-xl font-gemini"
     >
-      <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-        <Waypoints size={14} aria-hidden="true" /> Event Graph
+      <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+        <Waypoints size={13} className="text-zinc-400" aria-hidden="true" />
+        <span>Event Graph Matrix</span>
       </div>
       <h2 id="pricing-graph-heading" className="editorial mt-4 max-w-3xl text-[clamp(1.6rem,3vw,2.4rem)] leading-tight text-[#f4efec]">
         See. Understand. Optimize.
@@ -424,17 +426,17 @@ function EventGraphTiers() {
           <div
             key={tier.plan}
             data-testid={`pricing-graph-${tier.plan}`}
-            className="border border-[var(--okx-border)] bg-[#050505] p-5"
+            className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-5 shadow-sm"
           >
-            <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.2em]">
-              <span className="text-[var(--okx-accent-soft)]">{PLAN_META[tier.plan].label}</span>
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] font-gemini-mono">
+              <span className="text-zinc-400">{PLAN_META[tier.plan].label}</span>
               <span className="text-zinc-500">{tier.tier}</span>
             </div>
-            <div className="mt-3 text-sm text-zinc-200">{tier.headline}</div>
-            <ul className="mt-3 space-y-1.5 text-xs text-zinc-500">
+            <div className="mt-3 text-sm font-bold text-zinc-200">{tier.headline}</div>
+            <ul className="mt-3 space-y-1.5 text-xs text-zinc-400">
               {tier.bullets.map((b) => (
-                <li key={b} className="flex gap-2">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 bg-[var(--okx-accent)]" aria-hidden="true" />
+                <li key={b} className="flex gap-2 items-center">
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-white/40" aria-hidden="true" />
                   <span>{b}</span>
                 </li>
               ))}
@@ -479,7 +481,7 @@ const GRAPH_TIERS = [
 
 function ComparisonTable({ role, openGroups, setOpenGroups }) {
   return (
-    <section aria-labelledby="pricing-compare-heading" className="mt-16">
+    <section aria-labelledby="pricing-compare-heading" className="mt-16 font-gemini">
       <h2 id="pricing-compare-heading" className="editorial text-[clamp(1.6rem,3vw,2.4rem)] leading-tight text-[#f4efec]">
         Compare in detail
       </h2>
@@ -490,7 +492,7 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
         {COMPARISON_GROUPS.map((group, i) => {
           const open = openGroups.has(i);
           return (
-            <div key={group.title} className="border border-[var(--okx-border)] bg-[#0a0a0a]">
+            <div key={group.title} className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl overflow-hidden shadow-sm">
               <button
                 type="button"
                 aria-expanded={open}
@@ -502,25 +504,25 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
                     return next;
                   });
                 }}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left cursor-pointer hover:bg-white/[0.02] transition-colors"
               >
-                <span className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-100">
+                <span className="text-sm font-bold uppercase tracking-[0.14em] text-zinc-100 font-gemini-mono">
                   {group.title}
                 </span>
                 <ChevronDown
                   size={18}
                   aria-hidden="true"
-                  className={`shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`}
+                  className={`shrink-0 text-zinc-400 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
                 />
               </button>
               {open && (
-                <div className="overflow-x-auto border-t border-[var(--okx-border)]">
+                <div className="overflow-x-auto border-t border-white/[0.06]">
                   <table className="w-full min-w-[520px] text-sm">
                     <thead>
-                      <tr className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-                        <th scope="col" className="px-5 py-3 text-left font-semibold">Capability</th>
+                      <tr className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 font-gemini-mono">
+                        <th scope="col" className="px-6 py-3 text-left">Capability</th>
                         {PLAN_ORDER.map((p) => (
-                          <th key={p} scope="col" className="px-5 py-3 text-left font-semibold">
+                          <th key={p} scope="col" className="px-6 py-3 text-left">
                             {PLAN_META[p].label}
                           </th>
                         ))}
@@ -528,8 +530,8 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
                     </thead>
                     <tbody>
                       {group.rows.map((row) => (
-                        <tr key={row.capability} className="border-t border-[var(--okx-border)]">
-                          <th scope="row" className="px-5 py-3 text-left text-zinc-300 font-normal">
+                        <tr key={row.capability} className="border-t border-white/[0.06]">
+                          <th scope="row" className="px-6 py-3.5 text-left text-zinc-300 font-normal">
                             {row.capability}
                           </th>
                           {PLAN_ORDER.map((p) => {
@@ -539,8 +541,8 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
                               <td
                                 key={p}
                                 className={[
-                                  "px-5 py-3",
-                                  missing ? "text-zinc-600" : p === "max" ? "text-white" : "text-zinc-200",
+                                  "px-6 py-3.5",
+                                  missing ? "text-zinc-600" : p === "max" ? "text-white font-semibold" : "text-zinc-200",
                                 ].join(" ")}
                               >
                                 {cell}
@@ -588,15 +590,15 @@ const FAQ = [
 
 function MiniFaq() {
   return (
-    <section aria-labelledby="pricing-faq-heading" className="mt-16 border-t border-[var(--okx-border)] pt-14">
+    <section aria-labelledby="pricing-faq-heading" className="mt-16 border-t border-white/[0.06] pt-14 font-gemini">
       <h2 id="pricing-faq-heading" className="editorial text-[clamp(1.6rem,3vw,2.4rem)] leading-tight text-[#f4efec]">
         Common questions
       </h2>
       <dl className="mt-8 grid gap-x-8 gap-y-6 md:grid-cols-2">
         {FAQ.map((item) => (
-          <div key={item.q}>
-            <dt className="text-sm font-semibold text-zinc-100">{item.q}</dt>
-            <dd className="mt-2 text-sm leading-6 text-zinc-400">{item.a}</dd>
+          <div key={item.q} className="rounded-2xl border border-white/[0.06] bg-[#0c0c11]/60 p-6">
+            <dt className="text-sm font-bold text-zinc-100">{item.q}</dt>
+            <dd className="mt-2 text-sm leading-relaxed text-zinc-400">{item.a}</dd>
           </div>
         ))}
       </dl>
@@ -608,29 +610,29 @@ function MiniFaq() {
 
 function ClosingCta() {
   return (
-    <section className="mt-16 border border-[var(--okx-border)] bg-[#0c0c0c] p-8 sm:p-10">
-      <div className="flex flex-col items-start justify-between gap-6 lg:flex-row lg:items-center">
+    <section className="mt-16 rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)] font-gemini">
+      <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-            Start the operating network
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300">
+            <span>Start the operating network</span>
           </div>
-          <h2 className="editorial mt-3 max-w-2xl text-[clamp(1.6rem,3vw,2.4rem)] leading-tight text-[#f4efec]">
+          <h2 className="editorial mt-4 max-w-2xl text-[clamp(1.6rem,3vw,2.4rem)] leading-tight text-[#f4efec]">
             No card. No ticketing lock-in. Every plan enters the same network.
           </h2>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3.5 sm:flex-row">
           <Link
             to="/register"
-            className="group inline-flex min-w-52 items-center justify-between bg-[var(--okx-accent)] px-5 py-4 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]"
+            className="group inline-flex min-w-52 items-center justify-between rounded-xl bg-white hover:bg-zinc-200 px-6 py-4 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
           >
-            Start Free
+            <span>Start Free</span>
             <ArrowUpRight size={16} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
           <Link
             to="/discover"
-            className="group inline-flex min-w-52 items-center justify-between border border-zinc-700 px-5 py-4 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-900"
+            className="group inline-flex min-w-52 items-center justify-between rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
           >
-            Explore Discover
+            <span>Explore Discover</span>
             <ArrowUpRight size={16} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
         </div>

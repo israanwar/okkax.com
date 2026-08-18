@@ -5,9 +5,9 @@ import {
   Clock3, Crosshair, LayoutGrid, List, MapPin, Plus, Search, Sun, Ticket, Trash2,
   Users, X, XCircle,
 } from "lucide-react";
-import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import OkxDropdown from "@/components/OkxDropdown";
+import { SpotlightCard } from "@/components/MotionPrimitives";
 
 // Chip label -> entry_type value emitted by backend calendar_engine.
 // Chips act as scoped filters. Empty entry_type list means "all".
@@ -83,24 +83,24 @@ const buildFacetOptions = (label, values = []) => [
 ];
 
 const PUBLIC_STATUSES = {
-  upcoming: ["Akan berlangsung", Clock3, "border-sky-400/50 bg-sky-400/10 text-sky-200"],
-  ongoing: ["Sedang berlangsung", CircleDot, "border-emerald-400/50 bg-emerald-400/10 text-emerald-200"],
-  completed: ["Telah selesai", CheckCircle2, "border-zinc-600 bg-zinc-700/20 text-zinc-300"],
-  rescheduled: ["Dijadwalkan ulang", CalendarDays, "border-amber-400/50 bg-amber-400/10 text-amber-200"],
-  postponed: ["Ditunda", AlertTriangle, "border-orange-400/50 bg-orange-400/10 text-orange-200"],
-  cancelled: ["Dibatalkan", XCircle, "border-red-400/50 bg-red-400/10 text-red-200"],
-  tickets_on_sale: ["Tiket dijual", Ticket, "border-[var(--okx-accent)]/50 bg-[var(--okx-accent)]/10 text-[var(--okx-accent-soft)]"],
-  tenant_open: ["Tenant dibuka", CircleDot, "border-violet-400/50 bg-violet-400/10 text-violet-200"],
-  sponsor_open: ["Mencari sponsor", CircleDot, "border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-200"],
-  workforce_open: ["Rekrut workforce", Users, "border-cyan-400/50 bg-cyan-400/10 text-cyan-200"],
+  upcoming: ["Akan berlangsung", Clock3, "border-sky-400/50 bg-sky-950/40 text-sky-300"],
+  ongoing: ["Sedang berlangsung", CircleDot, "border-emerald-400/50 bg-emerald-950/40 text-emerald-300"],
+  completed: ["Telah selesai", CheckCircle2, "border-zinc-700 bg-zinc-800/40 text-zinc-400"],
+  rescheduled: ["Dijadwalkan ulang", CalendarDays, "border-amber-400/50 bg-amber-950/40 text-amber-300"],
+  postponed: ["Ditunda", AlertTriangle, "border-orange-400/50 bg-orange-950/40 text-orange-300"],
+  cancelled: ["Dibatalkan", XCircle, "border-rose-400/50 bg-rose-950/40 text-rose-300"],
+  tickets_on_sale: ["Tiket dijual", Ticket, "border-amber-400/50 bg-amber-950/40 text-amber-300"],
+  tenant_open: ["Tenant dibuka", CircleDot, "border-violet-400/50 bg-violet-950/40 text-violet-300"],
+  sponsor_open: ["Mencari sponsor", CircleDot, "border-zinc-400/50 bg-zinc-800/40 text-zinc-300"],
+  workforce_open: ["Rekrut workforce", Users, "border-cyan-400/50 bg-cyan-950/40 text-cyan-300"],
 };
 
 const INTERNAL_META = {
-  Completed: [CheckCircle2, "border-emerald-400/50 bg-emerald-400/10 text-emerald-200"],
+  Completed: [CheckCircle2, "border-emerald-400/50 bg-emerald-950/40 text-emerald-300"],
   Confirmed: [CheckCircle2, "border-white/40 bg-white/10 text-white"],
-  Pending: [Clock3, "border-amber-400/50 bg-amber-400/10 text-amber-200"],
-  "At Risk": [AlertTriangle, "border-red-400/60 bg-red-400/10 text-red-200"],
-  Missing: [XCircle, "border-red-400/60 bg-red-400/10 text-red-200"],
+  Pending: [Clock3, "border-amber-400/50 bg-amber-950/40 text-amber-300"],
+  "At Risk": [AlertTriangle, "border-rose-400/60 bg-rose-950/40 text-rose-300"],
+  Missing: [XCircle, "border-rose-400/60 bg-rose-950/40 text-rose-300"],
 };
 
 const pad = (value) => String(value).padStart(2, "0");
@@ -116,10 +116,10 @@ const timeLabel = (value) => String(value || "").slice(11, 16);
 
 function StatusPill({ item }) {
   const publicMeta = PUBLIC_STATUSES[item.status];
-  const [label, Icon, style] = publicMeta || [item.status || "Pending", ...(INTERNAL_META[item.status] || [Clock3, "border-zinc-600 bg-zinc-700/20 text-zinc-300"])];
+  const [label, Icon, style] = publicMeta || [item.status || "Pending", ...(INTERNAL_META[item.status] || [Clock3, "border-zinc-700 bg-zinc-800/40 text-zinc-400"])];
   return (
-    <span title={`Status: ${label}`} className={`inline-flex items-center gap-1 border px-1.5 py-0.5 text-[10px] font-medium ${style}`}>
-      <Icon size={10} aria-hidden="true" /> {label}
+    <span title={`Status: ${label}`} className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider font-gemini-mono ${style}`}>
+      <Icon size={9} aria-hidden="true" /> {label}
     </span>
   );
 }
@@ -128,15 +128,19 @@ function EntryCard({ item, selected, onSelect, dense = false, href = "" }) {
   const Card = href ? Link : "button";
   return (
     <Card {...(href ? { to: href } : { type: "button", onClick: () => onSelect(item) })} data-testid={`calendar-entry-${item.id}`}
-      className={`block w-full border text-left transition-colors ${selected ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10" : "border-[var(--okx-border)] bg-[#101010] hover:border-zinc-600"} ${dense ? "p-2" : "p-3"}`}>
+      className={`block w-full rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+        selected
+          ? "border-white/40 bg-white/[0.12] shadow-sm"
+          : "border-white/[0.08] bg-[#12121c]/90 hover:border-white/25 hover:bg-white/[0.06] hover:shadow-md"
+      } ${dense ? "p-2" : "p-3"}`}>
       <div className="flex items-start justify-between gap-2">
-        <span className={`min-w-0 font-medium text-zinc-100 ${dense ? "truncate text-[11px]" : "text-sm"}`}>{item.title}</span>
+        <span className={`min-w-0 font-bold text-white ${dense ? "truncate text-[11px]" : "text-xs sm:text-[13px]"}`}>{item.title}</span>
         {!dense && <StatusPill item={item} />}
       </div>
-      <div className={`mt-1 flex flex-wrap items-center gap-x-2 text-zinc-500 ${dense ? "text-[10px]" : "text-xs"}`}>
-        <span className="num">{timeLabel(item.start_at) || "Seharian"}</span>
-        {item.city && <span>{item.city}</span>}
-        {item.resource_name && <span className="truncate">{item.resource_name}</span>}
+      <div className={`mt-1.5 flex flex-wrap items-center gap-x-2 text-zinc-400 font-gemini ${dense ? "text-[10px]" : "text-[11px]"}`}>
+        <span className="font-mono text-zinc-300 font-semibold">{timeLabel(item.start_at) || "Seharian"}</span>
+        {item.city && <span>· {item.city}</span>}
+        {item.resource_name && <span className="truncate text-zinc-500">· {item.resource_name}</span>}
       </div>
     </Card>
   );
@@ -550,20 +554,44 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
         const priority = (item) => item.status === "ongoing" ? 0 : item.entry_type === "event" ? 1 : 2;
         return priority(left) - priority(right) || String(left.start_at).localeCompare(String(right.start_at));
       })
-      .slice(0, 16);
+      .slice(0, 6);
     return (
-      <section className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5" data-testid="map-calendar-panel">
+      <SpotlightCard className="p-5" data-testid="map-calendar-panel">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] accent-text"><CalendarDays size={14} /> Calendar & Scheduling Engine</div><h2 className="mt-2 text-lg font-semibold">Jadwal event {initialCity || "Indonesia"}</h2><p className="mt-1 max-w-xl text-xs leading-5 text-zinc-500">Tanggal event, penjualan tiket, pendaftaran tenant, sponsor, dan rekrutmen workforce dalam satu kalender.</p></div>
-          <Link to={`/calendar${initialCity ? `?city=${encodeURIComponent(initialCity)}` : ""}`} className="border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-[var(--okx-accent)]">Buka kalender lengkap</Link>
+          <div>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono">
+              <CalendarDays size={12} className="text-zinc-400" />
+              Calendar Engine
+            </div>
+            <h2 className="mt-2 text-base font-bold text-white">Jadwal Event {initialCity || "Indonesia"}</h2>
+            <p className="mt-1 max-w-xl text-xs leading-relaxed text-zinc-400 font-gemini">
+              Tanggal event, penjualan tiket, pendaftaran tenant, sponsor, dan rekrutmen workforce.
+            </p>
+          </div>
+          <Link
+            to={`/calendar${initialCity ? `?city=${encodeURIComponent(initialCity)}` : ""}`}
+            className="rounded-xl border border-white/[0.14] bg-white/[0.04] px-3.5 py-1.5 text-xs font-semibold text-zinc-200 hover:border-white/30 hover:bg-white/[0.08] hover:text-white transition-all shadow-sm"
+          >
+            Buka kalender lengkap
+          </Link>
         </div>
-        {busy ? <div className="mt-5 text-xs text-zinc-500">Memuat jadwal…</div> : error ? <div className="mt-5 text-xs text-red-300">{error}</div> : (
+        {busy ? (
+          <div className="mt-4 text-xs text-zinc-500">Memuat jadwal…</div>
+        ) : error ? (
+          <div className="mt-4 text-xs text-rose-300">{error}</div>
+        ) : (
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {rows.map((item) => <EntryCard key={item.id} item={item} selected={false} href={item.public_url} />)}
-            {rows.length === 0 && <div className="sm:col-span-2 border border-dashed border-[var(--okx-border)] p-6 text-center text-xs text-zinc-500">Belum ada jadwal pada rentang ini.</div>}
+            {rows.map((item) => (
+              <EntryCard key={item.id} item={item} selected={false} href={item.public_url} />
+            ))}
+            {rows.length === 0 && (
+              <div className="sm:col-span-2 rounded-xl border border-dashed border-white/[0.1] p-6 text-center text-xs text-zinc-500">
+                Belum ada jadwal pada rentang ini.
+              </div>
+            )}
           </div>
         )}
-      </section>
+      </SpotlightCard>
     );
   }
 

@@ -22,6 +22,44 @@ import {
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
+// -----------------------------------------------------------------------------
+// Custom Distinctive OKKAX Copilot Intelligence Glyph
+// Represents the 4 Pillars of Live Event Execution connected via Neural Graph
+// -----------------------------------------------------------------------------
+export function CopilotIntelligenceIcon({ className = "h-4 w-4", ...props }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      {/* Dynamic Orbital Radar Field */}
+      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="3 3" />
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1" />
+      
+      {/* Central Synaptic Intelligence Core */}
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+
+      {/* 4 Pillars Satellite Nodes (Brief, Talent, Ops, Finance) */}
+      <circle cx="12" cy="3.5" r="1.5" fill="currentColor" />
+      <circle cx="20.5" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="20.5" r="1.5" fill="currentColor" />
+      <circle cx="3.5" cy="12" r="1.5" fill="currentColor" />
+
+      {/* Primary Neural Graph Synapses */}
+      <path d="M12 5V9.8M12 14.2V19M5 12H9.8M14.2 12H19" stroke="currentColor" strokeWidth="1.4" />
+      
+      {/* Diagonal Telemetry Rays */}
+      <path d="M6.5 6.5L8.8 8.8M15.2 15.2L17.5 17.5M17.5 6.5L15.2 8.8M8.8 15.2L6.5 17.5" stroke="currentColor" strokeWidth="1" strokeOpacity="0.45" />
+    </svg>
+  );
+}
+
 function renderFormattedMarkdown(text) {
   if (!text) return null;
 
@@ -82,20 +120,20 @@ function renderFormattedMarkdown(text) {
     if (line.startsWith("### ")) {
       elements.push(
         <h4 key={`h3-${keyIdx++}`} className="mt-3.5 mb-1.5 text-sm font-bold text-[#f5eff2] tracking-wide flex items-center gap-1.5 font-gemini-display">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)]" />
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" />
           {formatInlineText(line.replace("### ", ""))}
         </h4>
       );
     } else if (line.startsWith("#### ")) {
       elements.push(
-        <h5 key={`h4-${keyIdx++}`} className="mt-2.5 mb-1 text-[11px] font-semibold text-[var(--okx-accent-soft)] uppercase tracking-wider font-gemini-display">
+        <h5 key={`h4-${keyIdx++}`} className="mt-2.5 mb-1 text-[11px] font-semibold text-zinc-300 uppercase tracking-wider font-gemini-display">
           {formatInlineText(line.replace("#### ", ""))}
         </h5>
       );
     } else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
       elements.push(
         <div key={`li-${keyIdx++}`} className="flex items-start gap-2 my-0.5 text-xs text-zinc-300 font-gemini">
-          <span className="text-[var(--okx-accent)] mt-0.5 font-bold select-none text-[10px]">•</span>
+          <span className="text-zinc-400 mt-0.5 font-bold select-none text-[10px]">•</span>
           <span className="flex-1 leading-relaxed">{formatInlineText(line.trim().substring(2))}</span>
         </div>
       );
@@ -103,7 +141,7 @@ function renderFormattedMarkdown(text) {
       const match = line.trim().match(/^(\d+)\.\s(.*)$/);
       elements.push(
         <div key={`oli-${keyIdx++}`} className="flex items-start gap-2 my-1 text-xs text-zinc-300 font-gemini">
-          <span className="font-gemini-mono text-[var(--okx-accent)] font-bold text-[11px] min-w-[18px]">
+          <span className="font-gemini-mono text-zinc-400 font-bold text-[11px] min-w-[18px]">
             {match[1]}.
           </span>
           <span className="flex-1 leading-relaxed">{formatInlineText(match[2])}</span>
@@ -143,7 +181,7 @@ function formatInlineText(text) {
         <Link
           key={match.index}
           to={url}
-          className="inline-flex items-center gap-1 font-semibold text-[var(--okx-accent)] underline decoration-[var(--okx-accent)]/50 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-300 transition-colors"
         >
           {label}
           <ArrowRight className="h-2.5 w-2.5 inline" />
@@ -156,7 +194,7 @@ function formatInlineText(text) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-semibold text-[var(--okx-accent)] underline hover:text-white transition-colors"
+          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-300 transition-colors"
         >
           {label}
         </a>
@@ -333,18 +371,26 @@ export default function YoonaChat() {
             setIsMinimized(false);
           }}
           data-testid="yoona-chat-trigger"
-          className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-full border border-[var(--okx-accent)]/60 bg-[#0c060a]/95 backdrop-blur-md px-4 py-3 text-white shadow-[0_8px_32px_rgba(255,46,126,0.3)] transition-all duration-300 hover:scale-105 hover:border-[var(--okx-accent)] hover:shadow-[0_12px_40px_rgba(255,46,126,0.5)] active:scale-95"
+          className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-2xl border border-white/[0.16] bg-[#08080e]/95 backdrop-blur-2xl px-3.5 py-2.5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_24px_rgba(255,46,126,0.12),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-300 hover:scale-[1.03] hover:border-white/40 hover:shadow-[0_16px_50px_rgba(0,0,0,0.95),0_0_36px_rgba(255,46,126,0.25)] active:scale-[0.98] cursor-pointer"
           aria-label="Buka OKKAX Copilot"
         >
-          <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[var(--okx-accent)] text-white shadow-[0_0_12px_rgba(255,46,126,0.5)]">
-            <Layers className="h-4 w-4" />
+          {/* Cybernetic Intelligence Lens */}
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.22] shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_4px_12px_rgba(0,0,0,0.6)] group-hover:border-white/60 transition-all">
+            <CopilotIntelligenceIcon className="h-5 w-5 text-white group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
+            <span className="absolute inset-0 rounded-xl bg-white/[0.05] group-hover:bg-white/[0.1] transition-colors" />
           </div>
-          <div className="flex flex-col text-left">
-            <div className="flex items-center gap-1.5 font-gemini-display">
-              <span className="text-xs font-bold tracking-wide text-white">OKKAX</span>
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
+
+          <div className="flex flex-col text-left pr-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold tracking-wider text-white font-gemini-display">OKKAX</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+              </span>
             </div>
-            <span className="text-[10px] leading-tight text-zinc-400 font-gemini-mono">Event Copilot</span>
+            <span className="text-[10px] font-semibold tracking-wider text-zinc-400 font-gemini-mono uppercase group-hover:text-zinc-200 transition-colors">
+              Event Copilot
+            </span>
           </div>
         </button>
       )}
@@ -353,33 +399,33 @@ export default function YoonaChat() {
       {isOpen && (
         <div
           data-testid="yoona-chat-modal"
-          className={`font-gemini fixed z-50 flex flex-col border border-[var(--okx-border)] bg-[#0c0c0cf5] shadow-[0_20px_60px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-all duration-200 overflow-hidden ${
+          className={`font-gemini fixed z-50 flex flex-col border border-white/[0.12] bg-[#0a0a10]/98 shadow-[0_24px_70px_rgba(0,0,0,0.95),0_0_30px_rgba(255,46,126,0.08)] backdrop-blur-3xl transition-all duration-200 overflow-hidden ${
             isExpanded
-              ? "inset-4 md:inset-8 rounded-xl"
+              ? "inset-4 md:inset-8 rounded-3xl"
               : isMinimized
-              ? "bottom-6 right-6 h-14 w-84 rounded-lg"
-              : "bottom-6 right-6 h-[620px] max-h-[88vh] w-[440px] max-w-[calc(100vw-32px)] rounded-xl"
+              ? "bottom-6 right-6 h-14 w-84 rounded-2xl"
+              : "bottom-6 right-6 h-[620px] max-h-[88vh] w-[440px] max-w-[calc(100vw-32px)] rounded-3xl"
           }`}
         >
-          {/* Top Accent Line */}
-          <div className="h-0.5 w-full bg-[var(--okx-accent)] opacity-80" />
+          {/* Top Ambient Line */}
+          <div className="h-[1.5px] w-full bg-gradient-to-r from-transparent via-white/[0.3] to-transparent" />
 
           {/* Window Header */}
-          <div className="flex items-center justify-between border-b border-zinc-800 bg-[#121212] px-4 py-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--okx-accent)] text-white shadow-[0_0_12px_rgba(255,46,126,0.4)]">
-                <Layers className="h-4 w-4" />
+          <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#0c0c14] px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm">
+                <CopilotIntelligenceIcon className="h-4 w-4 text-white" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-xs font-bold tracking-wide text-white font-gemini-display">OKKAX Copilot</h3>
-                  <span className="rounded bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/30 px-1.5 py-0.2 text-[9px] font-semibold text-[var(--okx-accent-soft)] font-gemini">
-                    Principal Intelligence
+                  <span className="rounded-full bg-white/[0.08] border border-white/[0.15] px-2 py-0.5 text-[9px] font-semibold text-zinc-200 font-gemini">
+                    Neural Ops Core
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-gemini">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  <span>OKKAX Event Operations</span>
+                  <span>Real-time Event Graph Intelligence</span>
                 </div>
               </div>
             </div>
@@ -390,7 +436,7 @@ export default function YoonaChat() {
                 onClick={clearChat}
                 title="Reset Percakapan"
                 data-testid="yoona-btn-clear"
-                className="rounded p-1 hover:bg-zinc-800 hover:text-white transition-colors"
+                className="rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -398,7 +444,7 @@ export default function YoonaChat() {
                 onClick={() => setIsExpanded(!isExpanded)}
                 title={isExpanded ? "Perkecil Ukuran" : "Maksimalkan Layar"}
                 data-testid="yoona-btn-expand"
-                className="hidden sm:block rounded p-1 hover:bg-zinc-800 hover:text-white transition-colors"
+                className="hidden sm:block rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
               >
                 {isExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
               </button>
@@ -406,7 +452,7 @@ export default function YoonaChat() {
                 onClick={() => setIsMinimized(!isMinimized)}
                 title={isMinimized ? "Buka Window" : "Minimalkan"}
                 data-testid="yoona-btn-minimize"
-                className="rounded p-1 hover:bg-zinc-800 hover:text-white transition-colors"
+                className="rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -414,7 +460,7 @@ export default function YoonaChat() {
                 onClick={() => setIsOpen(false)}
                 title="Tutup"
                 data-testid="yoona-btn-close"
-                className="rounded p-1 hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                className="rounded-lg p-1.5 hover:bg-red-500/20 hover:text-red-400 transition-colors cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -425,10 +471,10 @@ export default function YoonaChat() {
           {!isMinimized && (
             <>
               {/* Fast Scenario Ribbon */}
-              <div className="border-b border-zinc-800/60 bg-[#0e0e0e] px-3 py-2 overflow-x-auto whitespace-nowrap okx-custom-scrollbar">
+              <div className="border-b border-white/[0.06] bg-[#08080c] px-3 py-2 overflow-x-auto whitespace-nowrap okx-custom-scrollbar">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
-                    <Sliders className="h-3 w-3 text-[var(--okx-accent)]" /> Modul:
+                    <Sliders className="h-3 w-3 text-zinc-400" /> Modul:
                   </span>
                   {FAST_SCENARIOS.map((sc, sIdx) => (
                     <button
@@ -436,7 +482,7 @@ export default function YoonaChat() {
                       onClick={() => handleSend(sc.prompt)}
                       disabled={loading}
                       data-testid={`yoona-scenario-${sIdx}`}
-                      className="rounded border border-zinc-800/80 bg-zinc-900/60 px-2 py-0.5 text-[11px] text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/15 transition-all shrink-0"
+                      className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-300 hover:border-white/30 hover:text-white hover:bg-white/[0.08] transition-all shrink-0 cursor-pointer"
                     >
                       {sc.label}
                     </button>
@@ -445,7 +491,7 @@ export default function YoonaChat() {
               </div>
 
               {/* Message Thread */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm okx-custom-scrollbar bg-[#0a0a0a]/50">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm okx-custom-scrollbar bg-[#06060a]/60">
                 {messages.map((m, idx) => (
                   <div
                     key={idx}
@@ -453,18 +499,18 @@ export default function YoonaChat() {
                     className={`flex items-start gap-2.5 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                   >
                     <div
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold ${
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                         m.role === "user"
                           ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
-                          : "bg-[var(--okx-accent)] text-white shadow-[0_0_10px_rgba(255,46,126,0.3)]"
+                          : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm"
                       }`}
                     >
-                      {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Terminal className="h-4 w-4" />}
+                      {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-3.5 w-3.5 text-white" />}
                     </div>
                     <div
-                      className={`relative max-w-[88%] rounded-lg px-4 py-3 text-xs leading-relaxed group ${
+                      className={`relative max-w-[88%] rounded-xl px-4 py-3 text-xs leading-relaxed group ${
                         m.role === "user"
-                          ? "bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/35 text-white"
+                          ? "bg-white/[0.08] border border-white/[0.15] text-white"
                           : "bg-[#141414] border border-zinc-800/90 text-zinc-200"
                       }`}
                     >
@@ -477,7 +523,7 @@ export default function YoonaChat() {
                       {/* Message Footer */}
                       <div className="mt-2 pt-1 border-t border-zinc-800/40 flex items-center justify-between text-[9px] text-zinc-500 font-mono">
                         <div className="flex items-center gap-1.5">
-                          {m.engine && <span className="text-[var(--okx-accent-soft)]">{m.engine}</span>}
+                          {m.engine && <span className="text-zinc-300">{m.engine}</span>}
                           <span>· {m.timestamp}</span>
                         </div>
                         {m.role === "assistant" && (
@@ -485,7 +531,7 @@ export default function YoonaChat() {
                             onClick={() => copyMessage(m.content, idx)}
                             title="Salin Teks Jawaban"
                             data-testid={`yoona-copy-btn-${idx}`}
-                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-zinc-400 hover:text-white transition-opacity"
+                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-zinc-400 hover:text-white transition-opacity cursor-pointer"
                           >
                             {copiedIdx === idx ? (
                               <>
@@ -508,12 +554,12 @@ export default function YoonaChat() {
                 {/* Loading state */}
                 {loading && (
                   <div className="flex items-start gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--okx-accent)] text-white">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-black font-bold">
                       <Terminal className="h-3.5 w-3.5" />
                     </div>
                     <div className="rounded-lg bg-[#141414] border border-zinc-800 px-4 py-3 text-xs text-zinc-300">
                       <div className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)] animate-pulse" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-pulse" />
                         <span className="text-[11px] font-mono text-zinc-400">OKKAX Copilot sedang memproses data event…</span>
                       </div>
                     </div>
@@ -526,7 +572,7 @@ export default function YoonaChat() {
               {suggestions.length > 0 && (
                 <div className="border-t border-zinc-800/60 bg-[#0f0f0f] px-3 py-2">
                   <p className="mb-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-[var(--okx-accent-soft)]" /> Rekomendasi Pertanyaan:
+                    <Activity className="h-3 w-3 text-zinc-400" /> Rekomendasi Pertanyaan:
                   </p>
                   <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto okx-custom-scrollbar">
                     {suggestions.map((sug, sIdx) => (
@@ -535,7 +581,7 @@ export default function YoonaChat() {
                         onClick={() => handleSend(sug)}
                         disabled={loading}
                         data-testid={`yoona-chip-${sIdx}`}
-                        className="rounded border border-zinc-800 bg-zinc-900/90 px-2 py-1 text-[11px] text-zinc-300 transition-all hover:border-[var(--okx-accent)]/80 hover:text-white hover:bg-zinc-800"
+                        className="rounded border border-zinc-800 bg-zinc-900/90 px-2 py-1 text-[11px] text-zinc-300 transition-all hover:border-white/30 hover:text-white hover:bg-zinc-800 cursor-pointer"
                       >
                         {sug}
                       </button>
@@ -555,21 +601,21 @@ export default function YoonaChat() {
                     placeholder="Tanya OKKAX Copilot seputar kalkulasi budget, brief, atau strategi acara…"
                     rows={1}
                     data-testid="yoona-chat-input"
-                    className="w-full resize-none rounded-lg border border-zinc-800 bg-[#080808] px-3.5 py-2.5 pr-11 text-xs text-white placeholder:text-zinc-500 focus:border-[var(--okx-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--okx-accent)]"
+                    className="w-full resize-none rounded-lg border border-zinc-800 bg-[#080808] px-3.5 py-2.5 pr-11 text-xs text-white placeholder:text-zinc-500 focus:border-white/40 focus:outline-none"
                   />
                   <button
                     onClick={() => handleSend()}
                     disabled={!input.trim() || loading}
                     data-testid="yoona-chat-send"
-                    className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-md bg-[var(--okx-accent)] text-white transition-all hover:bg-[var(--okx-accent-hover)] disabled:opacity-30"
+                    className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-md bg-white text-black hover:bg-zinc-200 disabled:opacity-30 cursor-pointer"
                     aria-label="Kirim Pesan"
                   >
-                    <Send className="h-3.5 w-3.5" />
+                    <Send className="h-3.5 w-3.5 text-black" />
                   </button>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-[9px] text-zinc-500">
                   <span className="font-mono">Enter kirim · Shift+Enter baris baru</span>
-                  <Link to="/okkax" className="font-semibold text-[var(--okx-accent)] hover:text-white transition-colors">
+                  <Link to="/okkax" className="font-semibold text-zinc-400 hover:text-white transition-colors">
                     Command Center Layar Penuh →
                   </Link>
                 </div>

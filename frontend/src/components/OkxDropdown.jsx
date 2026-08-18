@@ -100,18 +100,18 @@ export default function OkxDropdown({
         aria-label={ariaLabel}
         disabled={disabled}
         data-testid={testId}
-        className={`flex h-11 w-full items-center gap-2 rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-left text-sm text-white outline-none transition-all duration-200 hover:border-zinc-700 focus:border-[var(--okx-accent)] focus:ring-1 focus:ring-[var(--okx-accent)]/40 disabled:cursor-not-allowed disabled:opacity-50 ${
-          open ? "border-[var(--okx-accent)] ring-1 ring-[var(--okx-accent)]/40 shadow-[0_0_12px_rgba(255,46,126,0.15)]" : ""
+        className={`flex h-11 w-full items-center gap-2 rounded-xl border border-white/[0.12] bg-[#0d0d14] px-3.5 text-left text-sm text-white outline-none transition-all duration-200 hover:border-white/25 focus:border-white/40 focus:ring-1 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+          open ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_16px_rgba(255,255,255,0.08)] bg-[#12121e]" : ""
         }`}
       >
         {Icon && <Icon size={15} strokeWidth={1.7} className="shrink-0 text-zinc-400" aria-hidden="true" />}
-        <span className={`min-w-0 flex-1 truncate ${active ? "font-medium text-zinc-100" : "text-zinc-500"}`}>
+        <span className={`min-w-0 flex-1 truncate ${active ? "font-semibold text-white" : "text-zinc-400"}`}>
           {active?.label || placeholder}
         </span>
         <ChevronDown
           size={16}
           strokeWidth={1.8}
-          className={`shrink-0 text-zinc-400 transition-transform duration-200 ${open ? "rotate-180 text-[var(--okx-accent-soft)]" : ""}`}
+          className={`shrink-0 text-zinc-400 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`}
           aria-hidden="true"
         />
       </button>
@@ -119,28 +119,28 @@ export default function OkxDropdown({
       {open && (
         <div
           role="listbox"
-          className={`absolute left-0 right-0 z-50 rounded-xl border border-zinc-800 bg-[#111116]/98 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl ${
+          className={`absolute left-0 right-0 z-50 rounded-2xl border border-white/[0.18] ring-1 ring-white/[0.08] bg-[#12121c]/98 p-2 shadow-[0_24px_60px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-3xl ${
             flipUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
           }`}
           data-testid={testId ? `${testId}-menu` : undefined}
         >
           {canSearch && (
-            <div className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-black/40 px-3 py-2 mb-1">
-              <Search size={14} className="shrink-0 text-zinc-500" aria-hidden="true" />
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.1] bg-black/50 px-3 py-2 mb-1.5">
+              <Search size={14} className="shrink-0 text-zinc-400" aria-hidden="true" />
               <input
                 ref={searchRef}
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Cari opsi..."
-                className="w-full bg-transparent text-xs text-zinc-100 outline-none placeholder:text-zinc-600 font-gemini"
+                className="w-full bg-transparent text-xs text-white outline-none placeholder:text-zinc-500 font-gemini"
                 data-testid={testId ? `${testId}-search` : undefined}
               />
             </div>
           )}
-          <ul className="okx-custom-scrollbar max-h-60 overflow-y-auto space-y-0.5 pr-0.5">
+          <ul className="okx-custom-scrollbar max-h-60 overflow-y-auto space-y-1 pr-0.5">
             {filtered.length === 0 ? (
-              <li className="px-3 py-3 text-center text-xs text-zinc-500">Tidak ada opsi ditemukan.</li>
+              <li className="px-3 py-3 text-center text-xs text-zinc-400">Tidak ada opsi ditemukan.</li>
             ) : (
               filtered.map((opt) => {
                 const selected = String(opt.value) === String(value ?? "");
@@ -153,12 +153,12 @@ export default function OkxDropdown({
                       aria-disabled={opt.disabled || undefined}
                       disabled={opt.disabled}
                       onClick={() => handleSelect(opt.value, opt)}
-                      className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-150 ${
+                      className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-xs sm:text-sm font-medium transition-all duration-150 cursor-pointer ${
                         opt.disabled
                           ? "cursor-not-allowed text-zinc-600 opacity-50"
                           : selected
-                            ? "bg-[var(--okx-accent)]/15 text-[var(--okx-accent-soft)] font-semibold"
-                            : "text-zinc-300 hover:bg-zinc-800/70 hover:text-white"
+                            ? "border border-white/30 bg-white/[0.12] text-white font-bold shadow-sm"
+                            : "border border-transparent text-zinc-200 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
                       <span className="truncate">{opt.label}</span>
@@ -167,7 +167,7 @@ export default function OkxDropdown({
                         <Check
                           size={14}
                           strokeWidth={2.5}
-                          className="shrink-0 text-[var(--okx-accent)]"
+                          className="shrink-0 text-emerald-400"
                           aria-hidden="true"
                         />
                       )}

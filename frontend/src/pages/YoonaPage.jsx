@@ -17,10 +17,19 @@ import {
   Check,
   Sliders,
   Terminal,
+  Store,
+  Mic2,
+  Workflow,
+  Sparkles,
+  QrCode,
+  Users,
+  ArrowUpRight,
 } from "lucide-react";
 import PublicNav from "@/components/PublicNav";
+import { CopilotIntelligenceIcon } from "@/components/YoonaChat";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { ScrollProgressBar, SpotlightCard, MotionPanel } from "@/components/MotionPrimitives";
 
 function renderFormattedMarkdown(text) {
   if (!text) return null;
@@ -82,20 +91,20 @@ function renderFormattedMarkdown(text) {
     if (line.startsWith("### ")) {
       elements.push(
         <h4 key={`h3-${keyIdx++}`} className="mt-5 mb-2 text-base font-bold text-[#f5eff2] tracking-wide flex items-center gap-2 font-gemini-display">
-          <span className="inline-block h-2 w-2 rounded-full bg-[var(--okx-accent)]" />
+          <span className="inline-block h-2 w-2 rounded-full bg-white" />
           {formatInlineText(line.replace("### ", ""))}
         </h4>
       );
     } else if (line.startsWith("#### ")) {
       elements.push(
-        <h5 key={`h4-${keyIdx++}`} className="mt-3.5 mb-1.5 text-xs font-bold text-[var(--okx-accent-soft)] uppercase tracking-wider font-gemini-display">
+        <h5 key={`h4-${keyIdx++}`} className="mt-3.5 mb-1.5 text-xs font-bold text-zinc-300 uppercase tracking-wider font-gemini-display">
           {formatInlineText(line.replace("#### ", ""))}
         </h5>
       );
     } else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
       elements.push(
         <div key={`li-${keyIdx++}`} className="flex items-start gap-2.5 my-1 text-xs sm:text-sm text-zinc-300 font-gemini">
-          <span className="text-[var(--okx-accent)] mt-1 select-none font-bold text-[10px]">•</span>
+          <span className="text-zinc-400 mt-1 select-none font-bold text-[10px]">•</span>
           <span className="flex-1 leading-relaxed">{formatInlineText(line.trim().substring(2))}</span>
         </div>
       );
@@ -103,7 +112,7 @@ function renderFormattedMarkdown(text) {
       const match = line.trim().match(/^(\d+)\.\s(.*)$/);
       elements.push(
         <div key={`oli-${keyIdx++}`} className="flex items-start gap-2.5 my-1 text-xs sm:text-sm text-zinc-300 font-gemini">
-          <span className="font-gemini-mono text-[var(--okx-accent)] font-bold text-xs min-w-[22px]">
+          <span className="font-gemini-mono text-zinc-400 font-bold text-xs min-w-[22px]">
             {match[1]}.
           </span>
           <span className="flex-1 leading-relaxed">{formatInlineText(match[2])}</span>
@@ -143,7 +152,7 @@ function formatInlineText(text) {
         <Link
           key={match.index}
           to={url}
-          className="inline-flex items-center gap-1 font-bold text-[var(--okx-accent)] underline decoration-[var(--okx-accent)]/50 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1 font-bold text-white underline decoration-zinc-500 hover:text-zinc-300 transition-colors"
         >
           {label}
           <ArrowRight className="h-3 w-3 inline" />
@@ -156,7 +165,7 @@ function formatInlineText(text) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-bold text-[var(--okx-accent)] underline hover:text-white transition-colors"
+          className="inline-flex items-center gap-1 font-bold text-white underline decoration-zinc-500 hover:text-zinc-300 transition-colors"
         >
           {label}
         </a>
@@ -196,64 +205,177 @@ function renderBoldItalic(raw) {
   });
 }
 
-const STRATEGY_SCENARIOS = [
+const PERSONAS_CONFIG = [
   {
-    title: "1. Brief & Technical Specs",
-    icon: Wand2,
-    prompts: [
-      "Bantu rancang kalkulasi finansial dan teknis sound system konser stadion 50.000 pax",
-      "Apa saja hal krusial yang wajib ada di Technical Rider artis internasional?",
-      "Bagaimana menyusun timeline operasional W-8 hingga hari H acara?",
+    id: "organizer",
+    label: "Organizer",
+    icon: Workflow,
+    badge: "Kompilasi & Operasional",
+    description: "Kompilasi brief, pemetaan Event Graph, dan penyelesaian blocker rantai pasok.",
+    modules: [
+      {
+        title: "1. Blocker & Event Graph",
+        icon: Network,
+        prompts: [
+          "Deteksi blocker kritis di Event Graph konser 5.000 pax",
+          "Bantu susun Event Blueprint lengkap dari brief konser festival",
+          "Apa hubungan antara node Venue dengan Vendor sound & lighting?",
+        ],
+      },
+      {
+        title: "2. Kalkulasi Anggaran & Biaya",
+        icon: Calculator,
+        prompts: [
+          "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar",
+          "Berapa persentase ideal untuk dana cadangan (contingency fund)?",
+          "Bagaimana menyusun timeline operasional W-8 hingga hari H acara?",
+        ],
+      },
     ],
   },
   {
-    title: "2. Alokasi Finansial & Break-Even",
-    icon: Calculator,
-    prompts: [
-      "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar",
-      "Berapa persentase ideal untuk dana cadangan (contingency fund)?",
-      "Bagaimana strategi menutup funding gap antara sponsor vs penjualan tiket?",
-    ],
-  },
-  {
-    title: "3. Event Graph & Rantai Pasok",
-    icon: Network,
-    prompts: [
-      "Jelaskan struktur node Event Graph dan bagaimana menangani node yang statusnya Blocked",
-      "Apa hubungan antara node Venue dengan Vendor sound & lighting?",
-      "Bagaimana cara memvalidasi node kontrak artis di Event Graph?",
-    ],
-  },
-  {
-    title: "4. Monetisasi Sponsor & Tenant",
-    icon: Handshake,
-    prompts: [
-      "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?",
-      "Berapa harga sewa wajar booth F&B kuliner di event 5.000 pax?",
-      "Benefit apa saja yang paling diminati brand korporat saat ini?",
-    ],
-  },
-  {
-    title: "5. Gate Control & Validasi Tiket",
-    icon: ScanLine,
-    prompts: [
-      "Bagaimana SOP validasi scanner tiket QR di gate dan pencegahan tiket ganda?",
-      "Apa saja metode pembayaran lokal yang didukung sandbox OKKAX?",
-      "Bagaimana manajemen antrean penonton saat jam puncak kedatangan?",
-    ],
-  },
-  {
-    title: "6. Dampak Ekonomi Regional",
+    id: "promotor",
+    label: "Promotor",
     icon: TrendingUp,
-    prompts: [
-      "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?",
-      "Sektor apa saja yang diuntungkan dari live event di kota-kota daerah?",
-      "Mengapa ekosistem UMKM dan vendor lokal dicatat dalam metrik perputaran?",
+    badge: "Yield & Multi-City Portfolio",
+    description: "Proyeksi break-even, optimasi penjualan tiket, dan manajemen arus kas escrow.",
+    modules: [
+      {
+        title: "1. Break-Even & Yield Tiket",
+        icon: TrendingUp,
+        prompts: [
+          "Hitung proyeksi break-even dan optimasi tier tiket VIP",
+          "Bagaimana strategi menutup funding gap antara sponsor vs penjualan tiket?",
+          "Berapa harga patokan tiket untuk konser indoor 3.000 pax?",
+        ],
+      },
+      {
+        title: "2. Portfolio Lintas Kota",
+        icon: Network,
+        prompts: [
+          "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?",
+          "Simulasi portfolio tur konser musik di Jakarta, Bandung, dan Surabaya",
+        ],
+      },
+    ],
+  },
+  {
+    id: "sponsor",
+    label: "Sponsor",
+    icon: Sparkles,
+    badge: "Aktivasi Brand & ROI",
+    description: "Valuasi paket sponsor, jaminan hak eksklusif, dan estimasi impresi audiens.",
+    modules: [
+      {
+        title: "1. Valuasi & Inventori Sponsor",
+        icon: Handshake,
+        prompts: [
+          "Valuasi paket Presenting Sponsor & estimasi audiens engagement",
+          "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?",
+          "Benefit apa saja yang paling diminati brand korporat saat ini?",
+        ],
+      },
+    ],
+  },
+  {
+    id: "tenant",
+    label: "Tenant",
+    icon: Store,
+    badge: "F&B / Merchandise Zone",
+    description: "Kebutuhan daya listrik, estimasi volume transaksi, dan settlement bagi hasil.",
+    modules: [
+      {
+        title: "1. Zonasi & Settlement Booth",
+        icon: Store,
+        prompts: [
+          "Rekomendasi kebutuhan daya listrik dan estimasi transaksi F&B",
+          "Berapa harga sewa wajar booth F&B kuliner di event 5.000 pax?",
+          "Bagaimana alur settlement otomatis bagi hasil QRIS di OKKAX?",
+        ],
+      },
+    ],
+  },
+  {
+    id: "audience",
+    label: "Audience",
+    icon: QrCode,
+    badge: "LivePass Access & Gate",
+    description: "Validasi tiket dinamis anti-screenshot dan prosedur scan cepat di pintu masuk.",
+    modules: [
+      {
+        title: "1. LivePass & Validasi Gate",
+        icon: ScanLine,
+        prompts: [
+          "Jelaskan cara kerja validasi gate offline LivePass anti-calo",
+          "Bagaimana SOP validasi scanner tiket QR di gate dan pencegahan tiket ganda?",
+          "Apa saja metode pembayaran lokal yang didukung sandbox OKKAX?",
+        ],
+      },
+    ],
+  },
+  {
+    id: "talent",
+    label: "Talent",
+    icon: Mic2,
+    badge: "Rider & Compliance",
+    description: "Pemeriksaan kompatibilitas rider teknis panggung dan jadwal termin honor.",
+    modules: [
+      {
+        title: "1. Technical Rider & Soundcheck",
+        icon: Mic2,
+        prompts: [
+          "Periksa kompatibilitas Technical Rider audio 400 kVA dengan venue",
+          "Apa saja hal krusial yang wajib ada di Technical Rider artis internasional?",
+          "Bagaimana skema pencairan honor talent berbasis milestone termin di OKKAX?",
+        ],
+      },
+    ],
+  },
+  {
+    id: "vendor",
+    label: "Vendor",
+    icon: Network,
+    badge: "Produksi & Rigging Specs",
+    description: "Validasi spek audio/lighting/LED dan proteksi milestone pembayaran produksi.",
+    modules: [
+      {
+        title: "1. Produksi & Spek Panggung",
+        icon: Network,
+        prompts: [
+          "Validasi kebutuhan sound system Line Array 24-box dan daya genset 250 kVA",
+          "Bagaimana standar rigging ground support untuk beban LED P3 12x6 meter?",
+          "Bagaimana alur milestone pembayaran vendor produksi di OKKAX?",
+        ],
+      },
+    ],
+  },
+  {
+    id: "workforce",
+    label: "Workforce",
+    icon: Users,
+    badge: "Crew & Field Operations",
+    description: "Manajemen shift kru panggung, usher, security, dan pencairan honor harian.",
+    modules: [
+      {
+        title: "1. Shift Kru & Crowd Safety",
+        icon: Users,
+        prompts: [
+          "Hitung rasio kebutuhan usher dan security untuk kapasitas 5.000 pax",
+          "Bagaimana SOP penugasan Liaison Officer (LO) untuk headliner talent?",
+          "Bagaimana verifikasi absensi QR dan pencairan honor kru harian di OKKAX?",
+        ],
+      },
     ],
   },
 ];
 
 export default function YoonaPage() {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialPersona = searchParams.get("persona") || searchParams.get("role") || "organizer";
+  const initialPrompt = searchParams.get("prompt") || "";
+
+  const [activePersona, setActivePersona] = useState(initialPersona);
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -266,13 +388,23 @@ export default function YoonaPage() {
   const [loading, setLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const { user } = useAuth();
-  const location = useLocation();
   const chatEndRef = useRef(null);
-  const textareaRef = useRef(null);
+  const autoPromptRan = useRef(false);
+
+  const personaObj = PERSONAS_CONFIG.find((p) => p.id === activePersona) || PERSONAS_CONFIG[0];
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-send prompt if provided in URL search parameters
+  useEffect(() => {
+    if (initialPrompt && !autoPromptRan.current) {
+      autoPromptRan.current = true;
+      handleSend(initialPrompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt]);
 
   const handleSend = async (textToSend) => {
     const query = textToSend || input;
@@ -293,7 +425,7 @@ export default function YoonaPage() {
         message: query.trim(),
         history: messages.slice(-8).map((m) => ({ role: m.role, content: m.content })),
         current_route: location.pathname,
-        role: user?.roles?.[0] || "organizer",
+        role: activePersona || user?.roles?.[0] || "organizer",
       };
 
       const res = await api.post("/okkax/chat", payload);
@@ -353,7 +485,7 @@ export default function YoonaPage() {
     setMessages([
       {
         role: "assistant",
-        content: "Percakapan telah direset. Silakan ajukan rencana atau pertanyaan event baru bersama OKKAX Copilot!",
+        content: `Mode **${personaObj.label}** aktif. Silakan ajukan rencana, kalkulasi, atau konsultasi operasional live event bersama OKKAX Copilot!`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
@@ -361,6 +493,7 @@ export default function YoonaPage() {
 
   return (
     <div className="min-h-screen bg-[#070707] text-white flex flex-col font-gemini">
+      <ScrollProgressBar />
       <PublicNav />
 
       {/* Telemetry Header Strip */}
@@ -368,16 +501,16 @@ export default function YoonaPage() {
         <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4 font-gemini-mono text-[11px] text-zinc-400">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold font-gemini">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               OKKAX Operations Engine · Online
             </span>
             <span className="hidden sm:inline text-zinc-600">|</span>
-            <span className="hidden sm:inline text-zinc-300 font-gemini">Live Event Operating Network</span>
+            <span className="hidden sm:inline text-zinc-300 font-gemini">Principal Event Intelligence</span>
           </div>
           <div className="flex items-center gap-4 text-[10px] font-gemini-mono">
-            <span>15+ Kota Terkoneksi</span>
+            <span className="text-zinc-300">Mode: {personaObj.label} Lens</span>
             <span>·</span>
-            <span>Grounding: OKKAX Multi-Model DB</span>
+            <span>15+ Kota Terkoneksi</span>
           </div>
         </div>
       </div>
@@ -385,40 +518,51 @@ export default function YoonaPage() {
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 flex flex-col lg:flex-row gap-6">
         {/* Left Panel: Mission Control & Scenarios */}
         <aside className="w-full lg:w-84 shrink-0 flex flex-col gap-4">
-          {/* OKKAX Copilot Identity Card */}
-          <div className="rounded-xl border border-[var(--okx-border)] bg-[#121212] p-5 shadow-lg relative overflow-hidden">
-            <div className="flex items-center gap-3.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--okx-accent)] text-white shadow-[0_0_12px_rgba(255,46,126,0.4)]">
-                <Layers className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-base font-bold tracking-wide text-white font-gemini-display">OKKAX Copilot</h1>
-                <p className="text-xs font-gemini-mono text-[var(--okx-accent-soft)]">Principal Event Intelligence</p>
-              </div>
+          {/* Persona Role Switcher Strip */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 shadow-lg">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2.5 flex items-center justify-between font-gemini-mono">
+              <span>PILIH KACAMATA PERAN:</span>
+              <span className="text-zinc-300 font-mono">8 Roles</span>
             </div>
-            <p className="mt-3.5 text-xs leading-relaxed text-zinc-400 font-gemini">
-              Asisten untuk komputasi finansial, arsitektur dependensi Event Graph, dan manajemen operasional live event di Indonesia.
-            </p>
-            <div className="mt-4 pt-3.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-400">
-              <span className="font-gemini">Kecepatan Inferensi</span>
-              <span className="font-gemini-mono text-white font-semibold">&lt; 1.0s</span>
+            <div className="grid grid-cols-4 gap-1.5">
+              {PERSONAS_CONFIG.map((p) => {
+                const PIcon = p.icon;
+                const isActive = p.id === activePersona;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setActivePersona(p.id)}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                      isActive
+                        ? "border-white/40 bg-white/[0.1] text-white shadow-sm"
+                        : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-white"
+                    }`}
+                  >
+                    <PIcon size={14} className={isActive ? "text-white" : "text-zinc-500"} />
+                    <span className="text-[11px] font-semibold mt-1">{p.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Preset Topics Accordion */}
-          <div className="rounded-xl border border-[var(--okx-border)] bg-[#111111] p-4 flex-1 flex flex-col shadow-md font-gemini">
+          {/* Preset Topics Accordion per Persona */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 flex-1 flex flex-col shadow-md font-gemini">
             <div className="flex items-center justify-between mb-3 px-1">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 font-gemini-display">
-                <Sliders className="h-3.5 w-3.5 text-[var(--okx-accent)]" /> Modul Konsultasi:
-              </h2>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-200 flex items-center gap-1.5 font-gemini-display">
+                  <Sliders className="h-3.5 w-3.5 text-zinc-400" /> Modul {personaObj.label}:
+                </h2>
+                <p className="text-[10px] text-zinc-400 mt-0.5">{personaObj.description}</p>
+              </div>
             </div>
-            <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-420px)] pr-1 okx-custom-scrollbar">
-              {STRATEGY_SCENARIOS.map((scenario, sIdx) => {
+            <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-450px)] pr-1 okx-custom-scrollbar">
+              {personaObj.modules.map((scenario, sIdx) => {
                 const Icon = scenario.icon;
                 return (
-                  <div key={sIdx} className="rounded-lg border border-zinc-800/70 bg-[#161616]/70 p-3 hover:border-zinc-700 transition-all">
+                  <div key={sIdx} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 hover:border-white/20 transition-all">
                     <div className="flex items-center gap-2 mb-2">
-                      <Icon className="h-3.5 w-3.5 text-[var(--okx-accent)] shrink-0" />
+                      <Icon className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                       <span className="text-xs font-bold text-zinc-200">{scenario.title}</span>
                     </div>
                     <div className="space-y-1">
@@ -428,7 +572,7 @@ export default function YoonaPage() {
                           onClick={() => handleSend(p)}
                           disabled={loading}
                           data-testid={`yoona-page-prompt-${sIdx}-${idx}`}
-                          className="w-full text-left rounded px-2.5 py-1.5 text-[11px] text-zinc-400 hover:text-white hover:bg-[var(--okx-accent)]/15 hover:border-[var(--okx-accent)]/30 border border-transparent transition-all truncate block"
+                          className="w-full text-left rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-300 hover:text-white hover:bg-white/[0.06] hover:border-white/20 border border-transparent transition-all leading-snug block cursor-pointer"
                           title={p}
                         >
                           → {p}
@@ -443,16 +587,16 @@ export default function YoonaPage() {
         </aside>
 
         {/* Right Panel: Conversational Command Deck */}
-        <section className="flex-1 rounded-xl border border-[var(--okx-border)] bg-[#111111] flex flex-col shadow-xl overflow-hidden min-h-[640px] lg:min-h-[calc(100vh-170px)]">
+        <section className="flex-1 rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl flex flex-col shadow-xl overflow-hidden min-h-[640px] lg:min-h-[calc(100vh-170px)]">
           {/* Deck Header */}
-          <div className="flex items-center justify-between border-b border-zinc-800 bg-[#151515] px-5 py-3.5">
+          <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#09090f] px-5 py-3.5">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[var(--okx-accent)]" />
-                <span className="text-xs font-bold text-white tracking-wide">Interactive Session Deck</span>
+                <span className="h-2 w-2 rounded-full bg-white" />
+                <span className="text-xs font-bold text-white tracking-wide">Interactive Copilot Session</span>
               </div>
-              <span className="rounded bg-zinc-800 border border-zinc-700/60 px-2 py-0.5 text-[10px] font-mono text-zinc-300">
-                {user ? `Role: ${user.roles?.[0] || "Organizer"}` : "Mode Tamu"}
+              <span className="rounded-full bg-white/[0.08] border border-white/[0.15] px-2.5 py-0.5 text-[10px] font-mono text-zinc-300">
+                Kacamata: {personaObj.label}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -460,7 +604,7 @@ export default function YoonaPage() {
                 onClick={exportTranscript}
                 data-testid="yoona-page-export-btn"
                 title="Ekspor Transkrip Diskusi"
-                className="flex items-center gap-1.5 rounded border border-zinc-800 bg-zinc-900/80 px-2.5 py-1 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
               >
                 <Download className="h-3 w-3" />
                 <span className="hidden sm:inline">Ekspor</span>
@@ -469,7 +613,7 @@ export default function YoonaPage() {
                 onClick={clearChat}
                 data-testid="yoona-page-clear-btn"
                 title="Bersihkan Percakapan"
-                className="flex items-center gap-1.5 rounded border border-zinc-800 bg-zinc-900/80 px-2.5 py-1 text-xs text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors"
+                className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
               >
                 <Trash2 className="h-3 w-3" />
                 <span className="hidden sm:inline">Reset</span>
@@ -478,7 +622,7 @@ export default function YoonaPage() {
           </div>
 
           {/* Conversation Canvas */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-5 okx-custom-scrollbar bg-[#090909]/40">
+          <div className="flex-1 overflow-y-auto p-5 space-y-5 okx-custom-scrollbar bg-[#060609]/40">
             {messages.map((m, idx) => (
               <div
                 key={idx}
@@ -486,100 +630,131 @@ export default function YoonaPage() {
                 className={`flex items-start gap-3.5 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-semibold ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                     m.role === "user"
                       ? "bg-zinc-800 text-zinc-200 border border-zinc-700 shadow-sm"
-                      : "bg-[var(--okx-accent)] text-white shadow-[0_0_10px_rgba(255,46,126,0.4)]"
+                      : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm"
                   }`}
                 >
-                  {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <Terminal className="h-4 w-4" />}
+                  {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-3.5 w-3.5 text-white" />}
                 </div>
                 <div
-                  className={`group relative max-w-[90%] sm:max-w-[82%] rounded-xl px-5 py-4 text-sm ${
+                  className={`group relative max-w-[90%] sm:max-w-[84%] rounded-2xl px-5 py-4 text-sm ${
                     m.role === "user"
-                      ? "bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/35 text-white"
-                      : "bg-[#141414] border border-zinc-800/90 text-zinc-200 shadow-md"
+                      ? "bg-white/[0.08] border border-white/[0.15] text-white"
+                      : "bg-[#121218] border border-white/[0.08] text-zinc-200 shadow-md"
                   }`}
                 >
-                  {m.role === "user" ? (
-                    <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                  ) : (
-                    renderFormattedMarkdown(m.content)
-                  )}
-
-                  <div className="mt-3 pt-2 border-t border-zinc-800/50 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+                  <div className="flex items-center justify-between gap-4 mb-2 pb-1 border-b border-white/[0.06] text-[10px] text-zinc-500 font-gemini-mono">
+                    <span className="font-semibold text-zinc-400">
+                      {m.role === "user" ? "Anda" : "OKKAX Copilot Intelligence"}
+                    </span>
                     <div className="flex items-center gap-2">
-                      {m.engine && <span className="text-[var(--okx-accent-soft)]">{m.engine}</span>}
-                      <span>· {m.timestamp}</span>
-                    </div>
-                    {m.role === "assistant" && (
+                      <span>{m.timestamp}</span>
                       <button
                         onClick={() => copyMessage(m.content, idx)}
-                        data-testid={`yoona-page-copy-${idx}`}
-                        className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-zinc-400 hover:text-white transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-white cursor-pointer"
+                        title="Salin Teks"
                       >
-                        {copiedIdx === idx ? (
-                          <>
-                            <Check className="h-3 w-3 text-emerald-400" />
-                            <span className="text-emerald-400">Tersalin</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            <span>Salin Teks</span>
-                          </>
-                        )}
+                        {copiedIdx === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                       </button>
-                    )}
+                    </div>
                   </div>
+
+                  <div className="leading-relaxed">
+                    {m.role === "assistant" ? renderFormattedMarkdown(m.content) : m.content}
+                  </div>
+
+                  {m.role === "assistant" && idx > 0 && (
+                    <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap items-center gap-2">
+                      <Link
+                        to="/demo"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-zinc-200 transition-all"
+                      >
+                        <Network size={12} className="text-zinc-400" />
+                        <span>Lihat Event Graph</span>
+                      </Link>
+                      <Link
+                        to="/products/event-studio"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-zinc-200 transition-all"
+                      >
+                        <Workflow size={12} className="text-zinc-400" />
+                        <span>Buka Event Studio</span>
+                      </Link>
+                      <Link
+                        to="/peta"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06] px-3 py-1.5 text-[11px] font-semibold text-zinc-200 transition-all"
+                      >
+                        <TrendingUp size={12} className="text-zinc-400" />
+                        <span>Live Event Map</span>
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
 
             {loading && (
               <div className="flex items-start gap-3.5">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-[var(--okx-accent)] text-white">
-                  <Terminal className="h-4 w-4" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm">
+                  <CopilotIntelligenceIcon className="h-3.5 w-3.5 animate-spin text-white" />
                 </div>
-                <div className="rounded-xl bg-[#141414] border border-zinc-800 px-5 py-4 text-xs text-zinc-300">
-                  <div className="flex items-center gap-2.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)] animate-pulse" />
-                    <span className="font-mono text-zinc-400">OKKAX Copilot sedang memproses dan mengompilasi model data…</span>
+                <div className="rounded-2xl border border-white/[0.08] bg-[#121218] px-5 py-4 text-xs text-zinc-400 flex items-center gap-3">
+                  <div className="flex space-x-1.5">
+                    <div className="h-2 w-2 rounded-full bg-zinc-300 animate-bounce" />
+                    <div className="h-2 w-2 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.2s]" />
+                    <div className="h-2 w-2 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.4s]" />
                   </div>
+                  <span>OKKAX Copilot sedang melakukan komputasi data operasional...</span>
                 </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input & Action Bar */}
-          <div className="border-t border-zinc-800 bg-[#151515] p-4">
-            <div className="relative flex items-center">
+          {/* Quick Action Chips Strip */}
+          <div className="border-t border-white/[0.08] bg-[#09090f] px-5 py-2.5 flex items-center gap-2 overflow-x-auto okx-custom-scrollbar">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono shrink-0">
+              💡 Cepat:
+            </span>
+            {personaObj.modules[0]?.prompts?.slice(0, 3).map((promptText, pIdx) => (
+              <button
+                key={pIdx}
+                onClick={() => handleSend(promptText)}
+                disabled={loading}
+                className="shrink-0 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1 text-[11px] text-zinc-300 hover:border-white/30 hover:text-white hover:bg-white/[0.08] transition-all truncate max-w-[280px] cursor-pointer"
+                title={promptText}
+              >
+                {promptText}
+              </button>
+            ))}
+          </div>
+
+          {/* Chat Input Console */}
+          <div className="border-t border-white/[0.08] bg-[#0c0c12] p-4">
+            <div className="relative flex items-center rounded-xl border border-white/[0.12] bg-[#060609] px-4 py-2.5 focus-within:border-white/40 transition-all">
               <textarea
-                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ajukan pertanyaan mengenai kalkulasi budget, brief acara, Event Graph, atau SOP scanner gate…"
-                rows={2}
-                data-testid="yoona-page-input"
-                className="w-full resize-none rounded-lg border border-zinc-800 bg-[#080808] px-4 py-3 pr-14 text-sm text-white placeholder:text-zinc-500 focus:border-[var(--okx-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--okx-accent)]"
+                placeholder={`Tanyakan pada OKKAX Copilot seputar ${personaObj.label.toLowerCase()} (e.g. kalkulasi budget, blocker graph, rider, vendor)...`}
+                rows={1}
+                disabled={loading}
+                className="w-full resize-none bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none okx-custom-scrollbar max-h-32"
               />
               <button
+                type="button"
                 onClick={() => handleSend()}
                 disabled={!input.trim() || loading}
                 data-testid="yoona-page-send-btn"
-                className="absolute right-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--okx-accent)] text-white transition-all hover:bg-[var(--okx-accent-hover)] disabled:opacity-30"
-                aria-label="Kirim Pesan"
+                className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-black hover:bg-zinc-200 disabled:opacity-30 transition-all shadow-md cursor-pointer"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-4 w-4 text-black" />
               </button>
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
-              <span className="font-mono">Shift+Enter untuk baris baru · Enter untuk mengirim</span>
-              <span className="hidden sm:inline text-zinc-400 font-mono">
-                OKKAX Operations Copilot
-              </span>
+            <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500 font-gemini-mono">
+              <span>Tekan Enter untuk mengirim · Shift+Enter untuk baris baru</span>
+              <span>OKKAX Event Intelligence Core v2.4</span>
             </div>
           </div>
         </section>
