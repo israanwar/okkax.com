@@ -18,65 +18,48 @@ import {
  */
 export function StitchAuroraBackground({ children, className = "", showGrid = true }) {
   return (
-    <div className={`relative overflow-hidden bg-[#030306] ${className}`}>
-      {/* 1. Fluid Aurora Energy Waves (Deep Midnight Moody Palette) */}
+    <div className={`relative overflow-hidden bg-black ${className}`}>
+      {/* 1. Pure Stealth Atmosphere (Subtle Studio Gradients) */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-        {/* Layer A: Deep Volumetric Atmospheric Bloom */}
+        {/* Soft Radial Ambient Spotlight behind Center Stage */}
         <div
-          className="absolute -top-[15%] -left-[10%] h-[600px] w-[75%] rounded-full opacity-40 blur-[140px]"
+          className="absolute top-[10%] left-1/2 -translate-x-1/2 h-[750px] w-[90%] max-w-[1200px] rounded-full opacity-30 blur-[130px]"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(76, 29, 149, 0.35), rgba(49, 46, 129, 0.25), transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute top-[25%] -left-[5%] h-[550px] w-[70%] rounded-full opacity-35 blur-[130px]"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(14, 116, 144, 0.3), rgba(30, 58, 138, 0.2), transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08), rgba(30, 41, 59, 0.15), transparent 70%)",
           }}
         />
 
-        {/* Layer B: Primary Sculpted Violet / Purple Ribbon (Upper-Left to Center-Top) */}
-        <div className="absolute -top-[5%] -left-[15%] h-[380px] w-[130%] -rotate-12 rounded-[100%] opacity-65 blur-[75px] stitch-aurora-violet-ribbon" />
-        {/* Inner glowing core */}
-        <div className="absolute top-[5%] -left-[10%] h-[240px] w-[110%] -rotate-10 rounded-[100%] opacity-70 blur-[48px] stitch-aurora-violet-ribbon" />
-
-        {/* Layer C: Primary Sculpted Cyan / Electric Sky Blue Ribbon (Lower-Left to Center-Right) */}
-        <div className="absolute top-[35%] -left-[12%] h-[340px] w-[125%] rotate-12 rounded-[100%] opacity-60 blur-[75px] stitch-aurora-cyan-ribbon" />
-        {/* Inner glowing core */}
-        <div className="absolute top-[42%] -left-[8%] h-[200px] w-[105%] rotate-8 rounded-[100%] opacity-65 blur-[45px] stitch-aurora-cyan-ribbon" />
-
-        {/* Layer D: Right-side Magenta / Indigo Echo Wave */}
-        <div className="absolute top-[10%] -right-[15%] h-[460px] w-[65%] rotate-6 rounded-[100%] opacity-45 blur-[80px] stitch-aurora-magenta-echo" />
-
-        {/* Layer E: Center High-Refraction Ambient Vignette */}
+        {/* Ultra-Subtle Deep Midnight Sheen */}
         <div
-          className="absolute inset-0 opacity-50"
+          className="absolute top-[20%] -left-[10%] h-[500px] w-[50%] rounded-full opacity-15 blur-[140px]"
           style={{
-            background: "radial-gradient(900px circle at 50% 35%, rgba(255, 255, 255, 0.04), transparent 75%)",
+            background: "radial-gradient(circle, rgba(99, 102, 241, 0.12), transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute top-[15%] -right-[10%] h-[500px] w-[50%] rounded-full opacity-10 blur-[140px]"
+          style={{
+            background: "radial-gradient(circle, rgba(14, 116, 144, 0.12), transparent 70%)",
+          }}
+        />
+
+        {/* Studio Top-Down Vignette */}
+        <div
+          className="absolute inset-0 opacity-60"
+          style={{
+            background: "linear-gradient(180deg, rgba(8, 8, 12, 0.5) 0%, rgba(0, 0, 0, 0.95) 100%)",
           }}
         />
       </div>
 
-      {/* 2. Dot-Matrix Blueprint Grid with Active Lens Illumination */}
-      {showGrid && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-70 stitch-grid-canvas"
-          style={{
-            mixBlendMode: "screen",
-          }}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* 3. Seamless Bottom Gradient Fade into Obsidian Base */}
+      {/* 2. Seamless Bottom Gradient Fade into Black Base */}
       <div
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-b from-transparent via-[#030306]/85 to-[#030306] z-10"
+        className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-black z-10"
         aria-hidden="true"
       />
 
-      {/* 4. Foreground Content */}
+      {/* 3. Foreground Content */}
       <div className="relative z-20">{children}</div>
     </div>
   );
