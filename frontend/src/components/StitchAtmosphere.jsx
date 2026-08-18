@@ -1,6 +1,5 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   Sparkles,
   ArrowRight,
@@ -14,40 +13,16 @@ import {
 /**
  * -----------------------------------------------------------------------------
  * STITCH AURORA BACKGROUND
- * Pure CSS/SVG + Framer Motion high-performance ambient fluid wave & dot grid.
+ * Pure CSS/SVG high-performance ambient fluid wave & dot grid (60fps hardware accelerated).
  * -----------------------------------------------------------------------------
  */
 export function StitchAuroraBackground({ children, className = "", showGrid = true }) {
-  const containerRef = useRef(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setMousePos({ x, y });
-  };
-
   return (
-    <div
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      className={`relative overflow-hidden bg-[#030306] ${className}`}
-    >
+    <div className={`relative overflow-hidden bg-[#030306] ${className}`}>
       {/* 1. Dot-Matrix Blueprint Grid with Radial Lens Vignette */}
       {showGrid && (
         <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-60 transition-transform duration-700 ease-out"
-          style={{
-            transform: `translate3d(${mousePos.x * 12}px, ${mousePos.y * 12}px, 0)`,
-            backgroundImage:
-              "radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 1.2px, transparent 1.2px)",
-            backgroundSize: "28px 28px",
-            maskImage: "radial-gradient(ellipse 80% 65% at 50% 45%, black 25%, transparent 85%)",
-            WebkitMaskImage:
-              "radial-gradient(ellipse 80% 65% at 50% 45%, black 25%, transparent 85%)",
-          }}
+          className="pointer-events-none absolute inset-0 z-0 opacity-60 stitch-grid-canvas"
           aria-hidden="true"
         />
       )}
@@ -56,73 +31,24 @@ export function StitchAuroraBackground({ children, className = "", showGrid = tr
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         {/* Deep Ambient Underglow */}
         <div
-          className="absolute -top-[10%] left-[15%] h-[550px] w-[70%] rounded-full opacity-40 blur-[120px] transition-transform duration-1000 ease-out"
+          className="absolute -top-[10%] left-[15%] h-[550px] w-[70%] rounded-full opacity-40 blur-[120px]"
           style={{
             background:
               "radial-gradient(ellipse at center, rgba(79, 70, 229, 0.35), rgba(147, 51, 234, 0.25), transparent 70%)",
-            transform: `translate3d(${mousePos.x * -30}px, ${mousePos.y * -30}px, 0)`,
           }}
         />
 
         {/* Primary Flowing Aurora Spline 1 (Electric Violet / Indigo) */}
-        <motion.div
-          animate={{
-            scale: [1, 1.08, 0.96, 1],
-            rotate: [-2, 3, -1, -2],
-            x: ["-5%", "3%", "-2%", "-5%"],
-            y: ["0%", "-4%", "2%", "0%"],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            transform: `translate3d(${mousePos.x * 20}px, ${mousePos.y * 20}px, 0)`,
-          }}
-          className="absolute top-[20%] left-[-10%] h-[320px] w-[120%] -rotate-6 rounded-[100%] opacity-70 blur-[75px]"
-        >
-          <div
-            className="h-full w-full"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.55) 20%, rgba(168, 85, 247, 0.65) 45%, rgba(236, 72, 153, 0.35) 75%, transparent 100%)",
-            }}
-          />
-        </motion.div>
+        <div className="absolute top-[20%] left-[-10%] h-[320px] w-[120%] -rotate-6 rounded-[100%] opacity-70 blur-[75px] stitch-aurora-ribbon-1" />
 
         {/* Secondary Flowing Aurora Spline 2 (Electric Cyan / Royal Blue Accent) */}
-        <motion.div
-          animate={{
-            scale: [1.05, 0.95, 1.08, 1.05],
-            rotate: [3, -3, 2, 3],
-            x: ["4%", "-4%", "2%", "4%"],
-            y: ["-2%", "3%", "-1%", "-2%"],
-          }}
-          transition={{
-            duration: 22,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          style={{
-            transform: `translate3d(${mousePos.x * -25}px, ${mousePos.y * -25}px, 0)`,
-          }}
-          className="absolute top-[32%] -left-[5%] h-[260px] w-[110%] rotate-3 rounded-[100%] opacity-60 blur-[85px]"
-        >
-          <div
-            className="h-full w-full"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent 0%, rgba(6, 182, 212, 0.45) 25%, rgba(99, 102, 241, 0.5) 55%, rgba(217, 70, 239, 0.3) 80%, transparent 100%)",
-            }}
-          />
-        </motion.div>
+        <div className="absolute top-[32%] -left-[5%] h-[260px] w-[110%] rotate-3 rounded-[100%] opacity-60 blur-[85px] stitch-aurora-ribbon-2" />
 
-        {/* Subtle Radial Cursor Spotlight Glow */}
+        {/* Subtle Ambient Radial Highlight */}
         <div
-          className="absolute inset-0 opacity-40 transition-opacity duration-300"
+          className="absolute inset-0 opacity-30"
           style={{
-            background: `radial-gradient(600px circle at calc(50% + ${mousePos.x * 400}px) calc(45% + ${mousePos.y * 300}px), rgba(255, 255, 255, 0.08), transparent 70%)`,
+            background: "radial-gradient(700px circle at 50% 40%, rgba(255, 255, 255, 0.08), transparent 70%)",
           }}
         />
       </div>
@@ -155,22 +81,26 @@ export function StitchHeroCommandCapsule({ className = "" }) {
   const SUGGESTIONS = [
     {
       label: "Konser 15.000 pax di GBK Senayan",
-      fullPrompt: "Rancang blueprint konser musik 15.000 penonton di Stadion GBK Senayan dengan kalkulasi staging, rider artist & ticketing multi-kategori.",
+      fullPrompt:
+        "Rancang blueprint konser musik 15.000 penonton di Stadion GBK Senayan dengan kalkulasi staging, rider artist & ticketing multi-kategori.",
       mode: "concert",
     },
     {
       label: "Makassar Jazz Fest 2-Hari 3-Panggung",
-      fullPrompt: "Simulasikan festival jazz 2 hari di Pantai Losari Makassar dengan 3 stage paralel, alokasi 40 vendor kuliner, dan settlement sponsor.",
+      fullPrompt:
+        "Simulasikan festival jazz 2 hari di Pantai Losari Makassar dengan 3 stage paralel, alokasi 40 vendor kuliner, dan settlement sponsor.",
       mode: "festival",
     },
     {
       label: "Break-even tiket & target sponsor Rp 2.5 M",
-      fullPrompt: "Analisis sensitivitas target sponsor Rp 2.5 Miliar dan titik impas tiket VIP & Festival untuk live show di Surabaya.",
+      fullPrompt:
+        "Analisis sensitivitas target sponsor Rp 2.5 Miliar dan titik impas tiket VIP & Festival untuk live show di Surabaya.",
       mode: "concert",
     },
     {
       label: "Arena Tour 5 Kota Jawa-Bali",
-      fullPrompt: "Susun jadwal logistik, timeline loading, vendor audio visual, dan proteksi pembayaran untuk tur arena di 5 kota.",
+      fullPrompt:
+        "Susun jadwal logistik, timeline loading, vendor audio visual, dan proteksi pembayaran untuk tur arena di 5 kota.",
       mode: "tour",
     },
   ];
@@ -193,10 +123,10 @@ export function StitchHeroCommandCapsule({ className = "" }) {
     <div className={`w-full max-w-4xl mx-auto ${className}`} data-testid="stitch-command-capsule">
       {/* Outer Floating Glass Capsule */}
       <div
-        className={`relative rounded-3xl border transition-all duration-500 ${
+        className={`relative rounded-3xl border transition-all duration-300 ${
           isFocused
-            ? "border-white/[0.28] bg-[#0d0d1c]/90 shadow-[0_28px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(99,102,241,0.22),inset_0_1px_0_rgba(255,255,255,0.3)]"
-            : "border-white/[0.14] bg-[#0a0a14]/80 shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_40px_rgba(79,70,229,0.12),inset_0_1px_0_rgba(255,255,255,0.18)]"
+            ? "border-white/[0.3] bg-[#0d0d1c]/95 shadow-[0_28px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(99,102,241,0.25),inset_0_1px_0_rgba(255,255,255,0.35)]"
+            : "border-white/[0.14] bg-[#0a0a14]/85 shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_40px_rgba(79,70,229,0.12),inset_0_1px_0_rgba(255,255,255,0.18)]"
         } backdrop-blur-3xl p-3 sm:p-4`}
       >
         {/* Top Atmosphere Accent Bar */}
@@ -214,23 +144,14 @@ export function StitchHeroCommandCapsule({ className = "" }) {
                   key={mode.id}
                   type="button"
                   onClick={() => setSelectedMode(mode.id)}
-                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
                     isActive
-                      ? "text-black font-bold shadow-md"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                      ? "bg-white text-black font-bold shadow-md scale-[1.02]"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
                   }`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activePillMode"
-                      className="absolute inset-0 rounded-xl bg-white"
-                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    <Icon size={12} className={isActive ? "text-black" : "text-zinc-400"} />
-                    {mode.label}
-                  </span>
+                  <Icon size={12} className={isActive ? "text-black" : "text-zinc-400"} />
+                  <span>{mode.label}</span>
                 </button>
               );
             })}
@@ -314,3 +235,4 @@ export function StitchHeroCommandCapsule({ className = "" }) {
     </div>
   );
 }
+
