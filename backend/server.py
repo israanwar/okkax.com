@@ -25,7 +25,7 @@ from core import (db, nid, now_iso, hash_password, verify_password, create_acces
                   ROLES, ROLE_KEYS)
 from compiler import (compile_blueprint, _fallback as baseline_blueprint,
                       AI_ENGINES, DEFAULT_ENGINE, resolve_engine)
-from yoona import ask_yoona, get_smart_suggestions
+from okkax_copilot import ask_okkax_copilot, get_smart_suggestions
 import asyncio
 import seed_data
 from control_plane import router as control_router
@@ -2934,19 +2934,21 @@ async def demo_state():
                           "roles": ["super_admin"]}]}
 
 
-class YoonaChatIn(BaseModel):
+class OkkaxChatIn(BaseModel):
     message: str
     history: Optional[List[Dict[str, str]]] = None
     current_route: Optional[str] = ""
     event_id: Optional[str] = ""
     role: Optional[str] = ""
 
+YoonaChatIn = OkkaxChatIn
+
 
 @api.post("/okkax/chat")
 @api.post("/yoona/chat")
-async def yoona_chat_endpoint(payload: YoonaChatIn, user: Optional[dict] = Depends(get_optional_user)):
+async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict] = Depends(get_optional_user)):
     user_role = (user.get("roles") or ["audience"])[0] if user else (payload.role or "audience")
-    result = await ask_yoona(
+    result = await ask_okkax_copilot(
         message=payload.message,
         history=payload.history,
         current_route=payload.current_route or "",
@@ -2955,17 +2957,21 @@ async def yoona_chat_endpoint(payload: YoonaChatIn, user: Optional[dict] = Depen
     )
     return result
 
+yoona_chat_endpoint = okkax_copilot_chat_endpoint
+
 
 @api.get("/okkax/suggestions")
 @api.get("/yoona/suggestions")
-async def yoona_suggestions_endpoint(route: str = Query("", alias="route"), role: str = Query("")):
+async def okkax_copilot_suggestions_endpoint(route: str = Query("", alias="route"), role: str = Query("")):
     return {"suggestions": get_smart_suggestions(route, role)}
+
+yoona_suggestions_endpoint = okkax_copilot_suggestions_endpoint
 
 
 # Legacy backward-compatibility endpoints
 @api.post("/okkaji/chat")
-async def okkaji_legacy_chat(payload: YoonaChatIn, user: Optional[dict] = Depends(get_optional_user)):
-    return await yoona_chat_endpoint(payload, user)
+async def okkaji_legacy_chat(payload: OkkaxChatIn, user: Optional[dict] = Depends(get_optional_user)):
+    return await okkax_copilot_chat_endpoint(payload, user)
 
 
 @api.get("/okkaji/suggestions")

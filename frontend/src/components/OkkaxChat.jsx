@@ -225,7 +225,7 @@ const FAST_SCENARIOS = [
   { id: "economy", label: "Dampak Ekonomi", icon: Activity, prompt: "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?" },
 ];
 
-export default function YoonaChat() {
+export default function OkkaxChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -360,7 +360,7 @@ export default function YoonaChat() {
             setIsOpen(true);
             setIsMinimized(false);
           }}
-          data-testid="yoona-chat-trigger"
+          data-testid="okkax-copilot-trigger"
           className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-2xl border border-white/[0.16] bg-[#09090e]/95 backdrop-blur-2xl px-4 py-2.5 text-white shadow-[0_16px_50px_rgba(0,0,0,0.85),0_0_24px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all duration-300 hover:scale-[1.03] hover:border-white/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_36px_rgba(255,255,255,0.12)] active:scale-[0.98] cursor-pointer"
           aria-label="Buka OKKAX Copilot"
         >
@@ -388,7 +388,7 @@ export default function YoonaChat() {
       {/* Floating Obsidian Command Console */}
       {isOpen && (
         <div
-          data-testid="yoona-chat-modal"
+          data-testid="okkax-copilot-modal"
           className={`font-gemini fixed z-50 flex flex-col border border-white/[0.14] bg-[#09090e]/98 shadow-[0_32px_100px_rgba(0,0,0,0.95),0_0_30px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-3xl transition-all duration-200 overflow-hidden ${
             isExpanded
               ? "inset-4 md:inset-8 rounded-[32px]"
@@ -428,7 +428,7 @@ export default function YoonaChat() {
               <button
                 onClick={clearChat}
                 title="Reset Percakapan"
-                data-testid="yoona-btn-clear"
+                data-testid="okkax-copilot-btn-clear"
                 className="rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -436,7 +436,7 @@ export default function YoonaChat() {
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 title={isExpanded ? "Perkecil Ukuran" : "Maksimalkan Layar"}
-                data-testid="yoona-btn-expand"
+                data-testid="okkax-copilot-btn-expand"
                 className="hidden sm:block rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
               >
                 {isExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
@@ -444,7 +444,7 @@ export default function YoonaChat() {
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
                 title={isMinimized ? "Buka Window" : "Minimalkan"}
-                data-testid="yoona-btn-minimize"
+                data-testid="okkax-copilot-btn-minimize"
                 className="rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
               >
                 <Minus className="h-3.5 w-3.5" />
@@ -452,7 +452,7 @@ export default function YoonaChat() {
               <button
                 onClick={() => setIsOpen(false)}
                 title="Tutup"
-                data-testid="yoona-btn-close"
+                data-testid="okkax-copilot-btn-close"
                 className="rounded-lg p-1.5 hover:bg-white/[0.12] hover:text-white transition-colors cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
@@ -476,7 +476,7 @@ export default function YoonaChat() {
                         key={sc.id}
                         onClick={() => handleSend(sc.prompt)}
                         disabled={loading}
-                        data-testid={`yoona-scenario-${sc.id}`}
+                        data-testid={`okkax-copilot-scenario-${sc.id}`}
                         className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08] px-3 py-1 text-[11px] text-zinc-300 hover:text-white transition-all shrink-0 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         <IconComponent size={11} className="text-zinc-400" />
@@ -492,7 +492,7 @@ export default function YoonaChat() {
                 {messages.map((m, idx) => (
                   <div
                     key={idx}
-                    data-testid={`yoona-message-${m.role}-${idx}`}
+                    data-testid={`okkax-copilot-message-${m.role}-${idx}`}
                     className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
                   >
                     {/* Role Header Indicator */}
@@ -542,7 +542,7 @@ export default function YoonaChat() {
                           <button
                             onClick={() => copyMessage(m.content, idx)}
                             title="Salin Respons"
-                            data-testid={`yoona-copy-btn-${idx}`}
+                            data-testid={`okkax-copilot-copy-btn-${idx}`}
                             className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-white/[0.06]"
                           >
                             {copiedIdx === idx ? (
@@ -598,7 +598,7 @@ export default function YoonaChat() {
                         key={sIdx}
                         onClick={() => handleSend(sug)}
                         disabled={loading}
-                        data-testid={`yoona-chip-${sIdx}`}
+                        data-testid={`okkax-copilot-chip-${sIdx}`}
                         className="rounded-xl border border-white/[0.08] bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.06] px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white transition-all text-left flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
                         <span className="truncate">{sug}</span>
@@ -619,7 +619,7 @@ export default function YoonaChat() {
                     onKeyDown={handleKeyDown}
                     placeholder="Tanya kalkulasi anggaran, dependensi rider, SOP venue, atau strategi tiket..."
                     rows={2}
-                    data-testid="yoona-chat-input"
+                    data-testid="okkax-copilot-chat-input"
                     className="w-full resize-none bg-transparent px-2 py-1 text-xs sm:text-[12.5px] text-white placeholder:text-zinc-500 focus:outline-none leading-relaxed"
                   />
 
@@ -632,7 +632,7 @@ export default function YoonaChat() {
                     <button
                       onClick={() => handleSend()}
                       disabled={!input.trim() || loading}
-                      data-testid="yoona-chat-send"
+                      data-testid="okkax-copilot-chat-send"
                       className="inline-flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 px-3.5 py-1.5 text-xs font-bold text-black transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-white cursor-pointer shadow-sm"
                       aria-label="Kirim Pesan"
                     >

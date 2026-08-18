@@ -27,8 +27,8 @@ import Pricing from "@/pages/Pricing";
 
 import Products from "@/pages/Products";
 import { About, HowItWorks, Contact, Terms, Privacy } from "@/pages/Company";
-import YoonaPage from "@/pages/YoonaPage";
-import YoonaChat from "@/components/YoonaChat";
+import OkkaxPage from "@/pages/OkkaxPage";
+import OkkaxChat from "@/components/OkkaxChat";
 
 import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
 const shell = (el) => <AppShell>{el}</AppShell>;
@@ -41,9 +41,10 @@ function RouterBody() {
     <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
-            <Route path="/okkax" element={<YoonaPage />} />
-            <Route path="/yoona" element={<YoonaPage />} />
-            <Route path="/okkaji" element={<YoonaPage />} />
+            <Route path="/okkax" element={<OkkaxPage />} />
+            <Route path="/copilot" element={<OkkaxPage />} />
+            <Route path="/yoona" element={<OkkaxPage />} />
+            <Route path="/okkaji" element={<OkkaxPage />} />
             <Route path="/peta" element={<EconomyMap />} />
             <Route path="/map" element={<EconomyMap />} />
             <Route path="/calendar" element={<PublicCalendar />} />
@@ -62,9 +63,10 @@ function RouterBody() {
             <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
             <Route path="/validator" element={shell(<Validator />)} />
             <Route path="/app" element={shell(<Overview />)} />
-            <Route path="/app/okkax" element={shell(<YoonaPage />)} />
-            <Route path="/app/yoona" element={shell(<YoonaPage />)} />
-            <Route path="/app/okkaji" element={shell(<YoonaPage />)} />
+            <Route path="/app/okkax" element={shell(<OkkaxPage />)} />
+            <Route path="/app/copilot" element={shell(<OkkaxPage />)} />
+            <Route path="/app/yoona" element={shell(<OkkaxPage />)} />
+            <Route path="/app/okkaji" element={shell(<OkkaxPage />)} />
             <Route path="/app/studio" element={shell(<EventStudio />)} />
             <Route path="/app/events" element={shell(<EventsList />)} />
             <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
@@ -120,7 +122,7 @@ function App() {
           <AuthProvider>
             <Toaster theme="dark" position="top-right" />
             <RouterBody />
-            <YoonaChat />
+            <OkkaxChat />
           </AuthProvider>
         </BrowserRouter>
       </div>

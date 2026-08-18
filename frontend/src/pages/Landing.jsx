@@ -1311,7 +1311,7 @@ export default function Landing() {
                 <div className="mt-8 flex flex-wrap gap-3.5">
                   <Link
                     to="/okkax"
-                    data-testid="landing-yoona-cta"
+                    data-testid="landing-okkax-copilot-cta"
                     className="inline-flex items-center gap-2 rounded-xl bg-white hover:bg-zinc-200 px-6 py-3.5 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
                   >
                     <Terminal size={16} />
@@ -1341,7 +1341,7 @@ export default function Landing() {
                   <Link
                     key={idx}
                     to="/okkax"
-                    data-testid={`yoona-landing-chip-${idx}`}
+                    data-testid={`okkax-landing-chip-${idx}`}
                     className="group rounded-xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-md p-3.5 text-xs text-zinc-300 hover:border-white/25 hover:text-white hover:bg-white/[0.04] transition-all flex items-center justify-between"
                   >
                     <span className="truncate pr-2 font-medium">→ {s.label}</span>

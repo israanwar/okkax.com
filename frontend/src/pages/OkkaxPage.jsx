@@ -26,7 +26,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import PublicNav from "@/components/PublicNav";
-import { CopilotIntelligenceIcon } from "@/components/YoonaChat";
+import { CopilotIntelligenceIcon } from "@/components/OkkaxChat";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { ScrollProgressBar, SpotlightCard, MotionPanel } from "@/components/MotionPrimitives";
@@ -369,7 +369,7 @@ const PERSONAS_CONFIG = [
   },
 ];
 
-export default function YoonaPage() {
+export default function OkkaxPage() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const initialPersona = searchParams.get("persona") || searchParams.get("role") || "organizer";
@@ -571,7 +571,7 @@ export default function YoonaPage() {
                           key={idx}
                           onClick={() => handleSend(p)}
                           disabled={loading}
-                          data-testid={`yoona-page-prompt-${sIdx}-${idx}`}
+                          data-testid={`okkax-page-prompt-${sIdx}-${idx}`}
                           className="w-full text-left rounded-lg px-2.5 py-1.5 text-[11px] text-zinc-300 hover:text-white hover:bg-white/[0.06] hover:border-white/20 border border-transparent transition-all leading-snug block cursor-pointer"
                           title={p}
                         >
@@ -602,7 +602,7 @@ export default function YoonaPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={exportTranscript}
-                data-testid="yoona-page-export-btn"
+                data-testid="okkax-page-export-btn"
                 title="Ekspor Transkrip Diskusi"
                 className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
               >
@@ -611,7 +611,7 @@ export default function YoonaPage() {
               </button>
               <button
                 onClick={clearChat}
-                data-testid="yoona-page-clear-btn"
+                data-testid="okkax-page-clear-btn"
                 title="Bersihkan Percakapan"
                 className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
               >
@@ -626,7 +626,7 @@ export default function YoonaPage() {
             {messages.map((m, idx) => (
               <div
                 key={idx}
-                data-testid={`yoona-page-message-${m.role}-${idx}`}
+                data-testid={`okkax-page-message-${m.role}-${idx}`}
                 className={`flex items-start gap-3.5 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
               >
                 <div
@@ -746,7 +746,7 @@ export default function YoonaPage() {
                 type="button"
                 onClick={() => handleSend()}
                 disabled={!input.trim() || loading}
-                data-testid="yoona-page-send-btn"
+                data-testid="okkax-page-send-btn"
                 className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-black hover:bg-zinc-200 disabled:opacity-30 transition-all shadow-md cursor-pointer"
               >
                 <Send className="h-4 w-4 text-black" />
