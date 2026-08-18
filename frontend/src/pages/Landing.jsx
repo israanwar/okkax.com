@@ -314,7 +314,7 @@ function PricingPreview() {
     <section
       aria-labelledby="landing-pricing-heading"
       data-testid="landing-pricing-preview"
-      className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 font-gemini"
+      className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini"
     >
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
@@ -1053,7 +1053,7 @@ function ParticipantNetwork() {
       ref={sectionRef}
       data-testid="network-participants"
       data-visible={visible ? "true" : "false"}
-      className="participant-network border-b border-white/[0.08] bg-[#07070b] px-4 py-16 sm:px-6 sm:py-24 font-gemini"
+      className="participant-network border-b border-white/[0.08] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini"
     >
       <div className="mx-auto max-w-7xl">
         <div className="participant-intro flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
@@ -1287,7 +1287,7 @@ export default function Landing() {
       <ParticipantNetwork />
 
       {/* 6 CANONICAL PRODUCTS BENTO GRID */}
-      <section id="products" className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 font-gemini">
+      <section id="products" className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
@@ -1403,7 +1403,7 @@ export default function Landing() {
       </section>
 
       {/* OKKAX COPILOT SPOTLIGHT */}
-      <Reveal as="section" className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden font-gemini">
+      <Reveal as="section" className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden font-gemini">
         <div className="mx-auto max-w-7xl relative z-10">
           <div className="rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-12 lg:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
             <div className="grid gap-10 lg:grid-cols-12 items-center">
@@ -1465,7 +1465,7 @@ export default function Landing() {
       </Reveal>
 
       {/* REGIONAL IMPACT & MULTI-CITY MAP STRIP */}
-      <Reveal as="section" className="border-b border-white/[0.06] px-4 py-16 sm:px-6 sm:py-24 bg-[#07070a] font-gemini">
+      <Reveal as="section" className="border-b border-white/[0.06] px-4 py-16 sm:px-6 sm:py-24 bg-transparent font-gemini">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
@@ -1522,7 +1522,7 @@ export default function Landing() {
         <PricingPreview />
       </Reveal>
 
-      <Reveal as="section" className="px-4 py-20 sm:px-6 sm:py-28 bg-[#050507] font-gemini">
+      <Reveal as="section" className="px-4 py-20 sm:px-6 sm:py-28 bg-transparent font-gemini">
         <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
           <QrCode size={24} className="text-white" />
           <h2 className="editorial text-3xl sm:text-5xl text-white leading-tight">Everything behind a live event, working as one.</h2>
