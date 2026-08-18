@@ -1115,7 +1115,7 @@ export default function Landing() {
       <ScrollProgressBar />
       <PublicNav />
 
-      <StitchAuroraBackground className="border-b border-white/[0.08] min-h-[90vh] flex flex-col justify-center pt-8 pb-20 sm:pb-28">
+      <StitchAuroraBackground className="min-h-[90vh] flex flex-col justify-center pt-8 pb-20 sm:pb-28">
         {/* Subtle Ambient Concert Stage Glow in background */}
         <div className="pointer-events-none absolute inset-0 z-0 opacity-15 mix-blend-screen overflow-hidden">
           <img

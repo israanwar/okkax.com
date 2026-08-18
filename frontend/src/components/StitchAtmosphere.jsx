@@ -19,42 +19,42 @@ import {
 export function StitchAuroraBackground({ children, className = "", showGrid = true }) {
   return (
     <div className={`relative overflow-hidden bg-[#030306] ${className}`}>
-      {/* 1. Fluid Aurora Energy Waves (Multi-Layer Flowing Splines - Google Stitch Authentic) */}
+      {/* 1. Fluid Aurora Energy Waves (Deep Midnight Moody Palette) */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         {/* Layer A: Deep Volumetric Atmospheric Bloom */}
         <div
-          className="absolute -top-[15%] -left-[10%] h-[600px] w-[75%] rounded-full opacity-60 blur-[130px]"
+          className="absolute -top-[15%] -left-[10%] h-[600px] w-[75%] rounded-full opacity-40 blur-[140px]"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(124, 58, 237, 0.45), rgba(79, 70, 229, 0.35), transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(76, 29, 149, 0.35), rgba(49, 46, 129, 0.25), transparent 70%)",
           }}
         />
         <div
-          className="absolute top-[25%] -left-[5%] h-[550px] w-[70%] rounded-full opacity-55 blur-[120px]"
+          className="absolute top-[25%] -left-[5%] h-[550px] w-[70%] rounded-full opacity-35 blur-[130px]"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(6, 182, 212, 0.4), rgba(14, 165, 233, 0.3), transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(14, 116, 144, 0.3), rgba(30, 58, 138, 0.2), transparent 70%)",
           }}
         />
 
         {/* Layer B: Primary Sculpted Violet / Purple Ribbon (Upper-Left to Center-Top) */}
-        <div className="absolute -top-[5%] -left-[15%] h-[380px] w-[130%] -rotate-12 rounded-[100%] opacity-85 blur-[65px] stitch-aurora-violet-ribbon" />
-        {/* Inner intense glowing core */}
-        <div className="absolute top-[5%] -left-[10%] h-[240px] w-[110%] -rotate-10 rounded-[100%] opacity-90 blur-[38px] stitch-aurora-violet-ribbon" />
+        <div className="absolute -top-[5%] -left-[15%] h-[380px] w-[130%] -rotate-12 rounded-[100%] opacity-65 blur-[75px] stitch-aurora-violet-ribbon" />
+        {/* Inner glowing core */}
+        <div className="absolute top-[5%] -left-[10%] h-[240px] w-[110%] -rotate-10 rounded-[100%] opacity-70 blur-[48px] stitch-aurora-violet-ribbon" />
 
         {/* Layer C: Primary Sculpted Cyan / Electric Sky Blue Ribbon (Lower-Left to Center-Right) */}
-        <div className="absolute top-[35%] -left-[12%] h-[340px] w-[125%] rotate-12 rounded-[100%] opacity-85 blur-[65px] stitch-aurora-cyan-ribbon" />
-        {/* Inner intense glowing core */}
-        <div className="absolute top-[42%] -left-[8%] h-[200px] w-[105%] rotate-8 rounded-[100%] opacity-95 blur-[36px] stitch-aurora-cyan-ribbon" />
+        <div className="absolute top-[35%] -left-[12%] h-[340px] w-[125%] rotate-12 rounded-[100%] opacity-60 blur-[75px] stitch-aurora-cyan-ribbon" />
+        {/* Inner glowing core */}
+        <div className="absolute top-[42%] -left-[8%] h-[200px] w-[105%] rotate-8 rounded-[100%] opacity-65 blur-[45px] stitch-aurora-cyan-ribbon" />
 
         {/* Layer D: Right-side Magenta / Indigo Echo Wave */}
-        <div className="absolute top-[10%] -right-[15%] h-[460px] w-[65%] rotate-6 rounded-[100%] opacity-70 blur-[70px] stitch-aurora-magenta-echo" />
+        <div className="absolute top-[10%] -right-[15%] h-[460px] w-[65%] rotate-6 rounded-[100%] opacity-45 blur-[80px] stitch-aurora-magenta-echo" />
 
         {/* Layer E: Center High-Refraction Ambient Vignette */}
         <div
-          className="absolute inset-0 opacity-40"
+          className="absolute inset-0 opacity-50"
           style={{
-            background: "radial-gradient(900px circle at 50% 35%, rgba(255, 255, 255, 0.06), transparent 75%)",
+            background: "radial-gradient(900px circle at 50% 35%, rgba(255, 255, 255, 0.04), transparent 75%)",
           }}
         />
       </div>
@@ -62,7 +62,7 @@ export function StitchAuroraBackground({ children, className = "", showGrid = tr
       {/* 2. Dot-Matrix Blueprint Grid with Active Lens Illumination */}
       {showGrid && (
         <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-80 stitch-grid-canvas"
+          className="pointer-events-none absolute inset-0 z-0 opacity-70 stitch-grid-canvas"
           style={{
             mixBlendMode: "screen",
           }}
@@ -70,8 +70,14 @@ export function StitchAuroraBackground({ children, className = "", showGrid = tr
         />
       )}
 
-      {/* 3. Foreground Content */}
-      <div className="relative z-10">{children}</div>
+      {/* 3. Seamless Bottom Gradient Fade into Obsidian Base */}
+      <div
+        className="pointer-events-none absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-b from-transparent via-[#030306]/85 to-[#030306] z-10"
+        aria-hidden="true"
+      />
+
+      {/* 4. Foreground Content */}
+      <div className="relative z-20">{children}</div>
     </div>
   );
 }
@@ -142,12 +148,12 @@ export function StitchHeroCommandCapsule({ className = "" }) {
       <div
         className={`relative rounded-3xl border transition-all duration-300 ${
           isFocused
-            ? "border-white/[0.3] bg-[#0d0d1c]/95 shadow-[0_28px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(99,102,241,0.25),inset_0_1px_0_rgba(255,255,255,0.35)]"
-            : "border-white/[0.14] bg-[#0a0a14]/85 shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_40px_rgba(79,70,229,0.12),inset_0_1px_0_rgba(255,255,255,0.18)]"
+            ? "border-white/[0.28] bg-[#0d0d1c]/95 shadow-[0_28px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(99,102,241,0.2),inset_0_1px_0_rgba(255,255,255,0.3)]"
+            : "border-white/[0.12] bg-[#0a0a14]/85 shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_40px_rgba(79,70,229,0.1),inset_0_1px_0_rgba(255,255,255,0.16)]"
         } backdrop-blur-3xl p-4 sm:p-5 text-left`}
       >
         {/* Top Atmosphere Subtle Specular Highlight */}
-        <div className="absolute top-0 left-12 right-12 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-12 right-12 h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent pointer-events-none" />
 
         <form onSubmit={handleExecute} className="flex flex-col gap-4">
           {/* Main Prompt Input Area (Top - Google Stitch Style) */}
@@ -210,21 +216,22 @@ export function StitchHeroCommandCapsule({ className = "" }) {
         </form>
       </div>
 
-      {/* Floating Interactive Suggestion Chips (Centered single/balanced row) */}
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5 px-1">
+      {/* Symmetrical 2x2 Suggestion Chips Grid */}
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-w-3xl mx-auto w-full px-1">
         {SUGGESTIONS.map((item, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => handleApplySuggestion(item)}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#0c0c16]/80 backdrop-blur-xl px-4 py-2 text-xs font-medium text-zinc-300 hover:border-white/35 hover:bg-white/[0.1] hover:text-white transition-all duration-200 shadow-sm cursor-pointer active:scale-95"
+            className="group flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-[#0c0c16]/75 backdrop-blur-xl px-4 py-2.5 text-xs font-medium text-zinc-300 hover:border-white/30 hover:bg-white/[0.08] hover:text-white transition-all duration-200 shadow-sm cursor-pointer active:scale-[0.99]"
           >
-            <Sparkles size={11} className="text-zinc-400 group-hover:text-white transition-colors" />
-            <span>{item.label}</span>
+            <Sparkles size={12} className="text-zinc-400 group-hover:text-white shrink-0 transition-colors" />
+            <span className="truncate">{item.label}</span>
           </button>
         ))}
       </div>
     </div>
   );
 }
+
 
