@@ -633,26 +633,6 @@ function GraphPreview() {
         </div>
       </SpotlightCard>
 
-      {/* Status Legend Strip */}
-      <SpotlightCard className="p-4 sm:p-5 overflow-visible relative z-20" data-testid="graph-status-strip">
-        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Status Komponen</div>
-            <p className="mt-1 text-xs text-zinc-400 font-gemini">Status dan ketergantungan komponen. Arahkan atau fokuskan untuk membaca artinya.</p>
-          </div>
-          <div className="flex flex-wrap gap-2" data-testid="graph-status-legend">
-            {STATUS_ORDER.map((status, index) => (
-              <StatusPill
-                key={status}
-                status={status}
-                testId={`graph-status-${status.toLowerCase().replace(/\s/g, "-")}`}
-                tooltipAlign={index < 2 ? "left" : index > 2 ? "right" : "center"}
-              />
-            ))}
-          </div>
-        </div>
-      </SpotlightCard>
-
       {/* Main 2-Column Section */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.72fr)] items-start">
         {/* Left Column: Graph Canvas + Compact Scenario Simulation */}
@@ -1008,100 +988,12 @@ function DetailList({ title, items = [], testId }) {
   );
 }
 
-const PARTICIPANT_GROUPS = [
-  ["01", "Event Direction", "Organizer · Promoter · Event Producer"],
-  ["02", "Talent & Programming", "Artist · Speaker · Talent Management"],
-  ["03", "Venue & Show Production", "Venue · Production Partner · Technical Crew"],
-  ["04", "Brand & Commercial", "Sponsor · Media Partner · Exhibitor · Tenant"],
-  ["05", "Ticketing & Guest Experience", "Ticketing · Access Control · Attendee Services"],
-  ["06", "Operations & Settlement", "Workforce · Logistics · Finance · Settlement"],
-];
-
 const PROCESS_STEPS = [
   [Workflow, "Brief", "Guided Event Brief menangkap tujuan, kapasitas, anggaran, dan kebutuhan."],
   [Boxes, "Blueprint", "Blueprint Engine menyusun fase, workstream, requirement, dan risiko. Semua dapat diedit."],
   [Building2, "Network", "Talent, rider, venue, vendor, dan workforce dicocokkan dengan penjelasan skor."],
   [CircleDollarSign, "Live Operations", "Sponsor, tenant, tiket, pembayaran, settlement, dan dampak event diperbarui otomatis."],
 ];
-
-function ParticipantNetwork() {
-  const sectionRef = useRef(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section || !("IntersectionObserver" in window)) {
-      setVisible(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.18 }
-    );
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section
-      ref={sectionRef}
-      data-testid="network-participants"
-      data-visible={visible ? "true" : "false"}
-      className="participant-network border-b border-white/[0.08] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini"
-    >
-      <div className="mx-auto max-w-7xl">
-        <div className="participant-intro flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-zinc-300 font-gemini-mono shadow-sm">
-              <Sparkles size={11} className="text-zinc-400" />
-              06 CORE FUNCTIONS
-            </div>
-            <h2 className="editorial mt-5 max-w-3xl text-3xl leading-[1.02] text-white sm:text-5xl">
-              Satu produksi. <span className="text-zinc-400">Semua fungsi terhubung.</span>
-            </h2>
-            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              OKKAX menyatukan fungsi inti di balik live event dalam satu alur kerja, satu sumber data,
-              dan satu standar operasional.
-            </p>
-          </div>
-          <Link
-            to="/register"
-            className="participant-cta group inline-flex min-h-11 w-fit items-center gap-3 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:border-white/30 hover:bg-white/[0.08]"
-          >
-            Join the operating network
-            <ArrowRight size={15} className="text-zinc-400 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-white" />
-          </Link>
-        </div>
-
-        <RevealGroup stagger={0.08} className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PARTICIPANT_GROUPS.map(([index, title, detail], i) => (
-            <RevealItem key={title}>
-              <SpotlightCard
-                data-testid={`participant-group-${i + 1}`}
-                className="group relative min-h-[160px] h-full p-5 sm:p-6"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <span className="font-mono text-xs font-bold text-zinc-400">{index}</span>
-                  <div className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-zinc-500 transition-all duration-200 group-hover:border-white/20 group-hover:text-white">
-                    <ArrowRight size={13} aria-hidden="true" />
-                  </div>
-                </div>
-                <h3 className="mt-5 text-base font-bold text-white sm:text-lg tracking-tight">{title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-400">{detail}</p>
-              </SpotlightCard>
-            </RevealItem>
-          ))}
-        </RevealGroup>
-      </div>
-    </section>
-  );
-}
 
 export default function Landing() {
   const [ripple, setRipple] = useState(null);
@@ -1283,8 +1175,6 @@ export default function Landing() {
           </Reveal>
         </div>
       </section>
-
-      <ParticipantNetwork />
 
       {/* 6 CANONICAL PRODUCTS BENTO GRID */}
       <section id="products" className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini">
@@ -1520,40 +1410,6 @@ export default function Landing() {
 
       <Reveal>
         <PricingPreview />
-      </Reveal>
-
-      <Reveal as="section" className="px-4 py-20 sm:px-6 sm:py-28 bg-transparent font-gemini">
-        <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
-          <QrCode size={24} className="text-white" />
-          <h2 className="editorial text-3xl sm:text-5xl text-white leading-tight">Everything behind a live event, working as one.</h2>
-          <p className="max-w-2xl text-sm text-zinc-300 sm:text-base leading-relaxed">
-            Jalankan demo terpandu 16 langkah: brief, blueprint, event graph, talent & rider, venue, vendor,
-            budget, sponsor, tenant, tiket, publish, sandbox payment, QR ticket, validasi, hingga Live Event Impact.
-          </p>
-          <div className="flex flex-col gap-3.5 sm:flex-row mt-2">
-            <Link
-              to="/demo"
-              data-testid="cta-juri-btn"
-              className="inline-flex items-center justify-center rounded-xl bg-white hover:bg-zinc-200 px-6 py-4 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
-            >
-              Platform Demo
-            </Link>
-            <Link
-              to="/demo"
-              data-testid="cta-demo-btn"
-              className="inline-flex items-center justify-center rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
-            >
-              Mulai Demo Terpandu
-            </Link>
-            <Link
-              to="/discover"
-              data-testid="cta-discover-btn"
-              className="inline-flex items-center justify-center rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
-            >
-              Explore Events
-            </Link>
-          </div>
-        </div>
       </Reveal>
 
       <Footer />
