@@ -48,6 +48,10 @@ import {
   CounterNumber,
   ProcessCableRail,
 } from "@/components/MotionPrimitives";
+import {
+  StitchAuroraBackground,
+  StitchHeroCommandCapsule,
+} from "@/components/StitchAtmosphere";
 
 const HERO = "/assets/okkax-concert-hero-v2.png";
 
@@ -1109,10 +1113,25 @@ export default function Landing() {
       <ScrollProgressBar />
       <PublicNav />
 
-      <HeroStageDepth imageSrc={HERO} alt="Panggung konser OKKAX dengan penonton">
-        <div className="fade-up relative z-10 max-w-[760px] lg:w-[58%]">
+      <StitchAuroraBackground className="border-b border-white/[0.08] pt-8 pb-16 sm:pb-24">
+        {/* Subtle Ambient Concert Stage Glow in background */}
+        <div className="pointer-events-none absolute inset-0 z-0 opacity-25 mix-blend-screen overflow-hidden">
+          <img
+            src={HERO}
+            alt="Panggung konser OKKAX"
+            className="h-full w-full object-cover object-center filter grayscale contrast-125"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#030306] via-transparent to-[#030306]" />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
           {/* Live Network Telemetry Pill */}
-          <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/[0.12] bg-[#0c0c16]/80 px-4 py-1.5 backdrop-blur-xl shadow-lg"
+          >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -1120,70 +1139,73 @@ export default function Landing() {
             <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
               <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
             </span>
-          </div>
+          </motion.div>
 
-          <div>
-            <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
+          {/* Core Tag */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.1 }}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-3.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+              <Sparkles size={11} className="text-zinc-400" />
               Live Event Operating Network
             </span>
-          </div>
+          </motion.div>
 
-          <MaskReveal delay={0.05}>
-            <h1 className="editorial mt-5 text-[clamp(3.35rem,6.15vw,5.8rem)] leading-[0.96] tracking-[-0.055em]">
-              One event.
+          {/* Main Hero Headline (Google Stitch Style) */}
+          <MaskReveal delay={0.15}>
+            <h1 className="editorial mt-6 text-[clamp(2.75rem,5.8vw,5.2rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
+              Design & Operate live events
               <br />
-              <span className="accent-text xl:whitespace-nowrap">Every moving part.</span>
+              <span className="text-zinc-300 font-normal">at the speed of intelligence.</span>
             </h1>
           </MaskReveal>
-          <Reveal delay={0.2} y={12}>
-            <p className="mt-6 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
-              Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
-              setiap detail di balik live event dalam satu koordinasi terpusat.
+
+          {/* Subtitle */}
+          <Reveal delay={0.25} y={12}>
+            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base font-gemini">
+              Dari brief ide hingga settlement panggung. OKKAX menyatukan seluruh komponen, rider, tiket,
+              dan workflow live event dalam satu koordinasi terpusat.
             </p>
           </Reveal>
-          <Reveal delay={0.3} y={14}>
-            <div className="mt-8 flex flex-wrap items-center gap-3.5">
-              <Link
-                to="/register"
-                data-testid="hero-compile-btn"
-                className="group inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-white hover:bg-zinc-200 px-7 py-3.5 text-sm font-bold text-black transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.18)] active:scale-[0.98]"
-              >
-                Build an Event
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-              <Link
-                to="/demo"
-                data-testid="hero-juri-btn"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/[0.15] bg-white/[0.04] backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] hover:text-white transition-all"
-              >
-                Platform Demo — 3 menit <ArrowRight size={15} className="ml-2 text-zinc-400" />
-              </Link>
-            </div>
-          </Reveal>
-          <p className="mt-6 max-w-lg text-xs leading-relaxed text-zinc-500">
-            From one idea to a live experience. Mode demo kompetisi — pembayaran sandbox, tanpa uang nyata.
-          </p>
-          <div className="mt-9 flex items-center gap-2 text-xs text-zinc-400">
-            <CalendarDays size={15} className="accent-text" aria-hidden="true" />
-            <a
+
+          {/* Google Stitch-Grade Hero Command Capsule */}
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.65, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full mt-8"
+          >
+            <StitchHeroCommandCapsule />
+          </motion.div>
+
+          {/* Secondary Trust & Calendar Row */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-zinc-500 font-gemini">
+            <span>Mode demo kompetisi — pembayaran sandbox tanpa uang nyata.</span>
+            <span className="text-zinc-700 hidden sm:inline">·</span>
+            <div className="flex items-center gap-1.5 text-zinc-400">
+              <CalendarDays size={13} className="text-zinc-400" aria-hidden="true" />
+              <a
                 href={`/calendar?date=${[
                   new Date().getFullYear(),
                   String(new Date().getMonth() + 1).padStart(2, "0"),
                   String(new Date().getDate()).padStart(2, "0"),
                 ].join("-")}`}
                 data-testid="hero-today-calendar-link"
-                title="Open today's events"
+                title="Buka kalender hari ini"
                 className="transition-colors hover:text-white"
               >
-                {new Intl.DateTimeFormat("en-GB", {
+                {new Intl.DateTimeFormat("id-ID", {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
                 }).format(new Date())}
               </a>
+            </div>
           </div>
         </div>
-      </HeroStageDepth>
+      </StitchAuroraBackground>
 
       <LiveTicker />
 
