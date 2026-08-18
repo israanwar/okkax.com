@@ -394,13 +394,13 @@ function StatusPill({ status, testId, tooltipAlign = "center" }) {
       data-testid={testId}
       tabIndex={0}
       aria-label={`${status}: ${meta.tooltip}`}
-      className="group/status relative inline-flex items-center gap-1.5 border border-white/10 bg-[#0b0b0d] px-2.5 py-1 text-[11px] font-semibold text-zinc-200 outline-none focus:border-[var(--okx-accent)]"
+      className="group/status relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#12121e]/90 px-3 py-1 text-[10.5px] font-bold tracking-wider text-zinc-200 outline-none hover:border-white/30 transition-all shadow-sm cursor-help"
     >
-      <Icon size={13} strokeWidth={2} style={{ color: meta.color }} aria-hidden="true" />
+      <Icon size={12} strokeWidth={2.4} style={{ color: meta.color }} aria-hidden="true" />
       <span>{status}</span>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-30 w-48 max-w-[calc(100vw-2.5rem)] border border-zinc-700 bg-[#111114] px-3 py-2 text-center text-[10px] font-normal leading-4 text-zinc-300 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
+        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-30 w-48 max-w-[calc(100vw-2.5rem)] rounded-xl border border-white/[0.18] bg-[#10101c]/98 backdrop-blur-xl px-3 py-2 text-center text-[10px] font-medium leading-4 text-zinc-200 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
       >
         {meta.tooltip}
       </span>
@@ -590,78 +590,88 @@ function GraphPreview() {
   }
 
   return (
-    <div className="space-y-5" data-testid="graph-preview">
-      <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]" data-testid="graph-event-switcher">
-        <div className="bg-[#0b0b0d] p-4 sm:p-5">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
-            Event aktif
-          </div>
-          <OkxDropdown
-            value={selectedEventId}
-            onChange={chooseEvent}
-            options={eventPickerOptions}
-            placeholder="Event OKKAX"
-            testId="graph-event-select"
-            className="mt-2"
-          />
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
-            <span data-testid="graph-active-organizer">{graphEvent.organizer_name || "Organizer belum tersedia"}</span>
-            <span>{graphEvent.city || "Kota belum tersedia"}</span>
-            <span data-testid="graph-active-talent">{nodeMap.talent?.progress > 0 ? "Talent terhubung" : "Talent belum tersedia"}</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 bg-[#0b0b0d]" data-testid="graph-catalog-stats">
-          {[
-            [catalogStats.events, "event"],
-            [catalogStats.bands, "talent"],
-            [catalogStats.promoters, "promotor"],
-          ].map(([value, label]) => (
-            <div key={label} className="flex min-w-0 flex-col justify-center border-l border-[var(--okx-border)] px-3 py-4 first:border-l-0 sm:px-5">
-              <span className="num text-xl font-semibold text-white sm:text-2xl">{num(value)}</span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:text-[10px]">{label}</span>
+    <div className="space-y-5 font-gemini" data-testid="graph-preview">
+      {/* Event Switcher & Catalog Stats */}
+      <SpotlightCard className="overflow-hidden" data-testid="graph-event-switcher">
+        <div className="grid xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]">
+          <div className="p-4 sm:p-5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+              <Sparkles size={11} className="text-zinc-400" />
+              Event Aktif
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col justify-between gap-4 border border-[var(--okx-border)] bg-[#0b0b0d] p-4 lg:flex-row lg:items-center">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Status komponen</div>
-          <p className="mt-1 text-xs text-zinc-500">Warna, ikon, dan label selalu tampil bersama. Arahkan atau fokuskan untuk membaca artinya.</p>
-        </div>
-        <div className="flex flex-wrap gap-2" data-testid="graph-status-legend">
-          {STATUS_ORDER.map((status, index) => (
-            <StatusPill
-              key={status}
-              status={status}
-              testId={`graph-status-${status.toLowerCase().replace(/\s/g, "-")}`}
-              tooltipAlign={index < 2 ? "left" : index > 2 ? "right" : "center"}
+            <OkxDropdown
+              value={selectedEventId}
+              onChange={chooseEvent}
+              options={eventPickerOptions}
+              placeholder="Event OKKAX"
+              testId="graph-event-select"
+              className="mt-2.5"
             />
-          ))}
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400 font-gemini">
+              <span data-testid="graph-active-organizer">{graphEvent.organizer_name || "Organizer belum tersedia"}</span>
+              <span>· {graphEvent.city || "Kota belum tersedia"}</span>
+              <span data-testid="graph-active-talent">· {nodeMap.talent?.progress > 0 ? "Talent terhubung" : "Talent belum tersedia"}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 border-t border-white/[0.08] xl:border-t-0 xl:border-l bg-white/[0.01]" data-testid="graph-catalog-stats">
+            {[
+              [catalogStats.events, "event"],
+              [catalogStats.bands, "talent"],
+              [catalogStats.promoters, "promotor"],
+            ].map(([value, label]) => (
+              <div key={label} className="flex min-w-0 flex-col justify-center border-l border-white/[0.06] px-3 py-4 first:border-l-0 sm:px-5">
+                <span className="font-mono text-xl font-bold text-white sm:text-2xl">{num(value)}</span>
+                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-500 sm:text-[10px] font-gemini-mono">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </SpotlightCard>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.72fr)]">
-        <div className="overflow-hidden border border-[var(--okx-border)] bg-[#080808]">
+      {/* Status Legend Strip */}
+      <SpotlightCard className="p-4 sm:p-5">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Status Komponen</div>
+            <p className="mt-1 text-xs text-zinc-400 font-gemini">Warna, ikon, dan label selalu tampil bersama. Arahkan atau fokuskan untuk membaca artinya.</p>
+          </div>
+          <div className="flex flex-wrap gap-2" data-testid="graph-status-legend">
+            {STATUS_ORDER.map((status, index) => (
+              <StatusPill
+                key={status}
+                status={status}
+                testId={`graph-status-${status.toLowerCase().replace(/\s/g, "-")}`}
+                tooltipAlign={index < 2 ? "left" : index > 2 ? "right" : "center"}
+              />
+            ))}
+          </div>
+        </div>
+      </SpotlightCard>
+
+      {/* Main 2-Column Section */}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.72fr)] items-start">
+        {/* Left Column: Graph Canvas + Compact Scenario Simulation */}
+        <SpotlightCard className="overflow-hidden flex flex-col justify-between" data-testid="graph-canvas-card">
           <div
-            className="flex min-h-[62px] flex-col justify-center gap-1 border-b border-[var(--okx-border)] bg-[#0c0c0e] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+            className="flex min-h-[54px] flex-col justify-center gap-1 border-b border-white/[0.08] bg-[#0d0d16]/90 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 font-gemini"
             data-testid="graph-relationship-readout"
             aria-live="polite"
           >
-            <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Hubungan aktif</span>
+            <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">Hubungan aktif</span>
             {inspectedEdge ? (
-              <span className="text-xs font-medium leading-5 text-zinc-200" data-testid={`graph-preview-edge-label-${inspectedEdge.id}`}>
-                <span className="text-[var(--okx-accent-soft)]">{GRAPH_COMPONENT_LABELS[inspectedEdge.source]}</span>
-                <span className="mx-2 text-zinc-600" aria-hidden="true">→</span>
-                <span className="text-[var(--okx-accent-soft)]">{GRAPH_COMPONENT_LABELS[inspectedEdge.target]}</span>
-                <span className="mx-2 text-zinc-700" aria-hidden="true">·</span>
-                {inspectedEdge.label}
+              <span className="text-xs font-semibold leading-5 text-zinc-200" data-testid={`graph-preview-edge-label-${inspectedEdge.id}`}>
+                <span className="text-white font-bold">{GRAPH_COMPONENT_LABELS[inspectedEdge.source]}</span>
+                <span className="mx-2 text-zinc-500" aria-hidden="true">→</span>
+                <span className="text-white font-bold">{GRAPH_COMPONENT_LABELS[inspectedEdge.target]}</span>
+                <span className="mx-2 text-zinc-600" aria-hidden="true">·</span>
+                <span className="text-zinc-300">{inspectedEdge.label}</span>
               </span>
             ) : (
-              <span className="text-[11px] leading-5 text-zinc-500">Arahkan atau fokuskan satu garis untuk membaca ketergantungannya.</span>
+              <span className="text-[11px] leading-5 text-zinc-400">Arahkan atau fokuskan satu garis untuk membaca ketergantungannya.</span>
             )}
           </div>
-          <div ref={graphScrollRef} className="okx-scroll overflow-x-auto">
+
+          <div ref={graphScrollRef} className="okx-scroll overflow-x-auto bg-[#07070b]">
             <svg
               viewBox={`0 0 ${PW} ${PH}`}
               className="block min-w-[760px] w-full"
@@ -807,8 +817,9 @@ function GraphPreview() {
                           y={radius + 7}
                           width="86"
                           height="31"
+                          rx="6"
                           fill="#0c0c0e"
-                          stroke={isActive || isScenarioOn ? "#ff2e7e" : "#27272a"}
+                          stroke={isActive || isScenarioOn ? "#ffffff" : "#27272a"}
                           strokeWidth="0.8"
                         />
                         <text x="0" y={radius + 19} textAnchor="middle" fontSize="8.6" fontWeight="700" fill={isActive || isScenarioOn ? "#ffffff" : "#d4d4d8"}>
@@ -830,42 +841,115 @@ function GraphPreview() {
               })}
             </svg>
           </div>
-          <div className="flex flex-col gap-2 border-t border-[var(--okx-border)] px-4 py-3 text-[11px] text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>Klik node untuk detail · arah panah menunjukkan komponen yang terdampak.</span>
-            <span className="num">Event ID: {graphEvent.event_code || DEMO_EVENT_ID}</span>
-          </div>
-        </div>
 
-        <aside data-testid="graph-preview-detail" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 xl:sticky xl:top-20 xl:self-start">
+          {/* Embedded Compact Scenario Simulation Section (Eliminates Empty Space) */}
+          <div className="border-t border-white/[0.08] bg-[#0a0a12]/95 p-4 sm:p-5" data-testid="graph-scenarios">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+                  <Layers size={10} className="text-zinc-400" />
+                  Simulasi Hubungan
+                </div>
+                <div className="text-[13px] font-bold text-white mt-1 font-gemini">
+                  Lihat bagaimana satu keputusan bekerja
+                </div>
+              </div>
+              <p className="text-[11px] text-zinc-400 max-w-xs font-gemini">
+                Pilih skenario untuk melihat node dan jalur terdampak disorot secara berurutan.
+              </p>
+            </div>
+
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {SCENARIOS.map((item, index) => {
+                const isSelected = activeScenario === item.id;
+                const currentLabel = isSelected && scenarioStep >= 0 ? item.steps[scenarioStep]?.label : null;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`graph-scenario-${item.id}`}
+                    aria-pressed={isSelected}
+                    onClick={() => playScenario(item.id)}
+                    className={`group rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
+                      isSelected
+                        ? "border-white/40 bg-white/[0.12] shadow-md shadow-white/5"
+                        : "border-white/[0.08] bg-[#12121e]/90 hover:border-white/25 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[9.5px] font-bold text-zinc-400">0{index + 1}</span>
+                      <ArrowRight
+                        size={13}
+                        className={`transition-all duration-200 ${
+                          isSelected ? "translate-x-0.5 text-white" : "text-zinc-500 group-hover:translate-x-0.5 group-hover:text-white"
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="mt-2 text-xs font-bold text-white tracking-tight">{item.title}</div>
+                    <p className="mt-1 text-[10.5px] leading-relaxed text-zinc-400 font-gemini line-clamp-2">{item.description}</p>
+                    <div className="mt-2.5 flex items-center gap-1" aria-label={isSelected ? `Tahap aktif: ${currentLabel}` : `${item.steps.length} tahap`}>
+                      {item.steps.map((step, stepIndex) => (
+                        <span
+                          key={step.label}
+                          className={`h-1 flex-1 rounded-full transition-all ${
+                            isSelected && stepIndex <= scenarioStep
+                              ? "bg-gradient-to-r from-zinc-300 to-white"
+                              : "bg-white/[0.1]"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-1.5 min-h-[14px] text-[9.5px] font-mono text-zinc-300 truncate">
+                      {currentLabel || "Pilih untuk menjalankan skenario"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3.5 flex flex-col gap-1 border-t border-white/[0.06] pt-2.5 text-[10.5px] text-zinc-500 sm:flex-row sm:items-center sm:justify-between font-gemini">
+              <span>Klik node untuk detail · arah panah menunjukkan komponen yang terdampak.</span>
+              <span className="font-mono text-zinc-400">Event ID: {graphEvent.event_code || DEMO_EVENT_ID}</span>
+            </div>
+          </div>
+        </SpotlightCard>
+
+        {/* Right Column: Component Detail Sidebar */}
+        <SpotlightCard className="p-5 xl:sticky xl:top-20 xl:self-start" data-testid="graph-preview-detail">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">Detail Komponen</div>
-              <h3 data-testid="graph-detail-name" className="mt-2 text-lg font-semibold text-white">{selected.label}</h3>
-              <p className="mt-1 text-xs text-zinc-500">{selected.kind}</p>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono">
+                Detail Komponen
+              </div>
+              <h3 data-testid="graph-detail-name" className="mt-2 text-lg font-bold text-white tracking-tight">{selected.label}</h3>
+              <p className="mt-0.5 text-xs text-zinc-400 font-gemini">{selected.kind}</p>
             </div>
             <StatusPill status={selected.status} testId="graph-detail-status" tooltipAlign="right" />
           </div>
 
-          <p data-testid="graph-detail-description" className="mt-4 border-l-2 border-[var(--okx-accent)] pl-3 text-sm leading-6 text-zinc-300">{selected.description}</p>
+          <p data-testid="graph-detail-description" className="mt-3.5 rounded-xl border-l-2 border-white/40 bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-300 font-gemini">
+            {selected.description}
+          </p>
 
-          <dl className="mt-5 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+          <dl className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             {[
               ["Penanggung jawab", selected.owner, "owner"],
               ["Nilai / biaya", selected.value, "value"],
             ].map(([label, value, key]) => (
-              <div key={key} className="bg-[#0c0c0d] p-3">
-                <dt className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">{label}</dt>
-                <dd data-testid={`graph-detail-${key}`} className="mt-1 text-xs font-medium leading-5 text-zinc-200">{value}</dd>
+              <div key={key} className="rounded-xl border border-white/[0.08] bg-[#12121e]/90 p-2.5">
+                <dt className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-zinc-500 font-gemini-mono">{label}</dt>
+                <dd data-testid={`graph-detail-${key}`} className="mt-1 text-xs font-semibold leading-snug text-white font-gemini">{value}</dd>
               </div>
             ))}
           </dl>
 
-          <div className="mt-5" data-testid="graph-detail-progress">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-              <span>Progres</span><span className="num text-zinc-300">{selected.progress}%</span>
+          <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#12121e]/90 p-3" data-testid="graph-detail-progress">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 font-gemini-mono">
+              <span>Progres</span><span className="font-mono text-white font-bold">{selected.progress}%</span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden bg-zinc-800">
-              <div className="h-full transition-[width] duration-500" style={{ width: `${selected.progress}%`, background: (STATUS_META[selected.status] || STATUS_META.Pending).color }} />
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+              <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${selected.progress}%`, background: (STATUS_META[selected.status] || STATUS_META.Pending).color }} />
             </div>
           </div>
 
@@ -873,71 +957,31 @@ function GraphPreview() {
           <DetailList title="Dependensi" testId="graph-detail-dependencies" items={relationships.map((edge) => `${edge.direction}: ${edge.counterpart} · ${edge.label}`)} />
           <DetailList title="Risiko" testId="graph-detail-risks" items={firstOpen(selected.risks, "Tidak ada risiko aktif pada data saat ini.")} />
 
-          <div className="mt-5 border border-[var(--okx-accent)]/35 bg-[var(--okx-accent)]/10 p-3" data-testid="graph-detail-next-action">
-            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--okx-accent-soft)]">
-              <ListChecks size={13} aria-hidden="true" /> Tindakan berikutnya
+          <div className="mt-4 rounded-xl border border-white/[0.15] bg-[#181828]/95 p-3.5 shadow-sm" data-testid="graph-detail-next-action">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-200 font-gemini-mono">
+              <ListChecks size={13} className="text-zinc-300" aria-hidden="true" /> Tindakan berikutnya
             </div>
-            <p className="mt-2 text-xs leading-5 text-zinc-200">{selected.nextAction}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-zinc-200 font-gemini">{selected.nextAction}</p>
           </div>
-        </aside>
+        </SpotlightCard>
       </div>
 
-      <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 xl:grid-cols-4" data-testid="graph-reading-guide">
+      {/* 4 Reading Guide Cards with modern SpotlightCards */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="graph-reading-guide">
         {[
           [CircleDot, "Pusat grafik", "Event di tengah adalah satu Event ID yang menjadi pusat kendali."],
           [MousePointerClick, "Node", "Setiap node adalah komponen operasional. Klik untuk membuka detailnya."],
           [Route, "Garis & panah", "Garis adalah ketergantungan; panah menunjukkan arah dampaknya."],
           [Info, "Status", "Ikon, warna, dan label menjelaskan kondisi setiap komponen."],
         ].map(([Icon, title, description]) => (
-          <div key={title} className="bg-[#0c0c0d] p-4">
-            <Icon size={16} className="text-[var(--okx-accent)]" aria-hidden="true" />
-            <h4 className="mt-3 text-xs font-semibold text-zinc-100">{title}</h4>
-            <p className="mt-1.5 text-[11px] leading-5 text-zinc-500">{description}</p>
-          </div>
+          <SpotlightCard key={title} className="p-4">
+            <div className="inline-flex rounded-xl border border-white/[0.1] bg-white/[0.04] p-2 text-zinc-300">
+              <Icon size={16} aria-hidden="true" />
+            </div>
+            <h4 className="mt-2.5 text-xs font-bold text-white tracking-tight">{title}</h4>
+            <p className="mt-1 text-[11px] leading-relaxed text-zinc-400 font-gemini">{description}</p>
+          </SpotlightCard>
         ))}
-      </div>
-
-      <div className="border border-[var(--okx-border)] bg-[#0b0b0d] p-5 sm:p-6" data-testid="graph-scenarios">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">Simulasi hubungan</div>
-            <h3 className="editorial mt-2 text-2xl text-white sm:text-3xl">Lihat bagaimana satu keputusan bekerja</h3>
-          </div>
-          <p className="max-w-sm text-xs leading-5 text-zinc-500">Pilih skenario untuk melihat node dan jalur terdampak disorot secara berurutan.</p>
-        </div>
-        <div className="mt-5 grid gap-3 lg:grid-cols-3">
-          {SCENARIOS.map((item, index) => {
-            const isSelected = activeScenario === item.id;
-            const currentLabel = isSelected && scenarioStep >= 0 ? item.steps[scenarioStep]?.label : null;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`graph-scenario-${item.id}`}
-                aria-pressed={isSelected}
-                onClick={() => playScenario(item.id)}
-                className={`group min-h-44 border p-4 text-left transition-colors ${isSelected ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10" : "border-zinc-800 bg-[#0e0e10] hover:border-zinc-600"}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="num text-[10px] font-semibold text-[var(--okx-accent)]">0{index + 1}</span>
-                  <ArrowRight size={15} className={`transition-transform ${isSelected ? "translate-x-1 text-[var(--okx-accent)]" : "text-zinc-600 group-hover:translate-x-1"}`} aria-hidden="true" />
-                </div>
-                <div className="mt-5 text-sm font-semibold text-zinc-100">{item.title}</div>
-                <p className="mt-2 text-xs leading-5 text-zinc-500">{item.description}</p>
-                <div className="mt-4 flex items-center gap-1.5" aria-label={isSelected ? `Tahap aktif: ${currentLabel}` : `${item.steps.length} tahap`}>
-                  {item.steps.map((step, stepIndex) => (
-                    <span
-                      key={step.label}
-                      className="h-1 flex-1"
-                      style={{ background: isSelected && stepIndex <= scenarioStep ? "#ff2e7e" : "#27272a" }}
-                    />
-                  ))}
-                </div>
-                <div className="mt-2 min-h-4 text-[10px] text-[var(--okx-accent-soft)]">{currentLabel || "Pilih untuk menjalankan skenario"}</div>
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
@@ -945,12 +989,12 @@ function GraphPreview() {
 
 function DetailList({ title, items = [], testId }) {
   return (
-    <div className="mt-5" data-testid={testId}>
-      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">{title}</div>
-      <ul className="mt-2 space-y-1.5">
+    <div className="mt-4 rounded-xl border border-white/[0.06] bg-[#0e0e16]/80 p-3" data-testid={testId}>
+      <div className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-zinc-400 font-gemini-mono">{title}</div>
+      <ul className="mt-2 space-y-1.5 font-gemini">
         {items.map((item, index) => (
           <li key={`${item}-${index}`} className="flex gap-2 text-xs leading-5 text-zinc-300">
-            <ArrowRight size={11} className="mt-1 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
+            <ArrowRight size={11} className="mt-1 shrink-0 text-white/60" aria-hidden="true" />
             <span>{item}</span>
           </li>
         ))}
@@ -1004,50 +1048,48 @@ function ParticipantNetwork() {
       ref={sectionRef}
       data-testid="network-participants"
       data-visible={visible ? "true" : "false"}
-      className="participant-network border-b border-[var(--okx-border)] bg-[#0b0b0d] px-4 py-16 sm:px-6 sm:py-24"
+      className="participant-network border-b border-white/[0.08] bg-[#07070b] px-4 py-16 sm:px-6 sm:py-24 font-gemini"
     >
       <div className="mx-auto max-w-7xl">
         <div className="participant-intro flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
           <div>
-            <div className="flex items-center gap-3">
-              <span className="num text-[10px] font-semibold tracking-[0.14em] text-[var(--okx-accent)]">06 CORE FUNCTIONS</span>
-              <span className="h-px w-12 bg-[var(--okx-accent)]" aria-hidden="true" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-1 text-[10px] font-bold tracking-[0.16em] text-zinc-300 font-gemini-mono shadow-sm">
+              <Sparkles size={11} className="text-zinc-400" />
+              06 CORE FUNCTIONS
             </div>
-            <h2 className="editorial mt-5 max-w-3xl text-3xl leading-[1.02] text-[#e6ded9] sm:text-5xl">
-              Satu produksi. <span className="text-[var(--okx-accent)]">Semua fungsi terhubung.</span>
+            <h2 className="editorial mt-5 max-w-3xl text-3xl leading-[1.02] text-white sm:text-5xl">
+              Satu produksi. <span className="text-zinc-400">Semua fungsi terhubung.</span>
             </h2>
-            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-[#989196] sm:text-base">
+            <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               OKKAX menyatukan fungsi inti di balik live event dalam satu alur kerja, satu sumber data,
               dan satu standar operasional.
             </p>
           </div>
           <Link
             to="/register"
-            className="participant-cta group inline-flex min-h-11 w-fit items-center gap-3 border-b border-[var(--okx-accent)] pb-2 font-semibold text-[#e6ded9]"
+            className="participant-cta group inline-flex min-h-11 w-fit items-center gap-3 rounded-xl border border-white/[0.14] bg-white/[0.04] px-5 py-2.5 text-xs font-bold text-white transition-all duration-200 hover:border-white/30 hover:bg-white/[0.08]"
           >
             Join the operating network
-            <ArrowRight size={16} className="text-[var(--okx-accent)] transition-transform group-hover:translate-x-1.5" />
+            <ArrowRight size={15} className="text-zinc-400 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-white" />
           </Link>
         </div>
 
-        <RevealGroup stagger={0.08} className="mt-11 grid gap-px border border-[#2a292d] bg-[#2a292d] sm:grid-cols-2 lg:grid-cols-3">
+        <RevealGroup stagger={0.08} className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PARTICIPANT_GROUPS.map(([index, title, detail], i) => (
             <RevealItem key={title}>
-              <article
+              <SpotlightCard
                 data-testid={`participant-group-${i + 1}`}
-                className="participant-card group relative min-h-[148px] h-full overflow-hidden bg-[#101014] p-5 sm:p-6 transition-all duration-300 hover:bg-[#16121a]"
+                className="group relative min-h-[160px] h-full p-5 sm:p-6"
               >
-                <div className="flex items-start justify-between gap-5">
-                  <span className="num text-[11px] font-semibold text-[var(--okx-accent)]">{index}</span>
-                  <ArrowRight
-                    size={15}
-                    aria-hidden="true"
-                    className="text-[#504c51] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--okx-accent)]"
-                  />
+                <div className="flex items-start justify-between gap-4">
+                  <span className="font-mono text-xs font-bold text-zinc-400">{index}</span>
+                  <div className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-zinc-500 transition-all duration-200 group-hover:border-white/20 group-hover:text-white">
+                    <ArrowRight size={13} aria-hidden="true" />
+                  </div>
                 </div>
-                <h3 className="participant-title mt-7 text-base font-semibold text-[#e6ded9] sm:text-lg">{title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-[#888188] sm:text-sm">{detail}</p>
-              </article>
+                <h3 className="mt-5 text-base font-bold text-white sm:text-lg tracking-tight">{title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-400">{detail}</p>
+              </SpotlightCard>
             </RevealItem>
           ))}
         </RevealGroup>
