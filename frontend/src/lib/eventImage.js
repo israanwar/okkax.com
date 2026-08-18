@@ -79,15 +79,15 @@ export function bucketFor(event) {
 }
 
 const TINT_BY_BUCKET = {
-  music: ["#ff2e7e", "#8b5cf6"],
-  food: ["#f59e0b", "#ef4444"],
-  tech: ["#06b6d4", "#3b82f6"],
-  esports: ["#8b5cf6", "#ec4899"],
-  sport: ["#10b981", "#0d9488"],
-  fashion: ["#d946ef", "#ec4899"],
-  art: ["#f97316", "#e11d48"],
-  wellness: ["#14b8a6", "#84cc16"],
-  business: ["#64748b", "#0f172a"],
+  music: ["#27272a", "#121215"],
+  food: ["#27272a", "#18181b"],
+  tech: ["#18181b", "#09090b"],
+  esports: ["#27272a", "#121215"],
+  sport: ["#1f1f23", "#0f0f12"],
+  fashion: ["#262626", "#171717"],
+  art: ["#27272a", "#18181b"],
+  wellness: ["#1e1e24", "#0f0f14"],
+  business: ["#27272a", "#09090b"],
 };
 
 function hashString(input) {

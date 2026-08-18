@@ -10,7 +10,7 @@ import { useCatalogCities } from "@/lib/cities";
 
 const GOOGLE_MARK_URL = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 const AUTH_BACKGROUND_URL = "/assets/okkax-concert-hero-v2.png";
-const inputClass = "mt-1.5 h-11 w-full rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 transition-all duration-200 hover:border-zinc-700 focus:border-[var(--okx-accent)] focus:ring-1 focus:ring-[var(--okx-accent)]/40 font-gemini";
+const inputClass = "mt-1.5 h-11 w-full rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-400 transition-all duration-200 hover:border-zinc-700 focus:border-white focus:ring-1 focus:ring-white/40 font-gemini";
 
 const ROLE_OPTIONS = [
   ["organizer", "Organizer"],
@@ -84,7 +84,7 @@ function Shell({ title, subtitle, children }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
             <span className="h-2 w-2 rounded-full bg-[var(--okx-accent)] shadow-[0_0_8px_var(--okx-accent)]" /> Built for live operations • 15+ Kota
           </div>
         </aside>
@@ -101,7 +101,7 @@ function Shell({ title, subtitle, children }) {
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">OKKAX Access</div>
                 <h1 className="editorial mt-1.5 text-2xl sm:text-3xl text-[#f5f0ed]">{title}</h1>
-                <p className="mt-1 text-xs sm:text-sm text-zinc-400">{subtitle}</p>
+                <p className="mt-1 text-xs sm:text-sm text-zinc-300">{subtitle}</p>
               </div>
               <Link to="/" className="hidden shrink-0 text-xs font-medium text-zinc-400 hover:text-white transition-colors sm:block">
                 Back to network →
@@ -133,7 +133,7 @@ function GoogleButton({ mode, onClick }) {
 
 function Divider({ children }) {
   return (
-    <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+    <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
       <span className="h-px flex-1 bg-zinc-800" />
       <span>{children}</span>
       <span className="h-px flex-1 bg-zinc-800" />
@@ -190,17 +190,17 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
   const [visible, setVisible] = useState(false);
   const { score, label } = useMemo(() => scorePassword(value), [value]);
   const strengthTone =
-    score >= 4 ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
-    : score === 3 ? "bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.5)]"
-    : score === 2 ? "bg-amber-400"
-    : score === 1 ? "bg-orange-500"
+    score >= 4 ? "bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+    : score === 3 ? "bg-zinc-300"
+    : score === 2 ? "bg-zinc-400"
+    : score === 1 ? "bg-zinc-600"
     : "bg-zinc-800";
   const strengthText =
-    score >= 4 ? "text-emerald-300"
-    : score === 3 ? "text-lime-300"
-    : score === 2 ? "text-amber-300"
-    : score === 1 ? "text-orange-300"
-    : "text-zinc-500";
+    score >= 4 ? "text-white font-bold"
+    : score === 3 ? "text-zinc-200 font-semibold"
+    : score === 2 ? "text-zinc-300"
+    : score === 1 ? "text-zinc-400"
+    : "text-zinc-400";
 
   const generate = () => onChange({ target: { value: suggestStrongPassword() } });
   const copy = async () => {
@@ -286,9 +286,9 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
 function FieldLabel({ label, hint, children }) {
   return (
     <div className="flex flex-col min-w-0 font-gemini">
-      <div className="flex h-5 items-center justify-between gap-2 text-[12px] font-medium tracking-tight text-zinc-300">
+      <div className="flex h-5 items-center justify-between gap-2 text-[12px] font-medium tracking-tight text-zinc-200">
         <span className="truncate">{label}</span>
-        {hint && <span className="shrink-0 text-[10px] text-zinc-500 uppercase tracking-wider">{hint}</span>}
+        {hint && <span className="shrink-0 text-[10px] text-zinc-400 uppercase tracking-wider font-gemini-mono">{hint}</span>}
       </div>
       {children}
     </div>
@@ -394,8 +394,8 @@ export function Login() {
         </FieldLabel>
 
         {error && (
-          <div data-testid="login-error" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400 flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+          <div data-testid="login-error" className="rounded-lg border border-white/20 bg-white/[0.04] px-3.5 py-2.5 text-xs text-zinc-300 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -428,7 +428,7 @@ export function Login() {
                 {matchingPersona ? `Akses Cepat Demo Persona (${matchingPersona.roleName})` : "Akses Cepat Demo Persona"}
               </span>
             </div>
-            <span className="text-[10px] text-zinc-500">1-Klik Sign In</span>
+            <span className="text-[10px] text-zinc-400 font-gemini-mono">1-Klik Sign In</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {visibleDemoAccounts.map((item) => (
@@ -613,8 +613,8 @@ export function Register() {
         </label>
 
         {error && (
-          <div data-testid="register-error" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400 flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+          <div data-testid="register-error" className="rounded-lg border border-white/20 bg-white/[0.04] px-3.5 py-2.5 text-xs text-zinc-300 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
             <span>{error}</span>
           </div>
         )}

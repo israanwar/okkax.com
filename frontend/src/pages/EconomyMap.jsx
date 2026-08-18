@@ -87,7 +87,7 @@ export default function EconomyMap() {
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" data-testid="map-totals">
               <SpotlightCard className="p-4 sm:p-5">
                 <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
-                  <TrendingUp size={13} className="text-emerald-400" />
+                  <TrendingUp size={13} className="text-zinc-300" />
                   Total Aktivitas
                 </div>
                 <div className="num mt-2 text-xl sm:text-2xl font-bold text-white tracking-tight" data-testid="map-total-activity">

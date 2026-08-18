@@ -73,12 +73,12 @@ function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments }) {
               {ev.event_type}
             </span>
             {ev.is_live && (
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-950/80 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-emerald-300 shadow-sm">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" /> Live
+              <span className="flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> Live
               </span>
             )}
             {!ev.is_live && ev.almost_sold_out && (
-              <span className="rounded-full border border-amber-500/40 bg-amber-950/80 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-amber-300 shadow-sm">
+              <span className="rounded-full border border-dashed border-white/30 bg-white/[0.04] backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold text-zinc-300 shadow-sm">
                 Hampir habis
               </span>
             )}
@@ -125,7 +125,7 @@ function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments }) {
               <div className="text-lg font-bold text-white font-gemini-display">{ev.min_price ? idr(ev.min_price) : "Gratis"}</div>
             </div>
             <div className="text-right text-xs text-zinc-400">
-              <div className="flex items-center justify-end gap-1 font-semibold text-emerald-400 font-gemini-mono">
+              <div className="flex items-center justify-end gap-1 font-semibold text-white font-gemini-mono">
                 <TrendingUp size={12} /> <span>{compact(ev.economic_ripple)}</span>
               </div>
               <div className="font-gemini-mono text-[11px] text-zinc-400">{num(ev.tickets_remaining)} tiket tersisa</div>
@@ -263,11 +263,11 @@ export default function Discover() {
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] px-5 py-3.5 sm:px-6 bg-[#09090f]">
               <div className="flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
-                <Activity size={14} className="text-emerald-400" />
+                <Activity size={14} className="text-zinc-300" />
                 Network overview
               </div>
               <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-gemini-mono">
-                <CircleDot size={12} className="animate-pulse text-emerald-400" />
+                <CircleDot size={12} className="animate-pulse text-white" />
                 Data katalog aktif
               </div>
             </div>

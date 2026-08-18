@@ -589,20 +589,13 @@ def _rp(v):
     return "Rp" + f"{int(v or 0):,}".replace(",", ".")
 
 
-def _pdf_response(build, filename: str):
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    build(c)
-    c.showPage()
-    c.save()
-    buf.seek(0)
-    return StreamingResponse(buf, media_type="application/pdf",
-                             headers={"Content-Disposition": f'attachment; filename="{filename}"'})
-
-
-DEMO_NOTE = ("Dokumen ini dihasilkan otomatis oleh OKKAX pada mode demo kompetisi.\n"
-             "Seluruh nama, organisasi, harga, dan transaksi merupakan data fiktif. Pembayaran bersifat sandbox —\n"
-             "tidak ada uang nyata yang ditagihkan. Estimasi pajak memerlukan verifikasi profesional dan bukan nasihat pajak.")
+def _pdf_response_from_bytes(pdf_bytes: bytes, filename: str):
+    buf = io.BytesIO(pdf_bytes)
+    return StreamingResponse(
+        buf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @extras.get("/documents/invoice/{order_id}")
@@ -616,42 +609,11 @@ async def invoice_pdf(order_id: str, user: dict = Depends(get_current_user)):
     payment = await db.payments.find_one({"id": order.get("payment_id")}, {"_id": 0}) or {}
     tickets = await db.tickets.find({"order_id": order_id}, {"_id": 0}).to_list(50)
 
-    def build(c):
-        _header(c, f"Invoice {order['order_code']}",
-                f"{order['event_name']} · diterbitkan {now_iso()[:10]}")
-        y = 240 * mm
-        y = _rows(c, y, [
-            ("Ditagihkan kepada", f"{order['buyer_name']} ({order['buyer_email']})"),
-            ("Event", order["event_name"]),
-            ("Ticket tier", f"{order['tier_name']} × {order['quantity']}"),
-            ("Metode pembayaran", payment.get("method_channel", "—")),
-            ("Nomor referensi", payment.get("reference_number", "—")),
-            ("Status pembayaran", payment.get("status", order["status"])),
-        ])
-        y -= 6 * mm
-        c.setFont("Helvetica-Bold", 11)
-        c.setFillColor(INK)
-        c.drawString(15 * mm, y, "Rincian biaya")
-        y -= 8 * mm
-        y = _rows(c, y, [
-            ("Subtotal tiket", _rp(order["gross"])),
-            ("Platform fee OKKAX (3%)", _rp(order["platform_fee"])),
-            ("Estimasi pajak (11%)", _rp(order["tax"])),
-            ("Total", _rp(order["total"])),
-        ], bold_last=True)
-        y -= 6 * mm
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(15 * mm, y, f"Tiket diterbitkan ({len(tickets)})")
-        y -= 7 * mm
-        c.setFont("Helvetica", 9)
-        for t in tickets:
-            c.setFillColor(colors.HexColor("#3f3f46"))
-            c.drawString(15 * mm, y, f"{t['ticket_number']} — {t['attendee_name']} ({t['status']})")
-            y -= 6 * mm
-        _footer(c, DEMO_NOTE)
+    from document_engine import build_invoice_pdf
+    pdf_bytes = build_invoice_pdf(order=order, payment=payment, tickets=tickets)
 
     await audit(order["event_id"], user, "document.invoice", {"order": order["order_code"]})
-    return _pdf_response(build, f"OKKAX-Invoice-{order['order_code']}.pdf")
+    return _pdf_response_from_bytes(pdf_bytes, f"OKKAX-Invoice-{order['order_code']}.pdf")
 
 
 @extras.get("/documents/quotation/{event_id}")
@@ -660,71 +622,23 @@ async def quotation_pdf(event_id: str, user: dict = Depends(get_current_user)):
     await assert_event_access(ev, user, write=True)
     from server import compute_budget
     b = await compute_budget(ev["id"])
-    by_cat = sorted(b["cost_by_category"].items(), key=lambda x: -x[1])[:11]
 
-    def build(c):
-        _header(c, f"Quotation {ev['event_code']}", f"{ev['name']} · {ev['city']} · {ev['start_date']}")
-        y = 240 * mm
-        y = _rows(c, y, [
-            ("Penyelenggara", ev.get("organizer_name") or "—"),
-            ("Jenis event", ev["event_type"]),
-            ("Venue", ev.get("venue_name") or "Belum dikonfirmasi"),
-            ("Durasi", f"{ev['days']} hari event + {ev['setup_days']} setup day"),
-            ("Kapasitas", f"{ev['capacity']:,}".replace(",", ".")),
-        ])
-        y -= 6 * mm
-        c.setFont("Helvetica-Bold", 11)
-        c.setFillColor(INK)
-        c.drawString(15 * mm, y, "Estimasi biaya per kategori (11 kategori terbesar)")
-        y -= 8 * mm
-        y = _rows(c, y, [(k, _rp(v)) for k, v in by_cat] + [("Total Event Cost", _rp(b["total_cost"]))],
-                  bold_last=True)
-        y -= 4 * mm
-        y = _rows(c, y, [
-            ("Confirmed Funding", _rp(b["confirmed_funding"])),
-            ("Funding Gap", _rp(b["funding_gap"])),
-            ("Projected ticket revenue", _rp(b["projected_ticket_revenue"])),
-            ("Break-even tickets", f"{b['break_even_tickets'] or 0:,}".replace(",", ".")),
-        ])
-        _footer(c, DEMO_NOTE)
+    from document_engine import build_quotation_pdf
+    pdf_bytes = build_quotation_pdf(event=ev, budget=b)
 
     await audit(ev["id"], user, "document.quotation")
-    return _pdf_response(build, f"OKKAX-Quotation-{ev['event_code']}.pdf")
+    return _pdf_response_from_bytes(pdf_bytes, f"OKKAX-Quotation-{ev['event_code']}.pdf")
 
 
 @extras.get("/documents/payment-schedule/{event_id}")
 async def payment_schedule_pdf(event_id: str, user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user, write=True)
-    ms = await db.payment_milestones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    ms = await db.payment_milestones.find({"event_id": ev["id"]}, {"_id": 0}).to_list(500)
 
-    def build(c):
-        _header(c, f"Payment Schedule {ev['event_code']}", f"{ev['name']} · {len(ms)} milestone")
-        y = 240 * mm
-        c.setFont("Helvetica-Bold", 8.5)
-        c.setFillColor(colors.HexColor("#52525b"))
-        for label, x in [("PENERIMA", 15), ("MILESTONE", 62), ("JATUH TEMPO", 115), ("%", 145), ("JUMLAH", 195)]:
-            (c.drawRightString if label in ("JUMLAH",) else c.drawString)(x * mm, y, label)
-        y -= 6 * mm
-        c.setFont("Helvetica", 8.5)
-        total = 0
-        for m in ms:
-            total += m["amount"]
-            c.setFillColor(colors.HexColor("#3f3f46"))
-            c.drawString(15 * mm, y, str(m["ref_name"])[:26])
-            c.drawString(62 * mm, y, f"{m['description']} ({m['status']})"[:32])
-            c.drawString(115 * mm, y, str(m["due_date"]))
-            c.drawString(145 * mm, y, f"{m['percentage']}%")
-            c.setFillColor(INK)
-            c.drawRightString(195 * mm, y, _rp(m["amount"]))
-            c.setStrokeColor(colors.HexColor("#e4e4e7"))
-            c.line(15 * mm, y - 2 * mm, 195 * mm, y - 2 * mm)
-            y -= 7 * mm
-            if y < 40 * mm:
-                break
-        y -= 4 * mm
-        _rows(c, y, [("Total milestone terjadwal", _rp(total))], bold_last=True)
-        _footer(c, DEMO_NOTE)
+    from document_engine import build_payment_schedule_pdf
+    pdf_bytes = build_payment_schedule_pdf(event=ev, milestones=ms)
 
     await audit(ev["id"], user, "document.payment_schedule")
-    return _pdf_response(build, f"OKKAX-Payment-Schedule-{ev['event_code']}.pdf")
+    return _pdf_response_from_bytes(pdf_bytes, f"OKKAX-Payment-Schedule-{ev['event_code']}.pdf")
+

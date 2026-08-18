@@ -374,8 +374,8 @@ export default function OkkaxChat() {
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold tracking-wider text-white font-gemini-display">OKKAX</span>
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
               </span>
             </div>
             <span className="text-[10px] font-semibold tracking-wider text-zinc-400 font-mono uppercase group-hover:text-zinc-200 transition-colors">
@@ -415,8 +415,8 @@ export default function OkkaxChat() {
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono mt-0.5">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
                   </span>
                   <span>Real-time Event Graph Intelligence</span>
                 </div>
@@ -547,8 +547,8 @@ export default function OkkaxChat() {
                           >
                             {copiedIdx === idx ? (
                               <>
-                                <Check className="h-3 w-3 text-emerald-400" />
-                                <span className="text-emerald-400 font-semibold">Tersalin</span>
+                                <Check className="h-3 w-3 text-white" />
+                                <span className="text-white font-semibold">Tersalin</span>
                               </>
                             ) : (
                               <>

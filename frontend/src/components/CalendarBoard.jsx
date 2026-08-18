@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleDot,
   Clock3, Crosshair, LayoutGrid, List, MapPin, Plus, Search, Sun, Ticket, Trash2,
   Users, X, XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import OkxDropdown from "@/components/OkxDropdown";
 import { SpotlightCard } from "@/components/MotionPrimitives";
@@ -83,24 +84,24 @@ const buildFacetOptions = (label, values = []) => [
 ];
 
 const PUBLIC_STATUSES = {
-  upcoming: ["Akan berlangsung", Clock3, "border-sky-400/50 bg-sky-950/40 text-sky-300"],
-  ongoing: ["Sedang berlangsung", CircleDot, "border-emerald-400/50 bg-emerald-950/40 text-emerald-300"],
-  completed: ["Telah selesai", CheckCircle2, "border-zinc-700 bg-zinc-800/40 text-zinc-400"],
-  rescheduled: ["Dijadwalkan ulang", CalendarDays, "border-amber-400/50 bg-amber-950/40 text-amber-300"],
-  postponed: ["Ditunda", AlertTriangle, "border-orange-400/50 bg-orange-950/40 text-orange-300"],
-  cancelled: ["Dibatalkan", XCircle, "border-rose-400/50 bg-rose-950/40 text-rose-300"],
-  tickets_on_sale: ["Tiket dijual", Ticket, "border-amber-400/50 bg-amber-950/40 text-amber-300"],
-  tenant_open: ["Tenant dibuka", CircleDot, "border-violet-400/50 bg-violet-950/40 text-violet-300"],
-  sponsor_open: ["Mencari sponsor", CircleDot, "border-zinc-400/50 bg-zinc-800/40 text-zinc-300"],
-  workforce_open: ["Rekrut workforce", Users, "border-cyan-400/50 bg-cyan-950/40 text-cyan-300"],
+  upcoming: ["Akan berlangsung", Clock3, "border-white/20 bg-white/[0.04] text-zinc-300"],
+  ongoing: ["Sedang berlangsung", CircleDot, "border-white/40 bg-white/10 text-white font-bold"],
+  completed: ["Telah selesai", CheckCircle2, "border-zinc-700/60 bg-zinc-800/30 text-zinc-400"],
+  rescheduled: ["Dijadwalkan ulang", CalendarDays, "border-dashed border-white/30 bg-white/[0.03] text-zinc-200"],
+  postponed: ["Ditunda", AlertTriangle, "border-white/25 bg-white/[0.03] text-zinc-300"],
+  cancelled: ["Dibatalkan", XCircle, "border-zinc-800 bg-black/40 text-zinc-500 line-through"],
+  tickets_on_sale: ["Tiket dijual", Ticket, "border-white/25 bg-white/[0.05] text-zinc-200 font-semibold"],
+  tenant_open: ["Tenant dibuka", CircleDot, "border-white/20 bg-white/[0.03] text-zinc-300"],
+  sponsor_open: ["Mencari sponsor", CircleDot, "border-white/20 bg-white/[0.03] text-zinc-300"],
+  workforce_open: ["Rekrut workforce", Users, "border-white/20 bg-white/[0.03] text-zinc-300"],
 };
 
 const INTERNAL_META = {
-  Completed: [CheckCircle2, "border-emerald-400/50 bg-emerald-950/40 text-emerald-300"],
-  Confirmed: [CheckCircle2, "border-white/40 bg-white/10 text-white"],
-  Pending: [Clock3, "border-amber-400/50 bg-amber-950/40 text-amber-300"],
-  "At Risk": [AlertTriangle, "border-rose-400/60 bg-rose-950/40 text-rose-300"],
-  Missing: [XCircle, "border-rose-400/60 bg-rose-950/40 text-rose-300"],
+  Completed: [CheckCircle2, "border-zinc-700/60 bg-zinc-800/30 text-zinc-400"],
+  Confirmed: [CheckCircle2, "border-white/40 bg-white/10 text-white font-bold"],
+  Pending: [Clock3, "border-dashed border-white/25 bg-white/[0.03] text-zinc-300"],
+  "At Risk": [AlertTriangle, "border border-white/50 bg-white/[0.06] text-white font-bold"],
+  Missing: [XCircle, "border border-white/60 bg-white/10 text-white font-bold"],
 };
 
 const pad = (value) => String(value).padStart(2, "0");
@@ -146,7 +147,7 @@ function EntryCard({ item, selected, onSelect, dense = false, href = "" }) {
   );
 }
 
-function MonthView({ cursor, items, selected, onSelect }) {
+function MonthView({ cursor, items, selected, onSelect, showDaysHeader = false }) {
   const first = startOfMonth(cursor);
   const gridStart = addDays(first, -((first.getDay() + 6) % 7));
   const days = Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
@@ -159,13 +160,15 @@ function MonthView({ cursor, items, selected, onSelect }) {
     return map;
   }, [items]);
   return (
-    <div className="overflow-x-auto okx-scroll" data-testid="calendar-month-view">
-      <div className="min-w-[760px] border-l border-t border-[var(--okx-border)]">
-        <div className="grid grid-cols-7 bg-[#0b0b0b]">
-          {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => (
-            <div key={day} className="border-b border-r border-[var(--okx-border)] px-2 py-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{day}</div>
-          ))}
-        </div>
+    <div className="overflow-x-auto okx-scroll rounded-2xl border border-white/[0.08] bg-[#0c0c14]/90 shadow-xl" data-testid="calendar-month-view">
+      <div className="min-w-[760px]">
+        {showDaysHeader && (
+          <div className="grid grid-cols-7 border-b border-white/[0.08] bg-white/[0.03]">
+            {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => (
+              <div key={day} className="border-r border-white/[0.06] last:border-r-0 px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400 font-gemini-mono">{day}</div>
+            ))}
+          </div>
+        )}
         <div className="grid grid-cols-7">
           {days.map((day) => {
             const key = isoDay(day);
@@ -173,11 +176,14 @@ function MonthView({ cursor, items, selected, onSelect }) {
             const outside = day.getMonth() !== cursor.getMonth();
             const today = key === isoDay(new Date());
             return (
-              <div key={key} className={`min-h-32 border-b border-r border-[var(--okx-border)] p-1.5 ${outside ? "bg-[#080808] text-zinc-700" : "bg-[#0d0d0d]"}`}>
-                <div className={`num mb-1.5 flex h-6 w-6 items-center justify-center text-xs ${today ? "bg-[var(--okx-accent)] font-bold text-white" : "text-zinc-500"}`}>{day.getDate()}</div>
+              <div key={key} className={`min-h-[90px] sm:min-h-[105px] border-b border-r border-white/[0.06] p-1.5 transition-colors ${outside ? "bg-black/40 text-zinc-400" : "bg-[#0c0c14]/60 text-zinc-300 hover:bg-white/[0.02]"}`}>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ${today ? "bg-white font-bold text-black shadow-md" : outside ? "text-zinc-400" : "text-zinc-200"}`}>{day.getDate()}</span>
+                  {rows.length > 0 && <span className="text-[9px] font-gemini-mono text-zinc-400">{rows.length} ev</span>}
+                </div>
                 <div className="space-y-1">
                   {rows.slice(0, 3).map((item) => <EntryCard key={item.id} item={item} dense selected={selected?.id === item.id} onSelect={onSelect} />)}
-                  {rows.length > 3 && <div className="px-1 text-[10px] accent-text">+{rows.length - 3} aktivitas</div>}
+                  {rows.length > 3 && <div className="px-1 text-[9.5px] font-medium text-zinc-400 hover:text-white">+{rows.length - 3} lainnya</div>}
                 </div>
               </div>
             );
@@ -192,16 +198,17 @@ function WeekView({ cursor, items, selected, onSelect }) {
   const start = addDays(cursor, -((cursor.getDay() + 6) % 7));
   const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
   return (
-    <div className="overflow-x-auto okx-scroll" data-testid="calendar-week-view">
-      <div className="grid min-w-[760px] grid-cols-7 border-l border-t border-[var(--okx-border)]">
+    <div className="overflow-x-auto okx-scroll rounded-2xl border border-white/[0.08] bg-[#0c0c14]/90 shadow-xl" data-testid="calendar-week-view">
+      <div className="grid min-w-[760px] grid-cols-7">
         {days.map((day) => {
           const key = isoDay(day);
           const rows = items.filter((item) => String(item.start_at).slice(0, 10) === key);
+          const today = key === isoDay(new Date());
           return (
-            <div key={key} className="min-h-[420px] border-b border-r border-[var(--okx-border)] bg-[#0d0d0d] p-2">
-              <div className="mb-3 border-b border-[var(--okx-border)] pb-2">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500">{new Intl.DateTimeFormat("id-ID", { weekday: "short" }).format(day)}</div>
-                <div className="num text-lg font-semibold">{day.getDate()}</div>
+            <div key={key} className={`min-h-[380px] border-b border-r border-white/[0.06] last:border-r-0 p-2.5 ${today ? "bg-white/[0.02]" : "bg-transparent"}`}>
+              <div className="mb-2 border-b border-white/[0.08] pb-2">
+                <div className="text-[9.5px] font-bold uppercase tracking-widest text-zinc-500 font-gemini-mono">{new Intl.DateTimeFormat("id-ID", { weekday: "short" }).format(day)}</div>
+                <div className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold ${today ? "bg-white text-black shadow-md" : "text-white"}`}>{day.getDate()}</div>
               </div>
               <div className="space-y-1.5">{rows.map((item) => <EntryCard key={item.id} item={item} dense selected={selected?.id === item.id} onSelect={onSelect} />)}</div>
             </div>
@@ -227,12 +234,12 @@ function DayView({ cursor, items, selected, onSelect }) {
     return map;
   }, [rows]);
   return (
-    <div className="border-t border-[var(--okx-border)]" data-testid="calendar-day-view">
-      <div className="border-b border-[var(--okx-border)] bg-[#0b0b0b] px-3 py-2 text-xs uppercase tracking-widest text-zinc-500">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c14]/90 overflow-hidden shadow-xl" data-testid="calendar-day-view">
+      <div className="border-b border-white/[0.08] bg-white/[0.03] px-4 py-3 text-xs font-bold uppercase tracking-widest text-zinc-400 font-gemini-mono">
         {dateLabel(key)}
       </div>
       {rows.length === 0 && (
-        <div className="border-b border-dashed border-[var(--okx-border)] p-10 text-center text-sm text-zinc-500">
+        <div className="p-12 text-center text-xs text-zinc-500" data-testid="calendar-empty">
           Tidak ada aktivitas pada hari ini dengan filter aktif.
         </div>
       )}
@@ -242,14 +249,14 @@ function DayView({ cursor, items, selected, onSelect }) {
             const bucket = grouped[h] || [];
             return (
               <div key={h} className="contents">
-                <div className="num border-b border-r border-[var(--okx-border)] bg-[#0b0b0b] px-2 py-2 text-right text-[10px] text-zinc-500">
+                <div className="num border-b border-r border-white/[0.06] bg-white/[0.01] px-3 py-3 text-right text-[11px] font-semibold text-zinc-500 font-gemini-mono">
                   {pad(h)}:00
                 </div>
-                <div className="min-h-[48px] border-b border-[var(--okx-border)] p-1.5">
+                <div className="min-h-[56px] border-b border-white/[0.06] p-2">
                   {bucket.length === 0 ? (
                     <div className="h-full" />
                   ) : (
-                    <div className="grid gap-1.5 md:grid-cols-2">
+                    <div className="grid gap-2 md:grid-cols-2">
                       {bucket.map((item) => (
                         <EntryCard key={item.id} item={item} selected={selected?.id === item.id} onSelect={onSelect} dense />
                       ))}
@@ -272,21 +279,21 @@ function ListView({ items, selected, onSelect }) {
     return acc;
   }, {}), [items]);
   return (
-    <div className="space-y-5" data-testid="calendar-list-view">
+    <div className="space-y-6" data-testid="calendar-list-view">
       {Object.entries(groups).map(([day, rows]) => (
-        <section key={day}>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">{dateLabel(day)}</h3>
-          <div className="grid gap-2 md:grid-cols-2">{rows.map((item) => <EntryCard key={item.id} item={item} selected={selected?.id === item.id} onSelect={onSelect} />)}</div>
+        <section key={day} className="rounded-2xl border border-white/[0.08] bg-[#0c0c14]/90 p-4 shadow-lg">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">{dateLabel(day)}</h3>
+          <div className="grid gap-2.5 md:grid-cols-2">{rows.map((item) => <EntryCard key={item.id} item={item} selected={selected?.id === item.id} onSelect={onSelect} />)}</div>
         </section>
       ))}
-      {items.length === 0 && <div className="border border-dashed border-[var(--okx-border)] p-10 text-center text-sm text-zinc-500">Tidak ada aktivitas pada rentang dan filter ini.</div>}
+      {items.length === 0 && <div className="rounded-2xl border border-dashed border-white/[0.1] p-12 text-center text-xs text-zinc-500">Tidak ada aktivitas pada rentang dan filter ini.</div>}
     </div>
   );
 }
 
 function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) {
   if (compact) return null;
-  const inputField = "w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-[var(--okx-accent)]";
+  const inputField = "w-full rounded-xl border border-white/[0.1] bg-[#0c0c14] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-white/40 transition-colors";
   const useLocation = () => {
     if (!navigator.geolocation) return toast.error("Geolokasi tidak tersedia di browser ini");
     navigator.geolocation.getCurrentPosition(({ coords }) => {
@@ -294,14 +301,14 @@ function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) 
       toast.success("Lokasi digunakan untuk filter jarak");
     }, () => toast.error("Izin lokasi tidak diberikan"));
   };
-  const label = (text) => <span className="mb-1 block text-[10px] uppercase tracking-wider text-zinc-500">{text}</span>;
+  const label = (text) => <span className="mb-1 block text-[10px] uppercase font-bold tracking-wider text-zinc-400 font-gemini-mono">{text}</span>;
   const set = (key) => (value) => setFilters({ ...filters, [key]: value });
   const statusOptions = [
     { value: "", label: "Semua status" },
     ...(facets.statuses || []).map((item) => ({ value: item.value, label: item.label })),
   ];
   return (
-    <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4" data-testid="calendar-public-filters">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c14]/80 p-4 shadow-xl backdrop-blur-md" data-testid="calendar-public-filters">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label>{label("Dari tanggal")}<input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className={inputField} /></label>
         <label>{label("Sampai tanggal")}<input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className={inputField} /></label>
@@ -320,10 +327,10 @@ function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) 
         <div>{label("Format")}<OkxDropdown value={filters.format} onChange={set("format")} options={buildFacetOptions("Offline, hybrid, virtual", facets.formats)} placeholder="Offline, hybrid, virtual" testId="calendar-filter-format" /></div>
         <div>{label("Status kalender")}<OkxDropdown value={filters.status} onChange={set("status")} options={statusOptions} placeholder="Semua status" testId="calendar-filter-status" /></div>
       </div>
-      <div className="mt-3 flex flex-wrap items-end gap-2">
+      <div className="mt-3.5 flex flex-wrap items-end gap-2.5">
         <div className="min-w-40">{label("Jarak lokasi")}<OkxDropdown value={filters.radius_km} onChange={set("radius_km")} placeholder="Tanpa batas" testId="calendar-filter-radius" options={[{ value: "", label: "Tanpa batas" }, { value: "10", label: "10 km" }, { value: "25", label: "25 km" }, { value: "50", label: "50 km" }, { value: "100", label: "100 km" }, { value: "250", label: "250 km" }]} /></div>
-        <button type="button" onClick={useLocation} className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-3 py-2 text-xs text-zinc-300 hover:border-zinc-500"><Crosshair size={14} /> Gunakan lokasi saya</button>
-        <button type="button" disabled={busy} onClick={onApply} className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-xs font-semibold text-[#080808] disabled:opacity-50"><Search size={14} /> Terapkan filter</button>
+        <button type="button" onClick={useLocation} className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-300 hover:border-white/25 hover:text-white transition-all"><Crosshair size={14} /> Gunakan lokasi saya</button>
+        <button type="button" disabled={busy} onClick={onApply} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-zinc-200 transition-all disabled:opacity-50 shadow-md"><Search size={14} /> Terapkan filter</button>
       </div>
     </div>
   );
@@ -333,31 +340,43 @@ function DetailPanel({ item, onClose, internal, onFollowUp, onDelete, deleting }
   if (!item) return null;
   const removable = internal && item.source_type === "calendar_entry";
   return (
-    <aside className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4" data-testid="calendar-detail-panel">
+    <aside className="rounded-2xl border border-white/[0.1] bg-[#0e0e18] p-5 shadow-2xl space-y-4" data-testid="calendar-detail-panel">
       <div className="flex items-start justify-between gap-3">
-        <div><div className="text-[10px] uppercase tracking-widest text-zinc-500">Detail jadwal</div><h3 className="mt-1 text-base font-semibold">{item.title}</h3></div>
-        <button onClick={onClose} aria-label="Tutup detail" className="p-1 text-zinc-500 hover:text-white"><X size={16} /></button>
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 font-gemini-mono">Detail Jadwal</div>
+          <h3 className="mt-1 text-base font-bold text-white">{item.title}</h3>
+        </div>
+        <button onClick={onClose} aria-label="Tutup detail" className="rounded-lg p-1.5 text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors"><X size={16} /></button>
       </div>
-      <div className="mt-3"><StatusPill item={item} /></div>
-      <dl className="mt-4 space-y-2 text-xs">
+      <div><StatusPill item={item} /></div>
+      <dl className="space-y-2.5 text-xs">
         {[
-          ["Mulai", `${dateLabel(item.start_at)} · ${timeLabel(item.start_at)}`], ["Selesai", `${dateLabel(item.end_at)} · ${timeLabel(item.end_at)}`],
-          ["Event ID", item.event_code || item.event_id], ["Lokasi", item.location], ["Penanggung jawab", item.owner || item.organizer],
-          ["Resource", item.resource_name], ["Format", item.format], ["Kapasitas", item.capacity ? num(item.capacity) : null],
-          ["Harga", item.max_price != null ? `${idr(item.min_price)} – ${idr(item.max_price)}` : null], ["Catatan", item.notes],
+          ["Mulai", `${dateLabel(item.start_at)} · ${timeLabel(item.start_at)}`],
+          ["Selesai", `${dateLabel(item.end_at)} · ${timeLabel(item.end_at)}`],
+          ["Event ID", item.event_code || item.event_id],
+          ["Lokasi", item.location],
+          ["Penanggung jawab", item.owner || item.organizer],
+          ["Resource", item.resource_name],
+          ["Format", item.format],
+          ["Kapasitas", item.capacity ? num(item.capacity) : null],
+          ["Harga", item.max_price != null ? `${idr(item.min_price)} – ${idr(item.max_price)}` : null],
+          ["Catatan", item.notes],
         ].filter(([, value]) => value).map(([label, value]) => (
-          <div key={label} className="grid grid-cols-[110px_1fr] gap-3 border-b border-[var(--okx-border)] pb-2"><dt className="text-zinc-500">{label}</dt><dd className="break-words text-zinc-200">{value}</dd></div>
+          <div key={label} className="grid grid-cols-[110px_1fr] gap-3 border-b border-white/[0.06] pb-2">
+            <dt className="text-zinc-400 font-gemini-mono text-[11px] font-medium">{label}</dt>
+            <dd className="break-words text-zinc-100 font-gemini">{value}</dd>
+          </div>
         ))}
       </dl>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {item.public_url && <Link to={item.public_url} className="bg-[var(--okx-accent)] px-3 py-2 text-xs font-semibold text-[#080808]">Buka event</Link>}
-        {internal && item.resource_id && <button onClick={() => onFollowUp(item)} className="border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-[var(--okx-accent)]">Jadwalkan tindak lanjut</button>}
+      <div className="flex flex-wrap gap-2 pt-2">
+        {item.public_url && <Link to={item.public_url} className="rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-black hover:bg-zinc-200 transition-all shadow-md">Buka event</Link>}
+        {internal && item.resource_id && <button onClick={() => onFollowUp(item)} className="rounded-xl border border-white/[0.12] bg-white/[0.04] px-3.5 py-2 text-xs text-zinc-200 hover:border-white/30 hover:bg-white/[0.08] transition-all">Jadwalkan tindak lanjut</button>}
         {removable && (
           <button
             data-testid="calendar-delete-entry-btn"
             disabled={deleting}
             onClick={() => onDelete(item)}
-            className="inline-flex items-center gap-1.5 border border-red-400/40 px-3 py-2 text-xs text-red-200 hover:bg-red-400/10 disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.15] bg-white/[0.04] px-3.5 py-2 text-xs font-medium text-zinc-200 hover:border-white/30 hover:bg-white/[0.08] hover:text-white disabled:opacity-50 transition-all">
             <Trash2 size={13} /> {deleting ? "Menghapus…" : "Hapus entri"}
           </button>
         )}
@@ -375,7 +394,7 @@ function CreateEntry({ seed, onClose, onCreated }) {
       resource_name: seed?.resource_name || seed?.event_name || "", start_at: `${day}T09:00`, end_at: `${day}T10:00`,
       status: "Pending", visibility: "private", city: seed?.city || "", location: seed?.location || "", notes: "" };
   });
-  const field = "mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none focus:border-[var(--okx-accent)]";
+  const field = "mt-1.5 w-full rounded-xl border border-white/[0.1] bg-[#0c0c14] px-3.5 py-2 text-xs text-white outline-none focus:border-white/40 transition-colors";
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);
@@ -387,20 +406,29 @@ function CreateEntry({ seed, onClose, onCreated }) {
     } catch (error) { toast.error(apiError(error)); } finally { setBusy(false); }
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4" data-testid="calendar-create-modal">
-      <form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-auto border border-[var(--okx-border)] bg-[#111] p-5 okx-scroll">
-        <div className="flex items-center justify-between"><div><div className="text-[10px] uppercase tracking-widest accent-text">Scheduling Engine</div><h2 className="text-lg font-semibold">Tambah aktivitas</h2></div><button type="button" onClick={onClose} className="p-2 text-zinc-500 hover:text-white"><X size={18} /></button></div>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="sm:col-span-2"><span className="text-xs text-zinc-500">Judul</span><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={field} /></label>
-          <label><span className="text-xs text-zinc-500">Mulai</span><input required type="datetime-local" value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} className={field} /></label>
-          <label><span className="text-xs text-zinc-500">Selesai</span><input required type="datetime-local" value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} className={field} /></label>
-          <div><span className="mb-1 block text-xs text-zinc-500">Jenis resource</span><OkxDropdown value={form.resource_type} onChange={(v) => setForm({ ...form, resource_type: v })} options={["event", "talent", "venue", "vendor", "worker", "sponsor", "tenant"].map((v) => ({ value: v, label: v }))} testId="calendar-create-resource-type" /></div>
-          <div><span className="mb-1 block text-xs text-zinc-500">Status</span><OkxDropdown value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={["Pending", "Confirmed", "Completed", "At Risk", "Missing"].map((v) => ({ value: v, label: v }))} testId="calendar-create-status" /></div>
-          <label><span className="text-xs text-zinc-500">Resource ID</span><input required value={form.resource_id} onChange={(e) => setForm({ ...form, resource_id: e.target.value })} className={field} /></label>
-          <label><span className="text-xs text-zinc-500">Nama resource</span><input value={form.resource_name} onChange={(e) => setForm({ ...form, resource_name: e.target.value })} className={field} /></label>
-          <label className="sm:col-span-2"><span className="text-xs text-zinc-500">Catatan</span><textarea rows="3" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={field} /></label>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm p-0 sm:items-center sm:p-4" data-testid="calendar-create-modal">
+      <form onSubmit={submit} className="max-h-[92vh] w-full max-w-2xl overflow-auto rounded-2xl border border-white/[0.12] bg-[#0e0e16] p-6 okx-scroll shadow-2xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 font-gemini-mono">Scheduling Engine</div>
+            <h2 className="text-lg font-bold text-white mt-0.5">Tambah aktivitas</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-zinc-400 hover:bg-white/[0.08] hover:text-white transition-colors"><X size={18} /></button>
         </div>
-        <div className="mt-5 flex justify-end gap-2"><button type="button" onClick={onClose} className="border border-[var(--okx-border)] px-4 py-2 text-sm">Batal</button><button disabled={busy} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-[#080808] disabled:opacity-50">{busy ? "Memeriksa konflik…" : "Simpan & periksa konflik"}</button></div>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <label className="sm:col-span-2"><span className="text-[11px] font-medium text-zinc-400">Judul aktivitas</span><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={field} /></label>
+          <label><span className="text-[11px] font-medium text-zinc-400">Waktu Mulai</span><input required type="datetime-local" value={form.start_at} onChange={(e) => setForm({ ...form, start_at: e.target.value })} className={field} /></label>
+          <label><span className="text-[11px] font-medium text-zinc-400">Waktu Selesai</span><input required type="datetime-local" value={form.end_at} onChange={(e) => setForm({ ...form, end_at: e.target.value })} className={field} /></label>
+          <div><span className="mb-1 block text-[11px] font-medium text-zinc-400">Jenis resource</span><OkxDropdown value={form.resource_type} onChange={(v) => setForm({ ...form, resource_type: v })} options={["event", "talent", "venue", "vendor", "worker", "sponsor", "tenant"].map((v) => ({ value: v, label: v }))} testId="calendar-create-resource-type" /></div>
+          <div><span className="mb-1 block text-[11px] font-medium text-zinc-400">Status</span><OkxDropdown value={form.status} onChange={(v) => setForm({ ...form, status: v })} options={["Pending", "Confirmed", "Completed", "At Risk", "Missing"].map((v) => ({ value: v, label: v }))} testId="calendar-create-status" /></div>
+          <label><span className="text-[11px] font-medium text-zinc-400">Resource ID</span><input required value={form.resource_id} onChange={(e) => setForm({ ...form, resource_id: e.target.value })} className={field} /></label>
+          <label><span className="text-[11px] font-medium text-zinc-400">Nama resource</span><input value={form.resource_name} onChange={(e) => setForm({ ...form, resource_name: e.target.value })} className={field} /></label>
+          <label className="sm:col-span-2"><span className="text-[11px] font-medium text-zinc-400">Catatan</span><textarea rows="3" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className={field} /></label>
+        </div>
+        <div className="mt-6 flex justify-end gap-2.5">
+          <button type="button" onClick={onClose} className="rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2 text-xs font-semibold text-zinc-300 hover:border-white/20 hover:text-white transition-all">Batal</button>
+          <button disabled={busy} className="rounded-xl bg-white px-5 py-2 text-xs font-bold text-black hover:bg-zinc-200 disabled:opacity-50 transition-all shadow-md">{busy ? "Memeriksa konflik…" : "Simpan & periksa konflik"}</button>
+        </div>
       </form>
     </div>
   );
@@ -430,7 +458,22 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
   const [eventFilter, setEventFilter] = useState("");
   const [resourceFilter, setResourceFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [conflictOpen, setConflictOpen] = useState(false);
+
+  const commandHeaderRef = useRef(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!internal || !commandHeaderRef.current) return;
+    const updateHeight = () => {
+      if (commandHeaderRef.current) {
+        setHeaderHeight(commandHeaderRef.current.offsetHeight);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(commandHeaderRef.current);
+    return () => observer.disconnect();
+  }, [internal, data.available_types, activeCategories, eventFilter, resourceFilter, statusFilter]);
 
   const load = useCallback(async (nextFilters = filters) => {
     setBusy(true); setError("");
@@ -533,18 +576,6 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     setStatusFilter("");
   };
 
-  const conflictCount = data.conflicts?.length || 0;
-  const conflictHigh = data.conflict_summary?.high || 0;
-  const conflictMedium = data.conflict_summary?.medium || 0;
-  const conflictLow = data.conflict_summary?.low || 0;
-  const topConflicts = (data.conflicts || [])
-    .slice()
-    .sort((a, b) => {
-      const rank = { high: 0, medium: 1, low: 2 };
-      return (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3);
-    })
-    .slice(0, 2);
-
   if (compact) {
     const today = isoDay(new Date());
     const rows = data.items
@@ -578,7 +609,7 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
         {busy ? (
           <div className="mt-4 text-xs text-zinc-500">Memuat jadwal…</div>
         ) : error ? (
-          <div className="mt-4 text-xs text-rose-300">{error}</div>
+          <div className="mt-4 text-xs text-zinc-300">{error}</div>
         ) : (
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {rows.map((item) => (
@@ -595,356 +626,347 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     );
   }
 
-  // Header / operational filters / conflict summary / view selector form
-  // the persistent chrome for the internal (authenticated) calendar.
-  // Only the calendar grid + status legend scroll.
   const operationalFiltersActive =
     activeCategories.size > 0 || !!eventFilter || !!resourceFilter || !!statusFilter;
 
-  const chrome = (
-    <>
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-        <div><div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] accent-text"><CalendarDays size={15} /> Calendar & Scheduling Engine</div><h1 className="editorial mt-3 text-2xl sm:text-3xl">{internal ? "Satu jadwal untuk seluruh ekosistem." : "Temukan event dan momentum pentingnya."}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">{internal ? "Kalender operasional lintas event, resource, dan pembayaran. Chip di bawah memfilter jadwal secara langsung." : "Lihat event, masa penjualan tiket, pembukaan tenant, peluang sponsor, dan rekrutmen workforce dalam satu kalender publik."}</p></div>
-        {internal && <button data-testid="calendar-add-btn" onClick={() => setCreateSeed(data.items[0] || {})} className="inline-flex shrink-0 items-center justify-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-white"><Plus size={15} /> Tambah aktivitas</button>}
-      </div>
-
-      {!internal && <PublicFilters filters={filters} setFilters={setFilters} facets={data.facets || {}} onApply={() => load(filters)} busy={busy} />}
-
+  return (
+    <div
+      className="space-y-3 pb-12"
+      style={{ "--cal-header-offset": `${headerHeight}px` }}
+      data-testid={internal ? "internal-calendar-engine" : "public-calendar-engine"}
+    >
+      {/* 1. Internal Unified Sticky Command Interface */}
       {internal && (
         <div
-          className="mt-4 grid gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]"
-          data-testid="calendar-filter-row"
+          ref={commandHeaderRef}
+          className="sticky -top-4 sm:-top-4.5 z-30 -mt-4 sm:-mt-4.5 -mx-3.5 sm:-mx-5 px-3.5 sm:px-5 pt-3 sm:pt-3.5 pb-2 bg-[#07070a] border-b border-white/[0.08] backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.9)] space-y-1.5"
         >
-          <div className="min-w-0">
-            <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">Event</div>
-            <OkxDropdown
-              value={eventFilter}
-              onChange={setEventFilter}
-              options={eventFacetOptions}
-              searchable={eventFacetOptions.length >= 8}
-              testId="calendar-filter-event"
-              ariaLabel="Filter event"
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">Resource</div>
-            <OkxDropdown
-              value={resourceFilter}
-              onChange={setResourceFilter}
-              options={RESOURCE_TYPE_OPTIONS}
-              testId="calendar-filter-resource"
-              ariaLabel="Filter resource"
-            />
-          </div>
-          <div className="min-w-0">
-            <div className="mb-1 text-[10px] uppercase tracking-wider text-zinc-500">Status</div>
-            <OkxDropdown
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={statusFacetOptions}
-              testId="calendar-filter-status"
-              ariaLabel="Filter status"
-            />
-          </div>
-        </div>
-      )}
+          {/* ROW 1: [Calendar & Scheduling] [<] [Hari ini] [>] [Agustus 2026]              [+ Tambah aktivitas] */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <div className="hidden sm:inline-flex items-center gap-1 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-300 font-gemini-mono shrink-0">
+                <CalendarDays size={10} className="text-zinc-400" />
+                Calendar & Scheduling
+              </div>
 
-      {internal && (
-        <div
-          className="mt-3 flex flex-wrap items-center gap-2 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3"
-          data-testid="calendar-category-chips"
-        >
-          <div className="mr-1 text-[10px] uppercase tracking-wider text-zinc-500">
-            Kalender {data.calendar_type || "peran"}
-          </div>
-          {(data.available_types || []).map((label) => {
-            const active = activeCategories.has(label);
-            const key = chipToEntryType(label);
-            const known = !!key;
-            return (
-              <button
-                key={label}
-                type="button"
-                disabled={!known}
-                onClick={() => toggleCategory(label)}
-                data-testid={`calendar-chip-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] transition-colors ${
-                  active
-                    ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/15 text-[var(--okx-accent-soft)]"
-                    : known
-                      ? "border-[var(--okx-border)] text-zinc-300 hover:border-zinc-500 hover:text-white"
-                      : "border-[var(--okx-border)] text-zinc-600 opacity-60 cursor-not-allowed"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-          {operationalFiltersActive && (
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                <button
+                  onClick={() => setCursor(
+                    view === "month" ? addMonths(cursor, -1)
+                      : view === "week" ? addDays(cursor, -7)
+                      : view === "day" ? addDays(cursor, -1)
+                      : addDays(cursor, -7),
+                  )}
+                  aria-label="Periode sebelumnya"
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-1 text-zinc-300 hover:border-white/25 hover:text-white transition-all cursor-pointer"
+                >
+                  <ChevronLeft size={13} />
+                </button>
+                <button
+                  onClick={() => setCursor(view === "day" ? new Date() : startOfMonth(new Date()))}
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-2 py-0.5 text-[11px] font-semibold text-zinc-200 hover:border-white/25 hover:text-white transition-all cursor-pointer whitespace-nowrap"
+                  data-testid="calendar-today-btn"
+                >
+                  Hari ini
+                </button>
+                <button
+                  onClick={() => setCursor(
+                    view === "month" ? addMonths(cursor, 1)
+                      : view === "week" ? addDays(cursor, 7)
+                      : view === "day" ? addDays(cursor, 1)
+                      : addDays(cursor, 7),
+                  )}
+                  aria-label="Periode berikutnya"
+                  className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-1 text-zinc-300 hover:border-white/25 hover:text-white transition-all cursor-pointer"
+                >
+                  <ChevronRight size={13} />
+                </button>
+                <span className="ml-1 text-xs sm:text-[13px] font-bold text-white capitalize font-gemini truncate">
+                  {view === "day" ? dateLabel(isoDay(cursor), true) : monthLabel(cursor)}
+                </span>
+              </div>
+            </div>
+
             <button
-              type="button"
-              onClick={resetOperational}
-              className="ml-auto inline-flex items-center gap-1 border border-[var(--okx-border)] px-2 py-1 text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-white"
-              data-testid="calendar-reset"
+              data-testid="calendar-add-btn"
+              onClick={() => setCreateSeed(data.items[0] || {})}
+              className="inline-flex shrink-0 items-center justify-center gap-1 rounded-xl bg-white px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold text-black hover:bg-zinc-200 transition-all shadow-sm cursor-pointer whitespace-nowrap"
             >
-              <X size={12} /> Reset
+              <Plus size={12} /> <span className="hidden sm:inline">Tambah aktivitas</span><span className="sm:hidden">Tambah</span>
             </button>
-          )}
-        </div>
-      )}
-
-      {internal && (
-        <div
-          className="mt-3 flex flex-wrap items-center gap-3 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3 text-xs"
-          data-testid="calendar-metrics"
-        >
-          <div className="flex items-center gap-1.5">
-            <span className="text-zinc-500">Aktivitas</span>
-            <span className="num text-sm font-semibold text-white">{num(filtered.length)}</span>
-            <span className="text-zinc-600">/ {num(data.total)}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-zinc-500">Konflik</span>
-            <span
-              className={`num text-sm font-semibold ${conflictCount ? "text-red-300" : "text-emerald-300"}`}
-              data-testid="calendar-conflict-count"
-            >
-              {num(conflictCount)}
-            </span>
-            {conflictHigh > 0 && (
-              <span className="border border-red-400/40 bg-red-400/10 px-1.5 py-0.5 text-[10px] text-red-200">
-                High {conflictHigh}
-              </span>
-            )}
-            {conflictMedium > 0 && (
-              <span className="border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-200">
-                Medium {conflictMedium}
-              </span>
-            )}
-            {conflictLow > 0 && (
-              <span className="border border-zinc-500/40 bg-zinc-500/10 px-1.5 py-0.5 text-[10px] text-zinc-300">
-                Low {conflictLow}
-              </span>
-            )}
-          </div>
-          {conflictCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setConflictOpen(true)}
-              className="ml-auto inline-flex items-center gap-1.5 border border-red-400/40 bg-red-400/10 px-2.5 py-1 text-[11px] text-red-100 hover:border-red-300"
-              data-testid="calendar-conflicts-view-all"
-            >
-              <AlertTriangle size={12} /> View all conflicts
-            </button>
-          )}
-        </div>
-      )}
 
-      {internal && topConflicts.length > 0 && (
-        <div
-          className="mt-3 grid gap-2 lg:grid-cols-2"
-          data-testid="calendar-conflicts-top"
-        >
-          {topConflicts.map((conflict) => (
+          {/* ROW 2: [Event ▼] [Resource ▼] [Status ▼]                     [Bulan] [Minggu] [Hari] [Agenda] */}
+          <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between pt-1.5 border-t border-white/[0.06]">
             <div
-              key={conflict.id}
-              className="flex items-start justify-between gap-2 border border-red-400/25 bg-red-400/5 p-3"
+              className="grid grid-cols-3 gap-1 sm:gap-1.5 flex-1 max-w-2xl"
+              data-testid="calendar-filter-row"
             >
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-red-100 truncate">{conflict.title}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-red-300">{conflict.severity}</span>
-                </div>
-                <p className="mt-1 line-clamp-2 text-xs text-zinc-400">{conflict.reason}</p>
+                <OkxDropdown
+                  value={eventFilter}
+                  onChange={setEventFilter}
+                  options={eventFacetOptions}
+                  placeholder="Semua event"
+                  searchable={eventFacetOptions.length >= 8}
+                  testId="calendar-filter-event"
+                  ariaLabel="Filter event"
+                />
               </div>
-              {conflict.event_id && (
-                <Link
-                  to={`/app/events/${conflict.event_id}/blueprint`}
-                  className="shrink-0 border border-[var(--okx-border)] px-2 py-1 text-[10px] text-zinc-300 hover:border-[var(--okx-accent)]"
-                >
-                  Open event
-                </Link>
-              )}
+              <div className="min-w-0">
+                <OkxDropdown
+                  value={resourceFilter}
+                  onChange={setResourceFilter}
+                  options={RESOURCE_TYPE_OPTIONS}
+                  placeholder="Semua resource"
+                  testId="calendar-filter-resource"
+                  ariaLabel="Filter resource"
+                />
+              </div>
+              <div className="min-w-0">
+                <OkxDropdown
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  options={statusFacetOptions}
+                  placeholder="Semua status"
+                  testId="calendar-filter-status"
+                  ariaLabel="Filter status"
+                />
+              </div>
             </div>
-          ))}
+
+            <div
+              className="flex items-center justify-between sm:justify-end gap-1 shrink-0 overflow-x-auto no-scrollbar"
+              data-testid="calendar-view-selector"
+            >
+              {[
+                ["month", "Bulan", CalendarDays],
+                ["week", "Minggu", LayoutGrid],
+                ["day", "Hari", Sun],
+                ["agenda", "Agenda", List],
+              ].map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  onClick={() => setView(key)}
+                  data-testid={`calendar-view-${key}`}
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                    view === key
+                      ? "border-white/40 bg-white/15 text-white font-bold shadow-sm"
+                      : "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-200 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <Icon size={12} /> <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ROW 3: [Kalender Organizer] [Persiapan] [Venue deadline] ...           [Reset filter] */}
+          <div
+            className="flex items-center gap-1.5 pt-1.5 border-t border-white/[0.06] overflow-x-auto okx-scroll no-scrollbar"
+            data-testid="calendar-category-chips"
+          >
+            <span className="mr-1 text-[9.5px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono shrink-0">
+              Kalender {data.calendar_type || "peran"}
+            </span>
+            <div className="flex items-center gap-1 flex-nowrap shrink-0">
+              {(data.available_types || []).map((label) => {
+                const active = activeCategories.has(label);
+                const key = chipToEntryType(label);
+                const known = !!key;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={!known}
+                    onClick={() => toggleCategory(label)}
+                    data-testid={`calendar-chip-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                    className={`inline-flex items-center whitespace-nowrap rounded-md border px-2 py-0.5 text-[9.5px] font-medium transition-all duration-150 shrink-0 ${
+                      active
+                        ? "border-white/50 bg-white/15 text-white font-semibold shadow-sm"
+                        : known
+                          ? "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-200 hover:bg-white/[0.05]"
+                          : "border-white/[0.04] text-zinc-600 opacity-40 cursor-not-allowed"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {operationalFiltersActive && (
+              <button
+                type="button"
+                onClick={resetOperational}
+                className="ml-auto inline-flex items-center gap-1 rounded-md border border-white/[0.1] bg-white/[0.04] px-2 py-0.5 text-[9.5px] font-medium text-zinc-300 hover:text-white hover:border-white/30 hover:bg-white/[0.08] transition-all shrink-0"
+                data-testid="calendar-reset"
+              >
+                <X size={10} /> Reset
+              </button>
+            )}
+          </div>
+
+          {/* ROW 4: Day Names (Sen Sel Rab Kam Jum Sab Min) for Month View */}
+          {view === "month" && (
+            <div className="grid grid-cols-7 border-t border-white/[0.06] pt-1.5 text-center font-gemini-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+              {["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((day) => (
+                <div key={day} className="py-0.5">{day}</div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <div
-        className="mt-3 flex flex-wrap items-center justify-between gap-3 border-y border-[var(--okx-border)] py-2"
-        data-testid="calendar-view-selector"
-      >
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => setCursor(
-              view === "month" ? addMonths(cursor, -1)
-                : view === "week" ? addDays(cursor, -7)
-                : view === "day" ? addDays(cursor, -1)
-                : addDays(cursor, -7),
-            )}
-            aria-label="Periode sebelumnya"
-            className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => setCursor(view === "day" ? new Date() : startOfMonth(new Date()))}
-            className="border border-[var(--okx-border)] px-3 py-2 text-xs hover:border-zinc-500"
-            data-testid="calendar-today-btn"
-          >
-            Hari ini
-          </button>
-          <button
-            onClick={() => setCursor(
-              view === "month" ? addMonths(cursor, 1)
-                : view === "week" ? addDays(cursor, 7)
-                : view === "day" ? addDays(cursor, 1)
-                : addDays(cursor, 7),
-            )}
-            aria-label="Periode berikutnya"
-            className="border border-[var(--okx-border)] p-2 hover:border-zinc-500"
-          >
-            <ChevronRight size={16} />
-          </button>
-          <span className="ml-2 text-sm font-semibold capitalize">
-            {view === "day" ? dateLabel(isoDay(cursor)) : monthLabel(cursor)}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {[
-            ["month", "Bulan", CalendarDays],
-            ["week", "Minggu", LayoutGrid],
-            ["day", "Hari", Sun],
-            ["agenda", "Agenda", List],
-          ].map(([key, label, Icon]) => (
-            <button
-              key={key}
-              onClick={() => setView(key)}
-              data-testid={`calendar-view-${key}`}
-              className={`inline-flex items-center gap-1.5 border px-3 py-2 text-xs ${
-                view === key
-                  ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10 accent-text"
-                  : "border-[var(--okx-border)] text-zinc-400"
-              }`}
-            >
-              <Icon size={13} /> {label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
-  );
+      {/* 2. Public Filters (if public mode) */}
+      {!internal && (
+        <>
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono">
+                <CalendarDays size={11} className="text-zinc-400" />
+                Calendar Engine
+              </div>
+              <h1 className="editorial mt-1.5 text-xl sm:text-2xl font-bold text-white tracking-tight">
+                Temukan event dan momentum pentingnya.
+              </h1>
+              <p className="mt-0.5 text-xs text-zinc-400 font-gemini max-w-3xl leading-relaxed">
+                Lihat event, masa penjualan tiket, pembukaan tenant, peluang sponsor, dan rekrutmen workforce dalam satu kalender publik.
+              </p>
+            </div>
+          </div>
 
-  const body = (
-    <>
-      {busy ? <div className="border border-[var(--okx-border)] p-12 text-center text-sm text-zinc-500">Menyusun kalender dan memeriksa konflik…</div> : error ? <div className="border border-red-400/30 p-6 text-sm text-red-300">{error}</div> : (
-        <div className={`grid gap-5 ${selected ? "xl:grid-cols-[minmax(0,1fr)_320px]" : ""}`} data-testid="calendar-body">
+          <PublicFilters
+            filters={filters}
+            setFilters={setFilters}
+            facets={data.facets || {}}
+            onApply={() => load(filters)}
+            busy={busy}
+          />
+
+          <div
+            className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-white/[0.08] bg-[#0c0c14]/80 p-1.5 sm:p-2 backdrop-blur-md shadow-md"
+            data-testid="calendar-view-selector"
+          >
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCursor(
+                  view === "month" ? addMonths(cursor, -1)
+                    : view === "week" ? addDays(cursor, -7)
+                    : view === "day" ? addDays(cursor, -1)
+                    : addDays(cursor, -7),
+                )}
+                aria-label="Periode sebelumnya"
+                className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-1.5 text-zinc-300 hover:border-white/25 hover:text-white transition-all cursor-pointer"
+              >
+                <ChevronLeft size={13} />
+              </button>
+              <button
+                onClick={() => setCursor(view === "day" ? new Date() : startOfMonth(new Date()))}
+                className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-2.5 py-1 text-[11px] font-semibold text-zinc-200 hover:border-white/25 hover:text-white transition-all cursor-pointer"
+                data-testid="calendar-today-btn"
+              >
+                Hari ini
+              </button>
+              <button
+                onClick={() => setCursor(
+                  view === "month" ? addMonths(cursor, 1)
+                    : view === "week" ? addDays(cursor, 7)
+                    : view === "day" ? addDays(cursor, 1)
+                    : addDays(cursor, 7),
+                )}
+                aria-label="Periode berikutnya"
+                className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-1.5 text-zinc-300 hover:border-white/25 hover:text-white transition-all cursor-pointer"
+              >
+                <ChevronRight size={13} />
+              </button>
+              <span className="ml-2 text-xs sm:text-sm font-bold text-white capitalize">
+                {view === "day" ? dateLabel(isoDay(cursor)) : monthLabel(cursor)}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {[
+                ["month", "Bulan", CalendarDays],
+                ["week", "Minggu", LayoutGrid],
+                ["day", "Hari", Sun],
+                ["agenda", "Agenda", List],
+              ].map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  onClick={() => setView(key)}
+                  data-testid={`calendar-view-${key}`}
+                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs transition-all duration-150 cursor-pointer ${
+                    view === key
+                      ? "border-white/40 bg-white/15 text-white font-bold shadow-sm"
+                      : "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-200 hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <Icon size={12} /> {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 5. Main Calendar Body Grid */}
+      {busy ? (
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c14]/80 p-16 text-center text-xs text-zinc-400 font-gemini">
+          Menyusun kalender dan memuat jadwal…
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl border border-white/20 bg-white/[0.04] p-6 text-xs text-zinc-300">
+          {error}
+        </div>
+      ) : (
+        <div className={`grid gap-5 ${selected ? "xl:grid-cols-[minmax(0,1fr)_340px]" : ""}`} data-testid="calendar-body">
           <div className="min-w-0">
-            {view === "month" ? <MonthView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} />
+            {view === "month" ? <MonthView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} showDaysHeader={!internal} />
               : view === "week" ? <WeekView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} />
               : view === "day" ? <DayView cursor={cursor} items={visible} selected={selected} onSelect={setSelected} />
               : <ListView items={visible} selected={selected} onSelect={setSelected} />}
-            {internal && visible.length === 0 && !busy && (
+            {internal && visible.length === 0 && !busy && (view === "month" || view === "week") && (
               <div
                 data-testid="calendar-empty"
-                className="mt-4 border border-dashed border-[var(--okx-border)] p-10 text-center text-sm text-zinc-500"
+                className="mt-4 rounded-2xl border border-dashed border-white/[0.1] p-12 text-center text-xs text-zinc-400 font-medium"
               >
                 Tidak ada aktivitas pada rentang + filter aktif.
               </div>
             )}
           </div>
-          <DetailPanel item={selected} onClose={() => setSelected(null)} internal={internal} onFollowUp={setCreateSeed} onDelete={removeEntry} deleting={deletingId === selected?.id} />
+          {selected && (
+            <DetailPanel
+              item={selected}
+              onClose={() => setSelected(null)}
+              internal={internal}
+              onFollowUp={setCreateSeed}
+              onDelete={removeEntry}
+              deleting={deletingId === selected?.id}
+            />
+          )}
         </div>
       )}
 
-      <div role="group" className="mt-5 flex flex-wrap gap-2 border-t border-[var(--okx-border)] pt-4" aria-label="Legenda status">
-        {Object.entries(PUBLIC_STATUSES).map(([status, [label, Icon, style]]) => <span key={status} title={`Status kalender: ${label}`} className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[10px] ${style}`}><Icon size={11} /> {label}</span>)}
+      {/* 6. Status Legend */}
+      <div role="group" className="flex flex-wrap items-center gap-2 border-t border-white/[0.08] pt-4" aria-label="Legenda status">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono mr-1">Status:</span>
+        {Object.entries(PUBLIC_STATUSES).map(([status, [label, Icon, style]]) => (
+          <span key={status} title={`Status kalender: ${label}`} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium font-gemini-mono ${style}`}>
+            <Icon size={11} /> {label}
+          </span>
+        ))}
       </div>
-    </>
-  );
 
-  const conflictModal = internal && conflictOpen ? (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-0 sm:items-center sm:p-4"
-      data-testid="calendar-conflicts-modal"
-      onClick={() => setConflictOpen(false)}
-    >
-      <div
-        className="max-h-[92vh] w-full max-w-3xl overflow-auto border border-[var(--okx-border)] bg-[#111] p-5 okx-scroll"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[10px] uppercase tracking-widest accent-text">Conflict Center</div>
-            <h3 className="editorial mt-1 text-xl">{num(conflictCount)} konflik terdeteksi</h3>
-            <p className="mt-1 text-xs text-zinc-500">
-              Sumber: overlap resource, overtime shift, dependency, travel buffer.
-              Actionable per baris.
-            </p>
-          </div>
-          <button
-            type="button"
-            aria-label="Tutup"
-            onClick={() => setConflictOpen(false)}
-            className="p-2 text-zinc-500 hover:text-white"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <div className="mt-4 grid gap-2">
-          {(data.conflicts || []).map((conflict) => (
-            <div
-              key={conflict.id}
-              className="border border-red-400/25 bg-black/30 p-3"
-              data-testid={`calendar-conflict-${conflict.id}`}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-red-100">{conflict.title}</span>
-                <span className="text-[9px] uppercase tracking-wider text-red-300">{conflict.severity}</span>
-              </div>
-              <p className="mt-1 text-xs leading-5 text-zinc-400">{conflict.reason}</p>
-              <p className="mt-2 text-xs text-zinc-200"><span className="text-zinc-500">Tindakan:</span> {conflict.action}</p>
-              {conflict.event_id && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link
-                    to={`/app/events/${conflict.event_id}/blueprint`}
-                    className="border border-[var(--okx-border)] px-2.5 py-1 text-[11px] text-zinc-300 hover:border-[var(--okx-accent)]"
-                    onClick={() => setConflictOpen(false)}
-                  >
-                    Open event
-                  </Link>
-                  <Link
-                    to={`/app/events/${conflict.event_id}/calendar`}
-                    className="border border-[var(--okx-border)] px-2.5 py-1 text-[11px] text-zinc-300 hover:border-[var(--okx-accent)]"
-                    onClick={() => setConflictOpen(false)}
-                  >
-                    Buka kalender event
-                  </Link>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  ) : null;
-
-  if (internal) {
-    return (
-      <div className="okx-workspace-page" data-testid="internal-calendar-engine">
-        <div className="okx-workspace-chrome" data-testid="calendar-chrome">{chrome}</div>
-        <div className="okx-workspace-content">{body}</div>
-        {conflictModal}
-        {createSeed !== null && <CreateEntry seed={createSeed} onClose={() => setCreateSeed(null)} onCreated={() => { setCreateSeed(null); load(filters); }} />}
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-5" data-testid="public-calendar-engine">
-      {chrome}
-      {body}
-      {createSeed !== null && <CreateEntry seed={createSeed} onClose={() => setCreateSeed(null)} onCreated={() => { setCreateSeed(null); load(filters); }} />}
+      {/* Create Activity Modal */}
+      {createSeed !== null && (
+        <CreateEntry
+          seed={createSeed}
+          onClose={() => setCreateSeed(null)}
+          onCreated={() => {
+            setCreateSeed(null);
+            load(filters);
+          }}
+        />
+      )}
     </div>
   );
 }

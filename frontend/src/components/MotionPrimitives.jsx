@@ -32,16 +32,17 @@ export function Reveal({
   testId,
   ...rest
 }) {
+  const shouldReduce = useReducedMotion();
   const Component = motion[as] || motion.div;
 
   return (
     <Component
-      initial={{ opacity: 0, y, x, scale }}
+      initial={{ opacity: 0, y: shouldReduce ? 0 : y, x: shouldReduce ? 0 : x, scale: shouldReduce ? 1 : scale }}
       whileInView={{ opacity: 1, y: 0, x: 0, scale: 1 }}
       viewport={{ once, margin: "0px 0px -50px 0px" }}
       transition={{
-        duration,
-        delay,
+        duration: shouldReduce ? 0.2 : duration,
+        delay: shouldReduce ? 0 : delay,
         ease: OKX_EASE_EDITORIAL,
       }}
       className={className}
@@ -67,6 +68,7 @@ export function RevealGroup({
   testId,
   ...rest
 }) {
+  const shouldReduce = useReducedMotion();
   const Component = motion[as] || motion.div;
 
   const containerVariants = {
@@ -74,8 +76,8 @@ export function RevealGroup({
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: stagger,
-        delayChildren: delay,
+        staggerChildren: shouldReduce ? 0 : stagger,
+        delayChildren: shouldReduce ? 0 : delay,
       },
     },
   };
@@ -104,15 +106,16 @@ export function RevealItem({
   testId,
   ...rest
 }) {
+  const shouldReduce = useReducedMotion();
   const Component = motion[as] || motion.div;
 
   const itemVariants = {
-    hidden: { opacity: 0, y },
+    hidden: { opacity: 0, y: shouldReduce ? 0 : y },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
-        duration,
+        duration: shouldReduce ? 0.2 : duration,
         ease: OKX_EASE_EDITORIAL,
       },
     },
@@ -143,17 +146,18 @@ export function MaskReveal({
   testId,
   ...rest
 }) {
+  const shouldReduce = useReducedMotion();
   const Component = motion[as] || motion.div;
 
   return (
     <div className={`overflow-hidden ${className}`} data-testid={testId}>
       <Component
-        initial={{ y: "100%", opacity: 0 }}
+        initial={{ y: shouldReduce ? "0%" : "100%", opacity: 0 }}
         whileInView={{ y: "0%", opacity: 1 }}
         viewport={{ once: true, margin: "0px 0px -30px 0px" }}
         transition={{
-          duration,
-          delay,
+          duration: shouldReduce ? 0.2 : duration,
+          delay: shouldReduce ? 0 : delay,
           ease: OKX_EASE_EDITORIAL,
         }}
         {...rest}
@@ -389,14 +393,15 @@ export function MotionPanel({
   testId,
   ...rest
 }) {
+  const shouldReduce = useReducedMotion();
   return (
     <AnimatePresence mode="wait">
       <motion.div
         key={activeKey}
-        initial={{ opacity: 0, y: 8, scale: 0.995 }}
+        initial={{ opacity: 0, y: shouldReduce ? 0 : 8, scale: shouldReduce ? 1 : 0.995 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -6, scale: 0.995 }}
-        transition={{ duration, ease: OKX_EASE_FAST }}
+        exit={{ opacity: 0, y: shouldReduce ? 0 : -6, scale: shouldReduce ? 1 : 0.995 }}
+        transition={{ duration: shouldReduce ? 0.15 : duration, ease: OKX_EASE_FAST }}
         className={className}
         data-testid={testId}
         {...rest}
@@ -417,10 +422,11 @@ export function MotionCard({
   onClick,
   ...rest
 }) {
+  const shouldReduce = useReducedMotion();
   return (
     <motion.div
-      whileHover={{ y: -3, transition: { duration: 0.2, ease: OKX_EASE_FAST } }}
-      whileTap={{ scale: 0.99, transition: { duration: 0.1 } }}
+      whileHover={shouldReduce ? {} : { y: -3, transition: { duration: 0.2, ease: OKX_EASE_FAST } }}
+      whileTap={shouldReduce ? {} : { scale: 0.99, transition: { duration: 0.1 } }}
       className={`transition-colors duration-200 ${className}`}
       data-testid={testId}
       onClick={onClick}

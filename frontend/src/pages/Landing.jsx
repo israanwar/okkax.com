@@ -597,7 +597,7 @@ function GraphPreview() {
   return (
     <div className="space-y-5 font-gemini" data-testid="graph-preview">
       {/* Event Switcher & Catalog Stats */}
-      <SpotlightCard className="overflow-hidden" data-testid="graph-event-switcher">
+      <SpotlightCard className="overflow-visible relative z-30" data-testid="graph-event-switcher">
         <div className="grid xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]">
           <div className="p-4 sm:p-5">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
@@ -866,7 +866,7 @@ function GraphPreview() {
                       <ArrowRight
                         size={13}
                         className={`transition-all duration-200 ${
-                          isSelected ? "translate-x-0.5 text-white" : "text-zinc-500 group-hover:translate-x-0.5 group-hover:text-white"
+                          isSelected ? "translate-x-0.5 text-white" : "text-zinc-400 group-hover:translate-x-0.5 group-hover:text-white"
                         }`}
                         aria-hidden="true"
                       />
@@ -893,9 +893,9 @@ function GraphPreview() {
               })}
             </div>
 
-            <div className="mt-3.5 flex flex-col gap-1 border-t border-white/[0.06] pt-2.5 text-[10.5px] text-zinc-500 sm:flex-row sm:items-center sm:justify-between font-gemini">
+            <div className="mt-3.5 flex flex-col gap-1 border-t border-white/[0.06] pt-2.5 text-[10.5px] text-zinc-400 sm:flex-row sm:items-center sm:justify-between font-gemini">
               <span>Klik node untuk detail · arah panah menunjukkan komponen yang terdampak.</span>
-              <span className="font-mono text-zinc-400">Event ID: {graphEvent.event_code || DEMO_EVENT_ID}</span>
+              <span className="font-mono text-zinc-300">Event ID: {graphEvent.event_code || DEMO_EVENT_ID}</span>
             </div>
           </div>
         </SpotlightCard>
@@ -1017,11 +1017,11 @@ export default function Landing() {
             className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/[0.12] bg-[#0c0c16]/80 px-4 py-1.5 backdrop-blur-xl shadow-lg"
           >
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
             </span>
             <span className="font-mono text-[10.5px] sm:text-[11px] font-semibold tracking-wide text-zinc-300">
-              <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF <span className="hidden sm:inline">· RP 4.8M GMV TERPROTEKSI</span>
+              <span className="text-white font-bold">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF <span className="hidden sm:inline">· RP 4.8M GMV TERPROTEKSI</span>
             </span>
           </motion.div>
 
@@ -1065,11 +1065,11 @@ export default function Landing() {
           </motion.div>
 
           {/* Secondary Trust & Calendar Row */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-zinc-500 font-gemini">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-zinc-300 font-gemini">
             <span>Mode demo kompetisi — pembayaran sandbox tanpa uang nyata.</span>
-            <span className="text-zinc-700 hidden sm:inline">·</span>
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <CalendarDays size={13} className="text-zinc-400" aria-hidden="true" />
+            <span className="text-zinc-500 hidden sm:inline">·</span>
+            <div className="flex items-center gap-1.5 text-zinc-300">
+              <CalendarDays size={13} className="text-zinc-300" aria-hidden="true" />
               <a
                 href={`/calendar?date=${[
                   new Date().getFullYear(),
@@ -1078,7 +1078,7 @@ export default function Landing() {
                 ].join("-")}`}
                 data-testid="hero-today-calendar-link"
                 title="Buka kalender hari ini"
-                className="transition-colors hover:text-white"
+                className="transition-colors hover:text-white font-medium"
               >
                 {new Intl.DateTimeFormat("id-ID", {
                   day: "numeric",
@@ -1097,46 +1097,35 @@ export default function Landing() {
         <div className="mx-auto max-w-7xl">
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
-            <h2 className="editorial mt-4 text-3xl sm:text-4xl">Dari ide menjadi panggung yang hidup.</h2>
+            <h2 className="editorial mt-4 text-3xl sm:text-4xl text-white">Dari ide menjadi panggung yang hidup.</h2>
           </Reveal>
-          <ProcessCableRail steps={PROCESS_STEPS} />
-        </div>
-      </section>
 
-      <section
-        data-testid="home-event-graph"
-        className="border-b border-white/[0.06] bg-[#050508]/60 backdrop-blur-md px-4 py-16 sm:px-6 sm:py-24 font-gemini"
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
-            <Reveal>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
-                <Waypoints size={13} className="text-zinc-400" />
-                <span>Event Graph Core</span>
-              </div>
-              <h2 className="editorial mt-5 max-w-2xl text-3xl leading-[1.02] text-white sm:text-5xl">
-                Satu pusat kendali untuk seluruh komponen event.
-              </h2>
-              <p className="mt-6 max-w-2xl text-sm leading-7 text-zinc-300 sm:text-base">
-                Event Graph adalah peta operasional interaktif yang menyatukan seluruh pihak, kebutuhan, status,
-                biaya, dan ketergantungan sebuah event dalam satu Event ID.
-              </p>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
-                Organizer dapat melihat komponen yang sudah siap, masih menunggu, berisiko, atau belum tersedia.
-                Ketika satu keputusan berubah, OKKAX menunjukkan komponen lain yang terdampak dan tindakan yang
-                harus diselesaikan berikutnya.
-              </p>
-            </Reveal>
-
-            <RevealGroup stagger={0.1} className="grid gap-4">
+          <div className="mt-12 sm:mt-14">
+            <RevealGroup stagger={0.06} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                [Network, "Lihat seluruh komponen", "Talent, rider, venue, vendor, sponsor, tenant, workforce, ticketing, dan pendanaan."],
-                [Workflow, "Pahami setiap ketergantungan", "Ketahui siapa membutuhkan apa, komponen yang terdampak, dan alasan di balik setiap hubungan."],
-                [ListChecks, "Tentukan tindakan berikutnya", "Temukan kebutuhan yang belum terpenuhi, risiko, dan keputusan yang perlu dikonfirmasi."],
-              ].map(([Icon, title, description], index) => (
+                {
+                  title: "1. Brief & Blueprint",
+                  description: "Input konsep acara Anda, dan sistem mengonversinya menjadi Event Blueprint 6 fase terstruktur.",
+                  Icon: Layers,
+                },
+                {
+                  title: "2. Supply Matching",
+                  description: "Temukan talent, venue, vendor terverifikasi dari katalog 15+ kota dengan sistem scoring kecocokan.",
+                  Icon: Network,
+                },
+                {
+                  title: "3. Komersialisasi",
+                  description: "Buka inventaris tiket dengan proteksi dinamis, aktivasi slot sponsor, dan seleksi tenant UMKM.",
+                  Icon: Ticket,
+                },
+                {
+                  title: "4. Showtime & Settle",
+                  description: "Validasi tiket offline-first di gate, pantau operasi langsung, dan cairkan termin secara otomatis.",
+                  Icon: CheckCircle2,
+                },
+              ].map(({ title, description, Icon }, index) => (
                 <RevealItem key={title}>
                   <article
-                    data-testid={`graph-benefit-${index + 1}`}
                     className="group rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-5 sm:p-6 shadow-md transition-all duration-300 hover:border-white/25 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)]"
                   >
                     <div className="flex items-start gap-4">
@@ -1144,9 +1133,9 @@ export default function Landing() {
                         <Icon size={18} aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-gemini-mono mb-1.5 text-[11px] font-bold text-zinc-500">0{index + 1}</div>
+                        <div className="font-gemini-mono mb-1.5 text-[11px] font-bold text-zinc-400">0{index + 1}</div>
                         <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-zinc-100 transition-colors">{title}</h3>
-                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-zinc-400">{description}</p>
+                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-zinc-300">{description}</p>
                       </div>
                     </div>
                   </article>
@@ -1161,8 +1150,8 @@ export default function Landing() {
 
           <Reveal delay={0.2} className="mt-8 grid gap-4 md:grid-cols-2" data-testid="graph-before-after">
             <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-xl p-6 shadow-md">
-              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-500">Sebelum OKKAX</div>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-400">Sebelum OKKAX</div>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-300">
                 Data event tersebar di WhatsApp, spreadsheet, PDF rider, invoice, email, dan dokumen vendor tanpa visibilitas ketergantungan.
               </p>
             </div>
@@ -1189,7 +1178,7 @@ export default function Landing() {
                 Enam pilar operasional live event modern.
               </h2>
             </div>
-            <p className="max-w-md text-xs leading-relaxed text-zinc-400 sm:text-sm">
+            <p className="max-w-md text-xs leading-relaxed text-zinc-300 sm:text-sm">
               Setiap produk terintegrasi langsung ke dalam Event Graph dan database 15+ kota tanpa fragmentasi file atau spreadsheet terpisah.
             </p>
           </div>
@@ -1262,7 +1251,7 @@ export default function Landing() {
                     >
                       <div>
                         <div className="flex items-center justify-between">
-                          <span className="font-gemini-mono text-xs font-bold text-zinc-500">{p.num}</span>
+                          <span className="font-gemini-mono text-xs font-bold text-zinc-400">{p.num}</span>
                           <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[10.5px] font-semibold text-zinc-300">
                             {p.badge}
                           </span>
@@ -1275,7 +1264,7 @@ export default function Landing() {
                             {p.title}
                           </h3>
                         </div>
-                        <p className="mt-3.5 text-xs leading-relaxed text-zinc-400">
+                        <p className="mt-3.5 text-xs leading-relaxed text-zinc-300">
                           {p.desc}
                         </p>
                       </div>
@@ -1345,7 +1334,7 @@ export default function Landing() {
                     className="group rounded-xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-md p-3.5 text-xs text-zinc-300 hover:border-white/25 hover:text-white hover:bg-white/[0.04] transition-all flex items-center justify-between"
                   >
                     <span className="truncate pr-2 font-medium">→ {s.label}</span>
-                    <ArrowRight size={13} className="text-zinc-500 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
+                    <ArrowRight size={13} className="text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
                   </Link>
                 ))}
               </div>
@@ -1378,31 +1367,31 @@ export default function Landing() {
 
           <RevealGroup stagger={0.08} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Total Perputaran Ekonomi</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Total Perputaran Ekonomi</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
                 <CounterNumber prefix="Rp " value={8.4} decimals={1} suffix=" Milyar" />
               </div>
             </RevealItem>
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Bisnis Lokal Teraktivasi</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Bisnis Lokal Teraktivasi</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
                 <CounterNumber value={142} suffix=" UMKM & Vendor" />
               </div>
             </RevealItem>
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Kru & Tenaga Kerja</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Kru & Tenaga Kerja</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
                 <CounterNumber value={263} suffix=" Profesional" />
               </div>
             </RevealItem>
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-500 font-gemini-mono">Okupansi Hotel & Wisata</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Okupansi Hotel & Wisata</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
                 <CounterNumber value={480} suffix=" Kamar/Malam" />
               </div>
             </RevealItem>
           </RevealGroup>
-          <p className="mt-4 text-xs text-zinc-500 font-gemini-mono">
+          <p className="mt-4 text-xs text-zinc-400 font-gemini-mono">
             Model kalkulasi multiplier dampak ekonomi regional terhubung langsung dengan Live Event Map dan data Event Graph.
           </p>
         </div>

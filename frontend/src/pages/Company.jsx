@@ -219,7 +219,7 @@ function ClosingCta({ primary, secondary }) {
         <Link
           to={primary[1]}
           data-testid="company-cta-primary"
-          className="group inline-flex items-center justify-between gap-2 bg-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]"
+          className="group inline-flex items-center justify-between gap-2 bg-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
         >
           {primary[0]}
           <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />

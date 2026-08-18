@@ -28,6 +28,7 @@ import Pricing from "@/pages/Pricing";
 import Products from "@/pages/Products";
 import { About, HowItWorks, Contact, Terms, Privacy } from "@/pages/Company";
 import OkkaxPage from "@/pages/OkkaxPage";
+import IntelligencePage from "@/pages/IntelligencePage";
 import OkkaxChat from "@/components/OkkaxChat";
 
 import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
@@ -41,10 +42,11 @@ function RouterBody() {
     <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
-            <Route path="/okkax" element={<OkkaxPage />} />
-            <Route path="/copilot" element={<OkkaxPage />} />
-            <Route path="/yoona" element={<OkkaxPage />} />
-            <Route path="/okkaji" element={<OkkaxPage />} />
+            <Route path="/intelligence" element={<IntelligencePage />} />
+            <Route path="/okkax" element={<IntelligencePage />} />
+            <Route path="/copilot" element={<IntelligencePage />} />
+            <Route path="/yoona" element={<IntelligencePage />} />
+            <Route path="/okkaji" element={<IntelligencePage />} />
             <Route path="/peta" element={<EconomyMap />} />
             <Route path="/map" element={<EconomyMap />} />
             <Route path="/calendar" element={<PublicCalendar />} />
@@ -63,10 +65,11 @@ function RouterBody() {
             <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
             <Route path="/validator" element={shell(<Validator />)} />
             <Route path="/app" element={shell(<Overview />)} />
-            <Route path="/app/okkax" element={shell(<OkkaxPage />)} />
-            <Route path="/app/copilot" element={shell(<OkkaxPage />)} />
-            <Route path="/app/yoona" element={shell(<OkkaxPage />)} />
-            <Route path="/app/okkaji" element={shell(<OkkaxPage />)} />
+            <Route path="/app/intelligence" element={shell(<IntelligencePage />)} />
+            <Route path="/app/okkax" element={<Navigate to="/app/intelligence" replace />} />
+            <Route path="/app/copilot" element={<Navigate to="/app/intelligence" replace />} />
+            <Route path="/app/yoona" element={<Navigate to="/app/intelligence" replace />} />
+            <Route path="/app/okkaji" element={<Navigate to="/app/intelligence" replace />} />
             <Route path="/app/studio" element={shell(<EventStudio />)} />
             <Route path="/app/events" element={shell(<EventsList />)} />
             <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />

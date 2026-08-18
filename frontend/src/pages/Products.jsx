@@ -128,9 +128,9 @@ function EventStudioProduct() {
 
   const statusClass = (status) =>
     status === "ready"
-      ? "text-emerald-300 border-emerald-500/40 bg-emerald-950/40 rounded-full"
+      ? "text-white border-white/40 bg-white/10 font-bold rounded-full"
       : status === "risk"
-      ? "text-amber-300 border-amber-500/40 bg-amber-950/40 rounded-full"
+      ? "text-zinc-200 border-dashed border-white/30 bg-white/[0.04] rounded-full"
       : "text-zinc-400 border-white/[0.1] bg-white/[0.03] rounded-full";
 
   const chooseType = (type) => {
@@ -245,7 +245,7 @@ function EventStudioProduct() {
                           Critical dependency path
                         </div>
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-gemini-mono">
-                          <span className="rounded-lg border border-amber-500/40 bg-amber-950/40 px-3 py-1.5 text-amber-300 font-semibold">Workforce</span>
+                          <span className="rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-white font-bold">Workforce</span>
                           <span className="text-zinc-600">&rarr;</span>
                           <span className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-zinc-300">Gate Operations</span>
                           <span className="text-zinc-600">&rarr;</span>
@@ -294,7 +294,7 @@ function EventStudioProduct() {
                           </>
                         ) : (
                           <>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-300 font-medium">
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-white font-semibold">
                               Demo action applied. Critical workforce and access blockers are now resolved.
                             </p>
                             <p className="mt-2 text-xs leading-5 text-zinc-400 font-gemini">
@@ -591,11 +591,11 @@ function NetworkProduct() {
                     {loading ? "..." : `Showing ${visible.length} of ${filtered.length}`}
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-400 font-gemini-mono">
-                    <ShieldCheck size={12} aria-hidden="true" className="text-emerald-400" /> Public preview
+                    <ShieldCheck size={12} aria-hidden="true" className="text-zinc-300" /> Public preview
                   </span>
                 </div>
                 {err ? (
-                  <div className="p-10 text-center text-sm text-amber-300" data-testid="network-error">{err}</div>
+                  <div className="p-10 text-center text-sm text-zinc-300" data-testid="network-error">{err}</div>
                 ) : loading ? (
                   <div className="p-10 text-center text-sm text-zinc-400" data-testid="network-loading">Memuat entitas dari catalog...</div>
                 ) : visible.length === 0 ? (
@@ -635,7 +635,7 @@ function NetworkProduct() {
                               {item.portfolio ? <span className="font-gemini-mono">{item.portfolio} records</span> : null}
                             </div>
                             {item.verified && (
-                              <div className="mt-3 inline-flex items-center gap-1 rounded-full border border-emerald-500/50 bg-emerald-950/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-emerald-300">
+                              <div className="mt-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                                 <CheckCircle2 size={9} aria-hidden="true" /> Verified
                               </div>
                             )}
@@ -840,7 +840,7 @@ function IntelligenceProduct() {
               </div>
               <h2 className="editorial mt-2 text-2xl text-white">{data.name}</h2>
               <div className="mt-1 font-mono text-xs text-zinc-400" data-testid="intel-event-code">EVENT ID · {data.eventCode}</div>
-              {err && <div className="mt-2 text-xs text-amber-300">Backend unreachable: {err}</div>}
+              {err && <div className="mt-2 text-xs text-zinc-300">Backend unreachable: {err}</div>}
             </div>
             <div className="sm:text-right">
               <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">Readiness</div>
@@ -895,7 +895,7 @@ function IntelligenceProduct() {
                   "Tidak menciptakan data fiktif.",
                 ].map((line) => (
                   <li key={line} className="flex items-start gap-2.5 text-zinc-300">
-                    <ShieldCheck size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-emerald-400" />
+                    <ShieldCheck size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-zinc-300" />
                     <span className="text-xs leading-5">{line}</span>
                   </li>
                 ))}
@@ -1144,7 +1144,7 @@ function LivePassProduct() {
                     <div className="flex items-start gap-4">
                       <span className={
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border font-mono text-[11px] font-bold " +
-                        (isDone ? "border-emerald-500/70 bg-emerald-950/40 text-emerald-300" : isActive ? "border-white/60 bg-white/[0.1] text-white shadow-sm" : "border-white/[0.08] bg-white/[0.02] text-zinc-500")
+                        (isDone ? "border-white/30 bg-white/10 text-white font-bold" : isActive ? "border-white/60 bg-white/[0.1] text-white shadow-sm" : "border-white/[0.08] bg-white/[0.02] text-zinc-500")
                       }>
                         {isDone ? <CheckCircle2 size={14} aria-hidden="true" /> : String(s.id).padStart(2, "0")}
                       </span>
@@ -1199,7 +1199,7 @@ function LivePassProduct() {
                 <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Status</div>
                 <div className={
                   "mt-1 flex items-center gap-2 text-sm font-bold " +
-                  (scan2 === "denied" ? "text-amber-300" : scan1 === "ok" ? "text-emerald-300" : "text-white")
+                  (scan2 === "denied" ? "text-zinc-300" : scan1 === "ok" ? "text-white font-bold" : "text-white")
                 }>
                   {scan2 === "denied" ? "Denied · Already Redeemed" : scan1 === "ok" ? "Redeemed at Main Gate" : "Ready for gate"}
                 </div>
@@ -1209,7 +1209,7 @@ function LivePassProduct() {
               </div>
             </SpotlightCard>
             <div className="mt-3.5 flex items-center justify-center gap-2 text-[11px] text-zinc-400">
-              <ShieldCheck size={13} aria-hidden="true" className="text-emerald-400" />
+              <ShieldCheck size={13} aria-hidden="true" className="text-zinc-300" />
               Media adalah representasi. Otoritas ada pada entitlement server.
             </div>
           </div>
@@ -1268,7 +1268,7 @@ function ProtectedPaymentProduct() {
                       (stageIdx === i
                         ? "border-white/40 bg-white/[0.1] text-white shadow-sm"
                         : i < stageIdx
-                          ? "border-emerald-500/50 bg-emerald-950/30 text-emerald-300"
+                          ? "border-white/25 bg-white/[0.05] text-zinc-200 font-medium"
                           : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-200")
                     }
                   >
@@ -1288,7 +1288,7 @@ function ProtectedPaymentProduct() {
               <div className="mt-3 font-mono text-2xl font-bold text-white">{compact(s.funded)}</div>
               <div className="mt-1 text-[11px] text-zinc-400 font-mono">{idr(s.funded)}</div>
               <div className="mt-4 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-400 transition-all duration-500" style={{ width: (s.funded > 0 ? 100 : 0) + "%" }} />
+                <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: (s.funded > 0 ? 100 : 0) + "%" }} />
               </div>
             </div>
             <div className="border-b border-white/[0.08] p-6 xl:border-b-0 xl:border-r bg-[#09090f]/30" data-testid="pp-protected">

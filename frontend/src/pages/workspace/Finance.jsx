@@ -112,7 +112,7 @@ export function BudgetTab({ eventId, onChange }) {
             <div className="mt-3 grid gap-2 sm:grid-cols-3">
               <input data-testid="budget-label-input" placeholder="Label" value={item.label} onChange={(e) => setItem({ ...item, label: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
               <input data-testid="budget-amount-input" type="number" value={item.amount} onChange={(e) => setItem({ ...item, amount: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
-              <button data-testid="budget-add-btn" onClick={addItem} disabled={!item.label} className="bg-[var(--okx-accent)] px-3 py-2 text-sm font-semibold disabled:opacity-50">Tambah</button>
+              <button data-testid="budget-add-btn" onClick={addItem} disabled={!item.label} className="bg-[var(--okx-accent)] px-3 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50">Tambah</button>
             </div>
           </div>
           <p className="text-xs text-zinc-500">{b.tax_estimate_note}</p>
@@ -154,7 +154,7 @@ export function BudgetTab({ eventId, onChange }) {
             />
           </label>
         </div>
-        <button data-testid="simulate-btn" onClick={simulate} className="mt-4 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold">Jalankan simulasi</button>
+        <button data-testid="simulate-btn" onClick={simulate} className="mt-4 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Jalankan simulasi</button>
 
         {sim && (
           <div className="mt-5 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] md:grid-cols-3" data-testid="sim-results">
@@ -407,7 +407,7 @@ export function OperationsTab({ eventId }) {
               <PremiumSelect data-testid="incident-severity-select" value={inc.severity} onChange={(e) => setInc({ ...inc, severity: e.target.value })} className="w-full">
                 {["Low", "Medium", "High", "Critical"].map((s) => <option key={s}>{s}</option>)}
               </PremiumSelect>
-              <button data-testid="incident-submit-btn" onClick={report} disabled={!inc.description} className="bg-[var(--okx-accent)] px-3 py-2 text-sm font-semibold disabled:opacity-50">Catat</button>
+              <button data-testid="incident-submit-btn" onClick={report} disabled={!inc.description} className="bg-[var(--okx-accent)] px-3 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50">Catat</button>
             </div>
           </div>
 

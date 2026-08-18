@@ -2392,15 +2392,55 @@ async def pay_milestone(event_id: str, milestone_id: str, user: dict = Depends(g
 
 # ---------------------------------------------------------------- notifications / admin / demo
 @api.get("/notifications")
-async def notifications(user: dict = Depends(get_current_user)):
-    rows = await db.notifications.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return {"items": rows, "unread": len([r for r in rows if not r.get("read")])}
+async def notifications(
+    limit: int = 12,
+    page: int = 1,
+    unread_only: bool = False,
+    category: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    from notifications import get_user_notifications_payload
+    return await get_user_notifications_payload(
+        user=user,
+        limit=limit,
+        page=page,
+        unread_only=unread_only,
+        category=category,
+    )
+
+
+@api.get("/notifications/history")
+async def notifications_history(
+    limit: int = 25,
+    page: int = 1,
+    unread_only: bool = False,
+    category: Optional[str] = None,
+    user: dict = Depends(get_current_user),
+):
+    from notifications import get_user_notifications_payload
+    return await get_user_notifications_payload(
+        user=user,
+        limit=limit,
+        page=page,
+        unread_only=unread_only,
+        category=category,
+        aggregate=False,
+    )
 
 
 @api.post("/notifications/read")
 async def read_notifications(user: dict = Depends(get_current_user)):
-    await db.notifications.update_many({"user_id": user["id"]}, {"$set": {"read": True}})
-    return {"ok": True}
+    from notifications import mark_all_user_notifications_read
+    count = await mark_all_user_notifications_read(user["id"])
+    return {"ok": True, "count": count}
+
+
+@api.post("/notifications/{notification_id}/read")
+async def read_single_notification(notification_id: str, user: dict = Depends(get_current_user)):
+    from notifications import mark_single_notification_read
+    ok = await mark_single_notification_read(user["id"], notification_id)
+    return {"ok": ok}
+
 
 
 @api.get("/admin/metrics")

@@ -38,7 +38,7 @@ export default function AuthCallback() {
       <Logo />
       {error ? (
         <>
-          <p data-testid="auth-callback-error" className="max-w-md text-sm text-red-400">{error}</p>
+          <p data-testid="auth-callback-error" className="max-w-md text-sm text-zinc-300 font-medium">{error}</p>
           <a href="/login" className="accent-text underline">Kembali ke Sign in</a>
         </>
       ) : (

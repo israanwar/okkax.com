@@ -26,8 +26,15 @@ export default function WorkspaceSelector() {
     const onDoc = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   if (!user) return null;
@@ -86,65 +93,69 @@ export default function WorkspaceSelector() {
       <button
         data-testid="workspace-identity-btn"
         onClick={() => setOpen((o) => !o)}
-        className="hidden items-center gap-2 border border-transparent px-2 py-1 text-right transition-colors hover:border-[var(--okx-border)] sm:flex"
+        className="hidden items-center gap-1.5 rounded-lg border border-transparent px-2 py-1 text-right transition-colors hover:border-white/10 hover:bg-white/[0.03] sm:flex cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
       >
         <div className="text-right">
-          <div className="text-sm font-medium leading-tight">{user.name}</div>
-          <div className="text-[11px] leading-tight text-zinc-500">{subtitle}</div>
+          <div className="text-[13px] font-medium leading-tight text-white">{user.name}</div>
+          <div className="text-[10px] leading-tight text-zinc-400">{subtitle}</div>
         </div>
-        <ChevronDown size={14} className={`text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={13} className={`text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
         <div
           data-testid="workspace-selector-panel"
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-72 border border-[var(--okx-border)] bg-[var(--okx-surface)] shadow-lg"
+          className="absolute right-0 z-[100] mt-1.5 w-64 rounded-xl border border-white/[0.12] bg-[#0c0c14] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.95)] backdrop-blur-2xl"
         >
-          <div className="border-b border-[var(--okx-border)] px-3 py-2 text-[11px] uppercase tracking-wide text-zinc-500">
+          <div className="border-b border-white/[0.08] px-2.5 py-1.5 text-[9.5px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
             Workspace
           </div>
           {!hasOptions && (
-            <div className="px-3 py-4 text-xs text-zinc-500">
+            <div className="px-2.5 py-3 text-xs text-zinc-500">
               Tidak ada workspace tersedia untuk akun ini.
             </div>
           )}
-          {hasOptions && workspaces.map((w) => {
-            const key = wsKey(w);
-            const isActive = key === activeKey;
-            const isPersonal = w.organization_id == null;
-            const Icon = isPersonal ? User : Building2;
-            return (
-              <button
-                key={key}
-                data-testid={`workspace-option-${isPersonal ? "personal" : w.organization_id}`}
-                onClick={() => onPick(w)}
-                disabled={!!busy}
-                className={`flex w-full items-start gap-2.5 px-3 py-2.5 text-left text-sm transition-colors ${
-                  isActive
-                    ? "bg-[var(--okx-accent-tint)] accent-text"
-                    : "text-zinc-200 hover:bg-black/40"
-                }`}
-              >
-                <Icon size={14} className="mt-0.5 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{w.label || w.organization_id || "Personal"}</div>
-                  <div className="mt-0.5 text-[11px] text-zinc-500">
-                    {w.role}{isPersonal ? " · personal" : ""}
-                  </div>
-                </div>
-                {isActive && <Check size={14} className="mt-1 shrink-0 accent-text" />}
-                {busy === key && !isActive && (
-                  <span className="mt-1 text-[10px] text-zinc-500">…</span>
-                )}
-              </button>
-            );
-          })}
+          {hasOptions && (
+            <div className="space-y-0.5 pt-1">
+              {workspaces.map((w) => {
+                const key = wsKey(w);
+                const isActive = key === activeKey;
+                const isPersonal = w.organization_id == null;
+                const Icon = isPersonal ? User : Building2;
+                return (
+                  <button
+                    key={key}
+                    data-testid={`workspace-option-${isPersonal ? "personal" : w.organization_id}`}
+                    onClick={() => onPick(w)}
+                    disabled={!!busy}
+                    className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer ${
+                      isActive
+                        ? "bg-white/[0.1] text-white font-semibold border border-white/[0.08]"
+                        : "text-zinc-300 hover:bg-white/[0.04] hover:text-white"
+                    }`}
+                  >
+                    <Icon size={13} className="mt-0.5 shrink-0 text-zinc-400" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{w.label || w.organization_id || "Personal"}</div>
+                      <div className="mt-0.5 text-[10px] text-zinc-500">
+                        {w.role}{isPersonal ? " · personal" : ""}
+                      </div>
+                    </div>
+                    {isActive && <Check size={13} className="mt-1 shrink-0 text-white" />}
+                    {busy === key && !isActive && (
+                      <span className="mt-1 text-[9px] text-zinc-500">…</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {error && (
-            <div className="flex items-start gap-2 border-t border-[var(--okx-border)] bg-black/40 px-3 py-2 text-xs text-red-400">
-              <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <div className="mt-1 flex items-start gap-1.5 rounded-lg border border-white/20 bg-white/[0.04] px-2.5 py-1.5 text-xs text-zinc-300">
+              <AlertCircle size={13} className="mt-0.5 shrink-0 text-zinc-300" />
               <span>{error}</span>
             </div>
           )}

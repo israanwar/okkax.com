@@ -166,7 +166,7 @@ export function TalentRider({ eventId, onChange }) {
               <button
                 data-testid={`add-talent-btn-${t.id}`}
                 onClick={() => add(t.id)}
-                className="mt-3 w-full bg-[var(--okx-accent)] px-3 py-2 text-xs font-semibold hover:bg-[var(--okx-accent-hover)]"
+                className="mt-3 w-full bg-[var(--okx-accent)] px-3 py-2 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
               >
                 Tambahkan ke event
               </button>
@@ -257,7 +257,7 @@ export function VenueTab({ eventId, onChange }) {
             <button
               data-testid={`select-venue-btn-${v.id}`}
               onClick={() => pick(v.id)}
-              className="mt-3 w-full bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold hover:bg-[var(--okx-accent-hover)]"
+              className="mt-3 w-full bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
             >
               {selected?.venue_id === v.id ? "Venue aktif — pilih ulang" : "Pilih venue ini"}
             </button>
@@ -405,7 +405,7 @@ export function WorkforceTab({ eventId, onChange }) {
               />
             </label>
           ))}
-          <button data-testid="create-job-btn" onClick={createJob} className="mt-5 h-10 bg-[var(--okx-accent)] px-4 text-sm font-semibold">Buat job</button>
+          <button data-testid="create-job-btn" onClick={createJob} className="mt-5 h-10 bg-[var(--okx-accent)] px-4 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Buat job</button>
         </div>
       </div>
 

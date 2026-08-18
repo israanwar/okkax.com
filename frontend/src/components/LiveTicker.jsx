@@ -83,7 +83,7 @@ export default function LiveTicker() {
     <div className="border-b border-white/[0.08] bg-[#080808] px-4 sm:px-6" data-testid="live-ticker">
       <div className="mx-auto flex max-w-7xl items-center gap-4 py-2.5">
         <div className="flex shrink-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-300">
-          <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-400" />
+          <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-white" />
           Live Now
         </div>
         <div className="okx-ticker-mask relative min-w-0 flex-1 overflow-hidden">
@@ -97,7 +97,7 @@ export default function LiveTicker() {
                   className="inline-flex items-center gap-2.5 text-xs text-zinc-400 transition-colors hover:text-zinc-100"
                 >
                   {item.is_live && (
-                    <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-emerald-400" />
+                    <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-white" />
                   )}
                   <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
                     {toLabel(item.event_type)}

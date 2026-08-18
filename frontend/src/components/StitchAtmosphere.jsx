@@ -34,13 +34,13 @@ export function StitchAuroraBackground({ children, className = "", showGrid = tr
         <div
           className="absolute top-[20%] -left-[10%] h-[500px] w-[50%] rounded-full opacity-15 blur-[140px]"
           style={{
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.12), transparent 70%)",
+            background: "radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%)",
           }}
         />
         <div
           className="absolute top-[15%] -right-[10%] h-[500px] w-[50%] rounded-full opacity-10 blur-[140px]"
           style={{
-            background: "radial-gradient(circle, rgba(14, 116, 144, 0.12), transparent 70%)",
+            background: "radial-gradient(circle, rgba(255, 255, 255, 0.04), transparent 70%)",
           }}
         />
 

@@ -39,7 +39,7 @@ export default function Checkout() {
     setAttendees((prev) => Array.from({ length: qty }, (_, i) => prev[i] || { name: "" }));
   }, [qty]);
 
-  if (!tier || !event) return <div className="min-h-screen bg-[var(--okx-bg)] p-10 text-zinc-500">Memuat checkout…</div>;
+  if (!tier || !event) return <div className="min-h-screen bg-[var(--okx-bg)] p-10 text-zinc-400">Memuat checkout…</div>;
 
   const gross = tier.price * qty;
   const fee = Math.round(gross * 0.03);
@@ -101,35 +101,35 @@ export default function Checkout() {
     <div className="min-h-screen bg-[var(--okx-bg)]">
       <PublicNav />
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <div className="border border-[var(--okx-accent)] bg-[#140700] px-4 py-3 text-sm" data-testid="sandbox-notice">
-          <ShieldAlert size={15} className="mr-2 inline accent-text" />
+        <div className="border border-white/20 bg-[#141419] px-4 py-3 text-sm text-zinc-300" data-testid="sandbox-notice">
+          <ShieldAlert size={15} className="mr-2 inline text-white" />
           {SANDBOX_NOTICE}
         </div>
 
-        <h1 className="editorial mt-8 text-3xl sm:text-4xl">Checkout</h1>
-        <p className="mt-2 text-sm text-zinc-400">{event.name} · {tier.name}</p>
+        <h1 className="editorial mt-8 text-3xl sm:text-4xl text-white">Checkout</h1>
+        <p className="mt-2 text-sm text-zinc-300">{event.name} · {tier.name}</p>
 
         {tickets ? (
-          <div className="mt-8 border border-[var(--okx-accent)]/45 bg-[var(--okx-accent)]/10 p-6" data-testid="checkout-success">
-            <CheckCircle2 className="accent-text" />
-            <h2 className="mt-3 text-base font-semibold md:text-lg">Pembayaran sandbox berhasil</h2>
-            <p className="mt-1 text-sm text-zinc-400">
+          <div className="mt-8 border border-white/30 bg-white/[0.05] p-6" data-testid="checkout-success">
+            <CheckCircle2 className="text-white" />
+            <h2 className="mt-3 text-base font-bold text-white md:text-lg">Pembayaran sandbox berhasil</h2>
+            <p className="mt-1 text-sm text-zinc-300">
               {tickets.length} tiket diterbitkan dengan nomor dan QR unik. Inventory tier telah dikurangi.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {tickets.map((t) => (
                 <div key={t.id} className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4" data-testid={`issued-ticket-${t.ticket_number}`}>
-                  <div className="num text-sm font-semibold">{t.ticket_number}</div>
-                  <div className="text-xs text-zinc-500">{t.attendee_name} · {t.tier_name}</div>
-                  <div className="num mt-2 break-all text-[11px] text-zinc-500">{t.qr_code}</div>
+                  <div className="num text-sm font-bold text-white">{t.ticket_number}</div>
+                  <div className="text-xs text-zinc-400 mt-0.5">{t.attendee_name} · {t.tier_name}</div>
+                  <div className="num mt-2 break-all text-[11px] text-zinc-300 font-gemini-mono">{t.qr_code}</div>
                 </div>
               ))}
             </div>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Link to="/app/tickets" data-testid="goto-mytickets-btn" className="bg-[var(--okx-accent)] px-5 py-2.5 text-center text-sm font-semibold">
+              <Link to="/app/tickets" data-testid="goto-mytickets-btn" className="bg-white px-5 py-2.5 text-center text-sm font-bold text-black hover:bg-zinc-200 shadow-md">
                 Buka My Tickets
               </Link>
-              <Link to="/validator" className="border border-[var(--okx-border)] px-5 py-2.5 text-center text-sm font-semibold">
+              <Link to="/validator" className="border border-[var(--okx-border)] px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/[0.04]">
                 Validasi QR
               </Link>
             </div>
@@ -140,23 +140,23 @@ export default function Checkout() {
               {!order && (
                 <>
                   <section className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-                    <h2 className="text-base font-semibold md:text-lg">Jumlah tiket</h2>
+                    <h2 className="text-base font-bold text-white md:text-lg">Jumlah tiket</h2>
                     <div className="mt-3 flex items-center gap-3">
-                      <button data-testid="qty-minus-btn" onClick={() => setQty(Math.max(1, qty - 1))} className="border border-[var(--okx-border)] px-4 py-2 text-lg">−</button>
-                      <span data-testid="qty-value" className="num w-10 text-center text-lg font-bold">{qty}</span>
+                      <button data-testid="qty-minus-btn" onClick={() => setQty(Math.max(1, qty - 1))} className="border border-[var(--okx-border)] px-4 py-2 text-lg text-white font-bold">−</button>
+                      <span data-testid="qty-value" className="num w-10 text-center text-lg font-bold text-white">{qty}</span>
                       <button
                         data-testid="qty-plus-btn"
                         onClick={() => setQty(Math.min(tier.purchase_limit, tier.quantity - tier.sold, qty + 1))}
-                        className="border border-[var(--okx-border)] px-4 py-2 text-lg"
+                        className="border border-[var(--okx-border)] px-4 py-2 text-lg text-white font-bold"
                       >
                         +
                       </button>
-                      <span className="text-xs text-zinc-500">Maksimum {tier.purchase_limit} per transaksi</span>
+                      <span className="text-xs text-zinc-300 font-medium">Maksimum {tier.purchase_limit} per transaksi</span>
                     </div>
                   </section>
 
                   <section className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-                    <h2 className="text-base font-semibold md:text-lg">Data attendee</h2>
+                    <h2 className="text-base font-bold text-white md:text-lg">Data attendee</h2>
                     <div className="mt-3 space-y-3">
                       {attendees.map((a, i) => (
                         <input
@@ -170,34 +170,34 @@ export default function Checkout() {
                           }}
                           placeholder={`Nama attendee ${i + 1}`}
                           aria-label={`Nama attendee ${i + 1}`}
-                          className="w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none focus:border-[var(--okx-accent)]"
+                          className="w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm text-white placeholder:text-zinc-400 outline-none focus:border-white"
                         />
                       ))}
                     </div>
                   </section>
 
                   <section className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-                    <h2 className="text-base font-semibold md:text-lg">Metode pembayaran</h2>
+                    <h2 className="text-base font-bold text-white md:text-lg">Metode pembayaran</h2>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       <button
                         data-testid="pay-mode-sandbox"
                         onClick={() => setUseStripe(false)}
-                        className={`border px-3 py-3 text-left text-sm ${!useStripe ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-[var(--okx-border)]"}`}
+                        className={`border px-3 py-3 text-left text-sm font-semibold ${!useStripe ? "border-white bg-white/[0.08] text-white" : "border-[var(--okx-border)] text-zinc-300"}`}
                       >
                         Sandbox internal OKKAX
-                        <div className="text-[11px] text-zinc-500">VA, QRIS, e-wallet, retail, corporate</div>
+                        <div className="text-[11px] text-zinc-300 mt-0.5 font-normal">VA, QRIS, e-wallet, retail, corporate</div>
                       </button>
                       <button
                         data-testid="pay-mode-stripe"
                         onClick={() => setUseStripe(true)}
-                        className={`border px-3 py-3 text-left text-sm ${useStripe ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-[var(--okx-border)]"}`}
+                        className={`border px-3 py-3 text-left text-sm font-semibold ${useStripe ? "border-white bg-white/[0.08] text-white" : "border-[var(--okx-border)] text-zinc-300"}`}
                       >
                         Kartu via Stripe test mode
-                        <div className="text-[11px] text-zinc-500">Kartu uji 4242 4242 4242 4242</div>
+                        <div className="text-[11px] text-zinc-300 mt-0.5 font-normal">Kartu uji 4242 4242 4242 4242</div>
                       </button>
                     </div>
                     {useStripe ? (
-                      <p className="mt-4 text-xs text-zinc-400" data-testid="stripe-note">
+                      <p className="mt-4 text-xs text-zinc-300" data-testid="stripe-note">
                         Stripe test mode: nilai rupiah dikonversi ke USD pada kurs indikatif Rp16.000/USD hanya untuk
                         keperluan uji. Tidak ada uang nyata yang ditagihkan.
                       </p>
@@ -213,27 +213,27 @@ export default function Checkout() {
                             setMethod(m);
                             setChannel(m.channels[0]);
                           }}
-                          className={`border px-3 py-2.5 text-left text-sm transition-colors ${
+                          className={`border px-3 py-2.5 text-left text-sm transition-colors font-medium ${
                             method?.key === m.key
-                              ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]"
-                              : "border-[var(--okx-border)] hover:border-zinc-500"
+                              ? "border-white bg-white/[0.08] text-white font-bold"
+                              : "border-[var(--okx-border)] text-zinc-300 hover:border-zinc-500"
                           } disabled:cursor-not-allowed disabled:opacity-40`}
                         >
                           {m.group}
-                          {!m.available && <div className="text-[10px] text-zinc-500">Future integration</div>}
+                          {!m.available && <div className="text-[10px] text-zinc-400">Future integration</div>}
                         </button>
                       ))}
                     </div>
                     {method && (
                       <div className="mt-4">
-                        <div className="text-xs uppercase tracking-wider text-zinc-500">Channel</div>
+                        <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono font-semibold">Channel</div>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {method.channels.map((c) => (
                             <button
                               key={c}
                               data-testid={`channel-${c.replace(/\s|\//g, "-").toLowerCase()}`}
                               onClick={() => setChannel(c)}
-                              className={`border px-3 py-1.5 text-xs ${channel === c ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-300"}`}
+                              className={`border px-3 py-1.5 text-xs font-semibold ${channel === c ? "border-white bg-white text-black" : "border-[var(--okx-border)] text-zinc-300 hover:text-white"}`}
                             >
                               {c}
                             </button>
@@ -249,7 +249,7 @@ export default function Checkout() {
 
               {order && payment && (
                 <section className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5" data-testid="payment-instruction">
-                  <h2 className="text-base font-semibold md:text-lg">Instruksi pembayaran sandbox</h2>
+                  <h2 className="text-base font-bold text-white md:text-lg">Instruksi pembayaran sandbox</h2>
                   <dl className="mt-4 divide-y divide-[var(--okx-border)] text-sm">
                     {[
                       ["Order code", order.order_code],
@@ -260,8 +260,8 @@ export default function Checkout() {
                       ["Total", idr(order.total)],
                     ].map(([k, v]) => (
                       <div key={k} className="flex justify-between gap-4 py-2">
-                        <dt className="text-zinc-500">{k}</dt>
-                        <dd className="num font-medium">{v}</dd>
+                        <dt className="text-zinc-400 font-medium">{k}</dt>
+                        <dd className="num font-semibold text-white">{v}</dd>
                       </div>
                     ))}
                   </dl>
@@ -270,7 +270,7 @@ export default function Checkout() {
                       data-testid="simulate-pay-btn"
                       disabled={busy || payment.status === "Simulated Paid"}
                       onClick={() => pay("success")}
-                      className="inline-flex items-center justify-center gap-2 bg-[var(--okx-accent)] px-5 py-3 text-sm font-semibold disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-2 bg-white px-5 py-3 text-sm font-bold text-black hover:bg-zinc-200 shadow-md disabled:opacity-60"
                     >
                       {busy && <Loader2 size={15} className="animate-spin" />} Simulasikan pembayaran berhasil
                     </button>
@@ -278,7 +278,7 @@ export default function Checkout() {
                       data-testid="simulate-fail-btn"
                       disabled={busy}
                       onClick={() => pay("fail")}
-                      className="border border-[var(--okx-border)] px-5 py-3 text-sm font-semibold text-zinc-300"
+                      className="border border-[var(--okx-border)] px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-white/[0.04]"
                     >
                       Simulasikan gagal
                     </button>
@@ -289,7 +289,7 @@ export default function Checkout() {
 
             <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
               <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-                <h2 className="text-base font-semibold md:text-lg">Ringkasan</h2>
+                <h2 className="text-base font-bold text-white md:text-lg">Ringkasan</h2>
                 <dl className="mt-4 space-y-2 text-sm">
                   {[
                     ["Tier", tier.name],
@@ -300,26 +300,26 @@ export default function Checkout() {
                     ["Estimasi pajak (11%)", idr(tax)],
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between">
-                      <dt className="text-zinc-500">{k}</dt>
-                      <dd className="num">{v}</dd>
+                      <dt className="text-zinc-400 font-medium">{k}</dt>
+                      <dd className="num font-semibold text-white">{v}</dd>
                     </div>
                   ))}
                 </dl>
                 <div className="mt-4 flex items-end justify-between border-t border-[var(--okx-border)] pt-4">
-                  <span className="text-sm text-zinc-400">Total</span>
-                  <span data-testid="checkout-total" className="num text-2xl font-bold">{idr(total)}</span>
+                  <span className="text-sm text-zinc-300 font-medium">Total</span>
+                  <span data-testid="checkout-total" className="num text-2xl font-bold text-white">{idr(total)}</span>
                 </div>
                 {!order && (
                   <button
                     data-testid="create-order-btn"
                     disabled={busy}
                     onClick={createOrder}
-                    className="mt-5 w-full bg-[var(--okx-accent)] px-4 py-3 text-sm font-semibold hover:bg-[var(--okx-accent-hover)] disabled:opacity-60"
+                    className="mt-5 w-full bg-white px-4 py-3 text-sm font-bold text-black hover:bg-zinc-200 shadow-md disabled:opacity-60 cursor-pointer"
                   >
                     {busy ? "Memproses…" : useStripe ? "Bayar dengan kartu (Stripe test)" : "Lanjut ke pembayaran"}
                   </button>
                 )}
-                <p className="mt-3 text-[11px] text-zinc-500">
+                <p className="mt-3 text-[11px] text-zinc-400 leading-relaxed">
                   Estimasi pajak. Memerlukan verifikasi profesional. Bukan nasihat pajak.
                 </p>
               </div>

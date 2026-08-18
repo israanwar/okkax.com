@@ -292,11 +292,11 @@ const INTELLIGENCE = {
 // Node style tokens by state. Kept flat so state changes are one lookup.
 // -----------------------------------------------------------------------------
 const STATE_STYLE = {
-  idle:      { stroke: "rgba(244,239,236,0.22)", text: "rgba(228,228,231,0.55)", chipCls: "border-zinc-700 text-zinc-500" },
-  active:    { stroke: "rgba(244,239,236,0.65)", text: "#f4efec",               chipCls: "border-zinc-400 text-zinc-100" },
-  confirmed: { stroke: "rgba(134,239,172,0.75)", text: "#dcfce7",               chipCls: "border-emerald-500/70 text-emerald-300" },
-  risk:      { stroke: "rgba(253,186,116,0.85)", text: "#fed7aa",               chipCls: "border-amber-400/80 text-amber-300" },
-  blocked:   { stroke: "#fbbf24",                 text: "#fef3c7",               chipCls: "border-amber-500/70 text-amber-300" },
+  idle:      { stroke: "rgba(244,239,236,0.22)", text: "rgba(228,228,231,0.55)", chipCls: "border-white/[0.08] text-zinc-500" },
+  active:    { stroke: "rgba(244,239,236,0.65)", text: "#f4efec",               chipCls: "border-white/20 text-zinc-300" },
+  confirmed: { stroke: "#ffffff",                 text: "#ffffff",               chipCls: "border-white/40 text-white font-bold" },
+  risk:      { stroke: "rgba(255,255,255,0.7)",   text: "#d4d4d8",               chipCls: "border-dashed border-white/30 text-zinc-300" },
+  blocked:   { stroke: "#ffffff",                 text: "#ffffff",               chipCls: "border-white/60 text-white font-bold" },
 };
 
 const STATE_LABEL = {
@@ -659,11 +659,11 @@ function PersonaLensSection() {
                 <div className="rounded-2xl border border-white/[0.06] bg-[#0e0e14]/80 p-5 sm:p-6 transition-all hover:border-white/[0.12] flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 font-gemini-mono flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-zinc-600" />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono flex items-center gap-1.5">
+                        <span className="h-1.5 w-1.5 rounded-full bg-zinc-400" />
                         Tantangan Konvensional
                       </span>
-                      <span className="text-[10px] text-zinc-600 font-gemini-mono">Legacy</span>
+                      <span className="text-[10px] text-zinc-400 font-gemini-mono">Legacy</span>
                     </div>
                     <p className="text-sm leading-relaxed text-zinc-300 font-normal">
                       {p.pain}
@@ -676,7 +676,7 @@ function PersonaLensSection() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-200 font-gemini-mono flex items-center gap-1.5">
-                        <Sparkles size={11} className="text-emerald-400" />
+                        <Sparkles size={11} className="text-zinc-300" />
                         Solusi Terintegrasi OKKAX
                       </span>
                       <span className="text-[10px] text-zinc-300 font-gemini-mono bg-white/[0.06] px-2 py-0.5 rounded border border-white/[0.1]">
@@ -703,11 +703,11 @@ function PersonaLensSection() {
                   </div>
 
                   <div className="flex items-center gap-2 font-gemini-mono text-[10px]">
-                    <div className="flex items-center gap-1 text-emerald-400 bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <div className="flex items-center gap-1 text-white bg-white/10 px-2.5 py-0.5 rounded-full border border-white/20">
+                      <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                       <span>Ready</span>
                     </div>
-                    <span className="hidden sm:inline text-zinc-500">Latency &lt;45ms</span>
+                    <span className="hidden sm:inline text-zinc-400">Latency &lt;45ms</span>
                   </div>
                 </div>
 
@@ -719,7 +719,7 @@ function PersonaLensSection() {
 
                 {/* Copilot Response Output */}
                 <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/[0.04] bg-[#0b0b10] p-4 text-xs sm:text-sm leading-relaxed text-zinc-200">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] mt-1.5 shrink-0" />
+                  <span className="h-2 w-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)] mt-1.5 shrink-0" />
                   <span className="font-normal">{p.copilotOutput}</span>
                 </div>
               </div>
@@ -1063,16 +1063,16 @@ function PhaseChips({ activeIdx, intelUnlocked, resolveUnlocked, onSelect }) {
 function GraphHeader({ phase, readiness }) {
   const tone =
     readiness >= 80
-      ? "text-emerald-300"
+      ? "text-white font-bold"
       : readiness >= 55
-      ? "text-amber-300"
-      : "text-zinc-200";
+      ? "text-zinc-200"
+      : "text-zinc-400";
   const barTone =
     readiness >= 80
-      ? "bg-emerald-400"
+      ? "bg-white"
       : readiness >= 55
-      ? "bg-amber-400"
-      : "bg-white";
+      ? "bg-zinc-300"
+      : "bg-zinc-500";
   return (
     <div className="border-b border-white/[0.07] p-5 sm:p-6" data-testid="demo-graph-header">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -1096,7 +1096,7 @@ function GraphHeader({ phase, readiness }) {
         />
       </div>
       <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-400">
-        <span className={"font-gemini-mono font-semibold " + (phase.id === "risk" || phase.id === "intelligence" ? "text-amber-300" : "text-zinc-200")}>
+        <span className="font-gemini-mono font-semibold text-white">
           Phase {phase.ordinal} · {phase.label}
         </span>
         <span className="text-zinc-600">·</span>
@@ -1412,7 +1412,7 @@ function PanelPhasePrompt({ phase, currentStates, onNodeSelectById }) {
       <p className="mt-3 text-sm leading-6 text-zinc-400">{phase.prompt}</p>
 
       <div className="mt-6 border-t border-[var(--okx-border)] pt-4">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
           Nodes on this phase
         </div>
         <ul className="mt-3 space-y-1" data-testid="demo-panel-shortlist">
@@ -1444,7 +1444,7 @@ function PanelPhasePrompt({ phase, currentStates, onNodeSelectById }) {
         </ul>
       </div>
 
-      <div className="mt-auto flex items-center gap-2 pt-5 text-[11px] text-zinc-500">
+      <div className="mt-auto flex items-center gap-2 pt-5 text-[11px] text-zinc-400">
         <MousePointerClick size={13} aria-hidden="true" />
         Klik salah satu node di atas atau langsung di graph.
       </div>
@@ -1460,7 +1460,7 @@ function PanelNodeDetail({ node, state, pathHighlight, onShowDependency, onAskIn
     <div className="flex h-full flex-col p-6" data-testid="demo-panel-node">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Node</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Node</div>
           <h3 className="mt-1 text-xl font-semibold text-white">{node.label}</h3>
         </div>
         <span
@@ -1497,7 +1497,7 @@ function PanelNodeDetail({ node, state, pathHighlight, onShowDependency, onAskIn
             className={[
               "inline-flex items-center justify-center gap-2 border px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.14em]",
               pathHighlight
-                ? "border-emerald-500/60 text-emerald-300"
+                ? "border-white/40 bg-white/10 text-white font-bold"
                 : "border-zinc-700 text-zinc-100 hover:border-zinc-500 hover:bg-zinc-900",
             ].join(" ")}
           >
@@ -1515,7 +1515,7 @@ function PanelNodeDetail({ node, state, pathHighlight, onShowDependency, onAskIn
       )}
 
       {!isBlocker && (
-        <p className="mt-auto pt-6 text-[11px] text-zinc-500">
+        <p className="mt-auto pt-6 text-[11px] text-zinc-400">
           Klik node lain untuk melihat detailnya, atau lanjut ke phase berikutnya.
         </p>
       )}
@@ -1526,7 +1526,7 @@ function PanelNodeDetail({ node, state, pathHighlight, onShowDependency, onAskIn
 function DetailRow({ k, v, tone }) {
   return (
     <div className="grid grid-cols-[110px_1fr] gap-3 py-2.5 sm:grid-cols-[130px_1fr]">
-      <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">{k}</dt>
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">{k}</dt>
       <dd className={"text-sm leading-6 " + (tone === "accent" ? "text-white font-medium" : "text-zinc-200")}>
         {v}
       </dd>
@@ -1537,7 +1537,7 @@ function DetailRow({ k, v, tone }) {
 function PanelIntelligence({ onExecute }) {
   return (
     <div className="flex h-full flex-col p-6" data-testid="demo-panel-intel">
-      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-400 font-gemini-mono">
+      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-300 font-gemini-mono">
         <Sparkles size={13} aria-hidden="true" /> OKKAX Intelligence
       </div>
       <h3 className="editorial mt-3 text-xl text-white">Grounded on state, not chat.</h3>
@@ -1550,7 +1550,7 @@ function PanelIntelligence({ onExecute }) {
             <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[12px] text-zinc-200">
               {INTELLIGENCE.dependencyPath.map((s, i) => (
                 <span key={s} className="inline-flex items-center gap-2">
-                  {i > 0 && <span className="text-zinc-500">/</span>}
+                  {i > 0 && <span className="text-zinc-400">/</span>}
                   <span className={i === INTELLIGENCE.dependencyPath.length - 1 ? "text-white font-bold" : ""}>{s}</span>
                 </span>
               ))}
@@ -1559,7 +1559,7 @@ function PanelIntelligence({ onExecute }) {
         />
         <IntelRow k="Impact" v={INTELLIGENCE.impact} />
         <IntelRow k="Recommendation" v={INTELLIGENCE.recommendation} />
-        <IntelRow k="Expected" v={INTELLIGENCE.expected} tone="emerald" />
+        <IntelRow k="Expected" v={INTELLIGENCE.expected} tone="white" />
       </dl>
       <button
         type="button"
@@ -1569,7 +1569,7 @@ function PanelIntelligence({ onExecute }) {
       >
         <Zap size={15} aria-hidden="true" /> Execute recommendation
       </button>
-      <div className="mt-3 text-[11px] text-zinc-500">
+      <div className="mt-3 text-[11px] text-zinc-400">
         Action melewati domain service. Otorisasi tetap berlaku. Demo tidak memodifikasi state produksi.
       </div>
     </div>
@@ -1580,8 +1580,8 @@ function IntelRow({ k, v, tone }) {
   return (
     <div className="grid grid-cols-[110px_1fr] gap-3 py-2.5 sm:grid-cols-[130px_1fr]">
       <dt className={
-        "text-[10px] font-semibold uppercase tracking-[0.18em] " +
-        (tone === "accent" ? "text-[var(--okx-accent-soft)]" : tone === "emerald" ? "text-emerald-300" : "text-zinc-500")
+        "text-[10px] font-semibold uppercase tracking-[0.18em] font-gemini-mono " +
+        (tone === "accent" || tone === "white" ? "text-white font-bold" : "text-zinc-400")
       }>
         {k}
       </dt>
@@ -1593,9 +1593,9 @@ function IntelRow({ k, v, tone }) {
 function PanelResolved() {
   return (
     <div className="flex h-full flex-col p-6" data-testid="demo-panel-resolved">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-emerald-300">Resolved</div>
+      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white">Resolved</div>
       <h3 className="editorial mt-3 text-xl text-white">Rantai kritis pulih.</h3>
-      <p className="mt-3 text-sm leading-6 text-zinc-400">
+      <p className="mt-3 text-sm leading-6 text-zinc-300">
         Workforce menuju Gate Operations menuju Access Readiness menuju Showtime kembali confirmed. Readiness naik dari 51% ke 92%.
       </p>
       <ul className="mt-5 space-y-2 border-t border-[var(--okx-border)] pt-4 text-sm">
@@ -1608,15 +1608,15 @@ function PanelResolved() {
           <li key={label} className="flex items-start justify-between gap-3 border-b border-[var(--okx-border)] pb-2 last:border-b-0">
             <div>
               <div className="text-[11.5px] font-semibold text-zinc-100">{label}</div>
-              <div className="text-[11px] text-zinc-500">{note}</div>
+              <div className="text-[11px] text-zinc-400">{note}</div>
             </div>
-            <span className="inline-flex shrink-0 items-center gap-1.5 border border-emerald-500/70 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
+            <span className="inline-flex shrink-0 items-center gap-1.5 border border-white/30 bg-white/10 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-white">
               Confirmed
             </span>
           </li>
         ))}
       </ul>
-      <div className="mt-auto pt-6 text-[11px] text-zinc-500">
+      <div className="mt-auto pt-6 text-[11px] text-zinc-400">
         Klik Reset demo di kanan atas untuk memutar ulang cerita.
       </div>
     </div>
@@ -1661,17 +1661,17 @@ function OperatingJourney() {
                 className="flex h-full flex-col p-5 sm:p-6"
               >
                 <div className="flex items-baseline justify-between">
-                  <span className="font-gemini-mono text-[11px] font-bold tracking-[0.16em] text-zinc-500">
+                  <span className="font-gemini-mono text-[11px] font-bold tracking-[0.16em] text-zinc-400">
                     CH {String(i + 1).padStart(2, "0")}
                   </span>
                   <ArrowUpRight
                     size={15}
-                    className="text-zinc-500 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
+                    className="text-zinc-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
                     aria-hidden="true"
                   />
                 </div>
                 <div className="mt-4 text-lg font-bold text-white group-hover:text-zinc-100 transition-colors">{label}</div>
-                <div className="mt-1.5 text-xs leading-5 text-zinc-400">{body}</div>
+                <div className="mt-1.5 text-xs leading-5 text-zinc-300">{body}</div>
               </Link>
             </li>
           ))}

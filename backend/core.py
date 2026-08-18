@@ -277,17 +277,33 @@ async def audit(event_id: Optional[str], user: Optional[dict], action: str, deta
     })
 
 
-async def notify(user_id: str, title: str, body: str, kind: str = "info", event_id: str = None):
-    await db.notifications.insert_one({
+async def notify(
+    user_id: str,
+    title: str,
+    body: str,
+    kind: str = "info",
+    event_id: str = None,
+    notif_type: str = "general",
+    destination: str = None,
+    event_name: str = None,
+    metadata: dict = None,
+):
+    doc = {
         "id": nid(),
         "user_id": user_id,
         "event_id": event_id,
+        "event_name": event_name,
+        "type": notif_type,
         "title": title,
         "body": body,
         "kind": kind,
         "read": False,
+        "destination": destination or (f"/app/events/{event_id}" if event_id else "/app"),
+        "metadata": metadata or {},
         "created_at": now_iso(),
-    })
+    }
+    await db.notifications.insert_one(doc)
+    return doc
 
 
 async def get_event_or_404(event_id: str) -> dict:

@@ -500,8 +500,8 @@ export default function OkkaxPage() {
       <div className="border-b border-zinc-800/80 bg-[#0c0c0c] px-4 py-2 text-xs">
         <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4 font-gemini-mono text-[11px] text-zinc-400">
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold font-gemini">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="flex items-center gap-1.5 text-white font-semibold font-gemini">
+              <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
               OKKAX Operations Engine · Online
             </span>
             <span className="hidden sm:inline text-zinc-600">|</span>
@@ -656,7 +656,7 @@ export default function OkkaxPage() {
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-400 hover:text-white cursor-pointer"
                         title="Salin Teks"
                       >
-                        {copiedIdx === idx ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                        {copiedIdx === idx ? <Check className="h-3 w-3 text-white" /> : <Copy className="h-3 w-3" />}
                       </button>
                     </div>
                   </div>

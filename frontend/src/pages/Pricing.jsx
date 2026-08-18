@@ -91,7 +91,7 @@ function Hero() {
 function RoleSelector({ value, onChange }) {
   return (
     <section aria-labelledby="pricing-role-heading" className="mt-10 font-gemini">
-      <h2 id="pricing-role-heading" className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500 font-gemini-mono">
+      <h2 id="pricing-role-heading" className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
         Choose your role
       </h2>
       <div
@@ -113,7 +113,7 @@ function RoleSelector({ value, onChange }) {
                 "shrink-0 rounded-xl border px-4 py-2.5 text-xs font-semibold transition-all duration-200 cursor-pointer active:scale-[0.98]",
                 active
                   ? "border-white/[0.22] bg-[#1a1a24] text-white shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]"
-                  : "border-white/[0.08] bg-[#0c0c11]/80 text-zinc-400 hover:border-white/25 hover:text-zinc-100 hover:bg-white/[0.04]",
+                  : "border-white/[0.08] bg-[#0c0c11]/80 text-zinc-300 hover:border-white/25 hover:text-white hover:bg-white/[0.04]",
               ].join(" ")}
             >
               {r.label}
@@ -150,7 +150,7 @@ function BillingToggle({ value, onChange }) {
               onClick={() => onChange(b.id)}
               className={[
                 "rounded-lg px-4 py-2 text-xs font-bold transition-all cursor-pointer",
-                active ? "bg-white text-black shadow-md" : "text-zinc-400 hover:text-white",
+                active ? "bg-white text-black shadow-md" : "text-zinc-300 hover:text-white",
               ].join(" ")}
             >
               {b.label}
@@ -519,7 +519,7 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
                 <div className="overflow-x-auto border-t border-white/[0.06]">
                   <table className="w-full min-w-[520px] text-sm">
                     <thead>
-                      <tr className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 font-gemini-mono">
+                      <tr className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
                         <th scope="col" className="px-6 py-3 text-left">Capability</th>
                         {PLAN_ORDER.map((p) => (
                           <th key={p} scope="col" className="px-6 py-3 text-left">
@@ -542,7 +542,7 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
                                 key={p}
                                 className={[
                                   "px-6 py-3.5",
-                                  missing ? "text-zinc-600" : p === "max" ? "text-white font-semibold" : "text-zinc-200",
+                                  missing ? "text-zinc-400" : p === "max" ? "text-white font-semibold" : "text-zinc-200",
                                 ].join(" ")}
                               >
                                 {cell}
@@ -598,7 +598,7 @@ function MiniFaq() {
         {FAQ.map((item) => (
           <div key={item.q} className="rounded-2xl border border-white/[0.06] bg-[#0c0c11]/60 p-6">
             <dt className="text-sm font-bold text-zinc-100">{item.q}</dt>
-            <dd className="mt-2 text-sm leading-relaxed text-zinc-400">{item.a}</dd>
+            <dd className="mt-2 text-sm leading-relaxed text-zinc-300">{item.a}</dd>
           </div>
         ))}
       </dl>

@@ -47,9 +47,8 @@ export const NAV = [
     label: "Products",
     children: [
       { label: "Event Studio",       to: "/products/event-studio",       note: "Compile brief menjadi Event Blueprint." },
-      { label: "OKKAX Copilot",      to: "/okkax",                       note: "Principal Event Intelligence & Operations Copilot." },
+      { label: "OKKAX Intelligence", to: "/intelligence",                note: "Principal Event Intelligence & Two-Way Matching." },
       { label: "Network",            to: "/products/network",            note: "Talent, Venue, Vendor, Workforce, Sponsor, Tenant." },
-      { label: "OKKAX Intelligence", to: "/products/intelligence",       note: "Observe. Understand. Optimize." },
       { label: "Ticket Studio",      to: "/products/ticket-studio",      note: "Inventory, seating, ticket products." },
       { label: "LivePass",           to: "/products/livepass",           note: "Live access entitlement, not a file." },
       { label: "Protected Payment",  to: "/products/protected-payment",  note: "Funding aman, protected balance, settlement." },
@@ -138,7 +137,7 @@ export const Logo = ({ small }) => (
       className={`okkax-logo-image ${small ? "h-[18px]" : "h-[23px]"} w-auto object-contain`}
     />
     {!small && (
-      <span className="okkax-logo-category mt-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.17em] text-zinc-500">
+      <span className="okkax-logo-category mt-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.17em] text-zinc-400">
         Live Event Operating Network
       </span>
     )}
@@ -690,11 +689,11 @@ function FooterColumns() {
 
         {/* Live Network Telemetry */}
         <div className="mt-6 flex flex-col gap-2.5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-950/30 px-3 py-1 text-[11px] font-medium text-emerald-300 font-gemini-mono w-fit">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-zinc-200 font-gemini-mono w-fit">
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
             <span>Event Graph Network: Active</span>
           </div>
-          <div className="font-gemini-mono text-[11px] text-zinc-500">
+          <div className="font-gemini-mono text-[11px] text-zinc-400">
             Node latency &lt;200ms · 15+ Cities Synced
           </div>
         </div>
@@ -712,7 +711,7 @@ function FooterColumns() {
 function FooterColumn({ title, items, testid }) {
   return (
     <div className="md:col-span-2" data-testid={testid}>
-      <h3 className="font-gemini-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">{title}</h3>
+      <h3 className="font-gemini-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-300">{title}</h3>
       <ul className="mt-4 space-y-2.5 text-sm">
         {items.map((c) => (
           <li key={c.to}>
@@ -774,13 +773,13 @@ function FooterMeta() {
       </div>
 
       {/* Disclaimer & Copyright */}
-      <div className="flex flex-col justify-between gap-5 border-t border-white/[0.06] pt-6 text-xs leading-relaxed text-zinc-500 lg:flex-row lg:items-end">
-        <div className="max-w-4xl">
+      <div className="flex flex-col justify-between gap-5 border-t border-white/[0.06] pt-6 text-xs leading-relaxed text-zinc-400 lg:flex-row lg:items-end font-gemini">
+        <div className="max-w-4xl text-zinc-400">
           Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk demonstrasi kompetisi. Pembayaran bersifat sandbox; tidak ada uang nyata yang ditagihkan.
         </div>
-        <div className="shrink-0 lg:text-right font-gemini-mono text-zinc-400">
+        <div className="shrink-0 lg:text-right font-gemini-mono text-zinc-300">
           <div>© 2026 OKKAX</div>
-          <div className="mt-1 text-zinc-500 text-[11px]">One event. Every moving part.</div>
+          <div className="mt-1 text-zinc-400 text-[11px]">One event. Every moving part.</div>
         </div>
       </div>
     </div>
@@ -793,3 +792,5 @@ function FooterMeta() {
 function slug(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+export { Footer as PublicFooter };
