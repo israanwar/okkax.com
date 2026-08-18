@@ -1111,7 +1111,7 @@ export default function Landing() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
+    <div className="min-h-screen bg-transparent">
       <ScrollProgressBar />
       <PublicNav />
 
@@ -1201,7 +1201,7 @@ export default function Landing() {
 
       <LiveTicker />
 
-      <section className="border-b border-[var(--okx-border)] bg-[#0d0d0d] px-4 py-14 sm:px-6 sm:py-16">
+      <section className="border-b border-white/[0.06] bg-[#08080d]/60 backdrop-blur-md px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
           <Reveal>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
@@ -1213,7 +1213,7 @@ export default function Landing() {
 
       <section
         data-testid="home-event-graph"
-        className="border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 font-gemini"
+        className="border-b border-white/[0.06] bg-[#050508]/60 backdrop-blur-md px-4 py-16 sm:px-6 sm:py-24 font-gemini"
       >
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">

@@ -18,15 +18,15 @@ import {
  */
 export function StitchAuroraBackground({ children, className = "", showGrid = true }) {
   return (
-    <div className={`relative overflow-hidden bg-black ${className}`}>
+    <div className={`relative overflow-hidden bg-transparent ${className}`}>
       {/* 1. Pure Stealth Atmosphere (Subtle Studio Gradients) */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
         {/* Soft Radial Ambient Spotlight behind Center Stage */}
         <div
-          className="absolute top-[10%] left-1/2 -translate-x-1/2 h-[750px] w-[90%] max-w-[1200px] rounded-full opacity-30 blur-[130px]"
+          className="absolute top-[10%] left-1/2 -translate-x-1/2 h-[750px] w-[90%] max-w-[1200px] rounded-full opacity-35 blur-[130px]"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.08), rgba(30, 41, 59, 0.15), transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.09), rgba(30, 41, 59, 0.18), transparent 70%)",
           }}
         />
 
@@ -46,20 +46,32 @@ export function StitchAuroraBackground({ children, className = "", showGrid = tr
 
         {/* Studio Top-Down Vignette */}
         <div
-          className="absolute inset-0 opacity-60"
+          className="absolute inset-0 opacity-50"
           style={{
-            background: "linear-gradient(180deg, rgba(8, 8, 12, 0.5) 0%, rgba(0, 0, 0, 0.95) 100%)",
+            background: "linear-gradient(180deg, rgba(8, 8, 12, 0.4) 0%, rgba(0, 0, 0, 0.85) 100%)",
           }}
         />
       </div>
 
-      {/* 2. Seamless Bottom Gradient Fade into Black Base */}
+      {/* 2. High-Precision Blueprint Dot Matrix Grid */}
+      {showGrid && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0 opacity-100"
+          style={{
+            backgroundImage: "radial-gradient(circle at center, rgba(255, 255, 255, 0.22) 1.25px, transparent 1.25px)",
+            backgroundSize: "28px 28px",
+          }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* 3. Seamless Bottom Gradient Fade into Canvas */}
       <div
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-black z-10"
+        className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-transparent z-10"
         aria-hidden="true"
       />
 
-      {/* 3. Foreground Content */}
+      {/* 4. Foreground Content */}
       <div className="relative z-20">{children}</div>
     </div>
   );

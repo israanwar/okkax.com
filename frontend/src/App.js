@@ -104,15 +104,26 @@ function RouterBody() {
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-      <GlobalScrollRestoration />
-        <AuthProvider>
-          <Toaster theme="dark" position="top-right" />
-          <RouterBody />
-          <YoonaChat />
-        </AuthProvider>
-      </BrowserRouter>
+    <div className="App min-h-screen bg-black text-white relative">
+      {/* Global High-Precision Architectural Dot-Matrix Canvas */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-100 stitch-grid-canvas"
+        style={{
+          backgroundImage: "radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 1.25px, transparent 1.25px)",
+          backgroundSize: "28px 28px",
+        }}
+        aria-hidden="true"
+      />
+      <div className="relative z-10">
+        <BrowserRouter>
+          <GlobalScrollRestoration />
+          <AuthProvider>
+            <Toaster theme="dark" position="top-right" />
+            <RouterBody />
+            <YoonaChat />
+          </AuthProvider>
+        </BrowserRouter>
+      </div>
     </div>
   );
 }
