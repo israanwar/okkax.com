@@ -23,40 +23,16 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 // -----------------------------------------------------------------------------
-// Custom Distinctive OKKAX Copilot Intelligence Glyph
-// Represents the 4 Pillars of Live Event Execution connected via Neural Graph
+// Official OKKAX Brand Mark (Identical to Favicon / Brand Identity)
 // -----------------------------------------------------------------------------
 export function CopilotIntelligenceIcon({ className = "h-4 w-4", ...props }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
+    <img
+      src="/assets/okkax-x-mark-v3.png"
+      alt="OKKAX"
+      className={`object-contain ${className}`}
       {...props}
-    >
-      {/* Dynamic Orbital Radar Field */}
-      <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1" strokeDasharray="3 3" />
-      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeOpacity="0.4" strokeWidth="1" />
-      
-      {/* Central Synaptic Intelligence Core */}
-      <circle cx="12" cy="12" r="2.2" fill="currentColor" />
-
-      {/* 4 Pillars Satellite Nodes (Brief, Talent, Ops, Finance) */}
-      <circle cx="12" cy="3.5" r="1.5" fill="currentColor" />
-      <circle cx="20.5" cy="12" r="1.5" fill="currentColor" />
-      <circle cx="12" cy="20.5" r="1.5" fill="currentColor" />
-      <circle cx="3.5" cy="12" r="1.5" fill="currentColor" />
-
-      {/* Primary Neural Graph Synapses */}
-      <path d="M12 5V9.8M12 14.2V19M5 12H9.8M14.2 12H19" stroke="currentColor" strokeWidth="1.4" />
-      
-      {/* Diagonal Telemetry Rays */}
-      <path d="M6.5 6.5L8.8 8.8M15.2 15.2L17.5 17.5M17.5 6.5L15.2 8.8M8.8 15.2L6.5 17.5" stroke="currentColor" strokeWidth="1" strokeOpacity="0.45" />
-    </svg>
+    />
   );
 }
 
@@ -375,9 +351,9 @@ export default function YoonaChat() {
           aria-label="Buka OKKAX Copilot"
         >
           {/* Cybernetic Intelligence Lens */}
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.22] shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_4px_12px_rgba(0,0,0,0.6)] group-hover:border-white/60 transition-all">
-            <CopilotIntelligenceIcon className="h-5 w-5 text-white group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
-            <span className="absolute inset-0 rounded-xl bg-white/[0.05] group-hover:bg-white/[0.1] transition-colors" />
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.22] shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_4px_12px_rgba(0,0,0,0.6)] group-hover:border-white/60 transition-all p-1.5">
+            <CopilotIntelligenceIcon className="h-full w-full object-contain group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
+            <span className="absolute inset-0 rounded-xl bg-white/[0.05] group-hover:bg-white/[0.1] transition-colors pointer-events-none" />
           </div>
 
           <div className="flex flex-col text-left pr-1">
@@ -413,8 +389,8 @@ export default function YoonaChat() {
           {/* Window Header */}
           <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#0c0c14] px-4 py-3.5">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm">
-                <CopilotIntelligenceIcon className="h-4 w-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm p-1.5">
+                <CopilotIntelligenceIcon className="h-full w-full object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -502,10 +478,10 @@ export default function YoonaChat() {
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                         m.role === "user"
                           ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
-                          : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm"
+                          : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm p-1"
                       }`}
                     >
-                      {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-3.5 w-3.5 text-white" />}
+                      {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-full w-full object-contain" />}
                     </div>
                     <div
                       className={`relative max-w-[88%] rounded-xl px-4 py-3 text-xs leading-relaxed group ${

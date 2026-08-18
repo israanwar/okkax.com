@@ -633,10 +633,10 @@ export default function YoonaPage() {
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                     m.role === "user"
                       ? "bg-zinc-800 text-zinc-200 border border-zinc-700 shadow-sm"
-                      : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm"
+                      : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm p-1"
                   }`}
                 >
-                  {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-3.5 w-3.5 text-white" />}
+                  {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-full w-full object-contain" />}
                 </div>
                 <div
                   className={`group relative max-w-[90%] sm:max-w-[84%] rounded-2xl px-5 py-4 text-sm ${
@@ -696,8 +696,8 @@ export default function YoonaPage() {
 
             {loading && (
               <div className="flex items-start gap-3.5">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm">
-                  <CopilotIntelligenceIcon className="h-3.5 w-3.5 animate-spin text-white" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm p-1">
+                  <CopilotIntelligenceIcon className="h-full w-full object-contain animate-spin" />
                 </div>
                 <div className="rounded-2xl border border-white/[0.08] bg-[#121218] px-5 py-4 text-xs text-zinc-400 flex items-center gap-3">
                   <div className="flex space-x-1.5">
