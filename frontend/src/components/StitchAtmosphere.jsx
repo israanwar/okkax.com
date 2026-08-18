@@ -19,39 +19,56 @@ import {
 export function StitchAuroraBackground({ children, className = "", showGrid = true }) {
   return (
     <div className={`relative overflow-hidden bg-[#030306] ${className}`}>
-      {/* 1. Dot-Matrix Blueprint Grid with Radial Lens Vignette */}
-      {showGrid && (
-        <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-60 stitch-grid-canvas"
-          aria-hidden="true"
-        />
-      )}
-
-      {/* 2. Fluid Aurora Energy Waves (Multi-Layer Flowing Splines) */}
+      {/* 1. Fluid Aurora Energy Waves (Multi-Layer Flowing Splines - Google Stitch Authentic) */}
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-        {/* Deep Ambient Underglow */}
+        {/* Layer A: Deep Volumetric Atmospheric Bloom */}
         <div
-          className="absolute -top-[10%] left-[15%] h-[550px] w-[70%] rounded-full opacity-40 blur-[120px]"
+          className="absolute -top-[15%] -left-[10%] h-[600px] w-[75%] rounded-full opacity-60 blur-[130px]"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(79, 70, 229, 0.35), rgba(147, 51, 234, 0.25), transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(124, 58, 237, 0.45), rgba(79, 70, 229, 0.35), transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute top-[25%] -left-[5%] h-[550px] w-[70%] rounded-full opacity-55 blur-[120px]"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(6, 182, 212, 0.4), rgba(14, 165, 233, 0.3), transparent 70%)",
           }}
         />
 
-        {/* Primary Flowing Aurora Spline 1 (Electric Violet / Indigo) */}
-        <div className="absolute top-[20%] left-[-10%] h-[320px] w-[120%] -rotate-6 rounded-[100%] opacity-70 blur-[75px] stitch-aurora-ribbon-1" />
+        {/* Layer B: Primary Sculpted Violet / Purple Ribbon (Upper-Left to Center-Top) */}
+        <div className="absolute -top-[5%] -left-[15%] h-[380px] w-[130%] -rotate-12 rounded-[100%] opacity-85 blur-[65px] stitch-aurora-violet-ribbon" />
+        {/* Inner intense glowing core */}
+        <div className="absolute top-[5%] -left-[10%] h-[240px] w-[110%] -rotate-10 rounded-[100%] opacity-90 blur-[38px] stitch-aurora-violet-ribbon" />
 
-        {/* Secondary Flowing Aurora Spline 2 (Electric Cyan / Royal Blue Accent) */}
-        <div className="absolute top-[32%] -left-[5%] h-[260px] w-[110%] rotate-3 rounded-[100%] opacity-60 blur-[85px] stitch-aurora-ribbon-2" />
+        {/* Layer C: Primary Sculpted Cyan / Electric Sky Blue Ribbon (Lower-Left to Center-Right) */}
+        <div className="absolute top-[35%] -left-[12%] h-[340px] w-[125%] rotate-12 rounded-[100%] opacity-85 blur-[65px] stitch-aurora-cyan-ribbon" />
+        {/* Inner intense glowing core */}
+        <div className="absolute top-[42%] -left-[8%] h-[200px] w-[105%] rotate-8 rounded-[100%] opacity-95 blur-[36px] stitch-aurora-cyan-ribbon" />
 
-        {/* Subtle Ambient Radial Highlight */}
+        {/* Layer D: Right-side Magenta / Indigo Echo Wave */}
+        <div className="absolute top-[10%] -right-[15%] h-[460px] w-[65%] rotate-6 rounded-[100%] opacity-70 blur-[70px] stitch-aurora-magenta-echo" />
+
+        {/* Layer E: Center High-Refraction Ambient Vignette */}
         <div
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0 opacity-40"
           style={{
-            background: "radial-gradient(700px circle at 50% 40%, rgba(255, 255, 255, 0.08), transparent 70%)",
+            background: "radial-gradient(900px circle at 50% 35%, rgba(255, 255, 255, 0.06), transparent 75%)",
           }}
         />
       </div>
+
+      {/* 2. Dot-Matrix Blueprint Grid with Active Lens Illumination */}
+      {showGrid && (
+        <div
+          className="pointer-events-none absolute inset-0 z-0 opacity-80 stitch-grid-canvas"
+          style={{
+            mixBlendMode: "screen",
+          }}
+          aria-hidden="true"
+        />
+      )}
 
       {/* 3. Foreground Content */}
       <div className="relative z-10">{children}</div>
