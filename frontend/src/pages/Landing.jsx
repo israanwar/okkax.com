@@ -1154,12 +1154,12 @@ export default function Landing() {
             </span>
           </motion.div>
 
-          {/* Main Hero Headline (Google Stitch Style) */}
+          {/* Main Hero Headline */}
           <MaskReveal delay={0.15}>
-            <h1 className="editorial mt-6 text-[clamp(2.75rem,5.8vw,5.2rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
-              Design & Operate live events
+            <h1 className="editorial mt-6 text-[clamp(2.85rem,6vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
+              Every moving part,
               <br />
-              <span className="text-zinc-300 font-normal">at the speed of intelligence.</span>
+              <span className="text-zinc-300 font-normal">working as one.</span>
             </h1>
           </MaskReveal>
 
