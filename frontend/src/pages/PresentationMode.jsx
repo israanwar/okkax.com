@@ -364,7 +364,7 @@ export default function PresentationMode() {
           data-testid="present-next-btn"
           onClick={next}
           disabled={i === scenes.length - 1}
-          className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-xs font-semibold disabled:opacity-40 sm:text-sm"
+          className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-40 sm:text-sm"
         >
           Next <ArrowRight size={14} />
         </button>

@@ -14,14 +14,12 @@ export default function GlobalScrollRestoration() {
   const { pathname } = useLocation();
 
   useLayoutEffect(() => {
-    // Disable native browser restoration so React controls the initial position.
-    if ("scrollRestoration" in window.history) {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
     const reset = () => {
-      // Main document scroll.
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 
       const scrollingElement =
         document.scrollingElement ||
@@ -33,8 +31,6 @@ export default function GlobalScrollRestoration() {
         scrollingElement.scrollLeft = 0;
       }
 
-      // OKKAX dashboard/public pages can contain their own scroll roots.
-      // Reset only elements that actually have a non-zero vertical scroll.
       document.querySelectorAll("*").forEach((el) => {
         if (el instanceof HTMLElement && el.scrollTop > 0) {
           el.scrollTop = 0;
@@ -42,8 +38,6 @@ export default function GlobalScrollRestoration() {
       });
     };
 
-    // Immediate reset + two frames to defeat browser/layout restoration
-    // that can occur after React starts rendering.
     reset();
 
     const raf1 = requestAnimationFrame(() => {
@@ -51,7 +45,14 @@ export default function GlobalScrollRestoration() {
       requestAnimationFrame(reset);
     });
 
-    return () => cancelAnimationFrame(raf1);
+    window.addEventListener("pageshow", reset);
+    window.addEventListener("load", reset);
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      window.removeEventListener("pageshow", reset);
+      window.removeEventListener("load", reset);
+    };
   }, [pathname]);
 
   return null;

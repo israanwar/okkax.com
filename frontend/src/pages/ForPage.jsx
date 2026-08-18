@@ -14,6 +14,15 @@ import { ArrowUpRight, Lock, MapPin, ShieldCheck, Sparkles } from "lucide-react"
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, apiError, compact, idr, num } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  MaskReveal,
+  ScrollProgressBar,
+  CounterNumber,
+  SpotlightCard,
+} from "@/components/MotionPrimitives";
 
 // ---------------------------------------------------------------------------
 // Talking points and CTA are still declarative per audience.
@@ -173,10 +182,10 @@ function renderCard(source, item) {
       <>
         <div className="flex items-baseline justify-between gap-3">
           <div className="text-sm font-semibold text-white">{item.name}</div>
-          {item.rating && <span className="text-xs text-zinc-500">{Number(item.rating).toFixed(1)}</span>}
+          {item.rating && <span className="text-xs text-zinc-300 font-mono font-bold">{Number(item.rating).toFixed(1)}</span>}
         </div>
-        <div className="mt-1 text-[11px] text-zinc-500">{item.category || item.genre} · {item.city}</div>
-        <div className="mt-3 text-[10.5px] text-zinc-600">{(item.availability || []).length} open dates published</div>
+        <div className="mt-1 text-[11px] text-zinc-400">{item.category || item.genre} · {item.city}</div>
+        <div className="mt-3 text-[10.5px] text-zinc-300">{(item.availability || []).length} open dates published</div>
       </>
     );
   }
@@ -184,8 +193,8 @@ function renderCard(source, item) {
     return (
       <>
         <div className="text-sm font-semibold text-white">{item.name}</div>
-        <div className="mt-1 text-[11px] text-zinc-500">{item.city} · {item.area_sqm ? item.area_sqm + " sqm" : "Multi-purpose"}</div>
-        <div className="mt-3 text-[10.5px] text-zinc-600">{(item.event_types || []).slice(0, 2).join(", ")}{item.curfew ? " · curfew " + item.curfew : ""}</div>
+        <div className="mt-1 text-[11px] text-zinc-400">{item.city} · {item.area_sqm ? item.area_sqm + " sqm" : "Multi-purpose"}</div>
+        <div className="mt-3 text-[10.5px] text-zinc-300">{(item.event_types || []).slice(0, 2).join(", ")}{item.curfew ? " · curfew " + item.curfew : ""}</div>
       </>
     );
   }
@@ -193,8 +202,8 @@ function renderCard(source, item) {
     return (
       <>
         <div className="text-sm font-semibold text-white">{item.name}</div>
-        <div className="mt-1 text-[11px] text-zinc-500">{item.city} · {item.category}</div>
-        <div className="mt-3 text-[10.5px] text-zinc-600">{(item.capabilities || []).slice(0, 2).join(", ")}</div>
+        <div className="mt-1 text-[11px] text-zinc-400">{item.city} · {item.category}</div>
+        <div className="mt-3 text-[10.5px] text-zinc-300">{(item.capabilities || []).slice(0, 2).join(", ")}</div>
       </>
     );
   }
@@ -202,8 +211,8 @@ function renderCard(source, item) {
     return (
       <>
         <div className="text-sm font-semibold text-white">{item.name}</div>
-        <div className="mt-1 text-[11px] text-zinc-500">{item.city} · {item.category}</div>
-        <div className="mt-3 text-[10.5px] text-zinc-600">{(item.skills || []).slice(0, 2).join(", ")}{item.attendance_rate ? " · " + item.attendance_rate + "% attendance" : ""}</div>
+        <div className="mt-1 text-[11px] text-zinc-400">{item.city} · {item.category}</div>
+        <div className="mt-3 text-[10.5px] text-zinc-300">{(item.skills || []).slice(0, 2).join(", ")}{item.attendance_rate ? " · " + item.attendance_rate + "% attendance" : ""}</div>
       </>
     );
   }
@@ -211,8 +220,8 @@ function renderCard(source, item) {
     return (
       <>
         <div className="text-sm font-semibold text-white">{item.business_name}</div>
-        <div className="mt-1 text-[11px] text-zinc-500">{item.city} · {item.product_category}</div>
-        <div className="mt-3 text-[10.5px] text-zinc-600">{item.description}</div>
+        <div className="mt-1 text-[11px] text-zinc-400">{item.city} · {item.product_category}</div>
+        <div className="mt-3 text-[10.5px] text-zinc-300">{item.description}</div>
       </>
     );
   }
@@ -220,10 +229,10 @@ function renderCard(source, item) {
     return (
       <>
         <div className="text-sm font-semibold text-white">{item.name || item.title}</div>
-        <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500">
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-400">
           <MapPin size={11} aria-hidden="true" /> {item.city} · {(item.start_date || item.end_date || "").slice(0, 10)}
         </div>
-        <div className="mt-3 text-[10.5px] text-zinc-600">
+        <div className="mt-3 text-[10.5px] text-zinc-300">
           {item.event_type} · Capacity {num(item.capacity)}
         </div>
       </>
@@ -244,7 +253,7 @@ function LiveSlice({ source, label, explain, ctaHref, ctaLabel }) {
           <h2 id="for-live-heading" className="editorial mt-3 text-[clamp(1.4rem,3vw,2.2rem)] leading-tight text-[#f4efec]">
             {source === "events" ? "Real events." : "Real entities."} <span className="accent-text">Public preview.</span>
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">{explain}</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">{explain}</p>
         </div>
         <Link to={source === "events" ? "/discover" : "/products/network"} className="hidden shrink-0 items-center gap-2 border border-zinc-700 px-4 py-2 text-xs font-semibold text-zinc-100 hover:border-zinc-500 sm:inline-flex">
           Open Network
@@ -256,22 +265,24 @@ function LiveSlice({ source, label, explain, ctaHref, ctaLabel }) {
           Backend unreachable. Silakan buka /discover atau /products/network setelah backend hidup.
         </div>
       ) : loading ? (
-        <div className="mt-6 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 text-sm text-zinc-500">Memuat sampel dari catalog...</div>
+        <div className="mt-6 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 text-sm text-zinc-400">Memuat sampel dari catalog...</div>
       ) : items.length === 0 ? (
-        <div className="mt-6 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 text-sm text-zinc-500">Belum ada entri publik pada catalog.</div>
+        <div className="mt-6 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 text-sm text-zinc-400">Belum ada entri publik pada catalog.</div>
       ) : (
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid={`for-live-${source}-list`}>
+        <RevealGroup stagger={0.06} as="ul" className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid={`for-live-${source}-list`}>
           {items.map((it) => (
-            <li key={it.id} className="border border-[var(--okx-border)] bg-[#0a0a0a] p-5">
-              {renderCard(source, it)}
-              <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
-                <Lock size={10} aria-hidden="true" /> Detail penuh gated
-              </div>
-            </li>
+            <RevealItem as="li" key={it.id}>
+              <SpotlightCard className="p-5 h-full">
+                {renderCard(source, it)}
+                <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-400 font-gemini-mono">
+                  <Lock size={10} aria-hidden="true" /> Detail penuh gated
+                </div>
+              </SpotlightCard>
+            </RevealItem>
           ))}
-        </ul>
+        </RevealGroup>
       )}
-      <div className="mt-6 text-xs text-zinc-600">
+      <div className="mt-6 text-xs text-zinc-400">
         Data ini publik dari catalog OKKAX. Detail komersial, kontak, dan action tetap terkunci hingga sign in dan role authorization backend.
       </div>
     </section>
@@ -285,23 +296,35 @@ export default function ForPage() {
   const { audience } = useParams();
   const c = AUDIENCES[audience] || AUDIENCES.organizers;
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
+      <ScrollProgressBar />
       <PublicNav />
       <main data-testid={`for-${audience || "organizers"}`} className="mx-auto max-w-5xl px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
-        <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-          <Sparkles size={12} aria-hidden="true" /> Solutions · {audience || "organizers"}
-        </div>
-        <h1 className="editorial mt-5 text-4xl leading-[0.98] sm:text-5xl lg:text-6xl">{c.title}</h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-300 sm:text-lg">{c.tagline}</p>
+        <Reveal delay={0.05}>
+          <div className="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+            <Sparkles size={12} aria-hidden="true" /> Solutions · {audience || "organizers"}
+          </div>
+        </Reveal>
+        <MaskReveal delay={0.1}>
+          <h1 className="editorial mt-5 text-4xl leading-[0.98] sm:text-5xl lg:text-6xl">{c.title}</h1>
+        </MaskReveal>
+        <Reveal delay={0.2}>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-300 sm:text-lg">{c.tagline}</p>
+        </Reveal>
 
-        <div className="mt-10 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2">
-          {c.points.map(([t, b]) => (
-            <div key={t} className="bg-[#0a0a0a] p-6">
-              <h2 className="text-base font-semibold text-white md:text-lg">{t}</h2>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">{b}</p>
-            </div>
+        <RevealGroup stagger={0.08} as="ul" className="mt-10 grid gap-3 sm:grid-cols-2" data-testid="for-points">
+          {c.points.map(([t, b], i) => (
+            <RevealItem as="li" key={t}>
+              <SpotlightCard className="p-6 h-full">
+                <span className="font-mono text-[10px] font-semibold tracking-[0.2em] text-[var(--okx-accent)]">
+                  0{i + 1}
+                </span>
+                <h2 className="mt-4 text-base font-semibold text-white">{t}</h2>
+                <p className="mt-2 text-sm leading-6 text-zinc-400">{b}</p>
+              </SpotlightCard>
+            </RevealItem>
           ))}
-        </div>
+        </RevealGroup>
 
         <LiveSlice
           source={c.live.source}
@@ -309,16 +332,16 @@ export default function ForPage() {
           explain={c.live.explain}
         />
 
-        <div className="mt-12 flex flex-col gap-3 sm:flex-row">
-          <Link to={c.cta[1]} data-testid="for-cta-btn" className="inline-flex items-center justify-between gap-3 bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
-            {c.cta[0]}
+        <Reveal delay={0.1} className="mt-12 flex flex-col gap-3.5 sm:flex-row">
+          <Link to={c.cta[1]} data-testid="for-cta-btn" className="inline-flex items-center justify-between gap-3 rounded-xl bg-white hover:bg-zinc-200 text-black px-6 py-3.5 text-sm font-bold shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition-all active:scale-[0.98]">
+            <span>{c.cta[0]}</span>
             <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
-          <Link to="/products/network" className="inline-flex items-center justify-between gap-3 border border-zinc-800 px-6 py-3.5 text-sm font-semibold text-zinc-200 hover:border-zinc-600">
-            Explore Network
+          <Link to="/products/network" className="inline-flex items-center justify-between gap-3 rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/30 hover:bg-white/[0.08] transition-all">
+            <span>Explore Network</span>
             <ArrowUpRight size={15} aria-hidden="true" />
           </Link>
-        </div>
+        </Reveal>
       </main>
       <Footer />
     </div>

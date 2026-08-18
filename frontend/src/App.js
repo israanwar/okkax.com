@@ -27,8 +27,9 @@ import Pricing from "@/pages/Pricing";
 
 import Products from "@/pages/Products";
 import { About, HowItWorks, Contact, Terms, Privacy } from "@/pages/Company";
-import YoonaPage from "@/pages/YoonaPage";
-import YoonaChat from "@/components/YoonaChat";
+import OkkaxPage from "@/pages/OkkaxPage";
+import IntelligencePage from "@/pages/IntelligencePage";
+import OkkaxChat from "@/components/OkkaxChat";
 
 import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
 const shell = (el) => <AppShell>{el}</AppShell>;
@@ -41,9 +42,11 @@ function RouterBody() {
     <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/discover" element={<Discover />} />
-            <Route path="/okkax" element={<YoonaPage />} />
-            <Route path="/yoona" element={<YoonaPage />} />
-            <Route path="/okkaji" element={<YoonaPage />} />
+            <Route path="/intelligence" element={<IntelligencePage />} />
+            <Route path="/okkax" element={<IntelligencePage />} />
+            <Route path="/copilot" element={<IntelligencePage />} />
+            <Route path="/yoona" element={<IntelligencePage />} />
+            <Route path="/okkaji" element={<IntelligencePage />} />
             <Route path="/peta" element={<EconomyMap />} />
             <Route path="/map" element={<EconomyMap />} />
             <Route path="/calendar" element={<PublicCalendar />} />
@@ -62,9 +65,11 @@ function RouterBody() {
             <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
             <Route path="/validator" element={shell(<Validator />)} />
             <Route path="/app" element={shell(<Overview />)} />
-            <Route path="/app/okkax" element={shell(<YoonaPage />)} />
-            <Route path="/app/yoona" element={shell(<YoonaPage />)} />
-            <Route path="/app/okkaji" element={shell(<YoonaPage />)} />
+            <Route path="/app/intelligence" element={shell(<IntelligencePage />)} />
+            <Route path="/app/okkax" element={<Navigate to="/app/intelligence" replace />} />
+            <Route path="/app/copilot" element={<Navigate to="/app/intelligence" replace />} />
+            <Route path="/app/yoona" element={<Navigate to="/app/intelligence" replace />} />
+            <Route path="/app/okkaji" element={<Navigate to="/app/intelligence" replace />} />
             <Route path="/app/studio" element={shell(<EventStudio />)} />
             <Route path="/app/events" element={shell(<EventsList />)} />
             <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
@@ -104,15 +109,26 @@ function RouterBody() {
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-      <GlobalScrollRestoration />
-        <AuthProvider>
-          <Toaster theme="dark" position="top-right" />
-          <RouterBody />
-          <YoonaChat />
-        </AuthProvider>
-      </BrowserRouter>
+    <div className="App min-h-screen bg-black text-white relative w-full overflow-x-hidden">
+      {/* Global High-Precision Architectural Dot-Matrix Canvas */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-100 stitch-grid-canvas"
+        style={{
+          backgroundImage: "radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 1.25px, transparent 1.25px)",
+          backgroundSize: "28px 28px",
+        }}
+        aria-hidden="true"
+      />
+      <div className="relative z-10">
+        <BrowserRouter>
+          <GlobalScrollRestoration />
+          <AuthProvider>
+            <Toaster theme="dark" position="top-right" />
+            <RouterBody />
+            <OkkaxChat />
+          </AuthProvider>
+        </BrowserRouter>
+      </div>
     </div>
   );
 }

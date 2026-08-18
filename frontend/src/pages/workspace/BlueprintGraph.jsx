@@ -62,10 +62,10 @@ export function Blueprint({ eventId, event }) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col justify-between gap-2.5 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-base font-semibold md:text-lg">AI Event Blueprint</h2>
+          <h2 className="text-sm font-bold md:text-base text-white">AI Event Blueprint</h2>
           <p className="text-xs text-zinc-500" data-testid="blueprint-source">
             Sumber: {bp?.source || "belum dikompilasi"}
             {bp?.ai_status === "refining" && " · Blueprint Engine sedang menyempurnakan blueprint…"}
@@ -83,36 +83,36 @@ export function Blueprint({ eventId, event }) {
               <option key={e.key} value={e.key}>{e.label}</option>
             ))}
           </PremiumSelect>
-          <button data-testid="compile-btn" onClick={compile} disabled={busy} className="bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold disabled:opacity-60">
+          <button data-testid="compile-btn" onClick={compile} disabled={busy} className="bg-[var(--okx-accent)] px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-60 rounded-xl">
             {busy ? "Blueprint Engine bekerja…" : bp ? "Bangun ulang" : "Build Blueprint"}
           </button>
         </div>
       </div>
 
       {!bp ? (
-        <div data-testid="blueprint-empty" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-10 text-center text-sm text-zinc-400">
+        <div data-testid="blueprint-empty" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-6 text-center text-xs text-zinc-400 rounded-xl">
           Belum ada blueprint. Jalankan Blueprint Engine untuk mengubah brief menjadi Event Blueprint.
         </div>
       ) : (
-        <div className="space-y-6" data-testid="blueprint-content">
-          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
+        <div className="space-y-4" data-testid="blueprint-content">
+          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3.5 sm:p-4 rounded-xl">
             <div className="flex items-center gap-2">
-              <span className="border border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 px-2 py-0.5 text-[11px] text-[var(--okx-accent-soft)]">Estimasi AI</span>
+              <span className="border border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10 px-2 py-0.5 text-[10px] text-[var(--okx-accent-soft)] rounded">Estimasi AI</span>
               <span className="text-xs text-zinc-500">Dapat diedit · bukan keputusan final</span>
             </div>
             <textarea
               data-testid="blueprint-summary-input"
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              rows={3}
-              className="mt-3 w-full border border-[var(--okx-border)] bg-[#0d0d0d] p-3 text-sm outline-none focus:border-[var(--okx-accent)]"
+              rows={2}
+              className="mt-2.5 w-full border border-[var(--okx-border)] bg-[#0d0d0d] p-2.5 text-xs sm:text-[13px] outline-none focus:border-[var(--okx-accent)] rounded-lg"
             />
-            <button data-testid="blueprint-save-btn" onClick={saveSummary} className="mt-2 border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]">
+            <button data-testid="blueprint-save-btn" onClick={saveSummary} className="mt-2 border border-[var(--okx-border)] px-2.5 py-1 text-xs hover:border-[var(--okx-accent)] rounded-lg">
               Simpan sebagai Dikonfirmasi pengguna
             </button>
           </div>
 
-          <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] md:grid-cols-2">
+          <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] md:grid-cols-2 rounded-xl overflow-hidden">
             <Section title="Fase event" rows={bp.phases?.map((p) => [p.name, `${p.objective} · ${p.duration}`])} />
             <Section title="Workstreams" rows={bp.workstreams?.map((w) => [w.name, `${w.owner_role} — ${w.description}`])} />
             <Section title="Timeline" rows={bp.timeline?.map((t) => [t.week, t.activity])} />
@@ -127,23 +127,23 @@ export function Blueprint({ eventId, event }) {
             <Section title="Informasi yang belum diketahui" rows={(bp.missing_information || []).map((m) => [m, "Perlu konfirmasi"])} />
           </div>
 
-          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Recommended next actions</h3>
-            <ol className="mt-3 space-y-2 text-sm text-zinc-300">
+          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3.5 sm:p-4 rounded-xl">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Recommended next actions</h3>
+            <ol className="mt-2 space-y-1.5 text-xs text-zinc-300">
               {(bp.next_actions || []).map((a, i) => (
-                <li key={i} className="flex gap-2"><span className="num accent-text">{i + 1}.</span> {a}</li>
+                <li key={i} className="flex gap-2"><span className="num accent-text font-gemini-mono">{i + 1}.</span> {a}</li>
               ))}
             </ol>
           </div>
 
           {brief && (
-            <details className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-              <summary className="cursor-pointer text-sm font-semibold">Lihat Event Brief sumber</summary>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <details className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3.5 sm:p-4 rounded-xl">
+              <summary className="cursor-pointer text-xs font-semibold">Lihat Event Brief sumber</summary>
+              <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
                 {Object.entries(brief).filter(([k]) => k !== "event_id").map(([k, v]) => (
-                  <div key={k} className="flex justify-between gap-3 border-b border-[var(--okx-border)] py-1.5 text-xs">
+                  <div key={k} className="flex justify-between gap-3 border-b border-[var(--okx-border)] py-1 text-[11px]">
                     <span className="text-zinc-500">{k}</span>
-                    <span className="num text-right text-zinc-200">{String(v)}</span>
+                    <span className="num text-right text-zinc-200 font-gemini-mono">{String(v)}</span>
                   </div>
                 ))}
               </div>
@@ -157,13 +157,13 @@ export function Blueprint({ eventId, event }) {
 
 function Section({ title, rows = [] }) {
   return (
-    <div className="bg-[var(--okx-surface)] p-5">
-      <h3 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">{title}</h3>
-      <div className="mt-3 space-y-2">
+    <div className="bg-[var(--okx-surface)] p-3.5 sm:p-4">
+      <h3 className="text-[10.5px] font-semibold uppercase tracking-widest text-zinc-500">{title}</h3>
+      <div className="mt-2 space-y-1.5">
         {(rows || []).map(([a, b], i) => (
-          <div key={i} className="border-b border-[var(--okx-border)] pb-2 last:border-0">
-            <div className="text-sm font-medium">{a}</div>
-            {b && <div className="num text-xs text-zinc-400">{b}</div>}
+          <div key={i} className="border-b border-[var(--okx-border)] pb-1.5 last:border-0">
+            <div className="text-xs font-medium text-white">{a}</div>
+            {b && <div className="num text-[11px] text-zinc-400">{b}</div>}
           </div>
         ))}
         {(!rows || rows.length === 0) && <div className="text-xs text-zinc-600">Belum diketahui</div>}
@@ -188,7 +188,7 @@ const KIND_META = {
   Risk: { icon: "alert", tone: "accent", r: 15, ring: 1 },
   Payment: { icon: "card", tone: "soft", r: 14, ring: 2 },
 };
-const TONE = { core: "#ffffff", accent: "#ff2e7e", soft: "#ff7ab0", neutral: "#e4e4e7" };
+const TONE = { core: "#ffffff", accent: "#ffffff", soft: "#d4d4d8", neutral: "#a1a1aa" };
 const metaOf = (k) => KIND_META[k] || { icon: "dot", tone: "neutral", r: 13, ring: 2 };
 export const colorOf = (k) => TONE[metaOf(k).tone];
 
@@ -301,29 +301,29 @@ export function Graph({ eventId }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
         <button onClick={() => { setFilter(""); setActive(null); }} data-testid="graph-filter-all"
-          className={`border px-3 py-1.5 text-xs transition-colors ${!filter ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
+          className={`border px-2.5 py-1 text-xs transition-colors rounded-lg ${!filter ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
           Semua kategori
         </button>
         {kinds.map((k) => (
           <button key={k} data-testid={`graph-filter-${k.replace(/\s/g, "-")}`} onClick={() => setFilter(k)}
-            className={`flex items-center gap-1.5 border px-3 py-1.5 text-xs transition-colors ${filter === k ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
-            <svg width="13" height="13" viewBox="-8 -8 16 16"><NodeIcon kind={k} size={14} color={colorOf(k)} /></svg>
+            className={`flex items-center gap-1.5 border px-2.5 py-1 text-xs transition-colors rounded-lg ${filter === k ? "border-[var(--okx-accent)] accent-text" : "border-[var(--okx-border)] text-zinc-400 hover:text-white"}`}>
+            <svg width="12" height="12" viewBox="-8 -8 16 16"><NodeIcon kind={k} size={13} color={colorOf(k)} /></svg>
             {k}
           </button>
         ))}
         <div className="ml-auto flex items-center gap-1">
           <button data-testid="graph-zoom-out" onClick={() => setZoom((z) => Math.max(0.7, +(z - 0.15).toFixed(2)))}
-            className="border border-[var(--okx-border)] px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white">−</button>
-          <span className="num w-12 text-center text-xs text-zinc-500">{Math.round(zoom * 100)}%</span>
+            className="border border-[var(--okx-border)] px-2 py-1 text-xs text-zinc-400 hover:text-white rounded-lg">−</button>
+          <span className="num w-10 text-center text-xs text-zinc-500">{Math.round(zoom * 100)}%</span>
           <button data-testid="graph-zoom-in" onClick={() => setZoom((z) => Math.min(1.8, +(z + 0.15).toFixed(2)))}
-            className="border border-[var(--okx-border)] px-2.5 py-1.5 text-xs text-zinc-400 hover:text-white">+</button>
+            className="border border-[var(--okx-border)] px-2 py-1 text-xs text-zinc-400 hover:text-white rounded-lg">+</button>
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
-        <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808]" data-testid="graph-canvas">
+      <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+        <div className="relative overflow-hidden border border-[var(--okx-border)] bg-[#080808] rounded-xl" data-testid="graph-canvas">
           <div className="pointer-events-none absolute inset-0 opacity-[0.13]"
             style={{ backgroundImage: "radial-gradient(#ffffff1f 1px, transparent 1px)", backgroundSize: "26px 26px" }} />
           <div className="okx-scroll max-h-[660px] overflow-auto">
@@ -387,19 +387,19 @@ export function Graph({ eventId }) {
                     onClick={() => setActive(n)}
                     style={{ cursor: "pointer", opacity: faded ? 0.2 : 1, transition: "opacity .25s ease" }}>
                     {(isFocus || crit || isCore) && (
-                      <circle r={m.r + 8} fill="none" stroke={crit ? "#ff2e7e" : isCore ? "#ff7ab0" : "#ffffff"} strokeOpacity="0.4">
+                      <circle r={m.r + 8} fill="none" stroke="#ffffff" strokeOpacity={crit ? "0.6" : "0.4"} strokeDasharray={crit ? "3 3" : undefined}>
                         <animate attributeName="r" values={`${m.r + 5};${m.r + 17};${m.r + 5}`} dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
                         <animate attributeName="stroke-opacity" values="0.45;0;0.45" dur={isCore ? "4s" : "3s"} repeatCount="indefinite" />
                       </circle>
                     )}
-                    <circle r={m.r} fill={isCore ? "#ff2e7e" : "#0f0f11"} fillOpacity={isCore ? 1 : 0.92}
+                    <circle r={m.r} fill={isCore ? "#ffffff" : "#0f0f11"} fillOpacity={isCore ? 1 : 0.92}
                       stroke={isCore ? "#ffffff" : col} strokeOpacity={isCore ? 0.85 : isFocus ? 1 : 0.6}
                       strokeWidth={isFocus || isCore ? 2 : 1.2}
                       style={{ transition: "stroke-opacity .2s ease, stroke-width .2s ease" }} />
                     <NodeIcon kind={n.kind} size={isCore ? 22 : 15} color={isCore ? "#0a0a0a" : col}
                       opacity={isCore ? 1 : isFocus ? 1 : 0.85} />
                     {crit && !isCore && (
-                      <circle cx={m.r * 0.72} cy={-m.r * 0.72} r="3.4" fill="#ff2e7e" stroke="#0a0a0a" strokeWidth="1" />
+                      <circle cx={m.r * 0.72} cy={-m.r * 0.72} r="3.4" fill="#ffffff" stroke="#0a0a0a" strokeWidth="1" />
                     )}
                     {showLabel && (
                       <>
@@ -417,39 +417,39 @@ export function Graph({ eventId }) {
               })}
             </svg>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-4 py-2 text-[11px] text-zinc-500">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--okx-border)] px-3.5 py-1.5 text-[10.5px] text-zinc-500">
             <span>Event di pusat · orbit dalam = komponen utama, orbit luar = turunan · klik node untuk detail</span>
             <span className="num">Event ID: {eventId}</span>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 lg:sticky lg:top-20" data-testid="graph-detail">
+        <div className="flex flex-col gap-3">
+          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3.5 sm:p-4 rounded-xl" data-testid="graph-detail">
             {active ? (
               <>
-                <div className="flex items-center gap-2">
-                  <svg width="15" height="15" viewBox="-8 -8 16 16"><NodeIcon kind={active.kind} size={15} color={colorOf(active.kind)} /></svg>
-                  <span className="text-[11px] uppercase tracking-wider text-zinc-500">{active.kind}</span>
+                <div className="flex items-center gap-1.5">
+                  <svg width="13" height="13" viewBox="-8 -8 16 16"><NodeIcon kind={active.kind} size={14} color={colorOf(active.kind)} /></svg>
+                  <span className="text-[10px] uppercase tracking-wider text-zinc-500">{active.kind}</span>
                 </div>
-                <h3 className="mt-1 text-base font-semibold md:text-lg">{active.label}</h3>
-                <div className="mt-2"><StatusBadge status={active.status} testId="graph-detail-status" /></div>
-                <dl className="mt-4 space-y-2 text-sm">
+                <h3 className="mt-1 text-sm font-semibold md:text-base">{active.label}</h3>
+                <div className="mt-1.5"><StatusBadge status={active.status} testId="graph-detail-status" /></div>
+                <dl className="mt-3 space-y-1.5 text-xs">
                   {Object.entries(active.meta || {}).map(([k, v]) => (
-                    <div key={k} className="flex justify-between gap-3 border-b border-[var(--okx-border)] pb-1.5">
-                      <dt className="text-zinc-500">{k}</dt>
-                      <dd className="num">{typeof v === "number" && v > 10000 ? idr(v) : String(v)}</dd>
+                    <div key={k} className="flex justify-between gap-3 border-b border-[var(--okx-border)] pb-1">
+                      <dt className="text-zinc-500 text-[11px]">{k}</dt>
+                      <dd className="num text-[11px]">{typeof v === "number" && v > 10000 ? idr(v) : String(v)}</dd>
                     </div>
                   ))}
                 </dl>
-                <div className="mt-4">
-                  <div className="text-xs uppercase tracking-wider text-zinc-500">Dependency</div>
-                  <ul className="mt-2 space-y-1.5 text-xs text-zinc-400">
+                <div className="mt-3">
+                  <div className="text-[10.5px] uppercase tracking-wider text-zinc-500">Dependency</div>
+                  <ul className="mt-1.5 space-y-1 text-xs text-zinc-400">
                     {edges.filter((e) => e.source === active.id || e.target === active.id).map((e, i) => {
                       const other = e.source === active.id ? e.target : e.source;
                       const on = data.nodes.find((n) => n.id === other);
                       return (
                         <li key={i}>
-                          <button onClick={() => setActive(on)} className="text-left hover:text-white">
+                          <button onClick={() => setActive(on)} className="text-left hover:text-white text-[11px]">
                             <span className="accent-text">{e.label}</span> → {on?.label}
                           </button>
                         </li>
@@ -459,22 +459,22 @@ export function Graph({ eventId }) {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-zinc-500">Klik salah satu node pada graph untuk melihat detail, dependency, dan konflik.</p>
+              <p className="text-xs text-zinc-500">Klik salah satu node pada graph untuk melihat detail, dependency, dan konflik.</p>
             )}
           </div>
 
-          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5">
-            <div className="text-xs uppercase tracking-wider text-zinc-500">Daftar node</div>
-            <div className="okx-scroll mt-3 max-h-64 space-y-1.5 overflow-auto pr-1" data-testid="graph-nodes">
+          <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-3.5 sm:p-4 rounded-xl">
+            <div className="text-[10.5px] uppercase tracking-wider text-zinc-500">Daftar node</div>
+            <div className="okx-scroll mt-2.5 max-h-64 space-y-1 overflow-auto pr-1" data-testid="graph-nodes">
               {visible.map((n) => (
                 <button key={n.id} data-testid={`graph-list-${n.id}`} onClick={() => setActive(n)}
                   onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(null)}
-                  className={`flex w-full items-center justify-between gap-2 border px-2.5 py-2 text-left text-xs transition-colors ${active?.id === n.id ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-transparent hover:border-[var(--okx-border)]"}`}>
-                  <span className="flex min-w-0 items-center gap-2">
-                    <svg width="13" height="13" viewBox="-8 -8 16 16" className="shrink-0">
-                      <NodeIcon kind={n.kind} size={14} color={colorOf(n.kind)} />
+                  className={`flex w-full items-center justify-between gap-2 border px-2 py-1.5 text-left text-xs transition-colors rounded-lg ${active?.id === n.id ? "border-[var(--okx-accent)] bg-[var(--okx-accent-tint)]" : "border-transparent hover:border-[var(--okx-border)]"}`}>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="-8 -8 16 16" className="shrink-0">
+                      <NodeIcon kind={n.kind} size={13} color={colorOf(n.kind)} />
                     </svg>
-                    <span className="truncate">{n.label}</span>
+                    <span className="truncate text-[11px]">{n.label}</span>
                   </span>
                   <StatusBadge status={n.status} />
                 </button>

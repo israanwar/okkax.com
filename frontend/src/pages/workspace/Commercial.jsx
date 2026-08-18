@@ -82,7 +82,7 @@ export function SponsorsTab({ eventId, onChange }) {
           <input data-testid="pkg-name-input" placeholder="Nama paket" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none sm:col-span-2" />
           <input data-testid="pkg-price-input" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
           <input data-testid="pkg-qty-input" type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
-          <button data-testid="create-pkg-btn" onClick={create} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Buat paket</button>
+          <button data-testid="create-pkg-btn" onClick={create} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50">Buat paket</button>
         </div>
         <input data-testid="pkg-rights-input" placeholder="Hak sponsor, pisahkan dengan koma" value={form.rights} onChange={(e) => setForm({ ...form, rights: e.target.value })} className="mt-3 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
       </div>
@@ -102,7 +102,7 @@ export function SponsorsTab({ eventId, onChange }) {
                 <StatusBadge status={i.status === "approved" ? "Confirmed" : i.status === "rejected" ? "Cancelled" : "Pending"} />
                 {i.status === "pending" && (
                   <>
-                    <button data-testid={`approve-interest-btn-${i.id}`} onClick={() => decide(i.id, "approved")} className="bg-[var(--okx-accent)] px-3 py-1.5 text-xs font-semibold">Setujui</button>
+                    <button data-testid={`approve-interest-btn-${i.id}`} onClick={() => decide(i.id, "approved")} className="bg-[var(--okx-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Setujui</button>
                     <button data-testid={`reject-interest-btn-${i.id}`} onClick={() => decide(i.id, "rejected")} className="border border-[var(--okx-border)] px-3 py-1.5 text-xs">Tolak</button>
                   </>
                 )}
@@ -220,7 +220,7 @@ export function TenantsTab({ eventId, onChange }) {
           type="button"
           data-testid="tenant-broadcast-btn"
           onClick={() => setBroadcast({ ...broadcast, open: true })}
-          className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-white"
+          className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
         >
           Broadcast tenant opportunity
         </button>
@@ -234,7 +234,7 @@ export function TenantsTab({ eventId, onChange }) {
             {["Food and Beverage", "Merchandise", "Fashion", "Beauty", "Technology", "Automotive", "Community", "Creative Product", "UMKM Lokal", "Exhibitor", "Franchise", "Retail Pop-up", "Sponsor Activation"].map((c) => <option key={c}>{c}</option>)}
           </PremiumSelect>
           <input data-testid="zone-slots-input" type="number" value={form.slots} onChange={(e) => setForm({ ...form, slots: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
-          <button data-testid="create-zone-btn" onClick={createZone} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Buat zona</button>
+          <button data-testid="create-zone-btn" onClick={createZone} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50">Buat zona</button>
         </div>
       </div>
 
@@ -377,7 +377,7 @@ export function TenantsTab({ eventId, onChange }) {
                 data-testid="broadcast-submit-btn"
                 onClick={sendBroadcast}
                 disabled={broadcasting || !broadcast.name.trim()}
-                className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50"
               >
                 {broadcasting ? "Mengirim..." : "Kirim broadcast"}
               </button>
@@ -431,14 +431,14 @@ export function TenantsTab({ eventId, onChange }) {
                 <div className="text-sm font-semibold">{a.business_name} — {a.booth_code}</div>
                 <div className="num text-xs text-zinc-500">{a.product_category} · {idr(a.amount)} · Listrik {a.power_requirement} · {a.payment_status}</div>
                 {a.compatibility_conflicts?.length > 0 && (
-                  <div className="mt-1 text-xs text-red-400">Konflik: {a.compatibility_conflicts.join("; ")}</div>
+                  <div className="mt-1 text-xs text-zinc-300 font-medium border-l-2 border-white/40 pl-2">Konflik: {a.compatibility_conflicts.join("; ")}</div>
                 )}
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={a.status === "approved" ? "Confirmed" : a.status === "rejected" ? "Cancelled" : "Pending"} />
                 {a.status === "pending" && (
                   <>
-                    <button data-testid={`approve-tenant-btn-${a.id}`} onClick={() => decide(a.id, "approved")} className="bg-[var(--okx-accent)] px-3 py-1.5 text-xs font-semibold">Setujui</button>
+                    <button data-testid={`approve-tenant-btn-${a.id}`} onClick={() => decide(a.id, "approved")} className="bg-[var(--okx-accent)] px-3 py-1.5 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Setujui</button>
                     <button data-testid={`reject-tenant-btn-${a.id}`} onClick={() => decide(a.id, "rejected")} className="border border-[var(--okx-border)] px-3 py-1.5 text-xs">Tolak</button>
                   </>
                 )}
@@ -544,7 +544,7 @@ export function TicketsTab({ eventId, event, onChange }) {
         <h2 className="text-base font-semibold md:text-lg">Ticketing</h2>
         <div className="flex items-center gap-3">
           <StatusBadge status={event?.status === "published" ? "Confirmed" : "Draft"} testId="event-publish-status" />
-          <button data-testid="publish-event-btn" onClick={publish} disabled={publishing} className="bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold disabled:opacity-60">
+          <button data-testid="publish-event-btn" onClick={publish} disabled={publishing} className="bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-60">
             {event?.status === "published" ? "Publikasikan ulang" : "Publish event"}
           </button>
         </div>
@@ -558,7 +558,7 @@ export function TicketsTab({ eventId, event, onChange }) {
           </PremiumSelect>
           <input data-testid="tier-price-input" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
           <input data-testid="tier-qty-input" type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })} className="border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2 text-sm outline-none" />
-          <button data-testid="create-tier-btn" onClick={create} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold disabled:opacity-50">Tambah tier</button>
+          <button data-testid="create-tier-btn" onClick={create} disabled={!form.name} className="bg-[var(--okx-accent)] px-4 py-2 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50">Tambah tier</button>
         </div>
       </div>
 
@@ -612,7 +612,7 @@ export function TicketsTab({ eventId, event, onChange }) {
                             data-testid={`save-tier-${t.id}`}
                             onClick={() => saveEdit(t)}
                             disabled={isSaving}
-                            className="inline-flex h-8 items-center gap-2 bg-[var(--okx-accent)] px-3 text-xs font-semibold text-white hover:bg-[var(--okx-accent-hover)] disabled:opacity-50"
+                            className="inline-flex h-8 items-center gap-2 bg-[var(--okx-accent)] px-3 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)] disabled:opacity-50"
                           >
                             <Check size={13} /> {isSaving ? "Menyimpan…" : "Simpan"}
                           </button>

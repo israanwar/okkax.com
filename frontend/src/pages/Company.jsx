@@ -7,6 +7,15 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Mail, MessageSquare } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
+import {
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  MaskReveal,
+  ScrollProgressBar,
+  CounterNumber,
+  SpotlightCard,
+} from "@/components/MotionPrimitives";
 
 // ============================================================================
 // About
@@ -17,18 +26,20 @@ export function About() {
       <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
         OKKAX menyatukan brief, jaringan, jadwal, kontrak, ticketing, operasi, dan keuangan pada satu Event ID. Kami percaya industri event tidak kekurangan pihak yang kompeten. Yang hilang adalah satu sistem yang menghubungkan mereka.
       </p>
-      <div className="mt-10 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-3">
+      <RevealGroup stagger={0.08} className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
           ["North Star", "Live event operating network untuk Indonesia dan regional."],
           ["Prinsip", "Satu concept, satu canonical name, satu clear destination."],
           ["Dampak", "Meningkatkan readiness, mengurangi risiko, dan memperjelas ekonomi event."],
         ].map(([t, b]) => (
-          <div key={t} className="bg-[#0a0a0a] p-6">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-zinc-500">{t}</h3>
-            <p className="mt-3 text-sm leading-6 text-zinc-200">{b}</p>
-          </div>
+          <RevealItem key={t}>
+            <SpotlightCard className="p-6 h-full">
+              <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--okx-accent-soft)]">{t}</h3>
+              <p className="mt-3 text-sm leading-6 text-zinc-200">{b}</p>
+            </SpotlightCard>
+          </RevealItem>
         ))}
-      </div>
+      </RevealGroup>
       <ClosingCta primary={["Buka Demo", "/demo"]} secondary={["Discover Events", "/discover"]} />
     </Shell>
   );
@@ -76,32 +87,36 @@ export function Contact() {
         Kirim pertanyaan, umpan balik, atau permintaan kerja sama melalui saluran di bawah. Balasan biasanya dalam 1 hari kerja.
       </p>
       <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        <a
-          href="mailto:hello@okkax.com"
-          data-testid="contact-email"
-          className="group flex items-start gap-4 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 hover:border-[var(--okx-accent)]"
-        >
-          <Mail size={22} className="mt-1 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Email</div>
-            <div className="mt-1 text-base font-semibold text-white">hello@okkax.com</div>
-            <div className="mt-1 text-xs text-zinc-500">Kerja sama, pertanyaan bisnis, dukungan.</div>
-          </div>
-        </a>
-        <a
-          href="https://wa.me/6282189594190"
-          target="_blank"
-          rel="noopener noreferrer"
-          data-testid="contact-whatsapp"
-          className="group flex items-start gap-4 border border-[var(--okx-border)] bg-[#0a0a0a] p-6 hover:border-[var(--okx-accent)]"
-        >
-          <MessageSquare size={22} className="mt-1 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Chat</div>
-            <div className="mt-1 text-base font-semibold text-white">WhatsApp</div>
-            <div className="mt-1 text-xs text-zinc-500">Untuk balasan cepat pada jam kerja.</div>
-          </div>
-        </a>
+        <SpotlightCard>
+          <a
+            href="mailto:admin@okkax.com"
+            data-testid="contact-email"
+            className="group flex items-start gap-4 p-6 hover:border-[var(--okx-accent)]"
+          >
+            <Mail size={22} className="mt-1 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Email</div>
+              <div className="mt-1 text-base font-semibold text-white">admin@okkax.com</div>
+              <div className="mt-1 text-xs text-zinc-500">Kerja sama, pertanyaan bisnis, dukungan.</div>
+            </div>
+          </a>
+        </SpotlightCard>
+        <SpotlightCard>
+          <a
+            href="https://wa.me/6282189594190"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="contact-whatsapp"
+            className="group flex items-start gap-4 p-6 hover:border-[var(--okx-accent)]"
+          >
+            <MessageSquare size={22} className="mt-1 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">WhatsApp Bisnis</div>
+              <div className="mt-1 text-base font-semibold text-white">+62 821-8959-4190</div>
+              <div className="mt-1 text-xs text-zinc-500">Konsultasi event, briefing, dan kemitraan.</div>
+            </div>
+          </a>
+        </SpotlightCard>
       </div>
       <ClosingCta primary={["Buka Demo", "/demo"]} secondary={["Discover Events", "/discover"]} />
     </Shell>
@@ -176,16 +191,21 @@ export function Privacy() {
 // ============================================================================
 function Shell({ tagline, title, children }) {
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
+      <ScrollProgressBar />
       <PublicNav />
       <main data-testid={"company-" + tagline.toLowerCase().replace(/[^a-z0-9]+/g, "-")} className="mx-auto max-w-4xl px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-          {tagline}
-        </div>
-        <h1 className="editorial mt-6 max-w-3xl text-[clamp(2.2rem,5vw,4.2rem)] leading-[1.0] text-[#f4efec]">
-          {title}
-        </h1>
-        {children}
+        <Reveal delay={0.05}>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+            {tagline}
+          </div>
+        </Reveal>
+        <MaskReveal delay={0.1}>
+          <h1 className="editorial mt-6 max-w-3xl text-[clamp(2.2rem,5vw,4.2rem)] leading-[1.0] text-[#f4efec]">
+            {title}
+          </h1>
+        </MaskReveal>
+        <Reveal delay={0.2}>{children}</Reveal>
       </main>
       <Footer />
     </div>
@@ -199,7 +219,7 @@ function ClosingCta({ primary, secondary }) {
         <Link
           to={primary[1]}
           data-testid="company-cta-primary"
-          className="group inline-flex items-center justify-between gap-2 bg-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]"
+          className="group inline-flex items-center justify-between gap-2 bg-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
         >
           {primary[0]}
           <ArrowUpRight size={15} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />

@@ -66,19 +66,19 @@ export function PaymentSuccess() {
               ))}
             </div>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <Link to="/app/tickets" className="bg-[var(--okx-accent)] px-5 py-2.5 text-center text-sm font-semibold">My Tickets</Link>
+              <Link to="/app/tickets" className="bg-[var(--okx-accent)] px-5 py-2.5 text-center text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">My Tickets</Link>
               <Link to="/app/orders" className="border border-[var(--okx-border)] px-5 py-2.5 text-center text-sm font-semibold">Orders & Invoice</Link>
             </div>
           </div>
         )}
         {["failed", "error", "timeout"].includes(state.status) && (
-          <div data-testid="stripe-failed" className="border border-red-500/40 bg-red-500/5 p-8">
-            <XCircle className="text-red-400" />
+          <div data-testid="stripe-failed" className="border border-white/20 bg-white/[0.04] p-8">
+            <XCircle className="text-zinc-300" />
             <h1 className="editorial mt-3 text-2xl">Pembayaran belum terkonfirmasi</h1>
             <p className="mt-2 text-sm text-zinc-400">
               Status Stripe belum "paid". Anda dapat mencoba lagi atau memakai metode sandbox internal OKKAX.
             </p>
-            <Link to="/discover" className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold">Kembali ke Discover</Link>
+            <Link to="/discover" className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
           </div>
         )}
       </div>
@@ -95,7 +95,7 @@ export function PaymentCancel() {
         <div data-testid="stripe-cancel" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8">
           <h1 className="editorial text-2xl">Pembayaran dibatalkan</h1>
           <p className="mt-2 text-sm text-zinc-400">Order Anda tetap berstatus awaiting payment dan tidak ada tiket yang diterbitkan.</p>
-          <Link to="/discover" className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold">Kembali ke Discover</Link>
+          <Link to="/discover" className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
         </div>
       </div>
       <Footer />

@@ -39,38 +39,42 @@ export function Overview() {
   }, [workspaceVersion, effectiveRole]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 font-gemini">
       <div
-        className="okx-overview-command"
+        className="okx-overview-command rounded-2xl border border-white/[0.08] p-4 sm:p-5 bg-[#0c0c12]/90 backdrop-blur-xl"
         data-testid="overview-command-surface"
       >
         <div>
-          <h1 className="editorial text-2xl sm:text-4xl">
+          <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+            <Sparkles size={10} className="text-zinc-400" />
+            Live Event OS Command
+          </div>
+          <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
             Selamat datang, {user.name}
           </h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Peran aktif: {effectiveRole || "audience"}.{" "}
+          <p className="mt-1 text-xs sm:text-[13px] text-zinc-400">
+            Peran aktif: <span className="font-semibold text-white">{effectiveRole || "audience"}</span>.{" "}
             {activeWorkspace?.kind === "personal"
               ? "Anda sedang menggunakan workspace personal."
               : "OKKAX menghubungkan setiap komponen event pada satu Event ID."}
           </p>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-3.5 flex flex-wrap gap-2.5">
           {organizerContext && (
             <>
               <Link
                 to="/app/studio"
                 data-testid="overview-studio-btn"
-                className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
               >
-                <Plus size={15} /> Buat Event Brief
+                <Plus size={14} /> Buat Event Brief
               </Link>
 
               <Link
                 to={`/app/events/${DEMO_EVENT_ID}/graph`}
                 data-testid="overview-demoevent-btn"
-                className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.98]"
               >
                 Buka event demo
               </Link>
@@ -80,7 +84,7 @@ export function Overview() {
           {hasRole("sponsor") && (
             <Link
               to="/app/sponsor"
-              className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
             >
               Lihat peluang sponsor
             </Link>
@@ -89,7 +93,7 @@ export function Overview() {
           {hasRole("tenant") && (
             <Link
               to="/app/tenant"
-              className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
             >
               Lihat peluang tenant
             </Link>
@@ -99,14 +103,14 @@ export function Overview() {
             <>
               <Link
                 to="/discover"
-                className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
               >
                 Jelajahi event
               </Link>
 
               <Link
                 to="/app/tickets"
-                className="border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.98]"
               >
                 Tiket saya
               </Link>
@@ -116,37 +120,37 @@ export function Overview() {
           <Link
             to="/demo"
             data-testid="overview-demo-btn"
-            className="inline-flex items-center gap-2 border border-[var(--okx-border)] px-4 py-2.5 text-sm font-semibold hover:border-[var(--okx-accent)]"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.98]"
           >
-            <Sparkles size={15} /> Demo Terpandu
+            <Sparkles size={14} /> Demo Terpandu
           </Link>
         </div>
       </div>
 
       {events.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Event Anda</h2>
-          <div className="mt-3 grid gap-3 lg:grid-cols-2" data-testid="overview-events">
+          <h2 className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Event Anda</h2>
+          <div className="mt-2.5 grid gap-2.5 lg:grid-cols-2" data-testid="overview-events">
             {events.map((ev) => (
               <Link
                 key={ev.id}
                 to={`/app/events/${ev.id}/blueprint`}
                 data-testid={`overview-event-${ev.id}`}
-                className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 transition-colors hover:border-zinc-500"
+                className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-3.5 sm:p-4 transition-all hover:border-white/25 hover:bg-[#12121c] shadow-sm hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="num text-xs text-zinc-500">{ev.event_code}</div>
-                    <h3 className="text-base font-semibold md:text-lg">{ev.name}</h3>
-                    <div className="text-xs text-zinc-500">{ev.event_type} · {ev.city} · {ev.start_date}</div>
+                    <div className="num text-[11px] text-zinc-400 font-gemini-mono">{ev.event_code}</div>
+                    <h3 className="text-sm font-semibold text-white md:text-base mt-0.5">{ev.name}</h3>
+                    <div className="text-[11px] text-zinc-400 mt-0.5">{ev.event_type} · {ev.city} · {ev.start_date}</div>
                   </div>
                   <StatusBadge status={ev.status === "published" ? "Confirmed" : "Draft"} />
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+                <div className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-white/[0.06] bg-black/40 p-2.5 text-xs">
                   {[["Total cost", compact(ev.total_cost)], ["Funding", compact(ev.confirmed_funding)], ["Gap", compact(ev.funding_gap)]].map(([l, v]) => (
                     <div key={l}>
-                      <div className="text-zinc-500">{l}</div>
-                      <div className="num text-sm font-bold">{v}</div>
+                      <div className="text-zinc-400 text-[10px] font-medium">{l}</div>
+                      <div className="num text-xs sm:text-[13px] font-bold text-white mt-0.5">{v}</div>
                     </div>
                   ))}
                 </div>
@@ -158,21 +162,21 @@ export function Overview() {
 
       {ripple && (
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Live Event Impact — event demo</h2>
-          <div className="mt-3 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Live Event Impact — event demo</h2>
+          <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ["Total event activity", compact(ripple.total_economic_activity)],
               ["Businesses activated", num(ripple.businesses_activated)],
               ["Workers", num(ripple.workers)],
               ["Ticket GMV", compact(ripple.ticket_gmv)],
             ].map(([l, v]) => (
-              <div key={l} className="bg-[var(--okx-surface)] p-4">
-                <div className="text-[11px] uppercase tracking-wider text-zinc-500">{l}</div>
-                <div className="num mt-1 text-lg font-bold">{v}</div>
+              <div key={l} className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-3 sm:p-3.5">
+                <div className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">{l}</div>
+                <div className="num mt-1 text-lg sm:text-xl font-bold text-white">{v}</div>
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-zinc-500">Data fiktif untuk demonstrasi kompetisi.</p>
+          <p className="mt-1.5 text-[10.5px] text-zinc-400 font-gemini-mono">Data fiktif untuk demonstrasi kompetisi.</p>
         </div>
       )}
     </div>
@@ -186,45 +190,45 @@ export function EventsList() {
     api.get("/events").then(({ data }) => setEvents(data.items));
     // eslint-disable-next-line
   }, [workspaceVersion]);
-  if (!events) return <div className="text-sm text-zinc-500">Memuat event…</div>;
+  if (!events) return <div className="text-xs text-zinc-400 p-6 font-gemini">Memuat event…</div>;
   return (
-    <div className="okx-workspace-page" data-testid="events-page">
-      <div className="okx-workspace-chrome" data-testid="events-chrome">
+    <div className="okx-workspace-page space-y-4 font-gemini" data-testid="events-page">
+      <div className="okx-workspace-chrome rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-3.5 sm:p-4" data-testid="events-chrome">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.22em] accent-text">
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
               Live Event Portfolio
             </div>
-            <h1 className="editorial text-2xl sm:text-3xl">Events</h1>
-            <p className="mt-1 text-xs text-zinc-500">
+            <h1 className="editorial text-xl sm:text-2xl text-white">Events</h1>
+            <p className="mt-0.5 text-xs text-zinc-400">
               {events.length} event pada workspace ini.
             </p>
           </div>
           <Link
             to="/app/studio"
-            className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-white"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
             data-testid="events-new-btn"
           >
-            <Plus size={15} /> Event baru
+            <Plus size={14} /> Event baru
           </Link>
         </div>
       </div>
       <div className="okx-workspace-content">
-        <div className="border border-[var(--okx-border)]" data-testid="events-list">
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl overflow-hidden divide-y divide-white/[0.06]" data-testid="events-list">
           {events.map((ev) => (
-            <Link key={ev.id} to={`/app/events/${ev.id}/blueprint`} className="flex flex-col gap-2 border-b border-[var(--okx-border)] p-4 last:border-0 hover:bg-[var(--okx-surface)] sm:flex-row sm:items-center sm:justify-between">
+            <Link key={ev.id} to={`/app/events/${ev.id}/blueprint`} className="flex flex-col gap-2 p-3 sm:p-4 transition-all hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="num text-xs text-zinc-500">{ev.event_code}</div>
-                <div className="text-sm font-semibold">{ev.name}</div>
-                <div className="text-xs text-zinc-500">{ev.city} · {ev.start_date}</div>
+                <div className="num text-[11px] text-zinc-400 font-gemini-mono">{ev.event_code}</div>
+                <div className="text-xs sm:text-sm font-semibold text-white mt-0.5">{ev.name}</div>
+                <div className="text-[11px] text-zinc-400 mt-0.5">{ev.city} · {ev.start_date}</div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="num text-xs text-zinc-400">Gap {compact(ev.funding_gap)}</span>
+              <div className="flex items-center gap-3">
+                <span className="num text-xs text-zinc-400 font-gemini-mono">Gap {compact(ev.funding_gap)}</span>
                 <StatusBadge status={ev.status === "published" ? "Confirmed" : "Draft"} />
               </div>
             </Link>
           ))}
-          {events.length === 0 && <div className="p-8 text-center text-sm text-zinc-500">Belum ada event. Mulai dari Event Studio.</div>}
+          {events.length === 0 && <div className="p-6 text-center text-xs text-zinc-400 font-gemini">Belum ada event. Mulai dari Event Studio.</div>}
         </div>
       </div>
     </div>
@@ -291,31 +295,42 @@ export function EventStudio() {
   const fields = STEPS[step][1];
 
   return (
-    <div className="max-w-4xl space-y-6">
-      <div>
-        <h1 className="editorial text-2xl sm:text-3xl">OKKAX Event Studio</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Guided Event Brief. Draft tersimpan otomatis di perangkat Anda dan dapat dilanjutkan kapan saja.
+    <div className="max-w-4xl space-y-4">
+      <div className="border-b border-white/[0.08] pb-3">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+          <Sparkles size={10} className="text-zinc-400" />
+          OKKAX Studio AI Integrated
+        </div>
+        <h1 className="editorial mt-1.5 text-xl sm:text-2xl text-white">OKKAX Event Studio</h1>
+        <p className="mt-0.5 text-xs text-zinc-400">
+          Guided Event Brief didukung Studio AI Engine. Mengubah parameter brief menjadi Event Blueprint lengkap.
         </p>
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex gap-1.5">
         {STEPS.map(([label], i) => (
           <button
             key={label}
             data-testid={`studio-step-${i}`}
             onClick={() => setStep(i)}
-            className={`flex-1 border-b-2 pb-2 text-left text-xs ${i <= step ? "border-[var(--okx-accent)] text-white" : "border-[var(--okx-border)] text-zinc-500"}`}
+            className={`flex-1 rounded-xl border py-1.5 px-2.5 text-left text-xs font-semibold transition-all ${
+              i === step
+                ? "border-white/30 bg-white/[0.1] text-white shadow-sm"
+                : i < step
+                  ? "border-white/20 bg-white/[0.04] text-zinc-300"
+                  : "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:text-zinc-300"
+            }`}
           >
-            {i + 1}. {label}
+            <span className="font-gemini-mono text-[9px] block opacity-70">Langkah 0{i + 1}</span>
+            {label}
           </button>
         ))}
       </div>
 
-      <div className="grid gap-4 border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 sm:grid-cols-2">
+      <div className="grid gap-3 rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-4 sm:p-4.5 sm:grid-cols-2 shadow-sm">
         {fields.map((k) => (
           <label key={k} className={`block ${["description", "objective", "notes"].includes(k) ? "sm:col-span-2" : ""}`}>
-            <span className="text-xs uppercase tracking-wider text-zinc-500">{FIELD_LABEL[k]}</span>
+            <span className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">{FIELD_LABEL[k]}</span>
             {k === "event_type" ? (
               <PremiumSelect data-testid={`studio-${k}-input`} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full">
                 {EVENT_TYPES.map((t) => <option key={t}>{t}</option>)}
@@ -325,34 +340,34 @@ export function EventStudio() {
                 {(k === "production_standard" ? ["Lean", "Balanced", "Premium"] : k === "attendance_format" ? ["Offline", "Hybrid", "Virtual"] : ["Indoor", "Outdoor"]).map((t) => <option key={t}>{t}</option>)}
               </PremiumSelect>
             ) : ["description", "objective", "notes", "audience_profile"].includes(k) ? (
-              <textarea data-testid={`studio-${k}-input`} rows={2} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none focus:border-[var(--okx-accent)]" />
+              <textarea data-testid={`studio-${k}-input`} rows={2} value={form[k]} onChange={(e) => setForm({ ...form, [k]: e.target.value })} className="mt-1 w-full rounded-xl border border-white/[0.12] bg-[#09090e] px-3 py-1.5 text-xs sm:text-[13px] text-white placeholder:text-zinc-400 outline-none transition-all focus:border-white/40 focus:ring-1 focus:ring-white/20" />
             ) : (
               <input
                 data-testid={`studio-${k}-input`}
                 type={["days", "setup_days", "capacity", "budget"].includes(k) ? "number" : k === "start_date" ? "date" : "text"}
                 value={form[k]}
                 onChange={(e) => setForm({ ...form, [k]: ["days", "setup_days", "capacity", "budget"].includes(k) ? Number(e.target.value) : e.target.value })}
-                className="mt-1 w-full border border-[var(--okx-border)] bg-[#0d0d0d] px-3 py-2.5 text-sm outline-none focus:border-[var(--okx-accent)]"
+                className="mt-1 w-full rounded-xl border border-white/[0.12] bg-[#09090e] px-3 py-1.5 text-xs sm:text-[13px] text-white placeholder:text-zinc-400 outline-none transition-all focus:border-white/40 focus:ring-1 focus:ring-white/20"
               />
             )}
           </label>
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <button data-testid="studio-prev-btn" disabled={step === 0} onClick={() => setStep(step - 1)} className="border border-[var(--okx-border)] px-4 py-2.5 text-sm disabled:opacity-40">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <button data-testid="studio-prev-btn" disabled={step === 0} onClick={() => setStep(step - 1)} className="rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white transition-all hover:border-white/30 hover:bg-white/[0.06] disabled:opacity-40 disabled:cursor-not-allowed">
           Sebelumnya
         </button>
         {step < STEPS.length - 1 ? (
-          <button data-testid="studio-next-btn" onClick={() => setStep(step + 1)} className="bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold">
+          <button data-testid="studio-next-btn" onClick={() => setStep(step + 1)} className="rounded-xl bg-white px-4 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]">
             Lanjut
           </button>
         ) : (
-          <button data-testid="studio-submit-btn" onClick={submit} disabled={busy} className="bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold disabled:opacity-60">
+          <button data-testid="studio-submit-btn" onClick={submit} disabled={busy} className="rounded-xl bg-white px-4 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-wait">
             {busy ? "Blueprint Engine bekerja…" : "Build Event Blueprint"}
           </button>
         )}
-        <span className="self-center text-xs text-zinc-500">Autosave aktif</span>
+        <span className="self-center text-[10.5px] text-zinc-400 font-gemini-mono">Autosave aktif</span>
       </div>
     </div>
   );

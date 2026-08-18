@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   BadgeCheck,
@@ -29,6 +30,7 @@ import {
   Terminal,
   ShieldCheck,
   Globe2,
+  Waypoints,
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
@@ -36,17 +38,32 @@ import { PLAN_META, PLAN_ORDER, priceFor } from "@/lib/pricing";
 import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
 import LiveTicker from "@/components/LiveTicker";
+import {
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  MaskReveal,
+  ScrollProgressBar,
+  HeroStageDepth,
+  SpotlightCard,
+  CounterNumber,
+  ProcessCableRail,
+} from "@/components/MotionPrimitives";
+import {
+  StitchAuroraBackground,
+  StitchHeroCommandCapsule,
+} from "@/components/StitchAtmosphere";
 
 const HERO = "/assets/okkax-concert-hero-v2.png";
 
 const PREVIEW_TONE = { get: (k) => PREVIEW_COLOR(k) };
 
 const STATUS_META = {
-  Confirmed: { color: "#f4f4f5", Icon: CheckCircle2, tooltip: "Sudah siap dan telah dikonfirmasi." },
-  Pending: { color: "#ff7ab0", Icon: Clock3, tooltip: "Sedang menunggu keputusan atau penyelesaian." },
-  "At Risk": { color: "#ff2e7e", Icon: TriangleAlert, tooltip: "Memerlukan perhatian karena dapat menghambat event." },
-  Missing: { color: "#a1a1aa", Icon: CircleOff, tooltip: "Komponen wajib belum tersedia." },
-  Completed: { color: "#ffd1e2", Icon: BadgeCheck, tooltip: "Target komponen telah selesai dipenuhi." },
+  Confirmed: { color: "#ffffff", Icon: CheckCircle2, tooltip: "Sudah siap dan telah dikonfirmasi." },
+  Pending: { color: "#ffffff", Icon: Clock3, tooltip: "Sedang menunggu keputusan atau penyelesaian." },
+  "At Risk": { color: "#ffffff", Icon: TriangleAlert, tooltip: "Memerlukan perhatian karena dapat menghambat event." },
+  Missing: { color: "#ffffff", Icon: CircleOff, tooltip: "Komponen wajib belum tersedia." },
+  Completed: { color: "#ffffff", Icon: BadgeCheck, tooltip: "Target komponen telah selesai dipenuhi." },
 };
 const STATUS_ORDER = ["Confirmed", "Pending", "At Risk", "Missing", "Completed"];
 
@@ -292,21 +309,18 @@ function buildPreviewNodes(summary, catalogEvent) {
   ];
 }
 
-// Compact homepage teaser for Free/Pro/Max. The full role selector and
-// billing toggle live on /pricing to keep this section lightweight.
-// Anchors on Organizer pricing per doc 33 section 6.
 function PricingPreview() {
   return (
     <section
       aria-labelledby="landing-pricing-heading"
       data-testid="landing-pricing-preview"
-      className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24"
+      className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini"
     >
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-              Subscription
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+              <span>Subscription Plans</span>
             </div>
             <h2 id="landing-pricing-heading" className="editorial mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] text-[#f4efec]">
               Start free. Scale with intelligence.
@@ -318,14 +332,14 @@ function PricingPreview() {
           <Link
             to="/pricing"
             data-testid="landing-pricing-see-all"
-            className="group inline-flex items-center gap-2 border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:bg-zinc-900"
+            className="group inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.04] px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
           >
-            See all plans and roles
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            <span>See all plans and roles</span>
+            <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {PLAN_ORDER.map((planId) => {
             const meta = PLAN_META[planId];
             const price = priceFor("organizer", planId, "monthly");
@@ -335,27 +349,27 @@ function PricingPreview() {
                 key={planId}
                 data-testid={`landing-pricing-${planId}`}
                 className={[
-                  "flex h-full flex-col border p-6",
+                  "flex h-full flex-col rounded-2xl border p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.8)]",
                   isMax
-                    ? "border-[var(--okx-accent)] bg-[#100609]"
-                    : "border-[var(--okx-border)] bg-[#0c0c0c]",
+                    ? "border-white/[0.22] bg-gradient-to-b from-[#181824]/90 to-[#0e0e15]/90 shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.12)]"
+                    : "border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl shadow-md hover:border-white/25",
                 ].join(" ")}
               >
                 <div className="flex items-baseline justify-between">
-                  <h3 className="text-lg font-semibold text-white">{meta.label}</h3>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                  <h3 className="text-lg font-bold text-white">{meta.label}</h3>
+                  <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
                     {meta.intelligence}
                   </span>
                 </div>
-                <div className="mt-4 flex items-baseline gap-2">
-                  <span className="text-2xl font-semibold text-white">{price.label}</span>
-                  <span className="text-xs text-zinc-500">
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="font-gemini-mono text-2xl sm:text-3xl font-bold text-white">{price.label}</span>
+                  <span className="text-xs text-zinc-400">
                     {planId === "free" ? "forever" : "per month, Organizer"}
                   </span>
                 </div>
-                <p className="mt-3 text-sm text-zinc-400">{meta.positioning}</p>
+                <p className="mt-3.5 text-sm text-zinc-400 leading-relaxed">{meta.positioning}</p>
                 {meta.inherits && (
-                  <div className="mt-3 border-l-2 border-[var(--okx-accent)] pl-3 text-[10px] uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">
+                  <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-[11px] text-zinc-300 font-medium">
                     {meta.inherits}
                   </div>
                 )}
@@ -385,13 +399,13 @@ function StatusPill({ status, testId, tooltipAlign = "center" }) {
       data-testid={testId}
       tabIndex={0}
       aria-label={`${status}: ${meta.tooltip}`}
-      className="group/status relative inline-flex items-center gap-1.5 border border-white/10 bg-[#0b0b0d] px-2.5 py-1 text-[11px] font-semibold text-zinc-200 outline-none focus:border-[var(--okx-accent)]"
+      className="group/status relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#111114]/90 px-3 py-1 text-[10.5px] font-bold tracking-wider text-white outline-none hover:border-white/30 hover:bg-white/[0.06] transition-all shadow-sm cursor-help"
     >
-      <Icon size={13} strokeWidth={2} style={{ color: meta.color }} aria-hidden="true" />
+      <Icon size={12} strokeWidth={2.4} className="text-zinc-300 group-hover/status:text-white transition-colors" aria-hidden="true" />
       <span>{status}</span>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-30 w-48 max-w-[calc(100vw-2.5rem)] border border-zinc-700 bg-[#111114] px-3 py-2 text-center text-[10px] font-normal leading-4 text-zinc-300 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
+        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-50 w-48 max-w-[calc(100vw-2.5rem)] rounded-xl border border-white/[0.16] bg-[#111114]/98 backdrop-blur-2xl px-3 py-2 text-center text-[10px] font-medium leading-4 text-zinc-200 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
       >
         {meta.tooltip}
       </span>
@@ -581,78 +595,68 @@ function GraphPreview() {
   }
 
   return (
-    <div className="space-y-5" data-testid="graph-preview">
-      <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]" data-testid="graph-event-switcher">
-        <div className="bg-[#0b0b0d] p-4 sm:p-5">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
-            Event aktif
-          </div>
-          <OkxDropdown
-            value={selectedEventId}
-            onChange={chooseEvent}
-            options={eventPickerOptions}
-            placeholder="Event OKKAX"
-            testId="graph-event-select"
-            className="mt-2"
-          />
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-500">
-            <span data-testid="graph-active-organizer">{graphEvent.organizer_name || "Organizer belum tersedia"}</span>
-            <span>{graphEvent.city || "Kota belum tersedia"}</span>
-            <span data-testid="graph-active-talent">{nodeMap.talent?.progress > 0 ? "Talent terhubung" : "Talent belum tersedia"}</span>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 bg-[#0b0b0d]" data-testid="graph-catalog-stats">
-          {[
-            [catalogStats.events, "event"],
-            [catalogStats.bands, "talent"],
-            [catalogStats.promoters, "promotor"],
-          ].map(([value, label]) => (
-            <div key={label} className="flex min-w-0 flex-col justify-center border-l border-[var(--okx-border)] px-3 py-4 first:border-l-0 sm:px-5">
-              <span className="num text-xl font-semibold text-white sm:text-2xl">{num(value)}</span>
-              <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-600 sm:text-[10px]">{label}</span>
+    <div className="space-y-5 font-gemini" data-testid="graph-preview">
+      {/* Event Switcher & Catalog Stats */}
+      <SpotlightCard className="overflow-visible relative z-30" data-testid="graph-event-switcher">
+        <div className="grid xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]">
+          <div className="p-4 sm:p-5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+              <Sparkles size={11} className="text-zinc-400" />
+              Event Aktif
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col justify-between gap-4 border border-[var(--okx-border)] bg-[#0b0b0d] p-4 lg:flex-row lg:items-center">
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Status komponen</div>
-          <p className="mt-1 text-xs text-zinc-500">Warna, ikon, dan label selalu tampil bersama. Arahkan atau fokuskan untuk membaca artinya.</p>
-        </div>
-        <div className="flex flex-wrap gap-2" data-testid="graph-status-legend">
-          {STATUS_ORDER.map((status, index) => (
-            <StatusPill
-              key={status}
-              status={status}
-              testId={`graph-status-${status.toLowerCase().replace(/\s/g, "-")}`}
-              tooltipAlign={index < 2 ? "left" : index > 2 ? "right" : "center"}
+            <OkxDropdown
+              value={selectedEventId}
+              onChange={chooseEvent}
+              options={eventPickerOptions}
+              placeholder="Event OKKAX"
+              testId="graph-event-select"
+              className="mt-2.5"
             />
-          ))}
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400 font-gemini">
+              <span data-testid="graph-active-organizer">{graphEvent.organizer_name || "Organizer belum tersedia"}</span>
+              <span>· {graphEvent.city || "Kota belum tersedia"}</span>
+              <span data-testid="graph-active-talent">· {nodeMap.talent?.progress > 0 ? "Talent terhubung" : "Talent belum tersedia"}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 border-t border-white/[0.08] xl:border-t-0 xl:border-l bg-white/[0.01]" data-testid="graph-catalog-stats">
+            {[
+              [catalogStats.events, "event"],
+              [catalogStats.bands, "talent"],
+              [catalogStats.promoters, "promotor"],
+            ].map(([value, label]) => (
+              <div key={label} className="flex min-w-0 flex-col justify-center border-l border-white/[0.06] px-3 py-4 first:border-l-0 sm:px-5">
+                <span className="font-mono text-xl font-bold text-white sm:text-2xl">{num(value)}</span>
+                <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-500 sm:text-[10px] font-gemini-mono">{label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </SpotlightCard>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.72fr)]">
-        <div className="overflow-hidden border border-[var(--okx-border)] bg-[#080808]">
+      {/* Main 2-Column Section */}
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.72fr)] items-start">
+        {/* Left Column: Graph Canvas + Compact Scenario Simulation */}
+        <SpotlightCard className="overflow-hidden flex flex-col justify-between" data-testid="graph-canvas-card">
           <div
-            className="flex min-h-[62px] flex-col justify-center gap-1 border-b border-[var(--okx-border)] bg-[#0c0c0e] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+            className="flex min-h-[54px] flex-col justify-center gap-1 border-b border-white/[0.08] bg-[#0d0d16]/90 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 font-gemini"
             data-testid="graph-relationship-readout"
             aria-live="polite"
           >
-            <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Hubungan aktif</span>
+            <span className="shrink-0 text-[9.5px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">Hubungan aktif</span>
             {inspectedEdge ? (
-              <span className="text-xs font-medium leading-5 text-zinc-200" data-testid={`graph-preview-edge-label-${inspectedEdge.id}`}>
-                <span className="text-[var(--okx-accent-soft)]">{GRAPH_COMPONENT_LABELS[inspectedEdge.source]}</span>
-                <span className="mx-2 text-zinc-600" aria-hidden="true">→</span>
-                <span className="text-[var(--okx-accent-soft)]">{GRAPH_COMPONENT_LABELS[inspectedEdge.target]}</span>
-                <span className="mx-2 text-zinc-700" aria-hidden="true">·</span>
-                {inspectedEdge.label}
+              <span className="text-xs font-semibold leading-5 text-zinc-200" data-testid={`graph-preview-edge-label-${inspectedEdge.id}`}>
+                <span className="text-white font-bold">{GRAPH_COMPONENT_LABELS[inspectedEdge.source]}</span>
+                <span className="mx-2 text-zinc-500" aria-hidden="true">→</span>
+                <span className="text-white font-bold">{GRAPH_COMPONENT_LABELS[inspectedEdge.target]}</span>
+                <span className="mx-2 text-zinc-600" aria-hidden="true">·</span>
+                <span className="text-zinc-300">{inspectedEdge.label}</span>
               </span>
             ) : (
-              <span className="text-[11px] leading-5 text-zinc-500">Arahkan atau fokuskan satu garis untuk membaca ketergantungannya.</span>
+              <span className="text-[11px] leading-5 text-zinc-400">Arahkan atau fokuskan satu garis untuk membaca ketergantungannya.</span>
             )}
           </div>
-          <div ref={graphScrollRef} className="okx-scroll overflow-x-auto">
+
+          <div ref={graphScrollRef} className="okx-scroll overflow-x-auto bg-[#07070b]">
             <svg
               viewBox={`0 0 ${PW} ${PH}`}
               className="block min-w-[760px] w-full"
@@ -722,6 +726,19 @@ function GraphPreview() {
                       markerEnd={highlighted ? "url(#graphArrowActive)" : "url(#graphArrow)"}
                       style={{ transition: "stroke .25s ease, stroke-opacity .25s ease, stroke-width .25s ease" }}
                     />
+                    {highlighted && (
+                      <path
+                        d={path}
+                        fill="none"
+                        stroke="#ff2e7e"
+                        strokeWidth="2.4"
+                        strokeDasharray="8 14"
+                        strokeLinecap="round"
+                        pointerEvents="none"
+                      >
+                        <animate attributeName="stroke-dashoffset" values="44;0" dur="1.2s" repeatCount="indefinite" />
+                      </path>
+                    )}
                   </g>
                 );
               })}
@@ -785,8 +802,9 @@ function GraphPreview() {
                           y={radius + 7}
                           width="86"
                           height="31"
+                          rx="6"
                           fill="#0c0c0e"
-                          stroke={isActive || isScenarioOn ? "#ff2e7e" : "#27272a"}
+                          stroke={isActive || isScenarioOn ? "#ffffff" : "#27272a"}
                           strokeWidth="0.8"
                         />
                         <text x="0" y={radius + 19} textAnchor="middle" fontSize="8.6" fontWeight="700" fill={isActive || isScenarioOn ? "#ffffff" : "#d4d4d8"}>
@@ -808,42 +826,115 @@ function GraphPreview() {
               })}
             </svg>
           </div>
-          <div className="flex flex-col gap-2 border-t border-[var(--okx-border)] px-4 py-3 text-[11px] text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>Klik node untuk detail · arah panah menunjukkan komponen yang terdampak.</span>
-            <span className="num">Event ID: {graphEvent.event_code || DEMO_EVENT_ID}</span>
-          </div>
-        </div>
 
-        <aside data-testid="graph-preview-detail" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-5 xl:sticky xl:top-20 xl:self-start">
+          {/* Embedded Compact Scenario Simulation Section (Eliminates Empty Space) */}
+          <div className="border-t border-white/[0.08] bg-[#0a0a12]/95 p-4 sm:p-5" data-testid="graph-scenarios">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+                  <Layers size={10} className="text-zinc-400" />
+                  Simulasi Hubungan
+                </div>
+                <div className="text-[13px] font-bold text-white mt-1 font-gemini">
+                  Lihat bagaimana satu keputusan bekerja
+                </div>
+              </div>
+              <p className="text-[11px] text-zinc-400 max-w-xs font-gemini">
+                Pilih skenario untuk melihat node dan jalur terdampak disorot secara berurutan.
+              </p>
+            </div>
+
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {SCENARIOS.map((item, index) => {
+                const isSelected = activeScenario === item.id;
+                const currentLabel = isSelected && scenarioStep >= 0 ? item.steps[scenarioStep]?.label : null;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    data-testid={`graph-scenario-${item.id}`}
+                    aria-pressed={isSelected}
+                    onClick={() => playScenario(item.id)}
+                    className={`group rounded-xl border p-3 text-left transition-all duration-200 cursor-pointer ${
+                      isSelected
+                        ? "border-white/40 bg-white/[0.12] shadow-md shadow-white/5"
+                        : "border-white/[0.08] bg-[#12121e]/90 hover:border-white/25 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[9.5px] font-bold text-zinc-400">0{index + 1}</span>
+                      <ArrowRight
+                        size={13}
+                        className={`transition-all duration-200 ${
+                          isSelected ? "translate-x-0.5 text-white" : "text-zinc-400 group-hover:translate-x-0.5 group-hover:text-white"
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </div>
+                    <div className="mt-2 text-xs font-bold text-white tracking-tight">{item.title}</div>
+                    <p className="mt-1 text-[10.5px] leading-relaxed text-zinc-400 font-gemini line-clamp-2">{item.description}</p>
+                    <div className="mt-2.5 flex items-center gap-1" aria-label={isSelected ? `Tahap aktif: ${currentLabel}` : `${item.steps.length} tahap`}>
+                      {item.steps.map((step, stepIndex) => (
+                        <span
+                          key={step.label}
+                          className={`h-1 flex-1 rounded-full transition-all ${
+                            isSelected && stepIndex <= scenarioStep
+                              ? "bg-gradient-to-r from-zinc-300 to-white"
+                              : "bg-white/[0.1]"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="mt-1.5 min-h-[14px] text-[9.5px] font-mono text-zinc-300 truncate">
+                      {currentLabel || "Pilih untuk menjalankan skenario"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3.5 flex flex-col gap-1 border-t border-white/[0.06] pt-2.5 text-[10.5px] text-zinc-400 sm:flex-row sm:items-center sm:justify-between font-gemini">
+              <span>Klik node untuk detail · arah panah menunjukkan komponen yang terdampak.</span>
+              <span className="font-mono text-zinc-300">Event ID: {graphEvent.event_code || DEMO_EVENT_ID}</span>
+            </div>
+          </div>
+        </SpotlightCard>
+
+        {/* Right Column: Component Detail Sidebar */}
+        <SpotlightCard className="p-5 xl:sticky xl:top-20 xl:self-start" data-testid="graph-preview-detail">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">Detail Komponen</div>
-              <h3 data-testid="graph-detail-name" className="mt-2 text-lg font-semibold text-white">{selected.label}</h3>
-              <p className="mt-1 text-xs text-zinc-500">{selected.kind}</p>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono">
+                Detail Komponen
+              </div>
+              <h3 data-testid="graph-detail-name" className="mt-2 text-lg font-bold text-white tracking-tight">{selected.label}</h3>
+              <p className="mt-0.5 text-xs text-zinc-400 font-gemini">{selected.kind}</p>
             </div>
             <StatusPill status={selected.status} testId="graph-detail-status" tooltipAlign="right" />
           </div>
 
-          <p data-testid="graph-detail-description" className="mt-4 border-l-2 border-[var(--okx-accent)] pl-3 text-sm leading-6 text-zinc-300">{selected.description}</p>
+          <p data-testid="graph-detail-description" className="mt-3.5 rounded-xl border-l-2 border-white/40 bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-300 font-gemini">
+            {selected.description}
+          </p>
 
-          <dl className="mt-5 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+          <dl className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
             {[
               ["Penanggung jawab", selected.owner, "owner"],
               ["Nilai / biaya", selected.value, "value"],
             ].map(([label, value, key]) => (
-              <div key={key} className="bg-[#0c0c0d] p-3">
-                <dt className="text-[10px] uppercase tracking-[0.14em] text-zinc-600">{label}</dt>
-                <dd data-testid={`graph-detail-${key}`} className="mt-1 text-xs font-medium leading-5 text-zinc-200">{value}</dd>
+              <div key={key} className="rounded-xl border border-white/[0.08] bg-[#12121e]/90 p-2.5">
+                <dt className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-zinc-500 font-gemini-mono">{label}</dt>
+                <dd data-testid={`graph-detail-${key}`} className="mt-1 text-xs font-semibold leading-snug text-white font-gemini">{value}</dd>
               </div>
             ))}
           </dl>
 
-          <div className="mt-5" data-testid="graph-detail-progress">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-zinc-500">
-              <span>Progres</span><span className="num text-zinc-300">{selected.progress}%</span>
+          <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#12121e]/90 p-3" data-testid="graph-detail-progress">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 font-gemini-mono">
+              <span>Progres</span><span className="font-mono text-white font-bold">{selected.progress}%</span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden bg-zinc-800">
-              <div className="h-full transition-[width] duration-500" style={{ width: `${selected.progress}%`, background: (STATUS_META[selected.status] || STATUS_META.Pending).color }} />
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+              <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${selected.progress}%`, background: (STATUS_META[selected.status] || STATUS_META.Pending).color }} />
             </div>
           </div>
 
@@ -851,71 +942,31 @@ function GraphPreview() {
           <DetailList title="Dependensi" testId="graph-detail-dependencies" items={relationships.map((edge) => `${edge.direction}: ${edge.counterpart} · ${edge.label}`)} />
           <DetailList title="Risiko" testId="graph-detail-risks" items={firstOpen(selected.risks, "Tidak ada risiko aktif pada data saat ini.")} />
 
-          <div className="mt-5 border border-[var(--okx-accent)]/35 bg-[var(--okx-accent)]/10 p-3" data-testid="graph-detail-next-action">
-            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--okx-accent-soft)]">
-              <ListChecks size={13} aria-hidden="true" /> Tindakan berikutnya
+          <div className="mt-4 rounded-xl border border-white/[0.15] bg-[#181828]/95 p-3.5 shadow-sm" data-testid="graph-detail-next-action">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-200 font-gemini-mono">
+              <ListChecks size={13} className="text-zinc-300" aria-hidden="true" /> Tindakan berikutnya
             </div>
-            <p className="mt-2 text-xs leading-5 text-zinc-200">{selected.nextAction}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-zinc-200 font-gemini">{selected.nextAction}</p>
           </div>
-        </aside>
+        </SpotlightCard>
       </div>
 
-      <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 xl:grid-cols-4" data-testid="graph-reading-guide">
+      {/* 4 Reading Guide Cards with modern SpotlightCards */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="graph-reading-guide">
         {[
           [CircleDot, "Pusat grafik", "Event di tengah adalah satu Event ID yang menjadi pusat kendali."],
           [MousePointerClick, "Node", "Setiap node adalah komponen operasional. Klik untuk membuka detailnya."],
           [Route, "Garis & panah", "Garis adalah ketergantungan; panah menunjukkan arah dampaknya."],
           [Info, "Status", "Ikon, warna, dan label menjelaskan kondisi setiap komponen."],
         ].map(([Icon, title, description]) => (
-          <div key={title} className="bg-[#0c0c0d] p-4">
-            <Icon size={16} className="text-[var(--okx-accent)]" aria-hidden="true" />
-            <h4 className="mt-3 text-xs font-semibold text-zinc-100">{title}</h4>
-            <p className="mt-1.5 text-[11px] leading-5 text-zinc-500">{description}</p>
-          </div>
+          <SpotlightCard key={title} className="p-4">
+            <div className="inline-flex rounded-xl border border-white/[0.1] bg-white/[0.04] p-2 text-zinc-300">
+              <Icon size={16} aria-hidden="true" />
+            </div>
+            <h4 className="mt-2.5 text-xs font-bold text-white tracking-tight">{title}</h4>
+            <p className="mt-1 text-[11px] leading-relaxed text-zinc-400 font-gemini">{description}</p>
+          </SpotlightCard>
         ))}
-      </div>
-
-      <div className="border border-[var(--okx-border)] bg-[#0b0b0d] p-5 sm:p-6" data-testid="graph-scenarios">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">Simulasi hubungan</div>
-            <h3 className="editorial mt-2 text-2xl text-white sm:text-3xl">Lihat bagaimana satu keputusan bekerja</h3>
-          </div>
-          <p className="max-w-sm text-xs leading-5 text-zinc-500">Pilih skenario untuk melihat node dan jalur terdampak disorot secara berurutan.</p>
-        </div>
-        <div className="mt-5 grid gap-3 lg:grid-cols-3">
-          {SCENARIOS.map((item, index) => {
-            const isSelected = activeScenario === item.id;
-            const currentLabel = isSelected && scenarioStep >= 0 ? item.steps[scenarioStep]?.label : null;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-testid={`graph-scenario-${item.id}`}
-                aria-pressed={isSelected}
-                onClick={() => playScenario(item.id)}
-                className={`group min-h-44 border p-4 text-left transition-colors ${isSelected ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/10" : "border-zinc-800 bg-[#0e0e10] hover:border-zinc-600"}`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="num text-[10px] font-semibold text-[var(--okx-accent)]">0{index + 1}</span>
-                  <ArrowRight size={15} className={`transition-transform ${isSelected ? "translate-x-1 text-[var(--okx-accent)]" : "text-zinc-600 group-hover:translate-x-1"}`} aria-hidden="true" />
-                </div>
-                <div className="mt-5 text-sm font-semibold text-zinc-100">{item.title}</div>
-                <p className="mt-2 text-xs leading-5 text-zinc-500">{item.description}</p>
-                <div className="mt-4 flex items-center gap-1.5" aria-label={isSelected ? `Tahap aktif: ${currentLabel}` : `${item.steps.length} tahap`}>
-                  {item.steps.map((step, stepIndex) => (
-                    <span
-                      key={step.label}
-                      className="h-1 flex-1"
-                      style={{ background: isSelected && stepIndex <= scenarioStep ? "#ff2e7e" : "#27272a" }}
-                    />
-                  ))}
-                </div>
-                <div className="mt-2 min-h-4 text-[10px] text-[var(--okx-accent-soft)]">{currentLabel || "Pilih untuk menjalankan skenario"}</div>
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
@@ -923,12 +974,12 @@ function GraphPreview() {
 
 function DetailList({ title, items = [], testId }) {
   return (
-    <div className="mt-5" data-testid={testId}>
-      <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">{title}</div>
-      <ul className="mt-2 space-y-1.5">
+    <div className="mt-4 rounded-xl border border-white/[0.06] bg-[#0e0e16]/80 p-3" data-testid={testId}>
+      <div className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-zinc-400 font-gemini-mono">{title}</div>
+      <ul className="mt-2 space-y-1.5 font-gemini">
         {items.map((item, index) => (
           <li key={`${item}-${index}`} className="flex gap-2 text-xs leading-5 text-zinc-300">
-            <ArrowRight size={11} className="mt-1 shrink-0 text-[var(--okx-accent)]" aria-hidden="true" />
+            <ArrowRight size={11} className="mt-1 shrink-0 text-white/60" aria-hidden="true" />
             <span>{item}</span>
           </li>
         ))}
@@ -937,15 +988,6 @@ function DetailList({ title, items = [], testId }) {
   );
 }
 
-const PARTICIPANT_GROUPS = [
-  ["01", "Event Direction", "Organizer · Promoter · Event Producer"],
-  ["02", "Talent & Programming", "Artist · Speaker · Talent Management"],
-  ["03", "Venue & Show Production", "Venue · Production Partner · Technical Crew"],
-  ["04", "Brand & Commercial", "Sponsor · Media Partner · Exhibitor · Tenant"],
-  ["05", "Ticketing & Guest Experience", "Ticketing · Access Control · Attendee Services"],
-  ["06", "Operations & Settlement", "Workforce · Logistics · Finance · Settlement"],
-];
-
 const PROCESS_STEPS = [
   [Workflow, "Brief", "Guided Event Brief menangkap tujuan, kapasitas, anggaran, dan kebutuhan."],
   [Boxes, "Blueprint", "Blueprint Engine menyusun fase, workstream, requirement, dan risiko. Semua dapat diedit."],
@@ -953,299 +995,195 @@ const PROCESS_STEPS = [
   [CircleDollarSign, "Live Operations", "Sponsor, tenant, tiket, pembayaran, settlement, dan dampak event diperbarui otomatis."],
 ];
 
-function ParticipantNetwork() {
-  const sectionRef = useRef(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section || !("IntersectionObserver" in window)) {
-      setVisible(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.18 }
-    );
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section
-      ref={sectionRef}
-      data-testid="network-participants"
-      data-visible={visible ? "true" : "false"}
-      className="participant-network border-b border-[var(--okx-border)] bg-[#0b0b0d] px-4 py-16 sm:px-6 sm:py-24"
-    >
-      <div className="mx-auto max-w-7xl">
-        <div className="participant-intro flex flex-col justify-between gap-7 lg:flex-row lg:items-end">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="num text-[10px] font-semibold tracking-[0.14em] text-[var(--okx-accent)]">06 CORE FUNCTIONS</span>
-              <span className="h-px w-12 bg-[var(--okx-accent)]" aria-hidden="true" />
-            </div>
-            <h2 className="editorial mt-5 max-w-3xl text-3xl leading-[1.02] text-[#e6ded9] sm:text-5xl">
-              Satu produksi. <span className="text-[var(--okx-accent)]">Semua fungsi terhubung.</span>
-            </h2>
-            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-[#989196] sm:text-base">
-              OKKAX menyatukan fungsi inti di balik live event dalam satu alur kerja, satu sumber data,
-              dan satu standar operasional.
-            </p>
-          </div>
-          <Link
-            to="/register"
-            className="participant-cta group inline-flex min-h-11 w-fit items-center gap-3 border-b border-[var(--okx-accent)] pb-2 font-semibold text-[#e6ded9]"
-          >
-            Join the operating network
-            <ArrowRight size={16} className="text-[var(--okx-accent)] transition-transform group-hover:translate-x-1.5" />
-          </Link>
-        </div>
-
-        <div className="mt-11 grid gap-px border border-[#2a292d] bg-[#2a292d] sm:grid-cols-2 lg:grid-cols-3">
-          {PARTICIPANT_GROUPS.map(([index, title, detail], i) => (
-            <article
-              key={title}
-              data-testid={`participant-group-${i + 1}`}
-              className="participant-card group relative min-h-[148px] overflow-hidden bg-[#101014] p-5 sm:p-6"
-              style={{ "--participant-delay": `${i * 70}ms` }}
-            >
-              <div className="flex items-start justify-between gap-5">
-                <span className="num text-[11px] font-semibold text-[var(--okx-accent)]">{index}</span>
-                <ArrowRight
-                  size={15}
-                  aria-hidden="true"
-                  className="text-[#504c51] transition-all duration-300 group-hover:translate-x-1 group-hover:text-[var(--okx-accent)]"
-                />
-              </div>
-              <h3 className="participant-title mt-7 text-base font-semibold text-[#e6ded9] sm:text-lg">{title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-[#888188] sm:text-sm">{detail}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function Landing() {
   const [ripple, setRipple] = useState(null);
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     api.get(`/events/${DEMO_EVENT_ID}/ripple`).then(({ data }) => setRipple(data.metrics)).catch(() => {});
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
+    <div className="min-h-screen bg-transparent w-full overflow-x-hidden">
+      <ScrollProgressBar />
       <PublicNav />
 
-      <section className="relative min-h-[640px] overflow-hidden border-b border-[var(--okx-border)] lg:min-h-[670px]">
-        <img
-          src={HERO}
-          alt="Panggung konser OKKAX dengan penonton"
-          className="absolute inset-0 h-full w-full object-cover object-center opacity-[0.86]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-[#080808e8] via-[46%] to-[#08080822]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-[#08080866]" />
-        <div className="relative mx-auto flex min-h-[640px] max-w-[1440px] items-center px-4 py-16 sm:px-8 lg:min-h-[670px] lg:px-16">
-          <div className="fade-up relative z-10 max-w-[760px] lg:w-[58%]">
-            {/* Live Network Telemetry Pill */}
-            <div className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-zinc-800 bg-zinc-950/80 px-3.5 py-1.5 backdrop-blur-xl shadow-lg">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <span className="font-mono text-[11px] font-semibold tracking-wide text-zinc-300">
-                <span className="text-emerald-400">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF · RP 4.8M GMV TERPROTEKSI
-              </span>
-            </div>
+      <StitchAuroraBackground className="min-h-[85vh] lg:min-h-[720px] flex flex-col justify-center pt-8 pb-16 sm:pb-24">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+          {/* Live Network Telemetry Pill */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/[0.12] bg-[#0c0c16]/80 px-4 py-1.5 backdrop-blur-xl shadow-lg"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
+            </span>
+            <span className="font-mono text-[10.5px] sm:text-[11px] font-semibold tracking-wide text-zinc-300">
+              <span className="text-white font-bold">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF <span className="hidden sm:inline">· RP 4.8M GMV TERPROTEKSI</span>
+            </span>
+          </motion.div>
 
-            <div>
-              <span className="inline-block border border-[var(--okx-accent)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] accent-text">
-                Live Event Operating Network
-              </span>
-            </div>
+          {/* Core Tag */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.1 }}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-3.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+              <Sparkles size={11} className="text-zinc-400" />
+              Live Event Operating Network
+            </span>
+          </motion.div>
 
-            <h1 className="editorial mt-5 text-[clamp(3.35rem,6.15vw,5.8rem)] leading-[0.96] tracking-[-0.055em]">
-              One event.
+          {/* Main Hero Headline */}
+          <MaskReveal delay={0.15}>
+            <h1 className="editorial mt-6 text-[clamp(2.15rem,6.5vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
+              Every moving part,
               <br />
-              <span className="accent-text xl:whitespace-nowrap">Every moving part.</span>
+              <span className="text-zinc-300 font-normal">working as one.</span>
             </h1>
-            <p className="mt-6 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base lg:text-lg">
-              Dari talent hingga tiket, dari panggung hingga penonton. OKKAX menyatukan
-              setiap detail di balik live event dalam satu koordinasi terpusat.
+          </MaskReveal>
+
+          {/* Subtitle */}
+          <Reveal delay={0.25} y={12}>
+            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base font-gemini">
+              Dari brief ide hingga settlement panggung. OKKAX menyatukan seluruh komponen, rider, tiket,
+              dan workflow live event dalam satu koordinasi terpusat.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                to="/register"
-                data-testid="hero-compile-btn"
-                className="group inline-flex min-h-12 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#ff2e7e] to-[#ff3b88] px-7 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:shadow-[0_0_24px_rgba(255,46,126,0.5)] hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Build an Event
-                <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-              <Link
-                to="/demo"
-                data-testid="hero-juri-btn"
-                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/80 backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-zinc-100 hover:border-zinc-500 hover:text-white transition-all"
-              >
-                Platform Demo — 3 menit <ArrowRight size={15} className="ml-2 text-[var(--okx-accent)]" />
-              </Link>
-              <Link
-                to="/okkax"
-                data-testid="hero-yoona-btn"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[var(--okx-accent)]/50 bg-[#1a0b14]/80 backdrop-blur-md px-5 py-3.5 text-sm font-semibold text-[var(--okx-accent-soft)] hover:bg-[var(--okx-accent)] hover:text-white transition-all shadow-[0_0_15px_rgba(255,46,126,0.2)]"
-              >
-                <Layers size={16} className="text-[var(--okx-accent-soft)]" />
-                OKKAX Copilot
-              </Link>
-            </div>
-            <p className="mt-6 max-w-lg text-xs leading-relaxed text-zinc-500">
-              From one idea to a live experience. Mode demo kompetisi — pembayaran sandbox, tanpa uang nyata.
-            </p>
-            <div className="mt-9 flex items-center gap-2 text-xs text-zinc-400">
-              <CalendarDays size={15} className="accent-text" aria-hidden="true" />
+          </Reveal>
+
+          {/* Google Stitch-Grade Hero Command Capsule */}
+          <motion.div
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.65, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full mt-8"
+          >
+            <StitchHeroCommandCapsule />
+          </motion.div>
+
+          {/* Secondary Trust & Calendar Row */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-zinc-300 font-gemini">
+            <span>Mode demo kompetisi — pembayaran sandbox tanpa uang nyata.</span>
+            <span className="text-zinc-500 hidden sm:inline">·</span>
+            <div className="flex items-center gap-1.5 text-zinc-300">
+              <CalendarDays size={13} className="text-zinc-300" aria-hidden="true" />
               <a
-                  href={`/calendar?date=${[
-                    new Date().getFullYear(),
-                    String(new Date().getMonth() + 1).padStart(2, "0"),
-                    String(new Date().getDate()).padStart(2, "0"),
-                  ].join("-")}`}
-                  data-testid="hero-today-calendar-link"
-                  title="Open today's events"
-                  className="transition-colors hover:text-white"
-                >
-                  {new Intl.DateTimeFormat("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  }).format(new Date())}
-                </a>
+                href={`/calendar?date=${[
+                  new Date().getFullYear(),
+                  String(new Date().getMonth() + 1).padStart(2, "0"),
+                  String(new Date().getDate()).padStart(2, "0"),
+                ].join("-")}`}
+                data-testid="hero-today-calendar-link"
+                title="Buka kalender hari ini"
+                className="transition-colors hover:text-white font-medium"
+              >
+                {new Intl.DateTimeFormat("id-ID", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }).format(new Date())}
+              </a>
             </div>
           </div>
         </div>
-      </section>
+      </StitchAuroraBackground>
 
       <LiveTicker />
 
-      <section className="border-b border-[var(--okx-border)] bg-[#0d0d0d] px-4 py-14 sm:px-6 sm:py-16">
+      <section className="border-b border-white/[0.06] bg-[#08080d]/60 backdrop-blur-md px-4 py-14 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-7xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
-          <h2 className="editorial mt-4 text-3xl sm:text-4xl">Dari ide menjadi panggung yang hidup.</h2>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
-            {PROCESS_STEPS.map(([Icon, title, body], i) => (
-              <div key={title} className="relative border-t border-zinc-700 pt-7 lg:border-t-0 lg:pt-0">
-                <div className="flex items-center justify-between">
-                  <span className="num text-xs font-semibold accent-text">0{i + 1}</span>
-                  <Icon size={25} strokeWidth={1.6} className="accent-text" aria-hidden="true" />
-                </div>
-                <div className="mt-5 flex items-center gap-3">
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-[var(--okx-accent)] bg-[#0d0d0d]" />
-                  <span className="h-px flex-1 bg-[var(--okx-accent)]" />
-                  {i < PROCESS_STEPS.length - 1 && <ArrowRight size={16} className="-ml-2 hidden accent-text lg:block" />}
-                </div>
-                <h3 className="mt-5 text-base font-semibold md:text-lg">{title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-400">{body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          <Reveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
+            <h2 className="editorial mt-4 text-3xl sm:text-4xl text-white">Dari ide menjadi panggung yang hidup.</h2>
+          </Reveal>
 
-      <section
-        data-testid="home-event-graph"
-        className="border-b border-[var(--okx-border)] bg-[#09090a] px-4 py-16 sm:px-6 sm:py-24"
-      >
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-10 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent)]">EVENT GRAPH</span>
-                <span className="h-px w-14 bg-[var(--okx-accent)]" aria-hidden="true" />
-              </div>
-              <h2 className="editorial mt-5 max-w-2xl text-3xl leading-[1.02] text-white sm:text-5xl">
-                Satu pusat kendali untuk seluruh komponen event.
-              </h2>
-              <p className="mt-6 max-w-2xl text-sm leading-7 text-zinc-300 sm:text-base">
-                Event Graph adalah peta operasional interaktif yang menyatukan seluruh pihak, kebutuhan, status,
-                biaya, dan ketergantungan sebuah event dalam satu Event ID.
-              </p>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500 sm:text-base">
-                Organizer dapat melihat komponen yang sudah siap, masih menunggu, berisiko, atau belum tersedia.
-                Ketika satu keputusan berubah, OKKAX menunjukkan komponen lain yang terdampak dan tindakan yang
-                harus diselesaikan berikutnya.
-              </p>
-            </div>
-
-            <div className="grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)]">
+          <div className="mt-12 sm:mt-14">
+            <RevealGroup stagger={0.06} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                [Network, "Lihat seluruh komponen", "Talent, rider, venue, vendor, sponsor, tenant, workforce, ticketing, dan pendanaan."],
-                [Workflow, "Pahami setiap ketergantungan", "Ketahui siapa membutuhkan apa, komponen yang terdampak, dan alasan di balik setiap hubungan."],
-                [ListChecks, "Tentukan tindakan berikutnya", "Temukan kebutuhan yang belum terpenuhi, risiko, dan keputusan yang perlu dikonfirmasi."],
-              ].map(([Icon, title, description], index) => (
-                <article key={title} data-testid={`graph-benefit-${index + 1}`} className="group bg-[#101012] p-5 sm:p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[var(--okx-accent)]/40 bg-[var(--okx-accent)]/10">
-                      <Icon size={18} className="text-[var(--okx-accent)]" aria-hidden="true" />
+                {
+                  title: "1. Brief & Blueprint",
+                  description: "Input konsep acara Anda, dan sistem mengonversinya menjadi Event Blueprint 6 fase terstruktur.",
+                  Icon: Layers,
+                },
+                {
+                  title: "2. Supply Matching",
+                  description: "Temukan talent, venue, vendor terverifikasi dari katalog 15+ kota dengan sistem scoring kecocokan.",
+                  Icon: Network,
+                },
+                {
+                  title: "3. Komersialisasi",
+                  description: "Buka inventaris tiket dengan proteksi dinamis, aktivasi slot sponsor, dan seleksi tenant UMKM.",
+                  Icon: Ticket,
+                },
+                {
+                  title: "4. Showtime & Settle",
+                  description: "Validasi tiket offline-first di gate, pantau operasi langsung, dan cairkan termin secara otomatis.",
+                  Icon: CheckCircle2,
+                },
+              ].map(({ title, description, Icon }, index) => (
+                <RevealItem key={title}>
+                  <article
+                    className="group rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-5 sm:p-6 shadow-md transition-all duration-300 hover:border-white/25 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)]"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04] text-white">
+                        <Icon size={18} aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-gemini-mono mb-1.5 text-[11px] font-bold text-zinc-400">0{index + 1}</div>
+                        <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-zinc-100 transition-colors">{title}</h3>
+                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-zinc-300">{description}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="num mb-2 text-[10px] font-semibold text-[var(--okx-accent)]">0{index + 1}</div>
-                      <h3 className="text-sm font-semibold text-zinc-100 sm:text-base">{title}</h3>
-                      <p className="mt-2 text-xs leading-5 text-zinc-500 sm:text-sm sm:leading-6">{description}</p>
-                    </div>
-                  </div>
-                </article>
+                  </article>
+                </RevealItem>
               ))}
-            </div>
+            </RevealGroup>
           </div>
 
-          <div className="mt-12 sm:mt-16">
+          <Reveal delay={0.15} className="mt-12 sm:mt-16">
             <GraphPreview />
-          </div>
+          </Reveal>
 
-          <div className="mt-6 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] md:grid-cols-2" data-testid="graph-before-after">
-            <div className="bg-[#0c0c0d] p-5 sm:p-6">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Sebelum OKKAX</div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">
-                Data event tersebar di WhatsApp, spreadsheet, PDF rider, invoice, email, dan dokumen vendor.
+          <Reveal delay={0.2} className="mt-8 grid gap-4 md:grid-cols-2" data-testid="graph-before-after">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-xl p-6 shadow-md">
+              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-400">Sebelum OKKAX</div>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+                Data event tersebar di WhatsApp, spreadsheet, PDF rider, invoice, email, dan dokumen vendor tanpa visibilitas ketergantungan.
               </p>
             </div>
-            <div className="bg-[#120a0e] p-5 sm:p-6">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">Dengan Event Graph</div>
-              <p className="mt-3 text-sm leading-6 text-zinc-200">
-                Seluruh komponen, status, ketergantungan, biaya, risiko, dan tindakan berikutnya berada dalam satu Event ID.
+            <div className="rounded-2xl border border-white/[0.18] bg-gradient-to-b from-[#151522]/90 to-[#0c0c12]/90 backdrop-blur-xl p-6 shadow-lg">
+              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-white">Dengan Event Graph</div>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-200">
+                Seluruh komponen, status, ketergantungan, biaya, risiko, dan tindakan berikutnya terpusat dan tersinkronisasi dalam satu Event ID.
               </p>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
-
-      <ParticipantNetwork />
 
       {/* 6 CANONICAL PRODUCTS BENTO GRID */}
-      <section id="products" className="border-b border-[var(--okx-border)] bg-[#070708] px-4 py-16 sm:px-6 sm:py-24">
+      <section id="products" className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 font-gemini">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]">
-                <Sparkles size={14} className="text-[var(--okx-accent)]" />
-                <span>CANONICAL PRODUCT SUITE</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+                <Sparkles size={13} className="text-zinc-400" />
+                <span>Canonical Product Suite</span>
               </div>
-              <h2 className="editorial mt-3 text-3xl sm:text-4xl text-white">
+              <h2 className="editorial mt-4 text-3xl sm:text-4xl text-white">
                 Enam pilar operasional live event modern.
               </h2>
             </div>
-            <p className="max-w-md text-xs leading-relaxed text-zinc-400 sm:text-sm">
+            <p className="max-w-md text-xs leading-relaxed text-zinc-300 sm:text-sm">
               Setiap produk terintegrasi langsung ke dalam Event Graph dan database 15+ kota tanpa fragmentasi file atau spreadsheet terpisah.
             </p>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <RevealGroup stagger={0.08} className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 num: "01",
@@ -1304,81 +1242,83 @@ export default function Landing() {
             ].map((p) => {
               const Icon = p.icon;
               return (
-                <Link
-                  key={p.slug}
-                  to={p.link}
-                  data-testid={`landing-product-${p.slug}`}
-                  className="group relative flex flex-col justify-between rounded-xl border border-zinc-800/90 bg-[#101014] p-6 transition-all duration-300 hover:border-[var(--okx-accent)]/80 hover:bg-[#15121a] hover:shadow-[0_8px_30px_rgba(255,46,126,0.15)]"
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold text-[var(--okx-accent)]">{p.num}</span>
-                      <span className="rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 py-0.5 text-[10px] font-semibold text-zinc-400">
-                        {p.badge}
-                      </span>
-                    </div>
-                    <div className="mt-6 flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--okx-accent)]/15 border border-[var(--okx-accent)]/30 text-[var(--okx-accent-soft)]">
-                        <Icon size={16} />
+                <RevealItem key={p.slug}>
+                  <div className="h-full rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl shadow-md transition-all duration-300 hover:border-white/25 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden">
+                    <Link
+                      to={p.link}
+                      data-testid={`landing-product-${p.slug}`}
+                      className="group relative flex h-full flex-col justify-between p-6 sm:p-7"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-gemini-mono text-xs font-bold text-zinc-400">{p.num}</span>
+                          <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2.5 py-0.5 text-[10.5px] font-semibold text-zinc-300">
+                            {p.badge}
+                          </span>
+                        </div>
+                        <div className="mt-6 flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.1] text-white">
+                            <Icon size={17} />
+                          </div>
+                          <h3 className="text-base font-bold text-white group-hover:text-zinc-100 transition-colors">
+                            {p.title}
+                          </h3>
+                        </div>
+                        <p className="mt-3.5 text-xs leading-relaxed text-zinc-300">
+                          {p.desc}
+                        </p>
                       </div>
-                      <h3 className="text-base font-bold text-white group-hover:text-[var(--okx-accent-soft)] transition-colors">
-                        {p.title}
-                      </h3>
-                    </div>
-                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">
-                      {p.desc}
-                    </p>
+                      <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors">
+                        <span>Eksplorasi Produk</span>
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </div>
+                    </Link>
                   </div>
-                  <div className="mt-6 pt-3 border-t border-zinc-800/60 flex items-center justify-between text-xs font-semibold text-[var(--okx-accent-soft)] group-hover:text-white transition-colors">
-                    <span>Eksplorasi Produk</span>
-                    <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                  </div>
-                </Link>
+                </RevealItem>
               );
             })}
-          </div>
+          </RevealGroup>
         </div>
       </section>
 
       {/* OKKAX COPILOT SPOTLIGHT */}
-      <section className="border-b border-[var(--okx-border)] bg-[#0c070e] px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[var(--okx-accent)] opacity-[0.06] blur-[120px] pointer-events-none rounded-full" />
+      <Reveal as="section" className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden font-gemini">
         <div className="mx-auto max-w-7xl relative z-10">
-          <div className="rounded-2xl border border-[var(--okx-accent)]/40 bg-gradient-to-b from-[#160b14] to-[#0d070e] p-6 sm:p-10 lg:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
-            <div className="grid gap-8 lg:grid-cols-12 items-center">
+          <div className="rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-12 lg:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="grid gap-10 lg:grid-cols-12 items-center">
               <div className="lg:col-span-7">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--okx-accent)]/50 bg-[var(--okx-accent)]/15 px-3 py-1 text-xs font-bold text-[var(--okx-accent-soft)] font-gemini">
-                  <Layers size={14} />
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-xs font-bold text-zinc-300">
+                  <Layers size={14} className="text-zinc-400" />
                   <span>Principal Event Intelligence Copilot</span>
                 </div>
-                <h2 className="editorial mt-4 text-3xl sm:text-5xl text-white">
+                <h2 className="editorial mt-5 text-3xl sm:text-5xl text-white leading-tight">
                   Temui OKKAX Copilot — Asisten Cerdas Operasional Acara.
                 </h2>
-                <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base font-gemini">
+                <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
                   OKKAX Copilot memahami seluruh data event, mengidentifikasi dependensi berisiko di Event Graph, menghitung alokasi anggaran dan break-even, hingga menyusun SOP gate check-in hari H.
                 </p>
-                <div className="mt-6 flex flex-wrap gap-3">
+                <div className="mt-8 flex flex-wrap gap-3.5">
                   <Link
                     to="/okkax"
-                    data-testid="landing-yoona-cta"
-                    className="inline-flex items-center gap-2 rounded-lg bg-[var(--okx-accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)] transition-all shadow-[0_0_20px_rgba(255,46,126,0.4)]"
+                    data-testid="landing-okkax-copilot-cta"
+                    className="inline-flex items-center gap-2 rounded-xl bg-white hover:bg-zinc-200 px-6 py-3.5 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
                   >
                     <Terminal size={16} />
-                    Buka OKKAX Command Center
+                    <span>Buka OKKAX Command Center</span>
                     <ArrowRight size={14} />
                   </Link>
                   <Link
                     to="/products/intelligence"
-                    className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/80 px-5 py-3 text-sm font-semibold text-zinc-200 hover:border-zinc-500 hover:text-white transition-all"
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.04] px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:border-white/[0.3] hover:text-white transition-all"
                   >
                     Pelajari Arsitektur AI
                   </Link>
                 </div>
               </div>
 
-              <div className="lg:col-span-5 flex flex-col gap-2.5 font-gemini">
-                <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-2">
-                  <Sparkles size={13} className="text-[var(--okx-accent)]" />
+              <div className="lg:col-span-5 flex flex-col gap-2.5">
+                <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-2 font-gemini-mono">
+                  <Sparkles size={13} className="text-zinc-400" />
                   <span>Coba Tanyakan Langsung ke OKKAX Copilot:</span>
                 </div>
                 {[
@@ -1390,82 +1330,76 @@ export default function Landing() {
                   <Link
                     key={idx}
                     to="/okkax"
-                    data-testid={`yoona-landing-chip-${idx}`}
-                    className="group rounded-lg border border-zinc-800 bg-[#121214]/90 p-3 text-xs text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10 transition-all flex items-center justify-between"
+                    data-testid={`okkax-landing-chip-${idx}`}
+                    className="group rounded-xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-md p-3.5 text-xs text-zinc-300 hover:border-white/25 hover:text-white hover:bg-white/[0.04] transition-all flex items-center justify-between"
                   >
-                    <span className="truncate pr-2">→ {s.label}</span>
-                    <ArrowRight size={13} className="text-zinc-600 group-hover:text-[var(--okx-accent)] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <span className="truncate pr-2 font-medium">→ {s.label}</span>
+                    <ArrowRight size={13} className="text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0" />
                   </Link>
                 ))}
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* REGIONAL IMPACT & MULTI-CITY MAP STRIP */}
-      <section className="border-b border-[var(--okx-border)] px-4 py-16 sm:px-6 sm:py-24 bg-[#09090b]">
+      <Reveal as="section" className="border-b border-white/[0.06] px-4 py-16 sm:px-6 sm:py-24 bg-transparent font-gemini">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent)]">
-                <LineChart size={16} className="text-[var(--okx-accent)]" />
-                <span>REGIONAL ECONOMIC MULTIPLIER</span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
+                <LineChart size={14} className="text-zinc-400" />
+                <span>Regional Economic Multiplier</span>
               </div>
-              <h2 className="editorial mt-2 text-2xl sm:text-4xl text-white">
+              <h2 className="editorial mt-3 text-2xl sm:text-4xl text-white">
                 Dampak ekonomi riil di 15+ kota Indonesia.
               </h2>
             </div>
             <Link
               to="/peta"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--okx-accent-soft)] hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
             >
-              Lihat Live Event Map Interaktif (/peta) →
+              <span>Lihat Live Event Map Interaktif (/peta)</span>
+              <ArrowRight size={13} />
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-px border border-[var(--okx-border)] bg-[var(--okx-border)] sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              ["Total Perputaran Ekonomi", ripple ? compact(ripple.total_economic_activity) : "Rp 8.4 Milyar"],
-              ["Bisnis Lokal Teraktivasi", ripple ? num(ripple.businesses_activated) : "142 UMKM & Vendor"],
-              ["Kru & Tenaga Kerja", ripple ? num(ripple.workers) : "263 Profesional"],
-              ["Okupansi Hotel & Wisata", ripple ? num(ripple.hotel_room_nights) : "480 Kamar/Malam"],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-[var(--okx-surface)] p-6">
-                <div className="text-xs uppercase tracking-wider text-zinc-500 font-mono">{label}</div>
-                <div className="num mt-2 text-2xl font-bold sm:text-3xl text-white">{value}</div>
+          <RevealGroup stagger={0.08} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Total Perputaran Ekonomi</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber prefix="Rp " value={8.4} decimals={1} suffix=" Milyar" />
               </div>
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-zinc-500 font-mono">
+            </RevealItem>
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Bisnis Lokal Teraktivasi</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber value={142} suffix=" UMKM & Vendor" />
+              </div>
+            </RevealItem>
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Kru & Tenaga Kerja</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber value={263} suffix=" Profesional" />
+              </div>
+            </RevealItem>
+            <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Okupansi Hotel & Wisata</div>
+              <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
+                <CounterNumber value={480} suffix=" Kamar/Malam" />
+              </div>
+            </RevealItem>
+          </RevealGroup>
+          <p className="mt-4 text-xs text-zinc-400 font-gemini-mono">
             Model kalkulasi multiplier dampak ekonomi regional terhubung langsung dengan Live Event Map dan data Event Graph.
           </p>
         </div>
-      </section>
+      </Reveal>
 
-      <PricingPreview />
-
-      <section className="px-4 py-20 sm:px-6 sm:py-28">
-        <div className="mx-auto flex max-w-5xl flex-col items-start gap-6 border border-[var(--okx-accent)] bg-[#140700] p-8 sm:p-14">
-          <QrCode size={22} className="accent-text" />
-          <h2 className="editorial text-3xl sm:text-5xl">Everything behind a live event, working as one.</h2>
-          <p className="max-w-2xl text-sm text-zinc-300 sm:text-base">
-            Jalankan demo terpandu 16 langkah: brief, blueprint, event graph, talent & rider, venue, vendor,
-            budget, sponsor, tenant, tiket, publish, sandbox payment, QR ticket, validasi, hingga Live Event Impact.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link to="/demo" data-testid="cta-juri-btn" className="bg-[var(--okx-accent)] px-6 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
-              Platform Demo
-            </Link>
-            <Link to="/demo" data-testid="cta-demo-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">
-              Mulai Demo Terpandu
-            </Link>
-            <Link to="/discover" data-testid="cta-discover-btn" className="border border-[var(--okx-border)] px-6 py-3.5 text-sm font-semibold hover:border-zinc-500">
-              Explore Events
-            </Link>
-          </div>
-        </div>
-      </section>
+      <Reveal>
+        <PricingPreview />
+      </Reveal>
 
       <Footer />
     </div>

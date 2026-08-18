@@ -10,41 +10,47 @@ import { useCatalogCities } from "@/lib/cities";
 
 const GOOGLE_MARK_URL = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 const AUTH_BACKGROUND_URL = "/assets/okkax-concert-hero-v2.png";
-const inputClass = "mt-1.5 h-11 w-full rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 transition-all duration-200 hover:border-zinc-700 focus:border-[var(--okx-accent)] focus:ring-1 focus:ring-[var(--okx-accent)]/40 font-gemini";
+const inputClass = "mt-1.5 h-11 w-full rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-400 transition-all duration-200 hover:border-zinc-700 focus:border-white focus:ring-1 focus:ring-white/40 font-gemini";
 
 const ROLE_OPTIONS = [
-  ["organizer", "Event Organizer"],
+  ["organizer", "Organizer"],
   ["promoter", "Promotor"],
   ["sponsor", "Sponsor"],
-  ["tenant", "Tenant & Exhibitor"],
-  ["talent_management", "Talent Management"],
-  ["venue_manager", "Venue Management"],
-  ["vendor", "Production Vendor"],
-  ["worker", "Event Crew"],
-  ["audience", "Attendee"],
-  ["finance_approver", "Finance Approver"],
-  ["supervisor", "Event Supervisor"],
+  ["tenant", "Tenant"],
+  ["talent_management", "Talent"],
+  ["vendor", "Vendor"],
+  ["worker", "Workforce"],
+  ["audience", "Audience"],
+  ["venue_manager", "Venue"],
+  ["finance_approver", "Finance"],
 ];
 
 const DEMO_ACCOUNTS = [
-  ["organizer@okkax.id", "Penyelenggara"],
-  ["sponsor@okkax.id", "Sponsor"],
-  ["tenant@okkax.id", "Tenant"],
-  ["audience@okkax.id", "Pengunjung"],
-  ["supervisor@okkax.id", "Supervisor"],
+  { key: "organizer", label: "Organizer", roleName: "Organizer", email: "organizer@okkax.id", defaultNext: "/app" },
+  { key: "promotor", label: "Promotor", roleName: "Promotor", email: "organizer@okkax.id", defaultNext: "/app/events" },
+  { key: "sponsor", label: "Sponsor", roleName: "Sponsor", email: "sponsor@okkax.id", defaultNext: "/app/sponsor" },
+  { key: "tenant", label: "Tenant", roleName: "Tenant", email: "tenant@okkax.id", defaultNext: "/app/tenant" },
+  { key: "audience", label: "Audience", roleName: "Audience", email: "audience@okkax.id", defaultNext: "/app/tickets" },
+  { key: "talent", label: "Talent", roleName: "Talent", email: "talent@okkax.id", defaultNext: "/app/me" },
+  { key: "vendor", label: "Vendor", roleName: "Vendor", email: "vendor@okkax.id", defaultNext: "/app/me" },
+  { key: "workforce", label: "Workforce", roleName: "Workforce", email: "worker@okkax.id", defaultNext: "/app/me" },
 ];
 
 function Shell({ title, subtitle, children }) {
   return (
     <div
       data-testid="auth-shell"
-      className="okx-auth-shell relative min-h-[100dvh] w-full overflow-y-auto bg-cover bg-center font-gemini"
-      style={{ backgroundImage: `url(${AUTH_BACKGROUND_URL})`, backgroundPosition: "78% center" }}
+      className="okx-auth-shell relative min-h-[100dvh] w-full overflow-y-auto bg-black font-gemini"
     >
-      <div className="fixed inset-0 bg-black/65 backdrop-blur-[1px]" aria-hidden="true" />
-      <div className="okx-aurora-field fixed inset-0 pointer-events-none" data-testid="auth-aurora" aria-hidden="true">
-        <div className="okx-aurora-blob" />
-      </div>
+      {/* High-Precision Blueprint Dot Matrix Grid */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-100 stitch-grid-canvas"
+        style={{
+          backgroundImage: "radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 1.25px, transparent 1.25px)",
+          backgroundSize: "28px 28px",
+        }}
+        aria-hidden="true"
+      />
 
       <div className="relative z-10 grid min-h-[100dvh] lg:grid-cols-[0.88fr_1.12fr]">
         {/* Left Branding Column */}
@@ -78,7 +84,7 @@ function Shell({ title, subtitle, children }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
             <span className="h-2 w-2 rounded-full bg-[var(--okx-accent)] shadow-[0_0_8px_var(--okx-accent)]" /> Built for live operations • 15+ Kota
           </div>
         </aside>
@@ -95,7 +101,7 @@ function Shell({ title, subtitle, children }) {
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">OKKAX Access</div>
                 <h1 className="editorial mt-1.5 text-2xl sm:text-3xl text-[#f5f0ed]">{title}</h1>
-                <p className="mt-1 text-xs sm:text-sm text-zinc-400">{subtitle}</p>
+                <p className="mt-1 text-xs sm:text-sm text-zinc-300">{subtitle}</p>
               </div>
               <Link to="/" className="hidden shrink-0 text-xs font-medium text-zinc-400 hover:text-white transition-colors sm:block">
                 Back to network →
@@ -127,7 +133,7 @@ function GoogleButton({ mode, onClick }) {
 
 function Divider({ children }) {
   return (
-    <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
+    <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
       <span className="h-px flex-1 bg-zinc-800" />
       <span>{children}</span>
       <span className="h-px flex-1 bg-zinc-800" />
@@ -184,17 +190,17 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
   const [visible, setVisible] = useState(false);
   const { score, label } = useMemo(() => scorePassword(value), [value]);
   const strengthTone =
-    score >= 4 ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"
-    : score === 3 ? "bg-lime-400 shadow-[0_0_8px_rgba(163,230,53,0.5)]"
-    : score === 2 ? "bg-amber-400"
-    : score === 1 ? "bg-orange-500"
+    score >= 4 ? "bg-white shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+    : score === 3 ? "bg-zinc-300"
+    : score === 2 ? "bg-zinc-400"
+    : score === 1 ? "bg-zinc-600"
     : "bg-zinc-800";
   const strengthText =
-    score >= 4 ? "text-emerald-300"
-    : score === 3 ? "text-lime-300"
-    : score === 2 ? "text-amber-300"
-    : score === 1 ? "text-orange-300"
-    : "text-zinc-500";
+    score >= 4 ? "text-white font-bold"
+    : score === 3 ? "text-zinc-200 font-semibold"
+    : score === 2 ? "text-zinc-300"
+    : score === 1 ? "text-zinc-400"
+    : "text-zinc-400";
 
   const generate = () => onChange({ target: { value: suggestStrongPassword() } });
   const copy = async () => {
@@ -280,9 +286,9 @@ function PasswordField({ testId, value, onChange, placeholder, autoComplete, sho
 function FieldLabel({ label, hint, children }) {
   return (
     <div className="flex flex-col min-w-0 font-gemini">
-      <div className="flex h-5 items-center justify-between gap-2 text-[12px] font-medium tracking-tight text-zinc-300">
+      <div className="flex h-5 items-center justify-between gap-2 text-[12px] font-medium tracking-tight text-zinc-200">
         <span className="truncate">{label}</span>
-        {hint && <span className="shrink-0 text-[10px] text-zinc-500 uppercase tracking-wider">{hint}</span>}
+        {hint && <span className="shrink-0 text-[10px] text-zinc-400 uppercase tracking-wider font-gemini-mono">{hint}</span>}
       </div>
       {children}
     </div>
@@ -290,13 +296,40 @@ function FieldLabel({ label, hint, children }) {
 }
 
 export function Login() {
+  const [sp] = useSearchParams();
+  const rawRoleParam = (sp.get("role") || sp.get("persona") || "").toLowerCase().trim();
+
+  // Normalize role key aliases:
+  const targetRole = useMemo(() => {
+    if (!rawRoleParam) return null;
+    if (rawRoleParam.startsWith("organiz")) return "organizer";
+    if (rawRoleParam.startsWith("promot")) return "promotor";
+    if (rawRoleParam.startsWith("spons")) return "sponsor";
+    if (rawRoleParam.startsWith("tenan")) return "tenant";
+    if (rawRoleParam.startsWith("audien")) return "audience";
+    if (rawRoleParam.startsWith("talen")) return "talent";
+    if (rawRoleParam.startsWith("vendor")) return "vendor";
+    if (rawRoleParam.startsWith("work") || rawRoleParam === "crew") return "workforce";
+    return rawRoleParam;
+  }, [rawRoleParam]);
+
+  // Filter demo accounts: If a specific role is passed, ONLY that role is visible; others are hidden!
+  const visibleDemoAccounts = useMemo(() => {
+    if (!targetRole) return DEMO_ACCOUNTS;
+    const filtered = DEMO_ACCOUNTS.filter(
+      (a) => a.key === targetRole || a.roleName.toLowerCase() === targetRole || a.label.toLowerCase() === targetRole
+    );
+    return filtered.length > 0 ? filtered : DEMO_ACCOUNTS;
+  }, [targetRole]);
+
+  const matchingPersona = visibleDemoAccounts.length === 1 ? visibleDemoAccounts[0] : null;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { login, loginWithGoogle, adoptSession } = useAuth();
   const nav = useNavigate();
-  const [sp] = useSearchParams();
 
   const submit = async (e) => {
     e.preventDefault();
@@ -305,7 +338,7 @@ export function Login() {
     try {
       await login(email, password);
       toast.success("Berhasil masuk ke OKKAX");
-      nav(sp.get("next") || "/app");
+      nav(sp.get("next") || (matchingPersona ? matchingPersona.defaultNext : "/app"));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -313,14 +346,14 @@ export function Login() {
     }
   };
 
-  const loginAsPersona = async (label) => {
+  const loginAsPersona = async (item) => {
     setBusy(true);
     setError("");
     try {
-      const { data } = await api.post("/demo/persona-login", { label });
+      const { data } = await api.post("/demo/persona-login", { label: item.key || item.label });
       await adoptSession(data.token);
-      toast.success(`Masuk sebagai ${label}`);
-      nav(sp.get("next") || "/app");
+      toast.success(`Masuk langsung sebagai ${item.roleName || item.label}`);
+      nav(sp.get("next") || item.defaultNext || "/app");
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -329,7 +362,10 @@ export function Login() {
   };
 
   return (
-    <Shell title="Sign in" subtitle="Masuk ke OKKAX workspace Anda.">
+    <Shell
+      title="Sign in"
+      subtitle={matchingPersona ? `Masuk ke OKKAX workspace ${matchingPersona.roleName} Anda.` : "Masuk ke OKKAX workspace Anda."}
+    >
       <GoogleButton mode="login" onClick={loginWithGoogle} />
       <Divider>atau email</Divider>
 
@@ -340,7 +376,7 @@ export function Login() {
             type="email"
             required
             autoComplete="email"
-            placeholder="nama@domain.com"
+            placeholder={matchingPersona ? matchingPersona.email : "nama@domain.com"}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={inputClass}
@@ -358,8 +394,8 @@ export function Login() {
         </FieldLabel>
 
         {error && (
-          <div data-testid="login-error" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400 flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+          <div data-testid="login-error" className="rounded-lg border border-white/20 bg-white/[0.04] px-3.5 py-2.5 text-xs text-zinc-300 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -367,7 +403,7 @@ export function Login() {
         <button
           data-testid="login-submit-btn"
           disabled={busy}
-          className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini"
+          className="h-[52px] w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-5 text-[15px] font-bold tracking-wide transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini cursor-pointer"
         >
           {busy ? "Memproses…" : "Sign In"}
         </button>
@@ -376,7 +412,10 @@ export function Login() {
           <Link to="/forgot-password" className="text-zinc-400 hover:text-white transition-colors">
             Lupa kata sandi?
           </Link>
-          <Link to="/register" className="text-[var(--okx-accent-soft)] hover:underline font-semibold">
+          <Link
+            to={targetRole ? `/register?role=${targetRole}` : "/register"}
+            className="text-[var(--okx-accent-soft)] hover:underline font-semibold"
+          >
             Belum punya akun? Buat akun →
           </Link>
         </div>
@@ -385,21 +424,27 @@ export function Login() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
               <UserCheck size={13} className="text-[var(--okx-accent)]" />
-              <span>Akses Cepat Demo Persona</span>
+              <span>
+                {matchingPersona ? `Akses Cepat Demo Persona (${matchingPersona.roleName})` : "Akses Cepat Demo Persona"}
+              </span>
             </div>
-            <span className="text-[10px] text-zinc-500">1-Klik Sign In</span>
+            <span className="text-[10px] text-zinc-400 font-gemini-mono">1-Klik Sign In</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {DEMO_ACCOUNTS.map(([emailAddress, persona]) => (
+            {visibleDemoAccounts.map((item) => (
               <button
-                key={emailAddress}
+                key={item.key}
                 type="button"
-                data-testid={`quickfill-${emailAddress.split("@")[0]}`}
+                data-testid={`quickfill-${item.key}`}
                 disabled={busy}
-                onClick={() => loginAsPersona(persona)}
-                className="rounded-lg border border-zinc-800 bg-[#141418] px-2.5 py-1.5 text-xs text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10 transition-all active:scale-[0.98]"
+                onClick={() => loginAsPersona(item)}
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer flex items-center gap-1.5 ${
+                  matchingPersona
+                    ? "border-[var(--okx-accent)] bg-[var(--okx-accent)]/15 text-white shadow-[0_0_12px_rgba(255,46,126,0.35)]"
+                    : "border-zinc-800 bg-[#141418] text-zinc-300 hover:border-[var(--okx-accent)] hover:text-white hover:bg-[var(--okx-accent)]/10"
+                }`}
               >
-                {persona}
+                <span>{matchingPersona ? `1-Klik Masuk sebagai ${item.roleName}` : item.label}</span>
               </button>
             ))}
           </div>
@@ -410,9 +455,28 @@ export function Login() {
 }
 
 export function Register() {
+  const [sp] = useSearchParams();
+  const rawRoleParam = (sp.get("role") || sp.get("persona") || "").toLowerCase().trim();
+
+  const initialRole = useMemo(() => {
+    if (rawRoleParam.startsWith("talent")) return "talent_management";
+    if (rawRoleParam.startsWith("promot")) return "promoter";
+    if (rawRoleParam.startsWith("spons")) return "sponsor";
+    if (rawRoleParam.startsWith("tenan")) return "tenant";
+    if (rawRoleParam.startsWith("audien") || rawRoleParam === "pengunjung") return "audience";
+    if (rawRoleParam.startsWith("organiz")) return "organizer";
+    return "organizer";
+  }, [rawRoleParam]);
+
   const [form, setForm] = useState({
-    name: "", email: "", password: "", role: "organizer", organization_name: "",
-    organization_type: "Corporate Brand", city: "Jakarta", terms_accepted: false,
+    name: "",
+    email: "",
+    password: "",
+    role: initialRole,
+    organization_name: "",
+    organization_type: "Corporate Brand",
+    city: "Jakarta",
+    terms_accepted: false,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -437,7 +501,10 @@ export function Register() {
   };
 
   return (
-    <Shell title="Build an Event" subtitle="Daftarkan akun dan organisasi Anda. Satu pengguna, satu peran operasional.">
+    <Shell
+      title="Build an Event"
+      subtitle="Daftarkan akun dan organisasi Anda. Satu pengguna, satu peran operasional."
+    >
       <GoogleButton mode="register" onClick={loginWithGoogle} />
       <Divider>atau isi formulir</Divider>
 
@@ -546,8 +613,8 @@ export function Register() {
         </label>
 
         {error && (
-          <div data-testid="register-error" className="rounded-lg border border-red-500/40 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-400 flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
+          <div data-testid="register-error" className="rounded-lg border border-white/20 bg-white/[0.04] px-3.5 py-2.5 text-xs text-zinc-300 flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-white shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -555,7 +622,7 @@ export function Register() {
         <button
           data-testid="register-submit-btn"
           disabled={busy}
-          className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini"
+          className="h-[52px] w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-5 text-[15px] font-bold tracking-wide transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)] disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2 font-gemini cursor-pointer"
         >
           {busy ? "Memproses…" : "Buat Akun"}
         </button>
@@ -603,7 +670,7 @@ export function ForgotPassword() {
           </FieldLabel>
           <button
             data-testid="forgot-submit-btn"
-            className="h-[52px] w-full rounded-xl bg-gradient-to-r from-[#ff2e7e] via-[#ff3b88] to-[#ff2e7e] px-5 text-[15px] font-bold tracking-wide text-white transition-all duration-200 hover:brightness-110 hover:shadow-[0_6px_28px_rgba(255,46,126,0.45)] active:scale-[0.99] flex items-center justify-center font-gemini"
+            className="h-[52px] w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-5 text-[15px] font-bold tracking-wide transition-all duration-200 shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.99] flex items-center justify-center font-gemini cursor-pointer"
           >
             Kirim Tautan Reset
           </button>

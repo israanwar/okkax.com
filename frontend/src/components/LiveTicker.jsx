@@ -80,10 +80,10 @@ export default function LiveTicker() {
   if (!ready || items.length === 0) return null;
 
   return (
-    <div className="border-b border-[var(--okx-border)] bg-[#080808]" data-testid="live-ticker">
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-2.5 sm:px-6">
-        <div className="flex shrink-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-          <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-[var(--okx-accent)]" />
+    <div className="border-b border-white/[0.08] bg-[#080808] px-4 sm:px-6" data-testid="live-ticker">
+      <div className="mx-auto flex max-w-7xl items-center gap-4 py-2.5">
+        <div className="flex shrink-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-300">
+          <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-white" />
           Live Now
         </div>
         <div className="okx-ticker-mask relative min-w-0 flex-1 overflow-hidden">
@@ -97,7 +97,7 @@ export default function LiveTicker() {
                   className="inline-flex items-center gap-2.5 text-xs text-zinc-400 transition-colors hover:text-zinc-100"
                 >
                   {item.is_live && (
-                    <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-[var(--okx-accent)]" />
+                    <span aria-hidden="true" className="inline-block h-1.5 w-1.5 animate-pulse bg-white" />
                   )}
                   <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-zinc-500">
                     {toLabel(item.event_type)}
@@ -106,7 +106,7 @@ export default function LiveTicker() {
                   {item.city && <span className="text-zinc-600">·</span>}
                   {item.city && <span className="text-zinc-500">{item.city}</span>}
                   {when && <span className="text-zinc-600">·</span>}
-                  {when && <span className="text-[var(--okx-accent-soft)]">{when}</span>}
+                  {when && <span className="text-zinc-300 font-gemini-mono">{when}</span>}
                 </Link>
               );
             })}

@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, Search } from "lucide-react";
 
-// Shared dropdown untuk seluruh OKKAX.
-// Menempatkan menu absolute di dalam parent sehingga ikut scroll
-// bersama layout, close saat klik luar atau Escape, dan otomatis menampilkan
-// kolom pencarian bila jumlah opsi >= 10.
+/**
+ * Shared Popover Dropdown untuk seluruh OKKAX.
+ *
+ * Menggunakan React Portal ke document.body dengan fixed positioning:
+ * 1. Terisolasi total dari parent stacking context (misal backdrop-filter / transform).
+ * 2. Tidak memperbesar tinggi parent/sticky container.
+ * 3. Max-height dibatasi 280–320px dengan internal scroll.
+ * 4. Background 100% solid/opaque `#0c0c14` dengan z-index 99999.
+ * 5. Auto flip-up jika ruang bawah viewport tidak mencukupi.
+ * 6. Single-open: otomatis menutup dropdown lain saat dibuka.
+ * 7. Close on outside click, select, or Escape.
+ */
 export default function OkxDropdown({
   value,
   onChange,
@@ -19,12 +28,21 @@ export default function OkxDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [flipUp, setFlipUp] = useState(false);
-  const shellRef = useRef(null);
+  const [placement, setPlacement] = useState({
+    top: undefined,
+    bottom: undefined,
+    left: 0,
+    width: 200,
+    maxHeight: 280,
+    flipUp: false,
+  });
+
+  const dropdownId = useId();
   const triggerRef = useRef(null);
+  const menuRef = useRef(null);
   const searchRef = useRef(null);
 
-  // Normalisasi options: string -> { value, label }.
+  // Normalisasi options: string/number -> { value, label }
   const normalized = useMemo(
     () =>
       (options || []).map((opt) =>
@@ -35,7 +53,6 @@ export default function OkxDropdown({
     [options]
   );
 
-  // Default searchable to false unless explicitly set to true.
   const canSearch = Boolean(searchable);
   const filtered = useMemo(() => {
     if (!canSearch || !query.trim()) return normalized;
@@ -45,105 +62,241 @@ export default function OkxDropdown({
 
   const active = normalized.find((opt) => String(opt.value) === String(value ?? ""));
 
+  // Hitung posisi fixed terhadap viewport
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Lebar dropdown mengikuti trigger dengan batas minimum
+    const width = Math.max(rect.width, 160);
+    // Batasi horizontal agar tidak keluar dari viewport
+    const left = Math.max(8, Math.min(rect.left, viewportWidth - width - 8));
+
+    const spaceBelow = viewportHeight - rect.bottom - 10;
+    const spaceAbove = rect.top - 10;
+    const estimatedHeight = Math.min(300, (canSearch ? 48 : 0) + normalized.length * 38 + 16);
+
+    const shouldFlipUp = spaceBelow < Math.min(220, estimatedHeight) && spaceAbove > spaceBelow;
+
+    if (shouldFlipUp) {
+      const maxHeight = Math.min(300, Math.max(120, spaceAbove));
+      setPlacement({
+        top: undefined,
+        bottom: viewportHeight - rect.top + 6,
+        left,
+        width,
+        maxHeight,
+        flipUp: true,
+      });
+    } else {
+      const maxHeight = Math.min(300, Math.max(120, spaceBelow));
+      setPlacement({
+        top: rect.bottom + 6,
+        bottom: undefined,
+        left,
+        width,
+        maxHeight,
+        flipUp: false,
+      });
+    }
+  }, [canSearch, normalized.length]);
+
+  // Update posisi saat open berubah
+  useLayoutEffect(() => {
+    if (open) {
+      updatePosition();
+    }
+  }, [open, updatePosition]);
+
+  // Single-open coordinator + scroll / resize tracking
   useEffect(() => {
     if (!open) return;
-    const closeOnOutside = (event) => {
-      if (!shellRef.current?.contains(event.target)) setOpen(false);
-    };
-    const closeOnEscape = (event) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", closeOnOutside);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutside);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open]);
 
+    // Tutup jika dropdown lain dibuka
+    const handleOtherOpen = (event) => {
+      if (event.detail !== dropdownId) {
+        setOpen(false);
+      }
+    };
+
+    const handleScrollOrResize = () => {
+      updatePosition();
+    };
+
+    const handleOutsideClick = (event) => {
+      if (
+        triggerRef.current?.contains(event.target) ||
+        menuRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setOpen(false);
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("okx-dropdown-open", handleOtherOpen);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("okx-dropdown-open", handleOtherOpen);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, dropdownId, updatePosition]);
+
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  // Focus search input on open
   useEffect(() => {
-    if (open && canSearch) {
-      searchRef.current?.focus({ preventScroll: true });
+    if (open) {
+      const activeIdx = filtered.findIndex((opt) => String(opt.value) === String(value ?? ""));
+      setFocusedIndex(activeIdx >= 0 ? activeIdx : 0);
+      if (canSearch) {
+        searchRef.current?.focus({ preventScroll: true });
+      }
     } else {
       setQuery("");
+      setFocusedIndex(-1);
     }
-  }, [open, canSearch]);
+  }, [open, canSearch, filtered, value]);
 
-  useEffect(() => {
-    if (!open) return;
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const estimated = Math.min(320, (canSearch ? 48 : 0) + normalized.length * 40 + 16);
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    setFlipUp(spaceBelow < estimated && spaceAbove > spaceBelow);
-  }, [open, canSearch, normalized.length]);
+  // Keyboard navigation
+  const handleKeyDown = (event) => {
+    if (!open) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        setOpen(true);
+        window.dispatchEvent(new CustomEvent("okx-dropdown-open", { detail: dropdownId }));
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      triggerRef.current?.focus();
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setFocusedIndex((prev) => (prev + 1) % Math.max(1, filtered.length));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setFocusedIndex((prev) => (prev - 1 + filtered.length) % Math.max(1, filtered.length));
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setFocusedIndex(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setFocusedIndex(Math.max(0, filtered.length - 1));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      if (focusedIndex >= 0 && focusedIndex < filtered.length) {
+        const item = filtered[focusedIndex];
+        if (!item.disabled) {
+          handleSelect(item.value, item);
+        }
+      }
+    }
+  };
+
+  const toggleOpen = () => {
+    if (disabled) return;
+    setOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        window.dispatchEvent(new CustomEvent("okx-dropdown-open", { detail: dropdownId }));
+      }
+      return next;
+    });
+  };
 
   const handleSelect = (nextValue, option) => {
     if (option?.disabled) return;
     onChange?.(nextValue);
     setOpen(false);
+    triggerRef.current?.focus();
   };
 
   return (
-    <div
-      ref={shellRef}
-      className={`relative font-gemini ${className}`}
-      data-testid={testId ? `${testId}-shell` : undefined}
-    >
+    <div className={`relative font-gemini ${className}`} data-testid={testId ? `${testId}-shell` : undefined}>
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => !disabled && setOpen((prev) => !prev)}
+        onClick={toggleOpen}
+        onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
         disabled={disabled}
         data-testid={testId}
-        className={`flex h-11 w-full items-center gap-2 rounded-lg border border-zinc-800 bg-[#121216] px-3.5 text-left text-sm text-white outline-none transition-all duration-200 hover:border-zinc-700 focus:border-[var(--okx-accent)] focus:ring-1 focus:ring-[var(--okx-accent)]/40 disabled:cursor-not-allowed disabled:opacity-50 ${
-          open ? "border-[var(--okx-accent)] ring-1 ring-[var(--okx-accent)]/40 shadow-[0_0_12px_rgba(255,46,126,0.15)]" : ""
+        className={`flex h-8 sm:h-9 w-full items-center gap-1.5 sm:gap-2 rounded-xl border border-white/[0.12] bg-[#0d0d14] px-2.5 sm:px-3 text-left text-[11px] sm:text-xs text-white outline-none transition-all duration-200 hover:border-white/25 focus:border-white/40 focus:ring-1 focus:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50 ${
+          open ? "border-white/40 ring-1 ring-white/20 shadow-[0_0_16px_rgba(255,255,255,0.08)] bg-[#12121e]" : ""
         }`}
       >
-        {Icon && <Icon size={15} strokeWidth={1.7} className="shrink-0 text-zinc-400" aria-hidden="true" />}
-        <span className={`min-w-0 flex-1 truncate ${active ? "font-medium text-zinc-100" : "text-zinc-500"}`}>
+        {Icon && <Icon size={14} strokeWidth={1.7} className="shrink-0 text-zinc-400" aria-hidden="true" />}
+        <span className={`min-w-0 flex-1 truncate ${active ? "font-semibold text-white" : "text-zinc-400"}`}>
           {active?.label || placeholder}
         </span>
         <ChevronDown
-          size={16}
+          size={14}
           strokeWidth={1.8}
-          className={`shrink-0 text-zinc-400 transition-transform duration-200 ${open ? "rotate-180 text-[var(--okx-accent-soft)]" : ""}`}
+          className={`shrink-0 text-zinc-400 transition-transform duration-200 ${open ? "rotate-180 text-white" : ""}`}
           aria-hidden="true"
         />
       </button>
 
-      {open && (
+      {open && typeof document !== "undefined" && createPortal(
         <div
+          ref={menuRef}
           role="listbox"
-          className={`absolute left-0 right-0 z-50 rounded-xl border border-zinc-800 bg-[#111116]/98 p-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl ${
-            flipUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
-          }`}
+          onKeyDown={handleKeyDown}
+          style={{
+            position: "fixed",
+            left: `${placement.left}px`,
+            width: `${placement.width}px`,
+            ...(placement.top != null ? { top: `${placement.top}px` } : {}),
+            ...(placement.bottom != null ? { bottom: `${placement.bottom}px` } : {}),
+            maxHeight: `${placement.maxHeight}px`,
+            zIndex: 99999,
+          }}
+          className="flex flex-col rounded-xl border border-white/[0.16] bg-[#0c0c14] p-1.5 shadow-[0_24px_70px_rgba(0,0,0,0.95)] animate-in fade-in zoom-in-95 duration-100 font-gemini select-none"
           data-testid={testId ? `${testId}-menu` : undefined}
         >
           {canSearch && (
-            <div className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-black/40 px-3 py-2 mb-1">
-              <Search size={14} className="shrink-0 text-zinc-500" aria-hidden="true" />
+            <div className="flex shrink-0 items-center gap-2 rounded-lg border border-white/[0.1] bg-black/60 px-2.5 py-1 mb-1">
+              <Search size={13} className="shrink-0 text-zinc-400" aria-hidden="true" />
               <input
                 ref={searchRef}
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Cari opsi..."
-                className="w-full bg-transparent text-xs text-zinc-100 outline-none placeholder:text-zinc-600 font-gemini"
+                className="w-full bg-transparent text-xs text-white outline-none placeholder:text-zinc-500 font-gemini"
                 data-testid={testId ? `${testId}-search` : undefined}
               />
             </div>
           )}
-          <ul className="okx-custom-scrollbar max-h-60 overflow-y-auto space-y-0.5 pr-0.5">
+          <ul className="okx-custom-scrollbar overflow-y-auto space-y-0.5 pr-0.5 flex-1 min-h-0">
             {filtered.length === 0 ? (
-              <li className="px-3 py-3 text-center text-xs text-zinc-500">Tidak ada opsi ditemukan.</li>
+              <li className="px-2.5 py-2 text-center text-xs text-zinc-400">Tidak ada opsi ditemukan.</li>
             ) : (
-              filtered.map((opt) => {
+              filtered.map((opt, idx) => {
                 const selected = String(opt.value) === String(value ?? "");
+                const isFocused = idx === focusedIndex;
                 return (
                   <li key={opt.value + opt.label}>
                     <button
@@ -153,21 +306,24 @@ export default function OkxDropdown({
                       aria-disabled={opt.disabled || undefined}
                       disabled={opt.disabled}
                       onClick={() => handleSelect(opt.value, opt)}
-                      className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-all duration-150 ${
+                      onMouseEnter={() => setFocusedIndex(idx)}
+                      className={`flex w-full items-center justify-between gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-all duration-150 cursor-pointer ${
                         opt.disabled
                           ? "cursor-not-allowed text-zinc-600 opacity-50"
                           : selected
-                            ? "bg-[var(--okx-accent)]/15 text-[var(--okx-accent-soft)] font-semibold"
-                            : "text-zinc-300 hover:bg-zinc-800/70 hover:text-white"
+                            ? "border border-white/30 bg-white/[0.12] text-white font-bold shadow-sm"
+                            : isFocused
+                              ? "border border-white/20 bg-white/[0.08] text-white"
+                              : "border border-transparent text-zinc-300 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
                       <span className="truncate">{opt.label}</span>
 
                       {selected && (
                         <Check
-                          size={14}
+                          size={13}
                           strokeWidth={2.5}
-                          className="shrink-0 text-[var(--okx-accent)]"
+                          className="shrink-0 text-white"
                           aria-hidden="true"
                         />
                       )}
@@ -177,7 +333,8 @@ export default function OkxDropdown({
               })
             )}
           </ul>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

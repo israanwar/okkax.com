@@ -47,9 +47,8 @@ export const NAV = [
     label: "Products",
     children: [
       { label: "Event Studio",       to: "/products/event-studio",       note: "Compile brief menjadi Event Blueprint." },
-      { label: "OKKAX Copilot",      to: "/okkax",                       note: "Principal Event Intelligence & Operations Copilot." },
+      { label: "OKKAX Intelligence", to: "/intelligence",                note: "Principal Event Intelligence & Two-Way Matching." },
       { label: "Network",            to: "/products/network",            note: "Talent, Venue, Vendor, Workforce, Sponsor, Tenant." },
-      { label: "OKKAX Intelligence", to: "/products/intelligence",       note: "Observe. Understand. Optimize." },
       { label: "Ticket Studio",      to: "/products/ticket-studio",      note: "Inventory, seating, ticket products." },
       { label: "LivePass",           to: "/products/livepass",           note: "Live access entitlement, not a file." },
       { label: "Protected Payment",  to: "/products/protected-payment",  note: "Funding aman, protected balance, settlement." },
@@ -138,7 +137,7 @@ export const Logo = ({ small }) => (
       className={`okkax-logo-image ${small ? "h-[18px]" : "h-[23px]"} w-auto object-contain`}
     />
     {!small && (
-      <span className="okkax-logo-category mt-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.17em] text-zinc-500">
+      <span className="okkax-logo-category mt-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.17em] text-zinc-400">
         Live Event Operating Network
       </span>
     )}
@@ -251,7 +250,7 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
         ?.closest("header")
         ?.getBoundingClientRect();
 
-      if (header) setPanelTop(header.bottom);
+      if (header) setPanelTop(header.bottom + 8);
     };
 
     updatePosition();
@@ -293,7 +292,7 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
   return (
     <div
       ref={wrapRef}
-      className="relative"
+      className="relative font-gemini"
       onMouseEnter={openNow}
       onMouseLeave={scheduleClose}
       onKeyDown={(e) => {
@@ -308,30 +307,24 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
         onClick={() => setOpen((v) => !v)}
         onFocus={openNow}
         className={[
-          "okx-nav-link relative inline-flex items-center gap-1.5 py-2 text-[13px] font-medium tracking-[0.015em] transition-colors",
+          "relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 cursor-pointer",
           isActive
-            ? "is-active text-[#f0e9e5]"
-            : "text-zinc-400 hover:text-white",
-          open ? "text-white" : "",
+            ? "bg-white/[0.08] text-white"
+            : open
+            ? "bg-white/[0.05] text-white"
+            : "text-zinc-400 hover:text-white hover:bg-white/[0.03]",
         ].join(" ")}
       >
-        {item.label}
+        <span>{item.label}</span>
 
         <ChevronDown
           size={12}
           className={
             "opacity-60 transition-transform duration-200 " +
-            (open ? "rotate-180" : "")
+            (open ? "rotate-180 text-white" : "")
           }
           aria-hidden="true"
         />
-
-        {open && !isActive && (
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 -bottom-[13px] h-px bg-[var(--okx-accent)]"
-          />
-        )}
       </button>
 
       {open && (
@@ -340,33 +333,34 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
           data-testid={`nav-${item.id}-panel`}
           style={{
             top: `${panelTop}px`,
-            width: "min(780px, calc(100vw - 32px))",
+            width: "min(840px, calc(100vw - 32px))",
           }}
-          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden rounded-2xl border border-zinc-800/90 bg-[#0a0a0ff8] shadow-[0_32px_90px_rgba(0,0,0,0.95)] backdrop-blur-2xl"
+          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden rounded-3xl border border-white/[0.14] bg-[#0c0c0e]/98 shadow-[0_32px_90px_rgba(0,0,0,0.98),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-3xl"
           onMouseEnter={openNow}
           onMouseLeave={scheduleClose}
         >
-          <div className="grid lg:grid-cols-[155px_minmax(0,1fr)]">
-            <div className="border-b border-zinc-800/80 bg-zinc-950/50 p-4 lg:border-b-0 lg:border-r">
-              <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--okx-accent-soft)]">
+          {/* Top ambient lighting accent */}
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+
+          <div className="grid lg:grid-cols-[200px_minmax(0,1fr)]">
+            <div className="border-b border-white/[0.08] bg-gradient-to-b from-[#141418] to-[#0a0a0c] p-6 lg:border-b-0 lg:border-r">
+              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.22em] text-zinc-300 font-gemini-mono shadow-sm">
+                <Sparkles size={11} className="text-zinc-300" aria-hidden="true" />
                 {meta.eyebrow}
               </div>
 
-              <div className="max-w-[135px] text-[15px] font-bold leading-[1.25] text-white font-gemini-display">
+              <div className="mt-2 text-[15px] font-bold leading-snug text-white">
                 {meta.title}
               </div>
 
-              <p className="mt-2 max-w-[135px] text-[10px] leading-[1.45] text-zinc-400 font-gemini">
+              <p className="mt-2.5 text-[11.5px] leading-relaxed text-zinc-400 font-medium">
                 {meta.text}
               </p>
             </div>
 
-            <ul className={`grid ${gridClass} bg-[#0b0b10]/80 divide-y divide-zinc-800/60 lg:divide-y-0`}>
+            <ul className={`grid ${gridClass} bg-[#08080a]/95 p-3.5 gap-2`}>
               {item.children?.map((c) => (
-                <li
-                  key={c.to}
-                  className="border-b border-zinc-800/60 lg:border-r last:border-r-0"
-                >
+                <li key={c.to}>
                   <Link
                     role="menuitem"
                     to={c.to}
@@ -375,21 +369,21 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
                       onNavigate?.();
                     }}
                     data-testid={`nav-${item.id}-${slug(c.label)}`}
-                    className="group flex min-h-[72px] h-full flex-col justify-between p-3.5 transition-all duration-150 hover:bg-[#150d14]"
+                    className="group flex min-h-[76px] h-full flex-col justify-between rounded-2xl border border-white/[0.08] bg-[#111114]/90 p-3.5 transition-all duration-200 hover:border-white/30 hover:bg-white/[0.08] hover:shadow-[0_8px_24px_rgba(0,0,0,0.9)] hover:-translate-y-0.5 cursor-pointer shadow-sm"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-[13px] font-semibold text-zinc-200 transition-colors group-hover:text-white">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-[13px] font-bold text-white tracking-tight transition-colors group-hover:text-white drop-shadow-sm">
                         {c.label}
                       </span>
 
                       <ArrowUpRight
                         size={14}
-                        className="mt-0.5 text-zinc-600 transition-all duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[var(--okx-accent)]"
+                        className="mt-0.5 text-zinc-500 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
                         aria-hidden="true"
                       />
                     </div>
 
-                    <span className="mt-1.5 max-w-[190px] text-[10px] leading-[1.4] text-zinc-400 group-hover:text-zinc-300 transition-colors">
+                    <span className="mt-1.5 text-[11px] leading-snug text-zinc-400 font-medium group-hover:text-zinc-200 transition-colors">
                       {c.note || MENU_NOTES[c.label] || ""}
                     </span>
                   </Link>
@@ -406,7 +400,7 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
 function QuickDemoGrid({ onDone, testidPrefix }) {
   const { enter, busy } = useQuickPersonaLogin();
   return (
-    <ul className="grid grid-cols-2 gap-1.5 px-1 sm:grid-cols-3">
+    <ul className="grid grid-cols-2 gap-2 px-1 sm:grid-cols-3 font-gemini">
       {QUICK_DEMO_ROLES.map((r) => (
         <li key={r.id}>
           <button
@@ -414,11 +408,11 @@ function QuickDemoGrid({ onDone, testidPrefix }) {
             disabled={busy === r.id}
             onClick={async () => { await enter(r); onDone?.(); }}
             data-testid={`${testidPrefix}-${r.id}`}
-            className="group flex w-full flex-col items-start rounded-lg border border-zinc-800 bg-[#0d0d12] px-3 py-2 text-left text-[12.5px] text-zinc-200 transition-all hover:border-[var(--okx-accent)] hover:bg-[#160a12] disabled:opacity-60"
+            className="group flex w-full flex-col items-start rounded-xl border border-white/[0.08] bg-[#0c0c12]/90 p-3 text-left text-xs transition-all hover:border-white/25 hover:bg-white/[0.04] hover:-translate-y-0.5 disabled:opacity-60 cursor-pointer shadow-sm"
           >
-            <span className="font-semibold text-white">{r.label}</span>
-            <span className="text-[10.5px] text-zinc-500">
-              {r.persona ? (busy === r.id ? "Masuk..." : "Masuk sekali klik") : "Daftar dulu"}
+            <span className="font-bold text-white group-hover:text-zinc-100">{r.label}</span>
+            <span className="mt-0.5 text-[10px] text-zinc-400 font-gemini-mono">
+              {r.persona ? (busy === r.id ? "Masuk..." : "1-Click Direct Access") : "Daftar Akun"}
             </span>
           </button>
         </li>
@@ -428,7 +422,7 @@ function QuickDemoGrid({ onDone, testidPrefix }) {
 }
 
 // -----------------------------------------------------------------------------
-// Header
+// Header Component
 // -----------------------------------------------------------------------------
 export default function PublicNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -444,11 +438,11 @@ export default function PublicNav() {
   };
 
   return (
-    <header className="okx-public-nav sticky top-0 z-40 border-b border-zinc-800/80 bg-[#08080ce8] backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] transition-all">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-        <div className="flex items-center gap-4 sm:gap-6 xl:gap-8">
+    <header className="okx-public-nav sticky top-0 z-50 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(255,255,255,0.04)] transition-all font-gemini px-4 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-3">
+        <div className="flex items-center gap-5 sm:gap-7 xl:gap-9">
           <Logo />
-          <nav className="okx-nav-type hidden items-center gap-4 lg:flex xl:gap-6" aria-label="Navigasi utama">
+          <nav className="hidden items-center gap-1.5 lg:flex xl:gap-2.5" aria-label="Navigasi utama">
             {NAV.map((item) =>
               item.children ? (
                 <DesktopDropdown key={item.id} item={item} isActive={isItemActive(item)} />
@@ -459,8 +453,10 @@ export default function PublicNav() {
                   end={item.to === "/"}
                   data-testid={`nav-${item.id}`}
                   className={({ isActive }) =>
-                    `okx-nav-link relative py-2 text-[13px] font-medium tracking-[0.015em] ${
-                      isActive ? "is-active text-[#f0e9e5]" : "text-zinc-400 hover:text-white"
+                    `relative rounded-lg px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 ${
+                      isActive
+                        ? "bg-white/[0.08] text-white"
+                        : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
                     }`
                   }
                 >
@@ -470,20 +466,20 @@ export default function PublicNav() {
             )}
           </nav>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {user ? (
             <>
               <Link
                 to="/app"
                 data-testid="nav-workspace-btn"
-                className="hidden rounded-lg bg-[var(--okx-accent)] px-4 py-2 text-xs font-bold text-white transition-all hover:bg-[var(--okx-accent-hover)] hover:shadow-[0_0_16px_rgba(255,46,126,0.35)] sm:block"
+                className="hidden rounded-xl bg-white hover:bg-zinc-200 px-5 py-2.5 text-xs font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] sm:block"
               >
                 Workspace
               </Link>
               <button
                 data-testid="nav-logout-btn"
                 onClick={() => { logout(); nav("/"); }}
-                className="hidden rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-300 hover:text-white hover:border-zinc-700 sm:block transition-colors"
+                className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2.5 text-xs font-semibold text-zinc-300 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all cursor-pointer"
               >
                 Sign Out
               </button>
@@ -493,14 +489,14 @@ export default function PublicNav() {
               <Link
                 to="/login"
                 data-testid="nav-signin-btn"
-                className="okx-nav-type hidden px-3 py-2 text-[13px] font-medium tracking-[0.015em] text-zinc-300 hover:text-white sm:block transition-colors"
+                className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 text-xs sm:text-[13px] font-semibold text-zinc-200 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all"
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
                 data-testid="nav-register-btn"
-                className="okx-nav-cta okx-nav-type rounded-lg bg-gradient-to-r from-[#ff2e7e] to-[#ff3b88] px-4 py-2 text-[13px] font-bold tracking-[0.01em] text-white hover:shadow-[0_0_20px_rgba(255,46,126,0.45)] transition-all"
+                className="rounded-xl bg-white hover:bg-zinc-200 px-3 sm:px-5 py-2 sm:py-2.5 text-[11.5px] sm:text-[13px] font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] whitespace-nowrap"
               >
                 Build an Event
               </Link>
@@ -511,9 +507,9 @@ export default function PublicNav() {
             aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
-            className="p-2 text-zinc-300 lg:hidden rounded-lg hover:bg-zinc-800/60"
+            className="p-2 sm:p-2.5 text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer shrink-0"
           >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
@@ -529,9 +525,9 @@ function MobileMenu({ onClose, isItemActive }) {
   return (
     <div
       data-testid="mobile-menu"
-      className="okx-mobile-menu max-h-[calc(100vh-6rem)] overflow-y-auto border-t border-[var(--okx-border)] bg-[var(--okx-surface)] px-4 py-3 lg:hidden"
+      className="max-h-[calc(100vh-5.5rem)] overflow-y-auto rounded-3xl border border-white/[0.1] bg-[#09090f]/98 backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.95)] p-5 mx-3 my-2 lg:hidden font-gemini"
     >
-      <nav className="okx-nav-type flex flex-col gap-1" aria-label="Navigasi mobile">
+      <nav className="flex flex-col gap-1.5" aria-label="Navigasi mobile">
         {NAV.map((item) =>
           item.children ? (
             <MobileAccordion key={item.id} item={item} onNavigate={onClose} />
@@ -542,8 +538,8 @@ function MobileMenu({ onClose, isItemActive }) {
               onClick={onClose}
               data-testid={`mnav-${item.id}`}
               className={
-                "okx-mobile-link border-b border-[var(--okx-border)]/40 py-3 text-sm " +
-                (isItemActive(item) ? "text-white" : "text-zinc-300")
+                "rounded-xl px-3.5 py-3 text-sm font-semibold transition-colors " +
+                (isItemActive(item) ? "bg-white/[0.08] text-white" : "text-zinc-300 hover:text-white hover:bg-white/[0.04]")
               }
             >
               {item.label}
@@ -551,18 +547,18 @@ function MobileMenu({ onClose, isItemActive }) {
           )
         )}
         {/* Extra mega section for Demo: quick roles beneath Demo link */}
-        <div className="border-b border-[var(--okx-border)]/40 py-3">
-          <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-            <Sparkles size={11} aria-hidden="true" /> Quick Demo Login
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 my-2">
+          <div className="mb-3 flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.22em] text-zinc-400 font-gemini-mono">
+            <Sparkles size={12} aria-hidden="true" /> Quick Demo Direct Access
           </div>
           <QuickDemoGrid onDone={onClose} testidPrefix="mnav-demo-quick" />
         </div>
-        <div className="mt-3 flex flex-col gap-2 pt-2">
+        <div className="mt-3 flex flex-col gap-2.5 pt-2">
           <Link
             to="/login"
             onClick={onClose}
             data-testid="mnav-signin"
-            className="border border-[var(--okx-border)] px-4 py-2.5 text-center text-sm font-semibold text-zinc-100"
+            className="rounded-xl border border-white/[0.15] bg-white/[0.04] px-4 py-3 text-center text-sm font-semibold text-zinc-100 hover:bg-white/[0.08] transition-all"
           >
             Sign In
           </Link>
@@ -570,9 +566,9 @@ function MobileMenu({ onClose, isItemActive }) {
             to="/register"
             onClick={onClose}
             data-testid="mnav-register"
-            className="bg-[var(--okx-accent)] px-4 py-2.5 text-center text-sm font-semibold text-white"
+            className="rounded-xl bg-white hover:bg-zinc-200 px-4 py-3 text-center text-sm font-bold text-black transition-all shadow-md active:scale-[0.98]"
           >
-            Register
+            Build an Event
           </Link>
         </div>
       </nav>
@@ -583,28 +579,29 @@ function MobileMenu({ onClose, isItemActive }) {
 function MobileAccordion({ item, onNavigate }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-[var(--okx-border)]/40 py-1">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e]/95 p-2.5 shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         data-testid={`mnav-${item.id}-toggle`}
-        className="flex w-full items-center justify-between py-2.5 text-left text-sm text-zinc-200"
+        className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm font-bold text-white hover:text-zinc-200 transition-colors cursor-pointer"
       >
         <span>{item.label}</span>
-        <ChevronDown size={16} className={"text-zinc-500 transition-transform " + (open ? "rotate-180" : "")} aria-hidden="true" />
+        <ChevronDown size={16} className={"text-zinc-400 transition-transform duration-200 " + (open ? "rotate-180 text-white" : "")} aria-hidden="true" />
       </button>
       {open && (
-        <ul className="mb-2 flex flex-col gap-1 pl-2">
+        <ul className="mt-2 flex flex-col gap-1.5 px-1 pb-1">
           {item.children.map((c) => (
             <li key={c.to}>
               <Link
                 to={c.to}
                 onClick={onNavigate}
                 data-testid={`mnav-${item.id}-${slug(c.label)}`}
-                className="block py-1.5 text-[13px] text-zinc-400 hover:text-white"
+                className="block rounded-xl border border-white/[0.08] bg-[#141418]/90 px-3.5 py-2.5 text-[13px] hover:border-white/30 hover:bg-white/[0.08] transition-all"
               >
-                {c.label}
+                <div className="font-bold text-white">{c.label}</div>
+                {c.note && <div className="text-[11px] text-zinc-400 font-medium mt-0.5">{c.note}</div>}
               </Link>
             </li>
           ))}
@@ -617,10 +614,15 @@ function MobileAccordion({ item, onNavigate }) {
 // -----------------------------------------------------------------------------
 // Footer. Mirrors the header taxonomy so users get the same map at the bottom.
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Footer. Redesigned with world-class studio aesthetics and consistent tokens.
+// -----------------------------------------------------------------------------
 export function Footer() {
   return (
-    <footer data-testid="public-footer" className="okx-footer border-t border-[var(--okx-border)] bg-[#070707] px-4 sm:px-6">
-      <div className="mx-auto max-w-7xl py-14 sm:py-20">
+    <footer data-testid="public-footer" className="relative border-t border-white/[0.07] bg-[#050508] px-4 sm:px-6 font-gemini overflow-hidden">
+      {/* Ambient top light line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[1px] bg-gradient-to-r from-transparent via-white/[0.2] to-transparent pointer-events-none" />
+      <div className="mx-auto max-w-7xl py-16 sm:py-24">
         <FooterHeadline />
         <FooterColumns />
         <FooterMeta />
@@ -631,47 +633,77 @@ export function Footer() {
 
 function FooterHeadline() {
   return (
-    <div className="grid items-end gap-9 lg:grid-cols-[minmax(0,1fr)_auto]">
-      <div>
-        <div className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
-          Live Event Operating Network
+    <div className="rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] via-[#0b0b10] to-[#060609] p-8 sm:p-14 lg:p-16 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
+      <div className="grid items-end gap-10 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300">
+            <Sparkles size={13} className="text-zinc-400" aria-hidden="true" />
+            <span>Live Event Operating Network</span>
+          </div>
+          <h2 className="editorial mt-5 max-w-4xl text-[clamp(2.4rem,5.5vw,5.2rem)] leading-[0.94] text-[#f4efec]">
+            Every moving part,
+            <br />
+            <span className="text-white font-bold">working as one.</span>
+          </h2>
+          <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+            Dari brief pertama hingga encore showtime — setiap partner, produksi, venue, ticketing, dan pembayaran bekerja sebagai satu kesatuan tanpa fragmentasi file.
+          </p>
         </div>
-        <h2 className="editorial mt-5 max-w-4xl text-[clamp(2.5rem,6vw,5.9rem)] leading-[0.92] text-[#f4efec]">
-          Every moving part,<br /><span className="accent-text">working as one.</span>
-        </h2>
-        <p className="mt-6 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-          Dari ide pertama hingga showtime, setiap partner, produksi, ticketing, dan pembayaran bekerja sebagai satu pertunjukan.
-        </p>
+        <div className="flex flex-col gap-3.5 sm:flex-row lg:flex-col shrink-0">
+          <Link
+            to="/register"
+            data-testid="footer-hero-primary"
+            className="group inline-flex min-w-52 items-center justify-between rounded-xl bg-white hover:bg-zinc-200 px-6 py-4 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
+          >
+            <span>Build an Event</span>
+            <ArrowUpRight size={17} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+          <Link
+            to="/demo"
+            data-testid="footer-hero-secondary"
+            className="group inline-flex min-w-52 items-center justify-between rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
+          >
+            <span>Platform Demo</span>
+            <ArrowUpRight size={17} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-        <Link to="/register" data-testid="footer-hero-primary" className="group flex min-w-52 items-center justify-between bg-[var(--okx-accent)] px-5 py-4 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
-          Register
-          <ArrowUpRight size={18} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
-        </Link>
-        </div>
     </div>
   );
 }
 
 function FooterColumns() {
-  const explore  = NAV.find((n) => n.id === "explore");
+  const explore = NAV.find((n) => n.id === "explore");
   const products = NAV.find((n) => n.id === "products");
   const solutions = NAV.find((n) => n.id === "solutions");
-  const company  = NAV.find((n) => n.id === "company");
+  const company = NAV.find((n) => n.id === "company");
+
   return (
-    <div className="mt-14 grid gap-10 border-t border-[var(--okx-border)] py-12 md:grid-cols-12">
-      <div className="md:col-span-3">
+    <div className="mt-16 grid gap-12 border-t border-white/[0.07] pt-14 md:grid-cols-12">
+      {/* Brand Column */}
+      <div className="md:col-span-4 lg:col-span-3">
         <Logo />
-        <p className="mt-5 max-w-sm text-sm leading-6 text-zinc-500">
-          Orkestrasi Koneksi, Kolaborasi, Aktivasi &amp; eXperience. Satu Event ID mengikat brief, jaringan, ticketing, hingga settlement.
+        <p className="mt-5 text-sm leading-relaxed text-zinc-400">
+          Orkestrasi Koneksi, Kolaborasi, Aktivasi &amp; eXperience. Satu Event ID mengikat brief, jaringan, ticketing, hingga milestone settlement.
         </p>
-        <div className="mt-6 flex flex-col gap-2 text-sm">
+
+        {/* Live Network Telemetry */}
+        <div className="mt-6 flex flex-col gap-2.5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-zinc-200 font-gemini-mono w-fit">
+            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+            <span>Event Graph Network: Active</span>
           </div>
+          <div className="font-gemini-mono text-[11px] text-zinc-400">
+            Node latency &lt;200ms · 15+ Cities Synced
+          </div>
+        </div>
       </div>
-      <FooterColumn title="Explore"   items={explore.children}   testid="footer-explore" />
-      <FooterColumn title="Products"  items={products.children}  testid="footer-products" />
-      <FooterColumn title="Solutions" items={solutions.children} testid="footer-solutions" />
-      <FooterColumn title="Company"   items={company.children}   testid="footer-company" />
+
+      {/* Navigation Columns */}
+      <FooterColumn title="Explore" items={explore?.children || []} testid="footer-explore" />
+      <FooterColumn title="Products" items={products?.children || []} testid="footer-products" />
+      <FooterColumn title="Solutions" items={solutions?.children || []} testid="footer-solutions" />
+      <FooterColumn title="Company" items={company?.children || []} testid="footer-company" />
     </div>
   );
 }
@@ -679,12 +711,15 @@ function FooterColumns() {
 function FooterColumn({ title, items, testid }) {
   return (
     <div className="md:col-span-2" data-testid={testid}>
-      <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{title}</h3>
-      <ul className="mt-4 space-y-3 text-sm text-zinc-400">
+      <h3 className="font-gemini-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-300">{title}</h3>
+      <ul className="mt-4 space-y-2.5 text-sm">
         {items.map((c) => (
           <li key={c.to}>
-            <Link className="inline-flex items-center gap-1.5 hover:text-white" to={c.to}>
-              {c.label}
+            <Link
+              to={c.to}
+              className="inline-flex items-center gap-1 text-zinc-400 transition-all duration-200 hover:text-white hover:translate-x-1"
+            >
+              <span>{c.label}</span>
             </Link>
           </li>
         ))}
@@ -695,21 +730,31 @@ function FooterColumn({ title, items, testid }) {
 
 function FooterMeta() {
   return (
-    <>
-      <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] py-8 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2 text-sm text-zinc-500">
-          <span>Dibuat oleh</span>
-          <a
-            href="https://www.instagram.com/okkarhys"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium tracking-tight text-zinc-200 transition-colors hover:text-[var(--okx-accent)]"
-            data-testid="footer-creator-link"
-          >
-            Isra Anwar
-          </a>
+    <div className="mt-14 space-y-8">
+      {/* Creator & Social Ribbon */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04] text-white font-bold font-gemini-mono text-sm">
+            OK
+          </div>
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+              Designed &amp; Engineered by
+            </div>
+            <a
+              href="https://www.instagram.com/okkarhys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-0.5 text-sm font-bold text-white transition-colors hover:text-zinc-300 inline-flex items-center gap-1"
+              data-testid="footer-creator-link"
+            >
+              <span>Isra Anwar</span>
+              <ArrowUpRight size={14} className="text-zinc-400" />
+            </a>
+          </div>
         </div>
-        <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2.5">
+
+        <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2">
           {SOCIAL_LINKS.map(({ label, href, Icon }) => (
             <a
               key={label}
@@ -719,23 +764,25 @@ function FooterMeta() {
               aria-label={label}
               title={label}
               data-testid={`footer-social-${label.split(" ")[0].toLowerCase()}`}
-              className="okx-social-tile inline-flex h-10 w-10 items-center justify-center border border-[var(--okx-border)] text-zinc-400"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:border-white/25 hover:bg-white/[0.08] hover:text-white transition-all duration-200 active:scale-95"
             >
-              <Icon size={18} />
+              <Icon size={17} />
             </a>
           ))}
         </nav>
       </div>
-      <div className="flex flex-col justify-between gap-5 border-t border-[var(--okx-border)] pt-6 text-xs leading-5 text-zinc-600 lg:flex-row lg:items-end">
-        <div className="max-w-4xl">
+
+      {/* Disclaimer & Copyright */}
+      <div className="flex flex-col justify-between gap-5 border-t border-white/[0.06] pt-6 text-xs leading-relaxed text-zinc-400 lg:flex-row lg:items-end font-gemini">
+        <div className="max-w-4xl text-zinc-400">
           Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk demonstrasi kompetisi. Pembayaran bersifat sandbox; tidak ada uang nyata yang ditagihkan.
         </div>
-        <div className="shrink-0 lg:text-right">
+        <div className="shrink-0 lg:text-right font-gemini-mono text-zinc-300">
           <div>© 2026 OKKAX</div>
-          <div className="mt-1 text-zinc-500">One event. Every moving part.</div>
+          <div className="mt-1 text-zinc-400 text-[11px]">One event. Every moving part.</div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -745,3 +792,5 @@ function FooterMeta() {
 function slug(s) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
+
+export { Footer as PublicFooter };

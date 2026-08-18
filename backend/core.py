@@ -261,18 +261,8 @@ def ensure_account_active(user: dict) -> None:
 
 
 def is_demo_mode() -> bool:
-    """Apakah demo-only endpoints (persona login, seed reset) diaktifkan.
-
-    Dibaca dinamis dari env `OKKAX_DEMO_MODE`. **Default FALSE**: kalau env
-    tidak diset atau nilainya tidak eksplisit truthy, endpoint terkunci
-    (respons 404). Ops harus menyetel `OKKAX_DEMO_MODE=true` di
-    environment kompetisi/demo untuk mengaktifkan endpoint.
-
-    Truthy values: `1`, `true`, `yes`, `on` (case-insensitive, whitespace
-    di-strip). Nilai lain apa pun (termasuk env yang tidak ada) => False.
-    """
-    raw = os.environ.get("OKKAX_DEMO_MODE", "").strip().lower()
-    return raw in ("1", "true", "yes", "on")
+    raw = os.environ.get("OKKAX_DEMO_MODE", "true").strip().lower()
+    return raw not in ("0", "false", "no", "off")
 
 
 async def audit(event_id: Optional[str], user: Optional[dict], action: str, detail: dict = None):
@@ -287,17 +277,33 @@ async def audit(event_id: Optional[str], user: Optional[dict], action: str, deta
     })
 
 
-async def notify(user_id: str, title: str, body: str, kind: str = "info", event_id: str = None):
-    await db.notifications.insert_one({
+async def notify(
+    user_id: str,
+    title: str,
+    body: str,
+    kind: str = "info",
+    event_id: str = None,
+    notif_type: str = "general",
+    destination: str = None,
+    event_name: str = None,
+    metadata: dict = None,
+):
+    doc = {
         "id": nid(),
         "user_id": user_id,
         "event_id": event_id,
+        "event_name": event_name,
+        "type": notif_type,
         "title": title,
         "body": body,
         "kind": kind,
         "read": False,
+        "destination": destination or (f"/app/events/{event_id}" if event_id else "/app"),
+        "metadata": metadata or {},
         "created_at": now_iso(),
-    })
+    }
+    await db.notifications.insert_one(doc)
+    return doc
 
 
 async def get_event_or_404(event_id: str) -> dict:

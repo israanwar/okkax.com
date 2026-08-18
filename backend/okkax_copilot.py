@@ -9,7 +9,7 @@ from core import db
 
 logger = logging.getLogger("okkax.copilot")
 
-YOONA_SYSTEM_PROMPT = """Kamu adalah "OKKAX Copilot" (atau "OKKAX AI"), Principal Event Intelligence & Copilot Operasional Resmi untuk platform OKKAX (Live Event Operating Network di Indonesia).
+OKKAX_COPILOT_SYSTEM_PROMPT = """Kamu adalah "OKKAX Copilot" (atau "OKKAX AI"), Principal Event Intelligence & Copilot Operasional Resmi untuk platform OKKAX (Live Event Operating Network di Indonesia).
 
 IDENTITAS & KARAKTER OKKAX COPILOT:
 - Nama: OKKAX Copilot (OKKAX AI)
@@ -143,12 +143,12 @@ def calculate_advanced_event_model(budget: int, capacity: int, event_type: str =
     }
 
 
-def deterministic_yoona_brain(query: str, history: List[Dict[str, str]] = None, current_route: str = "", role: str = "") -> str:
+def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] = None, current_route: str = "", role: str = "") -> str:
     """Mesin inferensi dan pengetahuan tingkat tinggi OKKAX Copilot untuk respon cepat & berbobot tinggi."""
     q = query.lower()
     
     # 1. Pertanyaan tentang Identitas OKKAX Copilot & Platform OKKAX
-    if any(k in q for k in ["siapa kamu", "tentang yoona", "apa itu yoona", "kenalan", "yoona", "okkax copilot", "siapa okkax"]):
+    if any(k in q for k in ["siapa kamu", "tentang okkax", "apa itu okkax", "kenalan", "copilot", "okkax copilot", "siapa okkax"]):
         return (
             "### Halo! Saya OKKAX Copilot — Principal Event Intelligence & Copilot Operasional Resmi OKKAX.\n\n"
             "Saya memandu promotor, brand sponsor, tenant, pengelola venue, dan pekerja kreatif dalam merancang serta mengoperasikan live event berskala profesional di seluruh Indonesia.\n\n"
@@ -287,7 +287,7 @@ def deterministic_yoona_brain(query: str, history: List[Dict[str, str]] = None, 
     )
 
 
-async def ask_yoona(
+async def ask_okkax_copilot(
     message: str,
     history: Optional[List[Dict[str, str]]] = None,
     current_route: str = "",
@@ -314,7 +314,7 @@ async def ask_yoona(
         try:
             from emergentintegrations.llm.chat import LlmChat, UserMessage
             
-            full_system = f"{YOONA_SYSTEM_PROMPT}\n{dynamic_context}\n{event_context}\n[USER STATUS]: Role={role or 'Guest/User'}, Active Route={current_route or '/'}"
+            full_system = f"{OKKAX_COPILOT_SYSTEM_PROMPT}\n{dynamic_context}\n{event_context}\n[USER STATUS]: Role={role or 'Guest/User'}, Active Route={current_route or '/'}"
             
             chat = LlmChat(
                 api_key=key,
@@ -347,7 +347,7 @@ async def ask_yoona(
             logger.warning(f"OKKAX Copilot LLM execution fallback to internal knowledge brain: {e}")
 
     # 2. Jalankan Mesin Pengetahuan Internal OKKAX Copilot
-    reply = deterministic_yoona_brain(message, history, current_route, role)
+    reply = deterministic_okkax_copilot_brain(message, history, current_route, role)
     return {
         "reply": reply,
         "engine": "okkax-intelligence-core-v2",
@@ -355,6 +355,11 @@ async def ask_yoona(
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "suggestions": get_smart_suggestions(current_route, role)
     }
+
+
+# Aliases for backward compatibility
+ask_yoona = ask_okkax_copilot
+deterministic_yoona_brain = deterministic_okkax_copilot_brain
 
 
 def get_smart_suggestions(current_route: str = "", role: str = "") -> List[str]:

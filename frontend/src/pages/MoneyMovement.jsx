@@ -40,7 +40,7 @@ const statusClass = (status = "") => {
     s.includes("settled") ||
     s.includes("completed")
   ) {
-    return "text-emerald-400";
+    return "text-white font-bold";
   }
 
   if (
@@ -48,10 +48,10 @@ const statusClass = (status = "") => {
     s.includes("reject") ||
     s.includes("failed")
   ) {
-    return "text-red-400";
+    return "text-zinc-400 line-through";
   }
 
-  return "text-amber-300";
+  return "text-zinc-300";
 };
 
 export default function MoneyMovement() {

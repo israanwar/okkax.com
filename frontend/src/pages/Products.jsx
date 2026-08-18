@@ -29,6 +29,16 @@ import {
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, apiError, compact, idr, num } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Reveal,
+  RevealGroup,
+  RevealItem,
+  MaskReveal,
+  MotionPanel,
+  ScrollProgressBar,
+  CounterNumber,
+  SpotlightCard,
+} from "@/components/MotionPrimitives";
 
 // ============================================================================
 // EVENT STUDIO  (preserved interactive experience)
@@ -118,10 +128,10 @@ function EventStudioProduct() {
 
   const statusClass = (status) =>
     status === "ready"
-      ? "text-zinc-200 border-zinc-700"
+      ? "text-white border-white/40 bg-white/10 font-bold rounded-full"
       : status === "risk"
-      ? "text-[var(--okx-accent-soft)] border-[var(--okx-accent)]"
-      : "text-zinc-500 border-zinc-800";
+      ? "text-zinc-200 border-dashed border-white/30 bg-white/[0.04] rounded-full"
+      : "text-zinc-400 border-white/[0.1] bg-white/[0.03] rounded-full";
 
   const chooseType = (type) => {
     setEventType(type);
@@ -133,13 +143,13 @@ function EventStudioProduct() {
   return (
     <ProductShell testid="event-studio-product" title="From event intent to executable operations." tagline="EVENT STUDIO" lead="Pilih jenis event, compile kebutuhan utamanya, lalu lihat bagaimana OKKAX membentuk Blueprint, Event ID, dependency, readiness, dan rekomendasi operasional." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="border border-[var(--okx-border)] bg-[#080808]">
+        <SpotlightCard className="overflow-hidden">
           <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]">
-            <div className="border-b border-[var(--okx-border)] p-5 lg:border-b-0 lg:border-r">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            <div className="border-b border-white/[0.08] p-6 lg:border-b-0 lg:border-r bg-[#09090f]/60">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                 01 · EVENT INTENT
               </div>
-              <p className="mt-3 text-sm leading-6 text-zinc-400">What are you building?</p>
+              <p className="mt-3 text-sm leading-6 text-zinc-300">What are you building?</p>
               <div className="mt-4 grid gap-2">
                 {Object.keys(EVENT_TYPES).map((type) => (
                   <button
@@ -148,23 +158,23 @@ function EventStudioProduct() {
                     aria-pressed={eventType === type}
                     onClick={() => chooseType(type)}
                     className={
-                      "flex items-center justify-between border px-3 py-2.5 text-left text-sm transition-colors " +
+                      "flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold transition-all cursor-pointer " +
                       (eventType === type
-                        ? "border-[var(--okx-accent)] bg-[#14080d] text-white"
-                        : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white")
+                        ? "border-white/40 bg-white/[0.1] text-white shadow-sm"
+                        : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-white")
                     }
                   >
-                    {type}
-                    <span className="text-[var(--okx-accent)]">&rarr;</span>
+                    <span>{type}</span>
+                    <span className="text-zinc-400">&rarr;</span>
                   </button>
                 ))}
               </div>
-              <p className="mt-5 text-xs leading-5 text-zinc-600">{model.description}</p>
+              <p className="mt-5 text-xs leading-5 text-zinc-400">{model.description}</p>
               <button
                 type="button"
                 onClick={() => { setCompiled(true); setResolved(false); setSelected("Workforce"); }}
                 data-testid="event-studio-compile"
-                className="mt-6 w-full bg-[var(--okx-accent)] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[var(--okx-accent-hover)]"
+                className="mt-6 w-full rounded-xl bg-white hover:bg-zinc-200 text-black px-4 py-3 text-sm font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
               >
                 Compile Event Blueprint
               </button>
@@ -174,42 +184,42 @@ function EventStudioProduct() {
               {!compiled ? (
                 <div className="flex min-h-[470px] items-center justify-center p-8">
                   <div className="max-w-md text-center">
-                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-zinc-800 text-xl text-[var(--okx-accent)]">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/[0.12] bg-white/[0.04] text-xl text-white shadow-sm">
                       <Sparkles size={22} aria-hidden="true" />
                     </div>
-                    <h2 className="editorial mt-6 text-2xl text-[#f4efec]">Ready to compile.</h2>
-                    <p className="mt-3 text-sm leading-6 text-zinc-500">
+                    <h2 className="editorial mt-6 text-2xl text-white">Ready to compile.</h2>
+                    <p className="mt-3 text-sm leading-6 text-zinc-400">
                       Event Studio mengubah intent menjadi requirement, dependency, readiness, dan satu Event ID yang dapat digunakan oleh seluruh sistem OKKAX.
                     </p>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <div className="flex flex-col gap-4 border-b border-[var(--okx-border)] p-5 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="flex flex-col gap-4 border-b border-white/[0.08] p-6 sm:flex-row sm:items-end sm:justify-between bg-[#09090f]/60">
                     <div>
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                         EVENT BLUEPRINT COMPILED
                       </div>
-                      <h2 className="editorial mt-2 text-2xl text-[#f4efec]">{eventType} Blueprint</h2>
-                      <div className="mt-1 font-mono text-xs text-zinc-600">
+                      <h2 className="editorial mt-2 text-2xl text-white">{eventType} Blueprint</h2>
+                      <div className="mt-1 font-mono text-xs text-zinc-400">
                         EVENT ID · DEMO-EVT-2026-0001
                       </div>
                     </div>
                     <div className="sm:text-right">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">Readiness</div>
-                      <div data-testid="event-studio-readiness" className="mt-1 font-mono text-2xl font-semibold text-white">{readiness}%</div>
+                      <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">Readiness</div>
+                      <div data-testid="event-studio-readiness" className="mt-1 font-mono text-2xl font-bold text-white">{readiness}%</div>
                     </div>
                   </div>
 
                   <div className="grid xl:grid-cols-[1fr_330px]">
-                    <div className="border-b border-[var(--okx-border)] p-5 xl:border-b-0 xl:border-r">
+                    <div className="border-b border-white/[0.08] p-6 xl:border-b-0 xl:border-r">
                       <div className="mb-4 flex items-center justify-between gap-4">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                           02 · EVENT GRAPH
                         </div>
-                        <div className="text-[10px] text-zinc-600">Click a node to inspect</div>
+                        <div className="text-[10px] text-zinc-400 font-gemini-mono">Click a node to inspect</div>
                       </div>
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                         {requirements.map((item) => (
                           <button
                             key={item.name}
@@ -217,77 +227,77 @@ function EventStudioProduct() {
                             onClick={() => setSelected(item.name)}
                             data-testid={`event-studio-node-${item.name.toLowerCase().replace(/[^a-z0-9]/g,'')}`}
                             className={
-                              "min-h-[88px] border p-3 text-left transition-all " +
+                              "min-h-[88px] rounded-xl border p-3.5 text-left transition-all cursor-pointer " +
                               (selected === item.name
-                                ? "border-[var(--okx-accent)] bg-[#11070b]"
-                                : "border-zinc-800 bg-[#090909] hover:border-zinc-600")
+                                ? "border-white/40 bg-white/[0.1] shadow-sm"
+                                : "border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]")
                             }
                           >
-                            <div className="text-sm font-medium text-zinc-200">{item.name}</div>
-                            <div className={"mt-3 inline-flex border px-2 py-1 text-[9px] font-semibold tracking-[0.16em] " + statusClass(item.status)}>
+                            <div className="text-sm font-semibold text-zinc-100">{item.name}</div>
+                            <div className={"mt-3 inline-flex border px-2.5 py-0.5 text-[9px] font-bold tracking-[0.16em] " + statusClass(item.status)}>
                               {statusLabel(item.status)}
                             </div>
                           </button>
                         ))}
                       </div>
-                      <div className="mt-5 border-t border-zinc-900 pt-5">
-                        <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+                      <div className="mt-6 border-t border-white/[0.08] pt-5">
+                        <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">
                           Critical dependency path
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                          <span className="border border-[var(--okx-accent)] px-3 py-2 text-[var(--okx-accent-soft)]">Workforce</span>
-                          <span className="text-zinc-700">&rarr;</span>
-                          <span className="border border-zinc-800 px-3 py-2 text-zinc-400">Gate Operations</span>
-                          <span className="text-zinc-700">&rarr;</span>
-                          <span className="border border-zinc-800 px-3 py-2 text-zinc-400">Access Readiness</span>
-                          <span className="text-zinc-700">&rarr;</span>
-                          <span className="border border-zinc-800 px-3 py-2 text-zinc-400">Showtime</span>
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-gemini-mono">
+                          <span className="rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-white font-bold">Workforce</span>
+                          <span className="text-zinc-600">&rarr;</span>
+                          <span className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-zinc-300">Gate Operations</span>
+                          <span className="text-zinc-600">&rarr;</span>
+                          <span className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-zinc-300">Access Readiness</span>
+                          <span className="text-zinc-600">&rarr;</span>
+                          <span className="rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-zinc-300">Showtime</span>
                         </div>
                       </div>
                     </div>
 
-                    <aside className="p-5">
-                      <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
+                    <aside className="p-6 bg-[#09090f]/40">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                         NODE INSPECTOR
                       </div>
-                      <h3 className="mt-3 text-lg font-semibold text-white">{current.name}</h3>
-                      <div className={"mt-3 inline-flex border px-2 py-1 text-[9px] font-semibold tracking-[0.16em] " + statusClass(current.status)}>
+                      <h3 className="mt-3 text-lg font-bold text-white">{current.name}</h3>
+                      <div className={"mt-3 inline-flex border px-2.5 py-0.5 text-[9px] font-bold tracking-[0.16em] " + statusClass(current.status)}>
                         {statusLabel(current.status)}
                       </div>
                       <dl className="mt-6 space-y-5">
                         <div>
-                          <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Evidence</dt>
-                          <dd className="mt-1 text-xs leading-5 text-zinc-400">{current.detail}</dd>
+                          <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">Evidence</dt>
+                          <dd className="mt-1.5 text-xs leading-5 text-zinc-300">{current.detail}</dd>
                         </div>
                         <div>
-                          <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Impact</dt>
-                          <dd className="mt-1 text-xs leading-5 text-zinc-400">{current.impact}</dd>
+                          <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">Impact</dt>
+                          <dd className="mt-1.5 text-xs leading-5 text-zinc-300">{current.impact}</dd>
                         </div>
                       </dl>
                     </aside>
                   </div>
 
-                  <div className="border-t border-[var(--okx-border)] bg-[#070707] p-5">
+                  <div className="border-t border-white/[0.08] bg-[#07070b] p-6">
                     <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                       <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                           03 · OKKAX INTELLIGENCE
                         </div>
                         {!resolved ? (
                           <>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-300">
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-200">
                               Workforce adalah blocker utama. 12 posisi security belum terisi dan memengaruhi Gate Operations, Access Readiness, lalu Showtime.
                             </p>
-                            <p className="mt-2 text-xs leading-5 text-zinc-600">
+                            <p className="mt-2 text-xs leading-5 text-zinc-400 font-gemini">
                               Recommendation: review available workforce, complete assignments, then finalize access setup.
                             </p>
                           </>
                         ) : (
                           <>
-                            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-200">
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-white font-semibold">
                               Demo action applied. Critical workforce and access blockers are now resolved.
                             </p>
-                            <p className="mt-2 text-xs leading-5 text-zinc-600">
+                            <p className="mt-2 text-xs leading-5 text-zinc-400 font-gemini">
                               Readiness changed from 68% to 92% in this deterministic simulation.
                             </p>
                           </>
@@ -298,7 +308,7 @@ function EventStudioProduct() {
                         disabled={resolved}
                         onClick={() => { setResolved(true); setSelected("Workforce"); }}
                         data-testid="event-studio-run"
-                        className="min-w-[190px] border border-[var(--okx-accent)] px-4 py-3 text-sm font-semibold text-[var(--okx-accent-soft)] transition-colors hover:bg-[#14080d] disabled:border-zinc-800 disabled:text-zinc-600"
+                        className="min-w-[190px] rounded-xl bg-white hover:bg-zinc-200 text-black px-5 py-3 text-sm font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-white cursor-pointer"
                       >
                         {resolved ? "Recommendation Applied" : "Run Recommendation"}
                       </button>
@@ -308,7 +318,7 @@ function EventStudioProduct() {
               )}
             </div>
           </div>
-        </div>
+        </SpotlightCard>
 
         <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-zinc-500">
           <span>Blueprint</span><span>&rarr;</span><span>Network</span><span>&rarr;</span>
@@ -476,18 +486,18 @@ function NetworkProduct() {
   return (
     <ProductShell testid="network-product" title="The live event economy, connected." tagline="OKKAX NETWORK" lead="Cari talent, venue, vendor, workforce, dan tenant dari satu jaringan nasional. Availability, reputation, dan pengalaman event dibaca dalam konteks event." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="border border-[var(--okx-border)] bg-[#080808]">
+        <SpotlightCard className="overflow-hidden">
           {/* Type filter */}
-          <div className="border-b border-[var(--okx-border)] p-4 sm:p-5">
+          <div className="border-b border-white/[0.08] p-5 sm:p-6 bg-[#09090f]/60">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                 WHAT DO YOU NEED?
               </div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+              <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">
                 {loading ? "Memuat catalog..." : `${filtered.length.toLocaleString("id-ID")} matching profiles`}
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3.5 flex flex-wrap gap-2">
               {NETWORK_TYPES.map((t) => (
                 <button
                   key={t}
@@ -495,21 +505,21 @@ function NetworkProduct() {
                   onClick={() => { setType(t); setLimit(24); setSelectedId(null); }}
                   data-testid={`network-type-${t.toLowerCase()}`}
                   className={
-                    "flex items-center gap-2 border px-3 py-2 text-xs transition-colors " +
+                    "flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer " +
                     (type === t
-                      ? "border-[var(--okx-accent)] bg-[#14080d] text-white"
-                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white")
+                      ? "border-white/40 bg-white/[0.1] text-white shadow-sm"
+                      : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-white")
                   }
                 >
-                  {t}
-                  <span className="text-[10px] text-zinc-500">{counts[t] || 0}</span>
+                  <span>{t}</span>
+                  <span className="text-[10px] text-zinc-400 font-gemini-mono">{counts[t] || 0}</span>
                 </button>
               ))}
               <button
                 type="button"
                 onClick={() => setType("Sponsor")}
                 data-testid="network-type-sponsor"
-                className="ml-1 inline-flex items-center gap-1.5 border border-zinc-800 px-3 py-2 text-xs text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+                className="ml-1 inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-xs font-semibold text-zinc-400 hover:border-white/20 hover:text-white cursor-pointer"
               >
                 <Lock size={11} aria-hidden="true" /> Sponsor
               </button>
@@ -517,35 +527,35 @@ function NetworkProduct() {
           </div>
 
           {/* Search + filter */}
-          <div className="grid border-b border-[var(--okx-border)] md:grid-cols-[1fr_220px_auto]">
-            <label className="flex items-center gap-2 border-b border-[var(--okx-border)] px-4 py-3 md:border-b-0 md:border-r">
-              <Search size={14} aria-hidden="true" className="text-zinc-600" />
+          <div className="grid border-b border-white/[0.08] md:grid-cols-[1fr_220px_auto] bg-[#0c0c12]">
+            <label className="flex items-center gap-2.5 border-b border-white/[0.08] px-5 py-3 md:border-b-0 md:border-r">
+              <Search size={15} aria-hidden="true" className="text-zinc-500" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search name, category, or city"
                 data-testid="network-search"
-                className="w-full bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-zinc-700"
+                className="w-full bg-transparent px-1 py-1 text-sm text-white outline-none placeholder:text-zinc-500"
               />
             </label>
-            <label className="flex items-center gap-2 border-b border-[var(--okx-border)] px-4 py-3 md:border-b-0 md:border-r">
-              <MapPin size={14} aria-hidden="true" className="text-zinc-600" />
+            <label className="flex items-center gap-2.5 border-b border-white/[0.08] px-5 py-3 md:border-b-0 md:border-r">
+              <MapPin size={15} aria-hidden="true" className="text-zinc-500" />
               <select
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 data-testid="network-city"
-                className="w-full bg-[#080808] px-1 py-1 text-sm text-zinc-300 outline-none"
+                className="w-full bg-transparent px-1 py-1 text-sm text-zinc-300 outline-none"
               >
-                {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                {cities.map((c) => <option key={c} value={c} className="bg-[#0c0c12] text-white">{c}</option>)}
               </select>
             </label>
-            <label className="flex cursor-pointer items-center gap-2 px-4 py-3 text-xs text-zinc-400">
+            <label className="flex cursor-pointer items-center gap-2 px-5 py-3 text-xs text-zinc-400 font-gemini">
               <input
                 type="checkbox"
                 checked={verifiedOnly}
                 onChange={(e) => setVerifiedOnly(e.target.checked)}
                 data-testid="network-verified"
-                className="accent-pink-500"
+                className="accent-white"
               />
               Verified only
             </label>
@@ -555,16 +565,18 @@ function NetworkProduct() {
           {type === "Sponsor" ? (
             <div className="p-8 sm:p-12" data-testid="network-sponsor-gated">
               <div className="mx-auto max-w-lg text-center">
-                <Lock size={22} className="mx-auto text-[var(--okx-accent)]" aria-hidden="true" />
-                <h3 className="editorial mt-4 text-xl text-[#f4efec]">Sponsor discovery is a signed-in surface</h3>
-                <p className="mt-3 text-sm leading-6 text-zinc-500">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.12] bg-white/[0.04] text-white shadow-sm">
+                  <Lock size={20} aria-hidden="true" />
+                </div>
+                <h3 className="editorial mt-5 text-2xl text-white">Sponsor discovery is a signed-in surface</h3>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">
                   Sponsor opportunities dan brand fit terkunci sesuai kebijakan data. Masuk sebagai Sponsor untuk membuka opportunity feed penuh.
                 </p>
-                <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
-                  <Link to={user ? "/app/sponsor" : "/login"} className="inline-flex items-center justify-center gap-2 bg-[var(--okx-accent)] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[var(--okx-accent-hover)]">
+                <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                  <Link to={user ? "/app/sponsor" : "/login"} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 text-black px-5 py-2.5 text-xs font-bold shadow-md transition-all active:scale-[0.98]">
                     {user ? "Buka Sponsor Portal" : "Sign In sebagai Sponsor"}
                   </Link>
-                  <Link to="/for/sponsors" className="inline-flex items-center justify-center gap-2 border border-zinc-700 px-5 py-2.5 text-xs font-semibold text-zinc-100 hover:border-zinc-500">
+                  <Link to="/for/sponsors" className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.04] px-5 py-2.5 text-xs font-semibold text-zinc-100 hover:border-white/30 hover:bg-white/[0.08] transition-all">
                     Lihat For Sponsors
                   </Link>
                 </div>
@@ -573,21 +585,21 @@ function NetworkProduct() {
           ) : (
             <div className="grid lg:grid-cols-[1fr_340px]">
               {/* Results grid */}
-              <div className="min-w-0 border-b border-[var(--okx-border)] lg:border-b-0 lg:border-r">
-                <div className="flex items-center justify-between border-b border-[var(--okx-border)] px-5 py-3">
-                  <span className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+              <div className="min-w-0 border-b border-white/[0.08] lg:border-b-0 lg:border-r">
+                <div className="flex items-center justify-between border-b border-white/[0.08] px-6 py-3.5 bg-[#09090f]/50">
+                  <span className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">
                     {loading ? "..." : `Showing ${visible.length} of ${filtered.length}`}
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-zinc-600">
-                    <ShieldCheck size={11} aria-hidden="true" /> Public preview
+                  <span className="inline-flex items-center gap-1.5 text-[10px] text-zinc-400 font-gemini-mono">
+                    <ShieldCheck size={12} aria-hidden="true" className="text-zinc-300" /> Public preview
                   </span>
                 </div>
                 {err ? (
-                  <div className="p-10 text-center text-sm text-[var(--okx-accent-soft)]" data-testid="network-error">{err}</div>
+                  <div className="p-10 text-center text-sm text-zinc-300" data-testid="network-error">{err}</div>
                 ) : loading ? (
-                  <div className="p-10 text-center text-sm text-zinc-600" data-testid="network-loading">Memuat entitas dari catalog...</div>
+                  <div className="p-10 text-center text-sm text-zinc-400" data-testid="network-loading">Memuat entitas dari catalog...</div>
                 ) : visible.length === 0 ? (
-                  <div className="p-10 text-center text-sm text-zinc-600">Tidak ada profil sesuai filter. Sesuaikan filter.</div>
+                  <div className="p-10 text-center text-sm text-zinc-400">Tidak ada profil sesuai filter. Sesuaikan filter.</div>
                 ) : (
                   <>
                     <div className="grid sm:grid-cols-2" data-testid="network-results">
@@ -600,30 +612,30 @@ function NetworkProduct() {
                             onClick={() => setSelectedId(item.id)}
                             data-testid={`network-item-${item.id}`}
                             className={
-                              "min-h-[142px] border-b border-r border-zinc-900 p-4 text-left transition-colors " +
-                              (isSel ? "bg-[#11070b]" : "bg-[#080808] hover:bg-[#0d0d0d]")
+                              "min-h-[142px] border-b border-r border-white/[0.06] p-5 text-left transition-all cursor-pointer " +
+                              (isSel ? "bg-white/[0.08]" : "bg-transparent hover:bg-white/[0.03]")
                             }
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">
+                                <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">
                                   {item.type}
                                 </div>
-                                <div className="mt-1.5 truncate text-sm font-medium text-white">
+                                <div className="mt-1.5 truncate text-sm font-bold text-white">
                                   {item.name}
                                 </div>
                               </div>
                               {item.rating != null && (
-                                <span className="shrink-0 text-xs text-zinc-500">{item.rating.toFixed(1)}</span>
+                                <span className="shrink-0 text-xs font-semibold text-zinc-400 font-gemini-mono">{item.rating.toFixed(1)}</span>
                               )}
                             </div>
-                            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+                            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-400 font-gemini">
                               <span>{item.city || "-"}</span>
                               <span>{item.category}</span>
-                              {item.portfolio ? <span>{item.portfolio} records</span> : null}
+                              {item.portfolio ? <span className="font-gemini-mono">{item.portfolio} records</span> : null}
                             </div>
                             {item.verified && (
-                              <div className="mt-3 inline-flex items-center gap-1 border border-emerald-500/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
+                              <div className="mt-3 inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-white">
                                 <CheckCircle2 size={9} aria-hidden="true" /> Verified
                               </div>
                             )}
@@ -632,12 +644,12 @@ function NetworkProduct() {
                       })}
                     </div>
                     {visible.length < filtered.length && (
-                      <div className="border-t border-[var(--okx-border)] p-4 text-center">
+                      <div className="border-t border-white/[0.08] p-5 text-center bg-[#09090f]/30">
                         <button
                           type="button"
                           onClick={() => setLimit((n) => n + 24)}
                           data-testid="network-load-more"
-                          className="border border-zinc-800 px-5 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white"
+                          className="rounded-xl border border-white/[0.12] bg-white/[0.03] px-5 py-2.5 text-xs font-semibold text-zinc-200 hover:border-white/25 hover:text-white transition-all cursor-pointer"
                         >
                           Load more ({filtered.length - visible.length} remaining)
                         </button>
@@ -648,27 +660,27 @@ function NetworkProduct() {
               </div>
 
               {/* Match inspector */}
-              <aside className="p-5">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
+              <aside className="p-6 bg-[#09090f]/40">
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                   MATCH INSPECTOR
                 </div>
                 {selected ? (
                   <>
                     <div className="mt-5">
-                      <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">Selected</div>
-                      <h2 data-testid="network-inspector-name" className="mt-2 text-xl font-semibold text-white">{selected.name}</h2>
-                      <div className="mt-1 text-xs text-zinc-500">
+                      <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Selected</div>
+                      <h2 data-testid="network-inspector-name" className="mt-2 text-xl font-bold text-white">{selected.name}</h2>
+                      <div className="mt-1 text-xs text-zinc-400">
                         {selected.type} · {selected.city || "-"} · {selected.category}
                       </div>
                       {selected.teaser && (
-                        <p className="mt-3 text-xs leading-5 text-zinc-500">{selected.teaser}</p>
+                        <p className="mt-3 text-xs leading-5 text-zinc-400">{selected.teaser}</p>
                       )}
                     </div>
 
                     <dl className="mt-6 space-y-5">
                       <div>
-                        <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Availability</dt>
-                        <dd className="mt-1 text-xs text-zinc-300">
+                        <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Availability</dt>
+                        <dd className="mt-1 text-xs font-medium text-zinc-300">
                           {selected.availability == null
                             ? "Contact for schedule"
                             : selected.availability > 0
@@ -677,36 +689,36 @@ function NetworkProduct() {
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Reputation</dt>
-                        <dd className="mt-1 text-xs text-zinc-300">
+                        <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Reputation</dt>
+                        <dd className="mt-1 text-xs font-medium text-zinc-300">
                           {selected.rating != null ? `${selected.rating.toFixed(1)} rating` : "No public rating"}
                           {selected.verified ? " · Verified" : ""}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Experience</dt>
-                        <dd className="mt-1 text-xs text-zinc-300">
+                        <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Experience</dt>
+                        <dd className="mt-1 text-xs font-medium text-zinc-300">
                           {selected.portfolio ? `${selected.portfolio} recorded event engagements` : "New to network"}
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Signal</dt>
-                        <dd className="mt-1 text-xs text-zinc-300">{selected.accent}</dd>
+                        <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Signal</dt>
+                        <dd className="mt-1 text-xs font-medium text-zinc-300">{selected.accent}</dd>
                       </div>
                     </dl>
 
                     {/* Protected detail lock */}
-                    <div className="mt-7 border border-zinc-800 bg-[#090909] p-4" data-testid="network-inspector-lock">
-                      <div className="flex items-start gap-2">
-                        <Lock size={14} className="mt-0.5 shrink-0 text-[var(--okx-accent-soft)]" aria-hidden="true" />
+                    <div className="mt-7 rounded-xl border border-white/[0.1] bg-white/[0.03] p-4" data-testid="network-inspector-lock">
+                      <div className="flex items-start gap-3">
+                        <Lock size={14} className="mt-0.5 shrink-0 text-zinc-400" aria-hidden="true" />
                         <div>
-                          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">
+                          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-300 font-gemini-mono">
                             Protected detail
                           </div>
-                          <p className="mt-1 text-[11.5px] leading-5 text-zinc-500">
+                          <p className="mt-1 text-[11.5px] leading-5 text-zinc-400">
                             Full pricing tier, contact, historical performance, and matching action tersedia setelah sign in dan tergantung role authorization backend.
                           </p>
-                          <Link to={user ? "/app" : "/login"} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-zinc-100 hover:text-white">
+                          <Link to={user ? "/app" : "/login"} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-white hover:underline">
                             {user ? "Buka workspace" : "Sign In untuk detail"}
                             <ArrowRight size={12} aria-hidden="true" />
                           </Link>
@@ -715,12 +727,12 @@ function NetworkProduct() {
                     </div>
                   </>
                 ) : (
-                  <div className="mt-5 text-xs text-zinc-500">Pilih satu profil di kiri untuk inspect.</div>
+                  <div className="mt-5 text-xs text-zinc-400">Pilih satu profil di kiri untuk inspect.</div>
                 )}
               </aside>
             </div>
           )}
-        </div>
+        </SpotlightCard>
 
         <CtaRow primary={["Join the Network", "/register"]} secondary={["Explore Full Demo", "/demo"]} />
       </section>
@@ -764,11 +776,11 @@ const INTEL_TIERS = [
       <div className="text-zinc-200">
         <p className="text-sm">Gate Operations is at risk.</p>
         <p className="mt-2 text-xs text-zinc-500">Root cause: 12 security positions remain unfilled.</p>
-        <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11.5px] text-zinc-500">
+        <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11.5px] text-zinc-400">
           {["Workforce", "Gate Operations", "Access Readiness", "Showtime"].map((s, i, a) => (
             <li key={s} className="flex items-center gap-2">
-              {i > 0 && <span className="text-[var(--okx-accent)]" aria-hidden="true">/</span>}
-              <span className={i === a.length - 1 ? "text-zinc-200" : ""}>{s}</span>
+              {i > 0 && <span className="text-zinc-600" aria-hidden="true">&rarr;</span>}
+              <span className={i === a.length - 1 ? "text-white font-semibold" : ""}>{s}</span>
             </li>
           ))}
         </ol>
@@ -781,16 +793,16 @@ const INTEL_TIERS = [
     plan: "Optimize",
     question: "What is the best next action?",
     render: () => (
-      <ol className="space-y-1.5 text-zinc-200">
+      <ol className="space-y-2 text-zinc-200">
         {[
           "Complete security assignment (18 hires)",
           "Finalize gate configuration",
           "Allocate validator teams",
           "Run access-readiness check",
         ].map((step, i) => (
-          <li key={step} className="flex gap-2 text-sm">
-            <span className="w-6 shrink-0 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--okx-accent)]">
-              {String(i + 1).padStart(2, "0")}
+          <li key={step} className="flex items-center gap-3 text-sm">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/[0.15] bg-white/[0.04] text-[10px] font-bold font-gemini-mono text-zinc-300">
+              {i + 1}
             </span>
             <span>{step}</span>
           </li>
@@ -819,25 +831,25 @@ function IntelligenceProduct() {
   return (
     <ProductShell testid="intelligence-product" title="Grounded on state. Not chat." tagline="OKKAX INTELLIGENCE" lead="Intelligence terikat pada state Event Graph yang berwenang. Rekomendasi memiliki evidence, dependency path, impact, dan action yang otorisasinya tetap melalui domain service." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="border border-[var(--okx-border)] bg-[#080808]">
+        <SpotlightCard className="overflow-hidden">
           {/* Anchored event ID from canonical demo backend */}
-          <div className="flex flex-col justify-between gap-4 border-b border-[var(--okx-border)] p-5 sm:flex-row sm:items-end">
+          <div className="flex flex-col justify-between gap-4 border-b border-white/[0.08] p-6 sm:flex-row sm:items-end bg-[#09090f]/60">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                 Anchored on canonical demo event
               </div>
-              <h2 className="editorial mt-2 text-2xl text-[#f4efec]">{data.name}</h2>
-              <div className="mt-1 font-mono text-xs text-zinc-600" data-testid="intel-event-code">EVENT ID · {data.eventCode}</div>
-              {err && <div className="mt-2 text-xs text-[var(--okx-accent-soft)]">Backend unreachable: {err}</div>}
+              <h2 className="editorial mt-2 text-2xl text-white">{data.name}</h2>
+              <div className="mt-1 font-mono text-xs text-zinc-400" data-testid="intel-event-code">EVENT ID · {data.eventCode}</div>
+              {err && <div className="mt-2 text-xs text-zinc-300">Backend unreachable: {err}</div>}
             </div>
             <div className="sm:text-right">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">Readiness</div>
-              <div className="mt-1 font-mono text-2xl font-semibold text-white">{data.readiness}%</div>
+              <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-400 font-gemini-mono">Readiness</div>
+              <div className="mt-1 font-mono text-2xl font-bold text-white">{data.readiness}%</div>
             </div>
           </div>
 
           {/* Tier selector */}
-          <div className="grid border-b border-[var(--okx-border)] sm:grid-cols-3">
+          <div className="grid border-b border-white/[0.08] sm:grid-cols-3">
             {INTEL_TIERS.map((t, i) => {
               const isActive = t.id === active;
               return (
@@ -848,16 +860,16 @@ function IntelligenceProduct() {
                   aria-pressed={isActive}
                   data-testid={`intel-tier-${t.id}`}
                   className={
-                    "border-b border-[var(--okx-border)] p-5 text-left transition-colors sm:border-b-0 " +
-                    (i > 0 ? "sm:border-l" : "") + " " +
-                    (isActive ? "bg-[#11070b]" : "bg-[#080808] hover:bg-[#0d0d0d]")
+                    "border-b border-white/[0.08] p-6 text-left transition-all cursor-pointer sm:border-b-0 " +
+                    (i > 0 ? "sm:border-l sm:border-white/[0.08]" : "") + " " +
+                    (isActive ? "bg-white/[0.08]" : "bg-transparent hover:bg-white/[0.03]")
                   }
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">{t.label}</span>
-                    <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">{t.plan}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-300 font-gemini-mono">{t.label}</span>
+                    <span className="text-[10px] uppercase font-bold tracking-[0.16em] text-zinc-500 font-gemini-mono">{t.plan}</span>
                   </div>
-                  <div className="mt-3 text-sm text-zinc-100">{t.question}</div>
+                  <div className="mt-3 text-sm font-semibold text-white">{t.question}</div>
                 </button>
               );
             })}
@@ -865,32 +877,32 @@ function IntelligenceProduct() {
 
           {/* Active tier detail */}
           <div className="grid xl:grid-cols-[1fr_320px]">
-            <div className="p-6 xl:border-r xl:border-[var(--okx-border)]" data-testid={`intel-panel-${tier.id}`}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+            <div className="p-6 xl:border-r xl:border-white/[0.08]" data-testid={`intel-panel-${tier.id}`}>
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400 font-gemini-mono">
                 {tier.label} · {tier.plan}
               </div>
-              <div className="mt-3">{tier.render(data)}</div>
+              <div className="mt-4">{tier.render(data)}</div>
             </div>
-            <aside className="border-t border-[var(--okx-border)] p-6 xl:border-t-0">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">
+            <aside className="border-t border-white/[0.08] p-6 xl:border-t-0 bg-[#09090f]/40">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400 font-gemini-mono">
                 CONTRACT
               </div>
-              <ul className="mt-4 space-y-3 text-sm">
+              <ul className="mt-4 space-y-3.5 text-sm">
                 {[
                   "Grounded pada state event yang berwenang.",
                   "Setiap action melewati otorisasi domain service.",
                   "Provenance selalu dapat diperiksa.",
                   "Tidak menciptakan data fiktif.",
                 ].map((line) => (
-                  <li key={line} className="flex gap-2 text-zinc-300">
-                    <ShieldCheck size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--okx-accent)]" />
-                    <span>{line}</span>
+                  <li key={line} className="flex items-start gap-2.5 text-zinc-300">
+                    <ShieldCheck size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-zinc-300" />
+                    <span className="text-xs leading-5">{line}</span>
                   </li>
                 ))}
               </ul>
             </aside>
           </div>
-        </div>
+        </SpotlightCard>
 
         <CtaRow primary={["Try on /demo", "/demo"]} secondary={["Compare tier on Pricing", "/pricing"]} />
       </section>
@@ -976,13 +988,13 @@ function TicketStudioProduct() {
   return (
     <ProductShell testid="ticket-studio-product" title="One ticketing authority per event." tagline="TICKET STUDIO" lead="Pilih inventory mode, lihat tier, kuota, dan gate configuration. Ticket Studio menjaga integrity inventory dan menyiapkan validator untuk gate operations." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="border border-[var(--okx-border)] bg-[#080808]">
+        <SpotlightCard className="overflow-hidden">
           {/* Inventory mode selector */}
-          <div className="border-b border-[var(--okx-border)] p-5">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="border-b border-white/[0.08] p-5 sm:p-6 bg-[#09090f]/60">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
               01 · INVENTORY MODE
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-3.5 flex flex-wrap gap-2">
               {Object.entries(TICKET_MODES).map(([k, v]) => (
                 <button
                   key={k}
@@ -991,42 +1003,42 @@ function TicketStudioProduct() {
                   data-testid={`ticket-mode-${k}`}
                   aria-pressed={mode === k}
                   className={
-                    "border px-3 py-2 text-xs transition-colors " +
+                    "rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer " +
                     (mode === k
-                      ? "border-[var(--okx-accent)] bg-[#14080d] text-white"
-                      : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white")
+                      ? "border-white/40 bg-white/[0.1] text-white shadow-sm"
+                      : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-white")
                   }
                 >
                   {v.short}
                 </button>
               ))}
             </div>
-            <p className="mt-4 text-sm text-zinc-400">{m.lead}</p>
+            <p className="mt-4 text-sm text-zinc-300">{m.lead}</p>
           </div>
 
           {/* Tiers */}
           <div className="grid lg:grid-cols-[1fr_320px]">
-            <div className="border-b border-[var(--okx-border)] p-5 lg:border-b-0 lg:border-r">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            <div className="border-b border-white/[0.08] p-6 lg:border-b-0 lg:border-r">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                 02 · TICKET PRODUCTS ({m.label})
               </div>
-              <ul className="mt-4 divide-y divide-[var(--okx-border)] border-y border-[var(--okx-border)]" data-testid="ticket-tiers">
+              <ul className="mt-4 divide-y divide-white/[0.08] border-y border-white/[0.08]" data-testid="ticket-tiers">
                 {m.tiers.map((t) => {
                   const pct = Math.round((t.sold / t.quota) * 100);
                   return (
                     <li key={t.name} className="py-4">
                       <div className="flex items-baseline justify-between gap-3">
                         <div>
-                          <div className="text-sm font-semibold text-white">{t.name}</div>
-                          <div className="font-mono text-xs text-zinc-500">{idr(t.price)}</div>
+                          <div className="text-sm font-bold text-white">{t.name}</div>
+                          <div className="font-mono text-xs text-zinc-400">{idr(t.price)}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-mono text-sm text-zinc-200">{num(t.sold)} / {num(t.quota)}</div>
-                          <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">{pct}% terjual</div>
+                          <div className="font-mono text-sm font-semibold text-zinc-200">{num(t.sold)} / {num(t.quota)}</div>
+                          <div className="text-[10px] uppercase font-bold tracking-[0.16em] text-zinc-400 font-gemini-mono">{pct}% terjual</div>
                         </div>
                       </div>
-                      <div className="mt-3 h-1 w-full overflow-hidden bg-[#1c1c1f]">
-                        <div className="h-full bg-[var(--okx-accent)] transition-all duration-500" style={{ width: pct + "%" }} />
+                      <div className="mt-3 h-1.5 w-full rounded-full overflow-hidden bg-white/[0.08]">
+                        <div className="h-full rounded-full bg-gradient-to-r from-zinc-400 to-white transition-all duration-500" style={{ width: pct + "%" }} />
                       </div>
                     </li>
                   );
@@ -1035,35 +1047,35 @@ function TicketStudioProduct() {
             </div>
 
             {/* Aggregate + gates */}
-            <aside className="p-5" data-testid="ticket-summary">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">
+            <aside className="p-6 bg-[#09090f]/40" data-testid="ticket-summary">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
                 LIVE INVENTORY
               </div>
               <dl className="mt-4 space-y-4">
                 <div>
-                  <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Total quota</dt>
-                  <dd className="font-mono text-lg text-white">{num(totalQuota)}</dd>
+                  <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Total quota</dt>
+                  <dd className="font-mono text-lg font-bold text-white">{num(totalQuota)}</dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Sold</dt>
-                  <dd className="font-mono text-lg text-white">{num(totalSold)} <span className="text-xs text-zinc-500">({sellThrough}%)</span></dd>
+                  <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Sold</dt>
+                  <dd className="font-mono text-lg font-bold text-white">{num(totalSold)} <span className="text-xs text-zinc-400 font-normal">({sellThrough}%)</span></dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Projected GMV</dt>
-                  <dd className="font-mono text-lg text-white">{compact(totalGmv)}</dd>
+                  <dt className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Projected GMV</dt>
+                  <dd className="font-mono text-lg font-bold text-white">{compact(totalGmv)}</dd>
                 </div>
               </dl>
 
-              <div className="mt-6 border-t border-zinc-900 pt-4">
-                <div className="text-[9px] uppercase tracking-[0.18em] text-zinc-600">Gates &amp; Validators</div>
+              <div className="mt-6 border-t border-white/[0.08] pt-4">
+                <div className="text-[9px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Gates &amp; Validators</div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {Array.from({ length: m.gates }).map((_, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 border border-zinc-800 px-2 py-1 text-[10px] font-semibold text-zinc-300">
+                    <span key={i} className="inline-flex items-center gap-1 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 text-[10px] font-bold font-gemini-mono text-zinc-200">
                       <QrCode size={10} aria-hidden="true" /> G{i + 1}
                     </span>
                   ))}
                 </div>
-                <div className="mt-2 text-[11px] text-zinc-500">
+                <div className="mt-2 text-[11px] text-zinc-400">
                   {m.seating ? "Seatmap dan gate mapping aktif." : "Seatmap tidak diperlukan untuk GA."}
                 </div>
               </div>
@@ -1071,19 +1083,19 @@ function TicketStudioProduct() {
           </div>
 
           {/* Sales rule + validator strip */}
-          <div className="grid border-t border-[var(--okx-border)] p-5 sm:grid-cols-3 sm:gap-4">
+          <div className="grid border-t border-white/[0.08] p-6 sm:grid-cols-3 sm:gap-4 bg-[#07070b]">
             {[
               ["Refund policy", "Full refund H-30, partial H-14, non-refundable H-7."],
               ["Transfer", "Boleh transfer hingga H-3 dengan audit trail."],
               ["Validator", "Scan pertama valid, scan kedua replay-denied."],
             ].map(([k, v]) => (
-              <div key={k} className="border-b border-[var(--okx-border)] py-4 sm:border-b-0 sm:pr-4">
-                <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">{k}</div>
-                <div className="mt-2 text-xs text-zinc-300">{v}</div>
+              <div key={k} className="border-b border-white/[0.08] py-4 sm:border-b-0 sm:pr-4">
+                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">{k}</div>
+                <div className="mt-2 text-xs leading-5 text-zinc-300">{v}</div>
               </div>
             ))}
           </div>
-        </div>
+        </SpotlightCard>
 
         <CtaRow primary={["Configure Ticket Studio", "/register"]} secondary={["Lihat pada Demo", "/demo"]} />
       </section>
@@ -1092,20 +1104,20 @@ function TicketStudioProduct() {
 }
 
 // ============================================================================
-// LIVEPASS  (audience mobile-first entitlement simulation)
+// LIVEPASS  (interactive ticket credential simulation)
 // ============================================================================
 
 const LIVEPASS_STEPS = [
-  { id: 1, label: "Purchase", body: "Ticket dibeli. OKKAX menerbitkan entitlement, bukan file." },
-  { id: 2, label: "LivePass", body: "Credential aktif di aplikasi. Rotating token, tanpa file duplikat." },
-  { id: 3, label: "Gate scan", body: "Scan pertama: entitlement, freshness, dan state diverifikasi." },
-  { id: 4, label: "Replay",   body: "Scan berikutnya: rejected sebagai already-redeemed." },
+  { id: 1, label: "01 · Issued upon purchase", body: "Entitlement dibuat langsung di event graph. State: active." },
+  { id: 2, label: "02 · Delivered via LivePass", body: "Live rotating credential disajikan via secure client interface." },
+  { id: 3, label: "03 · Gate scan 1 (valid)", body: "Check-in sukses. State berubah jadi redeemed dalam <120ms." },
+  { id: 4, label: "04 · Replay scan 2 (denied)", body: "Screenshot atau token lama ditolak secara deterministik." },
 ];
 
 function LivePassProduct() {
   const [step, setStep] = useState(1);
-  const [scan1, setScan1] = useState(null);   // "ok" | null
-  const [scan2, setScan2] = useState(null);   // "denied" | null
+  const [scan1, setScan1] = useState(null);
+  const [scan2, setScan2] = useState(null);
 
   const doScan = () => {
     if (scan1 == null) { setScan1("ok"); setStep(3); return; }
@@ -1119,11 +1131,11 @@ function LivePassProduct() {
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           {/* Journey timeline */}
-          <div className="border border-[var(--okx-border)] bg-[#080808] p-5">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+          <SpotlightCard className="p-6">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
               AUDIENCE JOURNEY
             </div>
-            <ol className="mt-4 divide-y divide-[var(--okx-border)]">
+            <ol className="mt-4 divide-y divide-white/[0.08]">
               {LIVEPASS_STEPS.map((s) => {
                 const isActive = step === s.id;
                 const isDone = step > s.id;
@@ -1131,27 +1143,27 @@ function LivePassProduct() {
                   <li key={s.id} className="py-4">
                     <div className="flex items-start gap-4">
                       <span className={
-                        "flex h-8 w-8 shrink-0 items-center justify-center border font-mono text-[11px] " +
-                        (isDone ? "border-emerald-500/70 text-emerald-300" : isActive ? "border-[var(--okx-accent)] text-[var(--okx-accent)]" : "border-zinc-800 text-zinc-500")
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border font-mono text-[11px] font-bold " +
+                        (isDone ? "border-white/30 bg-white/10 text-white font-bold" : isActive ? "border-white/60 bg-white/[0.1] text-white shadow-sm" : "border-white/[0.08] bg-white/[0.02] text-zinc-500")
                       }>
                         {isDone ? <CheckCircle2 size={14} aria-hidden="true" /> : String(s.id).padStart(2, "0")}
                       </span>
                       <div className="min-w-0">
-                        <div className={"text-sm font-semibold " + (isActive ? "text-white" : "text-zinc-200")}>{s.label}</div>
-                        <div className="mt-1 text-xs leading-5 text-zinc-500">{s.body}</div>
+                        <div className={"text-sm font-bold " + (isActive ? "text-white" : "text-zinc-300")}>{s.label}</div>
+                        <div className="mt-1 text-xs leading-5 text-zinc-400">{s.body}</div>
                       </div>
                     </div>
                   </li>
                 );
               })}
             </ol>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-6 flex gap-2.5">
               <button
                 type="button"
                 onClick={doScan}
                 data-testid="livepass-scan"
                 disabled={scan2 !== null}
-                className="inline-flex items-center gap-2 bg-[var(--okx-accent)] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[var(--okx-accent-hover)] disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-white hover:bg-zinc-200 text-black px-4 py-2.5 text-xs font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-40 cursor-pointer"
               >
                 <QrCode size={13} aria-hidden="true" /> {scan1 == null ? "Scan #1" : scan2 == null ? "Scan #2 (replay)" : "Selesai"}
               </button>
@@ -1159,45 +1171,45 @@ function LivePassProduct() {
                 type="button"
                 onClick={reset}
                 data-testid="livepass-reset"
-                className="inline-flex items-center gap-2 border border-zinc-800 px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:border-zinc-500 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 text-xs font-semibold text-zinc-300 hover:border-white/25 hover:text-white transition-all cursor-pointer"
               >
                 Reset
               </button>
             </div>
-          </div>
+          </SpotlightCard>
 
           {/* Mobile mock */}
           <div className="mx-auto w-full max-w-[340px]" data-testid="livepass-mobile">
-            <div className="border border-[var(--okx-border)] bg-[#0b0b0b] p-4">
-              <div className="flex items-center justify-between border-b border-[var(--okx-border)] pb-3">
-                <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">LivePass</span>
-                <span className="font-mono text-[10px] text-zinc-500">okkax://livepass</span>
+            <SpotlightCard className="p-5 border-white/[0.15]">
+              <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+                <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">LivePass</span>
+                <span className="font-mono text-[10px] text-zinc-400">okkax://livepass</span>
               </div>
               <div className="mt-4">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Event</div>
-                <div className="text-sm font-semibold text-white">Aruna Bold Live Experience 2026</div>
-                <div className="mt-0.5 text-[11px] text-zinc-500">24 Aug 2026 · Makassar Convention Hall</div>
+                <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Event</div>
+                <div className="text-sm font-bold text-white">Aruna Bold Live Experience 2026</div>
+                <div className="mt-0.5 text-[11px] text-zinc-400">24 Aug 2026 · Makassar Convention Hall</div>
               </div>
 
-              <div className="mt-5 flex aspect-square items-center justify-center border border-[var(--okx-border)] bg-[#050505]">
-                <QrCode size={140} className="text-zinc-100" aria-hidden="true" />
+              <div className="mt-5 flex aspect-square items-center justify-center rounded-xl border border-white/[0.08] bg-[#060609] p-4">
+                <QrCode size={140} className="text-white" aria-hidden="true" />
               </div>
 
               <div className="mt-4">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Status</div>
+                <div className="text-[10px] uppercase font-bold tracking-[0.18em] text-zinc-500 font-gemini-mono">Status</div>
                 <div className={
-                  "mt-1 flex items-center gap-2 text-sm font-semibold " +
-                  (scan2 === "denied" ? "text-[var(--okx-accent-soft)]" : scan1 === "ok" ? "text-emerald-300" : "text-zinc-100")
+                  "mt-1 flex items-center gap-2 text-sm font-bold " +
+                  (scan2 === "denied" ? "text-zinc-300" : scan1 === "ok" ? "text-white font-bold" : "text-white")
                 }>
                   {scan2 === "denied" ? "Denied · Already Redeemed" : scan1 === "ok" ? "Redeemed at Main Gate" : "Ready for gate"}
                 </div>
-                <div className="mt-1 text-[11px] text-zinc-500">
+                <div className="mt-1 text-[11px] text-zinc-400">
                   Credential rotating. Screenshot tidak meng-copy hak.
                 </div>
               </div>
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-zinc-500">
-              <ShieldCheck size={13} aria-hidden="true" className="text-[var(--okx-accent)]" />
+            </SpotlightCard>
+            <div className="mt-3.5 flex items-center justify-center gap-2 text-[11px] text-zinc-400">
+              <ShieldCheck size={13} aria-hidden="true" className="text-zinc-300" />
               Media adalah representasi. Otoritas ada pada entitlement server.
             </div>
           </div>
@@ -1237,10 +1249,10 @@ function ProtectedPaymentProduct() {
   return (
     <ProductShell testid="protected-payment-product" title="Funding aman. Settlement transparan." tagline="PROTECTED PAYMENT" lead="Protected Payment memisahkan protected funds dari revenue. Silence tidak menahan payment yang layak, dispute punya jalur, dan settlement mengikuti provider yang terverifikasi." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-        <div className="border border-[var(--okx-border)] bg-[#080808]">
+        <SpotlightCard className="overflow-hidden">
           {/* Stage stepper */}
-          <div className="border-b border-[var(--okx-border)] p-5">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+          <div className="border-b border-white/[0.08] p-5 sm:p-6 bg-[#09090f]/60">
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
               CONTRACT LIFECYCLE
             </div>
             <ol className="mt-4 flex flex-wrap gap-2" data-testid="pp-stepper">
@@ -1252,12 +1264,12 @@ function ProtectedPaymentProduct() {
                     aria-pressed={stageIdx === i}
                     data-testid={`pp-stage-${st.id}`}
                     className={
-                      "border px-3 py-2 text-xs transition-colors " +
+                      "rounded-xl border px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer " +
                       (stageIdx === i
-                        ? "border-[var(--okx-accent)] bg-[#14080d] text-white"
+                        ? "border-white/40 bg-white/[0.1] text-white shadow-sm"
                         : i < stageIdx
-                          ? "border-emerald-500/60 text-emerald-300"
-                          : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-200")
+                          ? "border-white/25 bg-white/[0.05] text-zinc-200 font-medium"
+                          : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:border-white/20 hover:text-zinc-200")
                     }
                   >
                     <span className="mr-1.5 font-mono text-[10px] text-zinc-500">{String(i + 1).padStart(2, "0")}</span>
@@ -1266,53 +1278,53 @@ function ProtectedPaymentProduct() {
                 </li>
               ))}
             </ol>
-            <p className="mt-4 text-sm text-zinc-400">{stage.note}</p>
+            <p className="mt-4 text-sm text-zinc-300">{stage.note}</p>
           </div>
 
           {/* Ledger view */}
           <div className="grid xl:grid-cols-3">
-            <div className="border-b border-[var(--okx-border)] p-6 xl:border-b-0 xl:border-r" data-testid="pp-funded">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Funded</div>
-              <div className="mt-3 font-mono text-2xl font-semibold text-white">{compact(s.funded)}</div>
-              <div className="mt-1 text-[11px] text-zinc-500">{idr(s.funded)}</div>
-              <div className="mt-4 h-1 w-full bg-[#1c1c1f]">
-                <div className="h-full bg-emerald-500/70 transition-all duration-500" style={{ width: (s.funded > 0 ? 100 : 0) + "%" }} />
+            <div className="border-b border-white/[0.08] p-6 xl:border-b-0 xl:border-r" data-testid="pp-funded">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Funded</div>
+              <div className="mt-3 font-mono text-2xl font-bold text-white">{compact(s.funded)}</div>
+              <div className="mt-1 text-[11px] text-zinc-400 font-mono">{idr(s.funded)}</div>
+              <div className="mt-4 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
+                <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: (s.funded > 0 ? 100 : 0) + "%" }} />
               </div>
             </div>
-            <div className="border-b border-[var(--okx-border)] p-6 xl:border-b-0 xl:border-r" data-testid="pp-protected">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--okx-accent-soft)]">Protected balance</div>
-              <div className="mt-3 font-mono text-2xl font-semibold text-white">{compact(s.protected)}</div>
-              <div className="mt-1 text-[11px] text-zinc-500">{idr(s.protected)}</div>
-              <div className="mt-4 h-1 w-full bg-[#1c1c1f]">
-                <div className="h-full bg-[var(--okx-accent)] transition-all duration-500" style={{ width: (s.funded > 0 ? (s.protected / s.funded) * 100 : 0) + "%" }} />
+            <div className="border-b border-white/[0.08] p-6 xl:border-b-0 xl:border-r bg-[#09090f]/30" data-testid="pp-protected">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono">Protected balance</div>
+              <div className="mt-3 font-mono text-2xl font-bold text-white">{compact(s.protected)}</div>
+              <div className="mt-1 text-[11px] text-zinc-400 font-mono">{idr(s.protected)}</div>
+              <div className="mt-4 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
+                <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: (s.funded > 0 ? (s.protected / s.funded) * 100 : 0) + "%" }} />
               </div>
-              <div className="mt-2 text-[11px] text-zinc-500">Bukan revenue OKKAX. Ditahan hingga completion.</div>
+              <div className="mt-2 text-[11px] text-zinc-400">Bukan revenue OKKAX. Ditahan hingga completion.</div>
             </div>
             <div className="p-6" data-testid="pp-released">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Released</div>
-              <div className="mt-3 font-mono text-2xl font-semibold text-white">{compact(s.released)}</div>
-              <div className="mt-1 text-[11px] text-zinc-500">{idr(s.released)}</div>
-              <div className="mt-4 h-1 w-full bg-[#1c1c1f]">
-                <div className="h-full bg-zinc-400 transition-all duration-500" style={{ width: (s.funded > 0 ? (s.released / s.funded) * 100 : 0) + "%" }} />
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Released</div>
+              <div className="mt-3 font-mono text-2xl font-bold text-white">{compact(s.released)}</div>
+              <div className="mt-1 text-[11px] text-zinc-400 font-mono">{idr(s.released)}</div>
+              <div className="mt-4 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
+                <div className="h-full rounded-full bg-zinc-400 transition-all duration-500" style={{ width: (s.funded > 0 ? (s.released / s.funded) * 100 : 0) + "%" }} />
               </div>
-              <div className="mt-2 text-[11px] text-zinc-500">Ke provider setelah state release memenuhi policy.</div>
+              <div className="mt-2 text-[11px] text-zinc-400">Ke provider setelah state release memenuhi policy.</div>
             </div>
           </div>
 
           {/* Guarantees strip */}
-          <div className="grid border-t border-[var(--okx-border)] p-5 sm:grid-cols-3">
+          <div className="grid border-t border-white/[0.08] p-6 sm:grid-cols-3 bg-[#07070b]">
             {[
               ["Not revenue", "Protected funds bukan pendapatan OKKAX."],
               ["No silent hold", "Buyer silence tidak menahan payment yang layak."],
               ["Dispute path", "Dispute punya jalur eksplisit, tidak menggantung."],
             ].map(([k, v]) => (
-              <div key={k} className="border-b border-[var(--okx-border)] py-4 sm:border-b-0 sm:pr-4">
-                <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">{k}</div>
-                <div className="mt-2 text-xs text-zinc-300">{v}</div>
+              <div key={k} className="border-b border-white/[0.08] py-4 sm:border-b-0 sm:pr-4">
+                <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">{k}</div>
+                <div className="mt-2 text-xs leading-5 text-zinc-300">{v}</div>
               </div>
             ))}
           </div>
-        </div>
+        </SpotlightCard>
 
         <CtaRow primary={["Configure Protected Payment", "/register"]} secondary={["Lihat pada Demo", "/demo"]} />
       </section>
@@ -1326,25 +1338,30 @@ function ProtectedPaymentProduct() {
 
 function ProductShell({ testid, title, tagline, lead, children }) {
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
+      <ScrollProgressBar />
       <PublicNav />
       <main data-testid={testid}>
         <section className="mx-auto max-w-6xl px-4 pb-10 pt-14 sm:px-6 sm:pt-20">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[var(--okx-accent-soft)]">
-            {tagline}
-          </div>
+          <Reveal delay={0.05}>
+            <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-zinc-400 font-gemini-mono">
+              {tagline}
+            </div>
+          </Reveal>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-end">
             <div>
-              <h1 className="editorial max-w-3xl text-[clamp(2.6rem,5.8vw,5rem)] leading-[0.94] text-[#f4efec]">
-                {title}
-              </h1>
+              <MaskReveal delay={0.1}>
+                <h1 className="editorial max-w-3xl text-[clamp(2.6rem,5.8vw,5rem)] leading-[0.94] text-white">
+                  {title}
+                </h1>
+              </MaskReveal>
             </div>
-            <div className="max-w-xl lg:pb-2">
+            <Reveal delay={0.2} className="max-w-xl lg:pb-2">
               <p className="text-sm leading-6 text-zinc-400 sm:text-base">{lead}</p>
-              <div className="mt-3 text-[10px] uppercase tracking-[0.2em] text-zinc-600">
+              <div className="mt-3 text-[10px] uppercase font-bold tracking-[0.2em] text-zinc-500 font-gemini-mono">
                 Interactive product demonstration
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
         {children}
@@ -1361,7 +1378,7 @@ function CtaRow({ primary, secondary }) {
         <Link
           to={primary[1]}
           data-testid="product-cta-primary"
-          className="inline-flex items-center justify-between gap-3 bg-[var(--okx-accent)] px-5 py-3.5 text-sm font-semibold text-white hover:bg-[var(--okx-accent-hover)]"
+          className="inline-flex items-center justify-between gap-3 rounded-xl bg-white hover:bg-zinc-200 text-black px-6 py-3.5 text-sm font-bold shadow-[0_4px_24px_rgba(255,255,255,0.15)] transition-all active:scale-[0.98]"
         >
           {primary[0]}
           <ArrowUpRight size={15} aria-hidden="true" />
@@ -1371,7 +1388,7 @@ function CtaRow({ primary, secondary }) {
         <Link
           to={secondary[1]}
           data-testid="product-cta-secondary"
-          className="inline-flex items-center justify-between gap-3 border border-zinc-800 px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:border-zinc-600"
+          className="inline-flex items-center justify-between gap-3 rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-3.5 text-sm font-semibold text-zinc-100 hover:border-white/30 hover:bg-white/[0.08] transition-all"
         >
           {secondary[0]}
           <ArrowUpRight size={15} aria-hidden="true" />
