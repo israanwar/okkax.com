@@ -21,7 +21,7 @@ import {
   ShieldCheck,
   CornerDownLeft,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, fetchCached } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 // -----------------------------------------------------------------------------
@@ -259,17 +259,16 @@ export default function OkkaxChat() {
     }
   }, [location.search]);
 
+  const userRole = user?.roles?.[0] || "audience";
   useEffect(() => {
-    const role = user?.roles?.[0] || "audience";
-    api
-      .get(`/okkax/suggestions?route=${encodeURIComponent(location.pathname)}&role=${role}`)
-      .then(({ data }) => {
+    fetchCached(`/okkax/suggestions?route=${encodeURIComponent(location.pathname)}&role=${userRole}`, 300_000)
+      .then((data) => {
         if (data?.suggestions?.length > 0) {
           setSuggestions(data.suggestions);
         }
       })
       .catch(() => {});
-  }, [location.pathname, user]);
+  }, [location.pathname, userRole]);
 
   useEffect(() => {
     if (isOpen && !isMinimized) {

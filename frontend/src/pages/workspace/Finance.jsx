@@ -4,17 +4,18 @@ import { api, apiError, idr, compact, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
 
+import {
+  useStudioBudget,
+  useStudioCacheManager,
+} from "@/hooks/useStudioQueries";
+
 export function BudgetTab({ eventId, onChange }) {
-  const [b, setB] = useState(null);
+  const { data: b, isLoading, isError, error, refetch } = useStudioBudget(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
+
   const [sim, setSim] = useState(null);
   const [inputs, setInputs] = useState({ sell_through: 0.65, ticket_price_multiplier: 1, production_multiplier: 1, capacity: "" });
   const [item, setItem] = useState({ category: "Marketing", label: "", amount: 10000000 });
-
-  const load = () => api.get(`/events/${eventId}/budget`).then(({ data }) => setB(data));
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
 
   const simulate = async () => {
     const { data } = await api.post(`/events/${eventId}/simulate`, { ...inputs, capacity: inputs.capacity || undefined, apply_to_all: true });
@@ -24,7 +25,7 @@ export function BudgetTab({ eventId, onChange }) {
     try {
       await api.post(`/events/${eventId}/apply-scenario`, { scenario: key, capacity: inputs.capacity || undefined });
       toast.success(`Skenario ${key} diterapkan ke event`);
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -32,17 +33,40 @@ export function BudgetTab({ eventId, onChange }) {
   };
   const addItem = async () => {
     try {
-      const { data } = await api.post(`/events/${eventId}/budget-items`, item);
-      setB(data.budget);
+      await api.post(`/events/${eventId}/budget-items`, item);
       setItem({ ...item, label: "" });
       toast.success("Cost item ditambahkan");
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
 
-  if (!b) return <div className="text-sm text-zinc-500">Menghitung budget…</div>;
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Event Budget Engine</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Menghitung & memuat anggaran event…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !b) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Event Budget Engine</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat budget: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
   const gapPct = b.total_cost ? Math.min(100, Math.max(0, (b.confirmed_funding / b.total_cost) * 100)) : 0;
 
   return (

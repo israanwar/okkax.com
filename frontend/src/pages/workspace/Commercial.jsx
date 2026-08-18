@@ -11,25 +11,20 @@ const TICKET_TYPES = [
   "Community Allocation", "Waiting List",
 ];
 
+import {
+  useStudioSponsors,
+  useStudioTenants,
+  useStudioCacheManager,
+} from "@/hooks/useStudioQueries";
+
 export function SponsorsTab({ eventId, onChange }) {
-  const [packages, setPackages] = useState([]);
-  const [interests, setInterests] = useState([]);
-  const [commitments, setCommitments] = useState([]);
+  const { data, isLoading, isError, error, refetch } = useStudioSponsors(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
   const [form, setForm] = useState({ name: "", price: 50000000, quantity: 1, rights: "" });
 
-  const load = async () => {
-    const [{ data: p }, { data: i }] = await Promise.all([
-      api.get(`/events/${eventId}/sponsor-packages`),
-      api.get(`/events/${eventId}/sponsor-interests`),
-    ]);
-    setPackages(p.items);
-    setInterests(i.items);
-    setCommitments(i.commitments);
-  };
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
+  const packages = data?.packages || [];
+  const interests = data?.interests || [];
+  const commitments = data?.commitments || [];
 
   const create = async () => {
     try {
@@ -38,7 +33,7 @@ export function SponsorsTab({ eventId, onChange }) {
       });
       toast.success("Sponsor package dibuat");
       setForm({ name: "", price: 50000000, quantity: 1, rights: "" });
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -49,12 +44,37 @@ export function SponsorsTab({ eventId, onChange }) {
     try {
       await api.post(`/sponsor-interests/${id}/decision`, { decision });
       toast.success(decision === "approved" ? "Sponsor disetujui — funding gap diperbarui" : "Pengajuan ditolak");
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Sponsor Exchange</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Memuat sponsor exchange…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Sponsor Exchange</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat sponsor: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -132,9 +152,13 @@ export function SponsorsTab({ eventId, onChange }) {
 }
 
 export function TenantsTab({ eventId, onChange }) {
-  const [zones, setZones] = useState([]);
-  const [booths, setBooths] = useState([]);
-  const [apps, setApps] = useState([]);
+  const { data, isLoading, isError, error, refetch } = useStudioTenants(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
+
+  const zones = data?.zones || [];
+  const booths = data?.booths || [];
+  const apps = data?.apps || [];
+
   const [form, setForm] = useState({ name: "", category: "Food and Beverage", slots: 6, price: 7500000 });
   const [broadcast, setBroadcast] = useState({
     open: false, name: "", category: "Food & Beverage", slots: 8, price: 6500000,
@@ -143,26 +167,12 @@ export function TenantsTab({ eventId, onChange }) {
   });
   const [broadcasting, setBroadcasting] = useState(false);
 
-  const load = async () => {
-    const [{ data: z }, { data: a }] = await Promise.all([
-      api.get(`/events/${eventId}/tenant-zones`),
-      api.get(`/events/${eventId}/tenant-applications`),
-    ]);
-    setZones(z.zones);
-    setBooths(z.booths);
-    setApps(a.items);
-  };
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
-
   const createZone = async () => {
     try {
       await api.post(`/events/${eventId}/tenant-zones`, form);
       toast.success("Tenant zone dan booth dibuat");
       setForm({ ...form, name: "" });
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -172,7 +182,7 @@ export function TenantsTab({ eventId, onChange }) {
     try {
       await api.post(`/tenant-applications/${id}/decision`, { decision });
       toast.success(decision === "approved" ? "Tenant disetujui, booth terisi & funding diperbarui" : "Aplikasi ditolak, booth dibuka kembali");
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -200,10 +210,10 @@ export function TenantsTab({ eventId, onChange }) {
         deadline: broadcast.deadline || undefined,
         description: broadcast.description.trim() || undefined,
       };
-      const { data } = await api.post(`/events/${eventId}/tenant-broadcast`, payload);
-      toast.success(`Broadcast terkirim ke ${data.notified_tenants} tenant terkait, ${data.slots} slot tersedia`);
+      const { data: resData } = await api.post(`/events/${eventId}/tenant-broadcast`, payload);
+      toast.success(`Broadcast terkirim ke ${resData.notified_tenants} tenant terkait, ${resData.slots} slot tersedia`);
       setBroadcast({ ...broadcast, open: false, name: "" });
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
@@ -211,6 +221,31 @@ export function TenantsTab({ eventId, onChange }) {
       setBroadcasting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Tenant Exchange</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Memuat tenant exchange…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Tenant Exchange</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat tenant: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -50,3 +50,20 @@ export async function downloadDoc(path, filename) {
   a.remove();
   window.URL.revokeObjectURL(url);
 }
+
+// In-flight promise deduplication & lightweight memory cache
+const requestCache = new Map();
+
+export async function fetchCached(url, ttlMs = 60_000) {
+  const now = Date.now();
+  const hit = requestCache.get(url);
+  if (hit && now - hit.time < ttlMs) {
+    return hit.promise;
+  }
+  const promise = api.get(url).then((res) => res.data).catch((err) => {
+    requestCache.delete(url);
+    throw err;
+  });
+  requestCache.set(url, { time: now, promise });
+  return promise;
+}

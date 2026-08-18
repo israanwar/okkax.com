@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Plus, Search } from "lucide-react";
 
 /**
  * Shared Popover Dropdown untuk seluruh OKKAX.
@@ -215,13 +215,13 @@ export default function OkxDropdown({
 
   const toggleOpen = () => {
     if (disabled) return;
-    setOpen((prev) => {
-      const next = !prev;
-      if (next) {
-        window.dispatchEvent(new CustomEvent("okx-dropdown-open", { detail: dropdownId }));
-      }
-      return next;
-    });
+    if (!open) {
+      updatePosition();
+      window.dispatchEvent(new CustomEvent("okx-dropdown-open", { detail: dropdownId }));
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
   };
 
   const handleSelect = (nextValue, option) => {
@@ -259,7 +259,7 @@ export default function OkxDropdown({
         />
       </button>
 
-      {open && typeof document !== "undefined" && createPortal(
+      {open && (placement.top != null || placement.bottom != null) && typeof document !== "undefined" && createPortal(
         <div
           ref={menuRef}
           role="listbox"
@@ -297,8 +297,12 @@ export default function OkxDropdown({
               filtered.map((opt, idx) => {
                 const selected = String(opt.value) === String(value ?? "");
                 const isFocused = idx === focusedIndex;
+                const isActionItem = Boolean(opt.isAction || opt.value === "__NEW_EVENT__" || opt.label?.startsWith("+ "));
                 return (
-                  <li key={opt.value + opt.label}>
+                  <li
+                    key={opt.value + opt.label}
+                    className={isActionItem ? "border-b border-white/[0.08] pb-1 mb-1" : ""}
+                  >
                     <button
                       type="button"
                       role="option"
@@ -310,14 +314,23 @@ export default function OkxDropdown({
                       className={`flex w-full items-center justify-between gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-xs font-medium transition-all duration-150 cursor-pointer ${
                         opt.disabled
                           ? "cursor-not-allowed text-zinc-600 opacity-50"
-                          : selected
-                            ? "border border-white/30 bg-white/[0.12] text-white font-bold shadow-sm"
-                            : isFocused
-                              ? "border border-white/20 bg-white/[0.08] text-white"
-                              : "border border-transparent text-zinc-300 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-white"
+                          : isActionItem
+                            ? selected
+                              ? "border border-white/30 bg-white/[0.14] text-white font-bold"
+                              : isFocused
+                                ? "border border-white/20 bg-white/[0.08] text-white font-semibold"
+                                : "border border-dashed border-white/20 bg-white/[0.02] text-zinc-200 hover:border-white/40 hover:bg-white/[0.06] hover:text-white font-semibold"
+                            : selected
+                              ? "border border-white/30 bg-white/[0.12] text-white font-bold shadow-sm"
+                              : isFocused
+                                ? "border border-white/20 bg-white/[0.08] text-white"
+                                : "border border-transparent text-zinc-300 hover:border-white/[0.12] hover:bg-white/[0.06] hover:text-white"
                       }`}
                     >
-                      <span className="truncate">{opt.label}</span>
+                      <span className="truncate flex items-center gap-1.5">
+                        {isActionItem && <Plus size={12} className="shrink-0 text-zinc-300" />}
+                        {isActionItem ? opt.label.replace(/^\+\s*/, "") : opt.label}
+                      </span>
 
                       {selected && (
                         <Check

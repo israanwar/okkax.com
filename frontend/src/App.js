@@ -1,37 +1,61 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import "@/App.css";
 import { AuthProvider } from "@/context/AuthContext";
 import AppShell from "@/components/AppShell";
 import Landing from "@/pages/Landing";
-import Discover from "@/pages/Discover";
-import EconomyMap from "@/pages/EconomyMap";
-import PublicEvent from "@/pages/PublicEvent";
-import ForPage from "@/pages/ForPage";
-import Demo from "@/pages/Demo";
-import Checkout from "@/pages/Checkout";
-import { Login, Register, ForgotPassword } from "@/pages/Auth";
-import { MyTickets, MyOrders, Validator } from "@/pages/Tickets";
-import { Overview, EventsList, EventStudio } from "@/pages/Organizer";
-import EventWorkspace from "@/pages/EventWorkspace";
-import { SponsorPortal, TenantPortal, AdminPanel } from "@/pages/Portals";
-import MoneyMovement from "@/pages/MoneyMovement";
 import AuthCallback from "@/pages/AuthCallback";
-import RoleWorkspace from "@/pages/RoleWorkspace";
-import { PaymentSuccess, PaymentCancel } from "@/pages/PaymentResult";
-import PresentationMode from "@/pages/PresentationMode";
-import { PublicCalendar, WorkspaceCalendar } from "@/pages/CalendarEngine";
-import ControlPlane from "@/pages/ControlPlane";
-import Network from "@/pages/Network";
-import Pricing from "@/pages/Pricing";
-
-import Products from "@/pages/Products";
-import { About, HowItWorks, Contact, Terms, Privacy } from "@/pages/Company";
-import OkkaxPage from "@/pages/OkkaxPage";
-import IntelligencePage from "@/pages/IntelligencePage";
 import OkkaxChat from "@/components/OkkaxChat";
-
 import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
+
+// Route-level code-splitting for high-speed initial bundle & instant navigation
+const Discover = lazy(() => import("@/pages/Discover"));
+const EconomyMap = lazy(() => import("@/pages/EconomyMap"));
+const PublicEvent = lazy(() => import("@/pages/PublicEvent"));
+const ForPage = lazy(() => import("@/pages/ForPage"));
+const Demo = lazy(() => import("@/pages/Demo"));
+const Checkout = lazy(() => import("@/pages/Checkout"));
+const Login = lazy(() => import("@/pages/Auth").then((m) => ({ default: m.Login })));
+const Register = lazy(() => import("@/pages/Auth").then((m) => ({ default: m.Register })));
+const ForgotPassword = lazy(() => import("@/pages/Auth").then((m) => ({ default: m.ForgotPassword })));
+const MyTickets = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.MyTickets })));
+const MyOrders = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.MyOrders })));
+const Validator = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.Validator })));
+const Overview = lazy(() => import("@/pages/Organizer").then((m) => ({ default: m.Overview })));
+const EventsList = lazy(() => import("@/pages/Organizer").then((m) => ({ default: m.EventsList })));
+const EventStudio = lazy(() => import("@/pages/Organizer").then((m) => ({ default: m.EventStudio })));
+const EventWorkspace = lazy(() => import("@/pages/EventWorkspace"));
+const SponsorPortal = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.SponsorPortal })));
+const TenantPortal = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.TenantPortal })));
+const AdminPanel = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.AdminPanel })));
+const MoneyMovement = lazy(() => import("@/pages/MoneyMovement"));
+const RoleWorkspace = lazy(() => import("@/pages/RoleWorkspace"));
+const PaymentSuccess = lazy(() => import("@/pages/PaymentResult").then((m) => ({ default: m.PaymentSuccess })));
+const PaymentCancel = lazy(() => import("@/pages/PaymentResult").then((m) => ({ default: m.PaymentCancel })));
+const PresentationMode = lazy(() => import("@/pages/PresentationMode"));
+const PublicCalendar = lazy(() => import("@/pages/CalendarEngine").then((m) => ({ default: m.PublicCalendar })));
+const WorkspaceCalendar = lazy(() => import("@/pages/CalendarEngine").then((m) => ({ default: m.WorkspaceCalendar })));
+const ControlPlane = lazy(() => import("@/pages/ControlPlane"));
+const Network = lazy(() => import("@/pages/Network"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Products = lazy(() => import("@/pages/Products"));
+const About = lazy(() => import("@/pages/Company").then((m) => ({ default: m.About })));
+const HowItWorks = lazy(() => import("@/pages/Company").then((m) => ({ default: m.HowItWorks })));
+const Contact = lazy(() => import("@/pages/Company").then((m) => ({ default: m.Contact })));
+const Terms = lazy(() => import("@/pages/Company").then((m) => ({ default: m.Terms })));
+const Privacy = lazy(() => import("@/pages/Company").then((m) => ({ default: m.Privacy })));
+const IntelligencePage = lazy(() => import("@/pages/IntelligencePage"));
+
+const RouteFallback = () => (
+  <div className="flex min-h-[60vh] items-center justify-center p-8 text-xs text-zinc-400 font-gemini">
+    <div className="flex items-center gap-2">
+      <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+      <span>Memuat halaman…</span>
+    </div>
+  </div>
+);
+
 const shell = (el) => <AppShell>{el}</AppShell>;
 
 function RouterBody() {
@@ -39,71 +63,73 @@ function RouterBody() {
   // Detect Google OAuth callback synchronously during render, before protected routes run.
   if (location.hash?.includes("session_id=")) return <AuthCallback />;
   return (
-    <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/discover" element={<Discover />} />
-            <Route path="/intelligence" element={<IntelligencePage />} />
-            <Route path="/okkax" element={<IntelligencePage />} />
-            <Route path="/copilot" element={<IntelligencePage />} />
-            <Route path="/yoona" element={<IntelligencePage />} />
-            <Route path="/okkaji" element={<IntelligencePage />} />
-            <Route path="/peta" element={<EconomyMap />} />
-            <Route path="/map" element={<EconomyMap />} />
-            <Route path="/calendar" element={<PublicCalendar />} />
-            <Route path="/events/:id" element={<PublicEvent />} />
-            <Route path="/for/:audience" element={<ForPage />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/plans" element={<Pricing />} />
-            <Route path="/demo" element={<Demo />} />
-            <Route path="/juri" element={<Navigate to="/demo" replace />} />
-            <Route path="/judges" element={<Navigate to="/demo" replace />} />
-            <Route path="/present" element={<PresentationMode />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ForgotPassword />} />
-            <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
-            <Route path="/validator" element={shell(<Validator />)} />
-            <Route path="/app" element={shell(<Overview />)} />
-            <Route path="/app/intelligence" element={shell(<IntelligencePage />)} />
-            <Route path="/app/okkax" element={<Navigate to="/app/intelligence" replace />} />
-            <Route path="/app/copilot" element={<Navigate to="/app/intelligence" replace />} />
-            <Route path="/app/yoona" element={<Navigate to="/app/intelligence" replace />} />
-            <Route path="/app/okkaji" element={<Navigate to="/app/intelligence" replace />} />
-            <Route path="/app/studio" element={shell(<EventStudio />)} />
-            <Route path="/app/events" element={shell(<EventsList />)} />
-            <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
-            <Route path="/app/events/:eventId/:tab" element={shell(<EventWorkspace />)} />
-            <Route path="/app/tickets" element={shell(<MyTickets />)} />
-            <Route path="/app/orders" element={shell(<MyOrders />)} />
-            <Route path="/app/validator" element={shell(<Validator />)} />
-            <Route path="/app/sponsor" element={shell(<SponsorPortal />)} />
-            <Route path="/app/tenant" element={shell(<TenantPortal />)} />
-            <Route path="/app/admin" element={shell(<AdminPanel />)} />
-            <Route path="/app/admin/finance" element={shell(<MoneyMovement />)} />
-            <Route path="/app/admin/control" element={shell(<ControlPlane />)} />
-            <Route path="/app/me" element={shell(<RoleWorkspace />)} />
-            <Route path="/app/network" element={shell(<Network />)} />
-            <Route path="/payment/success" element={<PaymentSuccess />} />
-            <Route path="/payment/cancel" element={<PaymentCancel />} />
-            <Route path="/products/:slug" element={<Products />} />
-            <Route path="/products" element={<Navigate to="/products/event-studio" replace />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route
-              path="*"
-              element={
-                <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-8 text-center">
-                  <h1 className="editorial text-4xl">404</h1>
-                  <p className="text-sm text-zinc-400">Halaman tidak ditemukan di OKKAX.</p>
-                  <a href="/" className="accent-text underline">Kembali ke beranda</a>
-                </div>
-              }
-            />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/discover" element={<Discover />} />
+        <Route path="/intelligence" element={<IntelligencePage />} />
+        <Route path="/okkax" element={<IntelligencePage />} />
+        <Route path="/copilot" element={<IntelligencePage />} />
+        <Route path="/yoona" element={<IntelligencePage />} />
+        <Route path="/okkaji" element={<IntelligencePage />} />
+        <Route path="/peta" element={<EconomyMap />} />
+        <Route path="/map" element={<EconomyMap />} />
+        <Route path="/calendar" element={<PublicCalendar />} />
+        <Route path="/events/:id" element={<PublicEvent />} />
+        <Route path="/for/:audience" element={<ForPage />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/plans" element={<Pricing />} />
+        <Route path="/demo" element={<Demo />} />
+        <Route path="/juri" element={<Navigate to="/demo" replace />} />
+        <Route path="/judges" element={<Navigate to="/demo" replace />} />
+        <Route path="/present" element={<PresentationMode />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ForgotPassword />} />
+        <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
+        <Route path="/validator" element={shell(<Validator />)} />
+        <Route path="/app" element={shell(<Overview />)} />
+        <Route path="/app/intelligence" element={shell(<IntelligencePage />)} />
+        <Route path="/app/okkax" element={<Navigate to="/app/intelligence" replace />} />
+        <Route path="/app/copilot" element={<Navigate to="/app/intelligence" replace />} />
+        <Route path="/app/yoona" element={<Navigate to="/app/intelligence" replace />} />
+        <Route path="/app/okkaji" element={<Navigate to="/app/intelligence" replace />} />
+        <Route path="/app/studio" element={shell(<EventStudio />)} />
+        <Route path="/app/events" element={shell(<EventsList />)} />
+        <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
+        <Route path="/app/events/:eventId/:tab" element={shell(<EventWorkspace />)} />
+        <Route path="/app/tickets" element={shell(<MyTickets />)} />
+        <Route path="/app/orders" element={shell(<MyOrders />)} />
+        <Route path="/app/validator" element={shell(<Validator />)} />
+        <Route path="/app/sponsor" element={shell(<SponsorPortal />)} />
+        <Route path="/app/tenant" element={shell(<TenantPortal />)} />
+        <Route path="/app/admin" element={shell(<AdminPanel />)} />
+        <Route path="/app/admin/finance" element={shell(<MoneyMovement />)} />
+        <Route path="/app/admin/control" element={shell(<ControlPlane />)} />
+        <Route path="/app/me" element={shell(<RoleWorkspace />)} />
+        <Route path="/app/network" element={shell(<Network />)} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/cancel" element={<PaymentCancel />} />
+        <Route path="/products/:slug" element={<Products />} />
+        <Route path="/products" element={<Navigate to="/products/event-studio" replace />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route
+          path="*"
+          element={
+            <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-8 text-center">
+              <h1 className="editorial text-4xl">404</h1>
+              <p className="text-sm text-zinc-400">Halaman tidak ditemukan di OKKAX.</p>
+              <a href="/" className="accent-text underline">Kembali ke beranda</a>
+            </div>
+          }
+        />
+      </Routes>
+    </Suspense>
   );
 }
 

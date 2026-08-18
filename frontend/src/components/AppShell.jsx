@@ -17,9 +17,6 @@ const NAV = {
     ["/app", "Overview", LayoutDashboard],
     ["/app/intelligence", "OKKAX Intelligence", Sparkles],
     ["/app/studio", "Event Studio", Wand2],
-    ["/app/events", "Events", ListOrdered],
-    ["/app/network", "Network", Globe2],
-    ["/app/calendar", "Calendar", CalendarDays],
     ["/app/me", "My Assignments", Settings],
     ["/app/validator", "Ticket Validator", ScanLine],
     ["/app/tickets", "My Tickets", Ticket],
@@ -93,7 +90,7 @@ export const EVENT_TABS = [
 ];
 
 export default function AppShell({ children }) {
-  const { user, org, loading, logout, hasRole } = useAuth();
+  const { user, org, loading, logout, hasRole, activeWorkspace } = useAuth();
   const [open, setOpen] = useState(false);
   const [notif, setNotif] = useState({ items: [], unread: 0, total: 0 });
   const [showNotif, setShowNotif] = useState(false);
@@ -101,15 +98,16 @@ export default function AppShell({ children }) {
   const notifBtnRef = useRef(null);
   const nav = useNavigate();
 
+  const userId = user?.id;
   const fetchNotifs = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     try {
       const { data } = await api.get("/notifications?limit=12");
       setNotif(data || { items: [], unread: 0, total: 0 });
     } catch {
       // Ignore
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetchNotifs();
@@ -118,16 +116,25 @@ export default function AppShell({ children }) {
   if (loading) return <div className="p-10 text-sm text-zinc-500">Memuat OKKAX…</div>;
   if (!user) return <Navigate to="/login" replace />;
 
+  const currentRole = activeWorkspace?.role || user?.role || (user?.roles && user.roles[0]) || "audience";
+
   let links = [];
-  if (hasRole("organizer", "event_organizer", "promoter", "supervisor", "finance_approver")) links = NAV.organizer;
-  else if (hasRole("sponsor")) links = NAV.sponsor;
-  else if (hasRole("tenant")) links = NAV.tenant;
-  else if (hasRole("talent", "talent_management", "venue_manager", "vendor", "worker")) links = NAV.role;
-  else links = NAV.audience;
-  if (user.roles?.includes("super_admin")) {
+  if (["organizer", "event_organizer", "promoter", "supervisor", "finance_approver"].includes(currentRole)) {
+    links = NAV.organizer;
+  } else if (currentRole === "sponsor") {
+    links = NAV.sponsor;
+  } else if (currentRole === "tenant") {
+    links = NAV.tenant;
+  } else if (["talent", "talent_management", "venue_manager", "vendor", "worker"].includes(currentRole)) {
+    links = NAV.role;
+  } else if (user.roles?.includes("super_admin")) {
     links = SUPER_ADMIN_NAV;
   } else if (user.roles?.includes("platform_admin")) {
     links = [...NAV.organizer, ...NAV.admin];
+  } else if (hasRole("organizer", "event_organizer", "promoter", "supervisor", "finance_approver")) {
+    links = NAV.organizer;
+  } else {
+    links = NAV.audience;
   }
 
   const handleMarkAllRead = async () => {

@@ -35,7 +35,7 @@ import {
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
 import { PLAN_META, PLAN_ORDER, priceFor } from "@/lib/pricing";
-import { api, compact, num, DEMO_EVENT_ID } from "@/lib/api";
+import { api, compact, num, DEMO_EVENT_ID, fetchCached } from "@/lib/api";
 import { NodeIcon, colorOf as PREVIEW_COLOR } from "@/pages/workspace/BlueprintGraph";
 import LiveTicker from "@/components/LiveTicker";
 import {
@@ -386,29 +386,18 @@ function PricingPreview() {
   );
 }
 
-function StatusPill({ status, testId, tooltipAlign = "center" }) {
+function StatusPill({ status, testId }) {
   const meta = STATUS_META[status] || STATUS_META.Pending;
   const Icon = meta.Icon;
-  const tooltipPosition = tooltipAlign === "left"
-    ? "left-0"
-    : tooltipAlign === "right"
-      ? "right-0"
-      : "left-1/2 -translate-x-1/2";
   return (
     <span
       data-testid={testId}
-      tabIndex={0}
+      title={`${status}: ${meta.tooltip}`}
       aria-label={`${status}: ${meta.tooltip}`}
-      className="group/status relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#111114]/90 px-3 py-1 text-[10.5px] font-bold tracking-wider text-white outline-none hover:border-white/30 hover:bg-white/[0.06] transition-all shadow-sm cursor-help"
+      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#111114]/90 px-3 py-1 text-[10.5px] font-bold tracking-wider text-white hover:border-white/30 hover:bg-white/[0.06] transition-all shadow-sm cursor-default"
     >
-      <Icon size={12} strokeWidth={2.4} className="text-zinc-300 group-hover/status:text-white transition-colors" aria-hidden="true" />
+      <Icon size={12} strokeWidth={2.4} className="text-zinc-300" aria-hidden="true" />
       <span>{status}</span>
-      <span
-        role="tooltip"
-        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-50 w-48 max-w-[calc(100vw-2.5rem)] rounded-xl border border-white/[0.16] bg-[#111114]/98 backdrop-blur-2xl px-3 py-2 text-center text-[10px] font-medium leading-4 text-zinc-200 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
-      >
-        {meta.tooltip}
-      </span>
     </span>
   );
 }
@@ -430,20 +419,28 @@ function GraphPreview() {
 
   useEffect(() => {
     let mounted = true;
-    api.get("/demo/summary")
-      .then(({ data }) => {
-        if (mounted) setSummary(data);
-      })
-      .catch(() => {
+
+    const loadGraphData = async () => {
+      try {
+        const [sumData, eventsData] = await Promise.all([
+          fetchCached("/demo/summary", 120_000).catch(() => null),
+          fetchCached("/discover/events", 60_000).catch(() => null),
+        ]);
+        if (!mounted) return;
+        if (sumData) setSummary(sumData);
+        else setLoadError(true);
+        if (eventsData?.items) setCatalogEvents(eventsData.items);
+      } catch {
         if (mounted) setLoadError(true);
-      });
-    api.get("/discover/events")
-      .then(({ data }) => {
-        if (mounted) setCatalogEvents(data.items || []);
-      })
-      .catch(() => {
-        if (mounted) setCatalogEvents([]);
-      });
+      }
+    };
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(loadGraphData, { timeout: 1500 });
+    } else {
+      setTimeout(loadGraphData, 50);
+    }
+
     return () => { mounted = false; };
   }, []);
 
@@ -910,7 +907,7 @@ function GraphPreview() {
               <h3 data-testid="graph-detail-name" className="mt-2 text-lg font-bold text-white tracking-tight">{selected.label}</h3>
               <p className="mt-0.5 text-xs text-zinc-400 font-gemini">{selected.kind}</p>
             </div>
-            <StatusPill status={selected.status} testId="graph-detail-status" tooltipAlign="right" />
+            <StatusPill status={selected.status} testId="graph-detail-status" />
           </div>
 
           <p data-testid="graph-detail-description" className="mt-3.5 rounded-xl border-l-2 border-white/40 bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-300 font-gemini">

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "@/lib/api";
+import { fetchCached } from "@/lib/api";
 
 // Peta event_type dari backend ke label kategori pendek (Opsi B: typographic
 // small-caps, tanpa emoji). Fallback: kata pertama di-uppercase.
@@ -50,12 +50,14 @@ export default function LiveTicker() {
 
   useEffect(() => {
     let cancelled = false;
+    let timerId = null;
+
     const fetchItems = async () => {
       try {
-        const { data } = await api.get("/discover/events");
+        const data = await fetchCached("/discover/events", 60_000);
         if (cancelled) return;
         // Prioritas: live -> minggu ini -> ripple ekonomi terbesar.
-        const sorted = [...(data.items || [])].sort((a, b) => {
+        const sorted = [...(data?.items || [])].sort((a, b) => {
           if ((b.is_live ? 1 : 0) - (a.is_live ? 1 : 0)) return b.is_live ? 1 : -1;
           if ((b.this_week ? 1 : 0) - (a.this_week ? 1 : 0)) return b.this_week ? 1 : -1;
           return (b.economic_ripple || 0) - (a.economic_ripple || 0);
@@ -66,11 +68,47 @@ export default function LiveTicker() {
         // silent fail — ticker tidak muncul kalau API tidak tersedia
       }
     };
-    fetchItems();
-    const id = setInterval(fetchItems, 60_000);
+
+    // Defer initialization to avoid blocking critical hero render
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(() => {
+        if (!cancelled) fetchItems();
+      }, { timeout: 1000 });
+    } else {
+      setTimeout(fetchItems, 100);
+    }
+
+    const startTimer = () => {
+      if (!timerId) {
+        timerId = setInterval(fetchItems, 60_000);
+      }
+    };
+
+    const stopTimer = () => {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    };
+
+    startTimer();
+
+    // Pause polling when browser tab is inactive
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopTimer();
+      } else {
+        fetchItems();
+        startTimer();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       cancelled = true;
-      clearInterval(id);
+      stopTimer();
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 

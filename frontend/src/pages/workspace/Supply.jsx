@@ -1,57 +1,97 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
+import {
+  useStudioTalents,
+  useStudioCatalogTalents,
+  useStudioVenue,
+  useStudioVendors,
+  useStudioWorkforce,
+  useStudioCacheManager,
+} from "@/hooks/useStudioQueries";
 
 const RIDER_STATUSES = ["Matched", "Partially Matched", "Missing", "Conflicted", "Alternative Available", "Requires Confirmation"];
 
 export function TalentRider({ eventId, onChange }) {
-  const [items, setItems] = useState([]);
-  const [riders, setRiders] = useState([]);
-  const [pool, setPool] = useState([]);
+  const { data, isLoading, isError, error, refetch } = useStudioTalents(eventId);
+  const { data: pool = [], isLoading: isPoolLoading } = useStudioCatalogTalents();
+  const { invalidateEvent } = useStudioCacheManager();
+
+  const items = useMemo(() => data?.items || [], [data?.items]);
+  const riders = useMemo(() => data?.riders || [], [data?.riders]);
   const [open, setOpen] = useState(null);
 
-  const load = async () => {
-    const [{ data }, { data: c }] = await Promise.all([
-      api.get(`/events/${eventId}/talents`),
-      api.get("/catalog/talents"),
-    ]);
-    setItems(data.items);
-    setRiders(data.riders);
-    setPool(c.items);
-    if (!open && data.items[0]) setOpen(data.items[0].id);
-  };
   useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
+    if (!open && items[0]) setOpen(items[0].id);
+  }, [items, open]);
 
   const add = async (talent_id) => {
     try {
       await api.post(`/events/${eventId}/talents`, { talent_id });
       toast.success("Talent ditambahkan. Rider otomatis diaktifkan.");
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
+
   const setStatus = async (et_id, status) => {
-    await api.patch(`/events/${eventId}/talents/${et_id}`, { status });
-    load();
-    onChange?.();
+    try {
+      await api.patch(`/events/${eventId}/talents/${et_id}`, { status });
+      invalidateEvent(eventId);
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
+
   const remove = async (et_id) => {
-    await api.delete(`/events/${eventId}/talents/${et_id}`);
-    load();
-    onChange?.();
+    try {
+      await api.delete(`/events/${eventId}/talents/${et_id}`);
+      invalidateEvent(eventId);
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
+
   const patchRider = async (id, body) => {
-    await api.patch(`/events/${eventId}/rider/${id}`, body);
-    load();
-    onChange?.();
+    try {
+      await api.patch(`/events/${eventId}/rider/${id}`, body);
+      invalidateEvent(eventId);
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Talent terpilih & Structured Rider Engine</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Memuat data talent & structured rider…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Talent terpilih & Structured Rider Engine</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat data talent: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -150,61 +190,80 @@ export function TalentRider({ eventId, onChange }) {
 
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Talent network</h3>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {pool.map((t) => (
-            <div key={t.id} className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4" data-testid={`talent-card-${t.id}`}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="text-sm font-semibold">{t.stage_name}</h4>
-                  <div className="text-xs text-zinc-500">{t.category} · {t.genre} · {t.city}</div>
+        {isPoolLoading ? (
+          <div className="mt-3 p-6 text-center text-xs text-zinc-500 animate-pulse">Memuat katalog talent…</div>
+        ) : (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {pool.map((t) => (
+              <div key={t.id} className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-4" data-testid={`talent-card-${t.id}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-semibold">{t.stage_name}</h4>
+                    <div className="text-xs text-zinc-500">{t.category} · {t.genre} · {t.city}</div>
+                  </div>
+                  {t.verified && <span className="border border-white/45 px-1.5 py-0.5 text-[10px] accent-text">Verified</span>}
                 </div>
-                {t.verified && <span className="border border-white/45 px-1.5 py-0.5 text-[10px] accent-text">Verified</span>}
+                <p className="mt-2 line-clamp-2 text-xs text-zinc-400">{t.bio}</p>
+                <div className="num mt-3 text-sm font-bold">{idr(t.base_fee)}</div>
+                <div className="text-[11px] text-zinc-500">{t.fee_status} · {t.team_size} orang · {t.duration_min} menit</div>
+                <button
+                  data-testid={`add-talent-btn-${t.id}`}
+                  onClick={() => add(t.id)}
+                  className="mt-3 w-full bg-[var(--okx-accent)] px-3 py-2 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)] cursor-pointer"
+                >
+                  Tambahkan ke event
+                </button>
               </div>
-              <p className="mt-2 line-clamp-2 text-xs text-zinc-400">{t.bio}</p>
-              <div className="num mt-3 text-sm font-bold">{idr(t.base_fee)}</div>
-              <div className="text-[11px] text-zinc-500">{t.fee_status} · {t.team_size} orang · {t.duration_min} menit</div>
-              <button
-                data-testid={`add-talent-btn-${t.id}`}
-                onClick={() => add(t.id)}
-                className="mt-3 w-full bg-[var(--okx-accent)] px-3 py-2 text-xs font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
-              >
-                Tambahkan ke event
-              </button>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export function VenueTab({ eventId, onChange }) {
-  const [matches, setMatches] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const { data, isLoading, isError, error, refetch } = useStudioVenue(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
 
-  const load = async () => {
-    const [{ data: m }, { data: s }] = await Promise.all([
-      api.get(`/events/${eventId}/venue-matches`),
-      api.get(`/events/${eventId}/venue`),
-    ]);
-    setMatches(m.items);
-    setSelected(s.item);
-  };
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
+  const matches = data?.matches || [];
+  const selected = data?.selected || null;
 
   const pick = async (venue_id) => {
     try {
       await api.post(`/events/${eventId}/venue`, { venue_id });
       toast.success("Venue dipilih. Budget dan Event Graph diperbarui.");
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Venue Network & Compatibility Score</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Memuat kecocokan venue…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Venue Network & Compatibility Score</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat venue: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -257,7 +316,7 @@ export function VenueTab({ eventId, onChange }) {
             <button
               data-testid={`select-venue-btn-${v.id}`}
               onClick={() => pick(v.id)}
-              className="mt-3 w-full bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]"
+              className="mt-3 w-full bg-[var(--okx-accent)] px-4 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] cursor-pointer"
             >
               {selected?.venue_id === v.id ? "Venue aktif — pilih ulang" : "Pilih venue ini"}
             </button>
@@ -269,37 +328,57 @@ export function VenueTab({ eventId, onChange }) {
 }
 
 export function VendorTab({ eventId, onChange }) {
-  const [matches, setMatches] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const { data, isLoading, isError, error, refetch } = useStudioVendors(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
 
-  const load = async () => {
-    const [{ data: m }, { data: s }] = await Promise.all([
-      api.get(`/events/${eventId}/vendor-matches`),
-      api.get(`/events/${eventId}/vendors`),
-    ]);
-    setMatches(m.items);
-    setSelected(s.items);
-  };
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
+  const matches = data?.matches || [];
+  const selected = data?.selected || [];
 
   const add = async (vendor_id) => {
     try {
       await api.post(`/events/${eventId}/vendors`, { vendor_id });
       toast.success("Vendor ditambahkan ke event");
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
+
   const setStatus = async (id, status) => {
-    await api.patch(`/events/${eventId}/vendors/${id}`, { status });
-    load();
-    onChange?.();
+    try {
+      await api.patch(`/events/${eventId}/vendors/${id}`, { status });
+      invalidateEvent(eventId);
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Vendor & Event Organizer</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Memuat vendor & matching network…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Vendor & Event Organizer</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat vendor: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -345,7 +424,7 @@ export function VendorTab({ eventId, onChange }) {
               {v.match.reasons.map((r) => <li key={r}>· {r}</li>)}
             </ul>
             <div className="num mt-2 text-xs text-zinc-400">{idr(v.price_min)} – {idr(v.price_max)}</div>
-            <button data-testid={`add-vendor-btn-${v.id}`} onClick={() => add(v.id)} className="mt-3 w-full border border-[var(--okx-border)] px-3 py-2 text-xs font-semibold hover:border-[var(--okx-accent)]">
+            <button data-testid={`add-vendor-btn-${v.id}`} onClick={() => add(v.id)} className="mt-3 w-full border border-[var(--okx-border)] px-3 py-2 text-xs font-semibold hover:border-[var(--okx-accent)] cursor-pointer">
               Tambahkan
             </button>
           </div>
@@ -356,37 +435,69 @@ export function VendorTab({ eventId, onChange }) {
 }
 
 export function WorkforceTab({ eventId, onChange }) {
-  const [data, setData] = useState(null);
+  const { data, isLoading, isError, error, refetch } = useStudioWorkforce(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
   const [form, setForm] = useState({ role: "Usher", needed: 10, compensation_per_day: 275000 });
-
-  const load = () => api.get(`/events/${eventId}/workforce`).then(({ data }) => setData(data));
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
 
   const createJob = async () => {
     try {
       await api.post(`/events/${eventId}/jobs`, form);
       toast.success("Event job dibuat");
-      load();
+      invalidateEvent(eventId);
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));
     }
   };
+
   const assign = async (worker_id, job_id) => {
-    await api.post(`/events/${eventId}/workers`, { worker_id, job_id });
-    load();
-    onChange?.();
-  };
-  const checkin = async (id) => {
-    await api.post(`/events/${eventId}/workers/${id}/checkin`);
-    toast.success("QR check-in tersimulasi & diverifikasi supervisor");
-    load();
+    try {
+      await api.post(`/events/${eventId}/workers`, { worker_id, job_id });
+      invalidateEvent(eventId);
+      onChange?.();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
   };
 
-  if (!data) return <div className="text-sm text-zinc-500">Memuat workforce…</div>;
+  const checkin = async (id) => {
+    try {
+      await api.post(`/events/${eventId}/workers/${id}/checkin`);
+      toast.success("QR check-in tersimulasi & diverifikasi supervisor");
+      invalidateEvent(eventId);
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Workforce Network</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-sm text-zinc-400 animate-pulse">
+          Memuat workforce…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-base font-semibold md:text-lg">Workforce Network</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-sm text-red-400 space-y-2">
+          <div>Gagal memuat workforce: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const jobs = data?.jobs || [];
+  const assigned = data?.assigned || [];
+  const pool = data?.pool || [];
 
   return (
     <div className="space-y-6">
@@ -405,7 +516,7 @@ export function WorkforceTab({ eventId, onChange }) {
               />
             </label>
           ))}
-          <button data-testid="create-job-btn" onClick={createJob} className="mt-5 h-10 bg-[var(--okx-accent)] px-4 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Buat job</button>
+          <button data-testid="create-job-btn" onClick={createJob} className="mt-5 h-10 bg-[var(--okx-accent)] px-4 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)] cursor-pointer">Buat job</button>
         </div>
       </div>
 
@@ -415,7 +526,7 @@ export function WorkforceTab({ eventId, onChange }) {
             <tr className="border-b border-[var(--okx-border)]"><th className="p-3">Role</th><th className="p-3">Shift</th><th className="p-3 text-right">Terisi</th><th className="p-3 text-right">Kompensasi</th><th className="p-3">Status</th></tr>
           </thead>
           <tbody>
-            {data.jobs.map((j) => (
+            {jobs.map((j) => (
               <tr key={j.id} className="border-b border-[var(--okx-border)] last:border-0">
                 <td className="p-3">{j.role}</td>
                 <td className="p-3 text-xs text-zinc-400">{j.shift}</td>
@@ -432,24 +543,24 @@ export function WorkforceTab({ eventId, onChange }) {
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Pekerja ditugaskan</h3>
           <div className="mt-3 border border-[var(--okx-border)]" data-testid="assigned-workers">
-            {data.assigned.map((w) => (
+            {assigned.map((w) => (
               <div key={w.id} className="flex items-center justify-between gap-3 border-b border-[var(--okx-border)] p-3 last:border-0">
                 <div>
                   <div className="text-sm font-medium">{w.worker_name}</div>
                   <div className="text-xs text-zinc-500">{w.role} · {w.status}</div>
                 </div>
-                <button data-testid={`checkin-btn-${w.id}`} onClick={() => checkin(w.id)} className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]">
+                <button data-testid={`checkin-btn-${w.id}`} onClick={() => checkin(w.id)} className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)] cursor-pointer">
                   {w.check_in_at ? "Checked in" : "QR check-in"}
                 </button>
               </div>
             ))}
-            {data.assigned.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">Belum ada pekerja ditugaskan.</div>}
+            {assigned.length === 0 && <div className="p-6 text-center text-sm text-zinc-500">Belum ada pekerja ditugaskan.</div>}
           </div>
         </div>
         <div>
           <h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Talent pool pekerja</h3>
           <div className="mt-3 border border-[var(--okx-border)]">
-            {data.pool.slice(0, 12).map((w) => (
+            {pool.slice(0, 12).map((w) => (
               <div key={w.id} className="flex items-center justify-between gap-3 border-b border-[var(--okx-border)] p-3 last:border-0">
                 <div>
                   <div className="text-sm font-medium">{w.name} {w.verified && <span className="ml-1 text-[10px] accent-text">Verified</span>}</div>
@@ -457,8 +568,8 @@ export function WorkforceTab({ eventId, onChange }) {
                 </div>
                 <button
                   data-testid={`assign-worker-btn-${w.id}`}
-                  onClick={() => assign(w.id, data.jobs.find((j) => j.role === w.category)?.id)}
-                  className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)]"
+                  onClick={() => assign(w.id, jobs.find((j) => j.role === w.category)?.id)}
+                  className="border border-[var(--okx-border)] px-3 py-1.5 text-xs hover:border-[var(--okx-accent)] cursor-pointer"
                 >
                   Tugaskan
                 </button>

@@ -1,15 +1,30 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { api, compact, idr } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
 
+import {
+  useStudioBlueprint,
+  useStudioBrief,
+  useStudioGraph,
+  useStudioCacheManager,
+} from "@/hooks/useStudioQueries";
+
 export function Blueprint({ eventId, event }) {
-  const [bp, setBp] = useState(null);
-  const [brief, setBrief] = useState(null);
+  const { data: bp, isLoading, isError, error, refetch } = useStudioBlueprint(eventId);
+  const { data: briefData } = useStudioBrief(eventId);
+  const { invalidateEvent } = useStudioCacheManager();
+
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState("");
   const [engines, setEngines] = useState([]);
   const [engine, setEngine] = useState("");
+
+  useEffect(() => {
+    if (bp?.summary) {
+      setSummary(bp.summary);
+    }
+  }, [bp?.summary]);
 
   useEffect(() => {
     api.get("/ai/engines").then(({ data }) => {
@@ -18,26 +33,11 @@ export function Blueprint({ eventId, event }) {
     }).catch(() => {});
   }, []);
 
-  const load = async () => {
-    const [{ data: b }, { data: br }] = await Promise.all([
-      api.get(`/events/${eventId}/blueprint`),
-      api.get(`/events/${eventId}/brief`),
-    ]);
-    setBp(b.blueprint);
-    setSummary(b.blueprint?.summary || "");
-    setBrief(br.brief?.payload);
-  };
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line
-  }, [eventId]);
-
   const compile = async () => {
     setBusy(true);
     try {
-      const { data } = await api.post(`/events/${eventId}/compile`, null, { params: engine ? { engine } : {} });
-      setBp(data.blueprint);
-      setSummary(data.blueprint.summary);
+      await api.post(`/events/${eventId}/compile`, null, { params: engine ? { engine } : {} });
+      invalidateEvent(eventId);
     } finally {
       setBusy(false);
     }
@@ -45,21 +45,41 @@ export function Blueprint({ eventId, event }) {
 
   useEffect(() => {
     if (bp?.ai_status !== "refining") return;
-    const t = setInterval(async () => {
-      const { data } = await api.get(`/events/${eventId}/blueprint`);
-      if (data.blueprint?.ai_status !== "refining") {
-        setBp(data.blueprint);
-        setSummary(data.blueprint.summary);
-      }
+    const t = setInterval(() => {
+      invalidateEvent(eventId, "blueprint");
     }, 8000);
     return () => clearInterval(t);
-    // eslint-disable-next-line
-  }, [bp?.ai_status, eventId]);
+  }, [bp?.ai_status, eventId, invalidateEvent]);
 
   const saveSummary = async () => {
-    const { data } = await api.patch(`/events/${eventId}/blueprint`, { summary });
-    setBp(data.blueprint);
+    await api.patch(`/events/${eventId}/blueprint`, { summary });
+    invalidateEvent(eventId, "blueprint");
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-sm font-bold md:text-base text-white">AI Event Blueprint</h2>
+        <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-xs text-zinc-400 animate-pulse rounded-xl">
+          Memuat Blueprint Engine…
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-4">
+        <h2 className="text-sm font-bold md:text-base text-white">AI Event Blueprint</h2>
+        <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-xs text-red-400 space-y-2 rounded-xl">
+          <div>Gagal memuat blueprint: {apiError(error)}</div>
+          <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -256,30 +276,52 @@ function labelAnchor(a) {
 }
 
 export function Graph({ eventId }) {
-  const [data, setData] = useState(null);
+  const { data, isLoading, isError, error, refetch } = useStudioGraph(eventId);
+
+  if (isLoading) {
+    return (
+      <div className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center text-xs text-zinc-400 animate-pulse rounded-xl" data-testid="graph-loading">
+        Memuat Event Graph…
+      </div>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="border border-red-500/30 bg-red-950/20 p-6 text-center text-xs text-red-400 space-y-2 rounded-xl">
+        <div>Gagal memuat Event Graph: {apiError(error)}</div>
+        <button onClick={() => refetch()} className="border border-white/20 px-3 py-1 text-xs text-white hover:bg-white/10">
+          Coba lagi
+        </button>
+      </div>
+    );
+  }
+
+  return <GraphView data={data} eventId={eventId} />;
+}
+
+function GraphView({ data, eventId }) {
   const [filter, setFilter] = useState("");
   const [active, setActive] = useState(null);
   const [hover, setHover] = useState(null);
   const [zoom, setZoom] = useState(1);
 
-  useEffect(() => {
-    setData(null);
-    setActive(null);
-    api.get(`/events/${eventId}/graph`).then(({ data }) => setData(data));
-  }, [eventId]);
-
-  if (!data) return <div className="text-sm text-zinc-500" data-testid="graph-loading">Memuat Event Graph…</div>;
-
-  const kinds = [...new Set(data.nodes.map((n) => n.kind))];
-  const visible = filter ? data.nodes.filter((n) => n.kind === filter || n.id === "event") : data.nodes;
-  const { pos } = layout(visible);
-  const ids = new Set(visible.map((n) => n.id));
-  const edges = data.edges.filter((e) => ids.has(e.source) && ids.has(e.target));
+  const kinds = useMemo(() => [...new Set(data.nodes.map((n) => n.kind))], [data.nodes]);
+  const visible = useMemo(
+    () => (filter ? data.nodes.filter((n) => n.kind === filter || n.id === "event") : data.nodes),
+    [filter, data.nodes]
+  );
+  const { pos } = useMemo(() => layout(visible), [visible]);
+  const ids = useMemo(() => new Set(visible.map((n) => n.id)), [visible]);
+  const edges = useMemo(
+    () => data.edges.filter((e) => ids.has(e.source) && ids.has(e.target)),
+    [data.edges, ids]
+  );
   const cand = hover || active;
   const focus = cand && ids.has(cand.id) ? cand : null;
-  const connected = new Set(
+  const connected = useMemo(() => new Set(
     focus ? edges.filter((e) => e.source === focus.id || e.target === focus.id).flatMap((e) => [e.source, e.target]) : []
-  );
+  ), [focus, edges]);
   const dim = (id) => focus && id !== focus.id && !connected.has(id);
 
   return (

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { api } from "@/lib/api";
 
 const AuthContext = createContext(null);
@@ -7,24 +7,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
-  // Phase 01 UX. Workspace state mirrors the server session's
-  // `active_workspace` context (backed by /me/workspaces and
-  // /me/workspace/active). `workspaceVersion` is a monotonic counter
-  // that pages depending on the current workspace can include in their
-  // fetch dependencies to force a refetch after a switch, without any
-  // page reload.
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
+
+  const refreshPromiseRef = useRef(null);
 
   const refreshWorkspaces = useCallback(async () => {
     try {
       const [{ data: list }, active] = await Promise.all([
         api.get("/me/workspaces"),
         api.get("/me/workspace/active").catch((err) => {
-          // Backend returns 403 when a previously-activated workspace's
-          // membership was revoked. Treat as "no active workspace"; the
-          // /me/workspaces list still tells us what is available.
           if (err?.response?.status === 403) return { data: { workspace: null } };
           throw err;
         }),
@@ -32,10 +25,6 @@ export function AuthProvider({ children }) {
       const items = list?.items || [];
       let resolvedActive = active?.data?.workspace || null;
 
-      // Default workspace hanya ditentukan ketika tidak ada active workspace
-      // server-side. Single-org account masuk langsung ke org workspace.
-      // Personal-only account masuk ke Personal.
-      // Multi-org account tidak ditebak: user harus memilih.
       if (!resolvedActive) {
         const organizationWorkspaces = items.filter(
           (w) => w.organization_id != null
@@ -86,17 +75,26 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    try {
-      const { data } = await api.get("/auth/me");
-      setUser(data.user);
-      setOrg(data.organization);
-      await refreshWorkspaces();
-    } catch {
-      localStorage.removeItem("okkax_token");
-      setUser(false);
-    } finally {
-      setLoading(false);
+    if (refreshPromiseRef.current) {
+      return refreshPromiseRef.current;
     }
+
+    refreshPromiseRef.current = (async () => {
+      try {
+        const { data } = await api.get("/auth/me");
+        setUser(data.user);
+        setOrg(data.organization);
+        await refreshWorkspaces();
+      } catch {
+        localStorage.removeItem("okkax_token");
+        setUser(false);
+      } finally {
+        setLoading(false);
+        refreshPromiseRef.current = null;
+      }
+    })();
+
+    return refreshPromiseRef.current;
   }, [refreshWorkspaces]);
 
   const switchWorkspace = useCallback(async (payload) => {
