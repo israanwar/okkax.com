@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Layers,
   X,
   Minus,
   Maximize2,
@@ -10,14 +9,17 @@ import {
   Trash2,
   User,
   ArrowRight,
-  Calculator,
-  Network,
-  ScanLine,
+  ArrowUpRight,
+  Sparkles,
   Check,
   Copy,
   Activity,
-  Sliders,
   Terminal,
+  Music,
+  Ticket,
+  DollarSign,
+  ShieldCheck,
+  CornerDownLeft,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -36,6 +38,9 @@ export function CopilotIntelligenceIcon({ className = "h-4 w-4", ...props }) {
   );
 }
 
+// -----------------------------------------------------------------------------
+// Markdown & Structured Content Renderer
+// -----------------------------------------------------------------------------
 function renderFormattedMarkdown(text) {
   if (!text) return null;
 
@@ -51,22 +56,22 @@ function renderFormattedMarkdown(text) {
       const dataRows = tableRows.slice(2);
 
       elements.push(
-        <div key={`table-${keyIdx++}`} className="my-2.5 overflow-x-auto rounded border border-zinc-800 bg-[#0a0a0a] font-gemini">
+        <div key={`table-${keyIdx++}`} className="my-3 overflow-x-auto rounded-xl border border-white/[0.1] bg-[#0c0c14]/90 font-gemini shadow-inner">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/90 font-gemini-display">
+              <tr className="border-b border-white/[0.1] bg-white/[0.03] font-gemini-display">
                 {headerRow.map((cell, cIdx) => (
-                  <th key={cIdx} className="px-3 py-2 font-semibold text-zinc-200">
+                  <th key={cIdx} className="px-3.5 py-2.5 font-bold text-zinc-100 uppercase tracking-wider text-[10.5px]">
                     {formatInlineText(cell.trim())}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/60 font-gemini-mono tabular-nums text-[11px]">
+            <tbody className="divide-y divide-white/[0.06] font-mono tabular-nums text-[11.5px]">
               {dataRows.map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-zinc-800/30 transition-colors">
+                <tr key={rIdx} className="hover:bg-white/[0.03] transition-colors">
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-3 py-2 text-zinc-300">
+                    <td key={cIdx} className="px-3.5 py-2 text-zinc-300">
                       {formatInlineText(cell.trim())}
                     </td>
                   ))}
@@ -95,39 +100,38 @@ function renderFormattedMarkdown(text) {
 
     if (line.startsWith("### ")) {
       elements.push(
-        <h4 key={`h3-${keyIdx++}`} className="mt-3.5 mb-1.5 text-sm font-bold text-[#f5eff2] tracking-wide flex items-center gap-1.5 font-gemini-display">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" />
-          {formatInlineText(line.replace("### ", ""))}
+        <h4 key={`h3-${keyIdx++}`} className="mt-3.5 mb-2 text-[13.5px] font-bold text-white tracking-tight font-gemini-display flex items-center gap-2">
+          <span>{formatInlineText(line.replace("### ", ""))}</span>
         </h4>
       );
     } else if (line.startsWith("#### ")) {
       elements.push(
-        <h5 key={`h4-${keyIdx++}`} className="mt-2.5 mb-1 text-[11px] font-semibold text-zinc-300 uppercase tracking-wider font-gemini-display">
+        <h5 key={`h4-${keyIdx++}`} className="mt-3 mb-1.5 text-[11px] font-bold text-zinc-300 uppercase tracking-[0.16em] font-mono">
           {formatInlineText(line.replace("#### ", ""))}
         </h5>
       );
     } else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
       elements.push(
-        <div key={`li-${keyIdx++}`} className="flex items-start gap-2 my-0.5 text-xs text-zinc-300 font-gemini">
-          <span className="text-zinc-400 mt-0.5 font-bold select-none text-[10px]">•</span>
+        <div key={`li-${keyIdx++}`} className="flex items-start gap-2.5 my-1 text-xs sm:text-[12.5px] text-zinc-300 font-gemini">
+          <span className="text-zinc-500 mt-1 font-bold select-none text-[9px] shrink-0">◆</span>
           <span className="flex-1 leading-relaxed">{formatInlineText(line.trim().substring(2))}</span>
         </div>
       );
     } else if (/^\d+\.\s/.test(line.trim())) {
       const match = line.trim().match(/^(\d+)\.\s(.*)$/);
       elements.push(
-        <div key={`oli-${keyIdx++}`} className="flex items-start gap-2 my-1 text-xs text-zinc-300 font-gemini">
-          <span className="font-gemini-mono text-zinc-400 font-bold text-[11px] min-w-[18px]">
+        <div key={`oli-${keyIdx++}`} className="flex items-start gap-2.5 my-1.5 text-xs sm:text-[12.5px] text-zinc-300 font-gemini">
+          <span className="font-mono text-zinc-400 font-semibold text-[11px] min-w-[20px] shrink-0">
             {match[1]}.
           </span>
           <span className="flex-1 leading-relaxed">{formatInlineText(match[2])}</span>
         </div>
       );
     } else if (line.trim() === "") {
-      elements.push(<div key={`space-${keyIdx++}`} className="h-1.5" />);
+      elements.push(<div key={`space-${keyIdx++}`} className="h-2" />);
     } else {
       elements.push(
-        <p key={`p-${keyIdx++}`} className="my-1 text-xs leading-relaxed text-zinc-300 font-gemini">
+        <p key={`p-${keyIdx++}`} className="my-1.5 text-xs sm:text-[12.5px] leading-relaxed text-zinc-300 font-gemini">
           {formatInlineText(line)}
         </p>
       );
@@ -157,10 +161,10 @@ function formatInlineText(text) {
         <Link
           key={match.index}
           to={url}
-          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-300 transition-colors"
+          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-200 transition-colors"
         >
           {label}
-          <ArrowRight className="h-2.5 w-2.5 inline" />
+          <ArrowRight className="h-2.5 w-2.5 inline text-zinc-400" />
         </Link>
       );
     } else {
@@ -170,7 +174,7 @@ function formatInlineText(text) {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-300 transition-colors"
+          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-200 transition-colors"
         >
           {label}
         </a>
@@ -191,7 +195,7 @@ function renderBoldItalic(raw) {
   return boldParts.map((part, idx) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={idx} className="font-semibold text-white">
+        <strong key={idx} className="font-bold text-white">
           {part.slice(2, -2)}
         </strong>
       );
@@ -210,12 +214,15 @@ function renderBoldItalic(raw) {
   });
 }
 
+// -----------------------------------------------------------------------------
+// Curated Fast Scenario Triggers
+// -----------------------------------------------------------------------------
 const FAST_SCENARIOS = [
-  { label: "Konser Stadion 50k", prompt: "Bantu rancang kalkulasi finansial dan teknis sound system konser stadion 50.000 pax" },
-  { label: "Festival Musik 5k", prompt: "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar" },
-  { label: "Valuasi Sponsor", prompt: "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?" },
-  { label: "SOP Scanner Gate", prompt: "Bagaimana SOP validasi scanner tiket QR di gate pintu masuk saat hari H?" },
-  { label: "Dampak Ekonomi", prompt: "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?" },
+  { id: "concert", label: "Konser Stadion 50k", icon: Music, prompt: "Bantu rancang kalkulasi finansial dan teknis sound system konser stadion 50.000 pax" },
+  { id: "fest", label: "Festival Musik 5k", icon: Ticket, prompt: "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar" },
+  { id: "sponsor", label: "Valuasi Sponsor", icon: DollarSign, prompt: "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?" },
+  { id: "scanner", label: "SOP Scanner Gate", icon: ShieldCheck, prompt: "Bagaimana SOP validasi scanner tiket QR di gate pintu masuk saat hari H?" },
+  { id: "economy", label: "Dampak Ekonomi", icon: Activity, prompt: "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?" },
 ];
 
 export default function YoonaChat() {
@@ -244,6 +251,13 @@ export default function YoonaChat() {
   const location = useLocation();
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (location.search.includes("copilot=open")) {
+      setIsOpen(true);
+      setIsMinimized(false);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const role = user?.roles?.[0] || "audience";
@@ -339,7 +353,7 @@ export default function YoonaChat() {
 
   return (
     <>
-      {/* Floating Trigger Button */}
+      {/* Floating Trigger Capsule */}
       {!isOpen && (
         <button
           onClick={() => {
@@ -347,13 +361,13 @@ export default function YoonaChat() {
             setIsMinimized(false);
           }}
           data-testid="yoona-chat-trigger"
-          className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-2xl border border-white/[0.16] bg-[#08080e]/95 backdrop-blur-2xl px-3.5 py-2.5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_24px_rgba(255,46,126,0.12),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-300 hover:scale-[1.03] hover:border-white/40 hover:shadow-[0_16px_50px_rgba(0,0,0,0.95),0_0_36px_rgba(255,46,126,0.25)] active:scale-[0.98] cursor-pointer"
+          className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-2xl border border-white/[0.16] bg-[#09090e]/95 backdrop-blur-2xl px-4 py-2.5 text-white shadow-[0_16px_50px_rgba(0,0,0,0.85),0_0_24px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all duration-300 hover:scale-[1.03] hover:border-white/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_36px_rgba(255,255,255,0.12)] active:scale-[0.98] cursor-pointer"
           aria-label="Buka OKKAX Copilot"
         >
-          {/* Cybernetic Intelligence Lens */}
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.22] shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_4px_12px_rgba(0,0,0,0.6)] group-hover:border-white/60 transition-all p-1.5">
-            <CopilotIntelligenceIcon className="h-full w-full object-contain group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
-            <span className="absolute inset-0 rounded-xl bg-white/[0.05] group-hover:bg-white/[0.1] transition-colors pointer-events-none" />
+          {/* Official OKKAX Favicon Brand Mark Tile */}
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.18] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_2px_8px_rgba(0,0,0,0.5)] group-hover:border-white/50 transition-all p-1.5">
+            <CopilotIntelligenceIcon className="h-full w-full object-contain group-hover:scale-110 transition-transform duration-300" />
+            <span className="absolute inset-0 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors pointer-events-none" />
           </div>
 
           <div className="flex flex-col text-left pr-1">
@@ -364,55 +378,58 @@ export default function YoonaChat() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
               </span>
             </div>
-            <span className="text-[10px] font-semibold tracking-wider text-zinc-400 font-gemini-mono uppercase group-hover:text-zinc-200 transition-colors">
+            <span className="text-[10px] font-semibold tracking-wider text-zinc-400 font-mono uppercase group-hover:text-zinc-200 transition-colors">
               Event Copilot
             </span>
           </div>
         </button>
       )}
 
-      {/* Floating Chat Window */}
+      {/* Floating Obsidian Command Console */}
       {isOpen && (
         <div
           data-testid="yoona-chat-modal"
-          className={`font-gemini fixed z-50 flex flex-col border border-white/[0.12] bg-[#0a0a10]/98 shadow-[0_24px_70px_rgba(0,0,0,0.95),0_0_30px_rgba(255,46,126,0.08)] backdrop-blur-3xl transition-all duration-200 overflow-hidden ${
+          className={`font-gemini fixed z-50 flex flex-col border border-white/[0.14] bg-[#09090e]/98 shadow-[0_32px_100px_rgba(0,0,0,0.95),0_0_30px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-3xl transition-all duration-200 overflow-hidden ${
             isExpanded
-              ? "inset-4 md:inset-8 rounded-3xl"
+              ? "inset-4 md:inset-8 rounded-[32px]"
               : isMinimized
-              ? "bottom-6 right-6 h-14 w-84 rounded-2xl"
-              : "bottom-6 right-6 h-[620px] max-h-[88vh] w-[440px] max-w-[calc(100vw-32px)] rounded-3xl"
+              ? "bottom-6 right-6 h-14 w-88 rounded-2xl"
+              : "bottom-6 right-6 h-[650px] max-h-[88vh] w-[460px] max-w-[calc(100vw-32px)] rounded-[28px]"
           }`}
         >
-          {/* Top Ambient Line */}
-          <div className="h-[1.5px] w-full bg-gradient-to-r from-transparent via-white/[0.3] to-transparent" />
+          {/* Top Ambient Highlight Beam */}
+          <div className="h-[1.5px] w-full bg-gradient-to-r from-transparent via-white/[0.35] to-transparent shrink-0" />
 
-          {/* Window Header */}
-          <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#0c0c14] px-4 py-3.5">
+          {/* Unified Console Header */}
+          <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#0c0c14]/90 px-4 py-3 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm p-1.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.16] shadow-sm p-1.5 shrink-0">
                 <CopilotIntelligenceIcon className="h-full w-full object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xs font-bold tracking-wide text-white font-gemini-display">OKKAX Copilot</h3>
-                  <span className="rounded-full bg-white/[0.08] border border-white/[0.15] px-2 py-0.5 text-[9px] font-semibold text-zinc-200 font-gemini">
+                  <h3 className="text-xs sm:text-[13px] font-bold tracking-tight text-white font-gemini-display">OKKAX Copilot</h3>
+                  <span className="rounded-full bg-white/[0.06] border border-white/[0.12] px-2 py-0.5 text-[9px] font-semibold text-zinc-300 font-mono">
                     Neural Ops Core
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-gemini">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono mt-0.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                  </span>
                   <span>Real-time Event Graph Intelligence</span>
                 </div>
               </div>
             </div>
 
-            {/* Window Controls */}
-            <div className="flex items-center gap-1 text-zinc-400">
+            {/* Minimalist Action Controls Pill */}
+            <div className="flex items-center gap-0.5 bg-white/[0.03] border border-white/[0.08] p-1 rounded-xl text-zinc-400">
               <button
                 onClick={clearChat}
                 title="Reset Percakapan"
                 data-testid="yoona-btn-clear"
-                className="rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
+                className="rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -420,7 +437,7 @@ export default function YoonaChat() {
                 onClick={() => setIsExpanded(!isExpanded)}
                 title={isExpanded ? "Perkecil Ukuran" : "Maksimalkan Layar"}
                 data-testid="yoona-btn-expand"
-                className="hidden sm:block rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
+                className="hidden sm:block rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
               >
                 {isExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
               </button>
@@ -428,7 +445,7 @@ export default function YoonaChat() {
                 onClick={() => setIsMinimized(!isMinimized)}
                 title={isMinimized ? "Buka Window" : "Minimalkan"}
                 data-testid="yoona-btn-minimize"
-                className="rounded-lg p-1.5 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer"
+                className="rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
@@ -436,163 +453,204 @@ export default function YoonaChat() {
                 onClick={() => setIsOpen(false)}
                 title="Tutup"
                 data-testid="yoona-btn-close"
-                className="rounded-lg p-1.5 hover:bg-red-500/20 hover:text-red-400 transition-colors cursor-pointer"
+                className="rounded-lg p-1.5 hover:bg-white/[0.12] hover:text-white transition-colors cursor-pointer"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
 
-          {/* Body Content */}
+          {/* Console Body Content */}
           {!isMinimized && (
             <>
               {/* Fast Scenario Ribbon */}
-              <div className="border-b border-white/[0.06] bg-[#08080c] px-3 py-2 overflow-x-auto whitespace-nowrap okx-custom-scrollbar">
+              <div className="border-b border-white/[0.06] bg-[#07070b] px-3.5 py-2 overflow-x-auto whitespace-nowrap okx-custom-scrollbar shrink-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider shrink-0 flex items-center gap-1">
-                    <Sliders className="h-3 w-3 text-zinc-400" /> Modul:
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest shrink-0 font-mono mr-1">
+                    Modul:
                   </span>
-                  {FAST_SCENARIOS.map((sc, sIdx) => (
-                    <button
-                      key={sIdx}
-                      onClick={() => handleSend(sc.prompt)}
-                      disabled={loading}
-                      data-testid={`yoona-scenario-${sIdx}`}
-                      className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-300 hover:border-white/30 hover:text-white hover:bg-white/[0.08] transition-all shrink-0 cursor-pointer"
-                    >
-                      {sc.label}
-                    </button>
-                  ))}
+                  {FAST_SCENARIOS.map((sc) => {
+                    const IconComponent = sc.icon;
+                    return (
+                      <button
+                        key={sc.id}
+                        onClick={() => handleSend(sc.prompt)}
+                        disabled={loading}
+                        data-testid={`yoona-scenario-${sc.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08] px-3 py-1 text-[11px] text-zinc-300 hover:text-white transition-all shrink-0 cursor-pointer active:scale-95 disabled:opacity-50"
+                      >
+                        <IconComponent size={11} className="text-zinc-400" />
+                        <span>{sc.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Message Thread */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm okx-custom-scrollbar bg-[#06060a]/60">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm okx-custom-scrollbar bg-[#050508]/60">
                 {messages.map((m, idx) => (
                   <div
                     key={idx}
                     data-testid={`yoona-message-${m.role}-${idx}`}
-                    className={`flex items-start gap-2.5 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                    className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
                   >
-                    <div
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                        m.role === "user"
-                          ? "bg-zinc-800 text-zinc-200 border border-zinc-700"
-                          : "bg-gradient-to-br from-zinc-800 via-[#151522] to-zinc-950 border border-white/[0.2] text-white shadow-sm p-1"
-                      }`}
-                    >
-                      {m.role === "user" ? <User className="h-3.5 w-3.5" /> : <CopilotIntelligenceIcon className="h-full w-full object-contain" />}
+                    {/* Role Header Indicator */}
+                    <div className="flex items-center gap-2 mb-1.5 px-1 text-[10px] text-zinc-500 font-mono">
+                      {m.role === "assistant" ? (
+                        <>
+                          <span className="flex items-center gap-1 text-zinc-300 font-bold">
+                            <Sparkles size={10} className="text-zinc-400" />
+                            OKKAX Copilot
+                          </span>
+                          <span>· {m.timestamp}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>{m.timestamp}</span>
+                          <span className="text-zinc-400 font-bold">Anda</span>
+                        </>
+                      )}
                     </div>
+
+                    {/* Bubble Card */}
                     <div
-                      className={`relative max-w-[88%] rounded-xl px-4 py-3 text-xs leading-relaxed group ${
+                      className={`relative rounded-2xl p-4 text-xs sm:text-[12.5px] leading-relaxed transition-all ${
                         m.role === "user"
-                          ? "bg-white/[0.08] border border-white/[0.15] text-white"
-                          : "bg-[#141414] border border-zinc-800/90 text-zinc-200"
+                          ? "max-w-[85%] bg-white/[0.08] border border-white/[0.16] text-white rounded-tr-sm shadow-sm"
+                          : "w-full bg-[#101017]/85 border border-white/[0.08] text-zinc-200 rounded-tl-sm shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
                       }`}
                     >
                       {m.role === "user" ? (
-                        <p className="whitespace-pre-wrap">{m.content}</p>
+                        <p className="whitespace-pre-wrap font-medium">{m.content}</p>
                       ) : (
-                        renderFormattedMarkdown(m.content)
-                      )}
-                      
-                      {/* Message Footer */}
-                      <div className="mt-2 pt-1 border-t border-zinc-800/40 flex items-center justify-between text-[9px] text-zinc-500 font-mono">
-                        <div className="flex items-center gap-1.5">
-                          {m.engine && <span className="text-zinc-300">{m.engine}</span>}
-                          <span>· {m.timestamp}</span>
+                        <div className="leading-relaxed">
+                          {renderFormattedMarkdown(m.content)}
                         </div>
-                        {m.role === "assistant" && (
+                      )}
+
+                      {/* Card Footer Actions for Assistant */}
+                      {m.role === "assistant" && (
+                        <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-zinc-500 font-mono">
+                          <div className="flex items-center gap-1.5">
+                            {m.engine ? (
+                              <span className="text-zinc-400">{m.engine}</span>
+                            ) : (
+                              <span className="text-zinc-500">Event Graph Neural Inference</span>
+                            )}
+                          </div>
                           <button
                             onClick={() => copyMessage(m.content, idx)}
-                            title="Salin Teks Jawaban"
+                            title="Salin Respons"
                             data-testid={`yoona-copy-btn-${idx}`}
-                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-zinc-400 hover:text-white transition-opacity cursor-pointer"
+                            className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-white/[0.06]"
                           >
                             {copiedIdx === idx ? (
                               <>
-                                <Check className="h-2.5 w-2.5 text-emerald-400" />
-                                <span className="text-emerald-400">Tersalin</span>
+                                <Check className="h-3 w-3 text-emerald-400" />
+                                <span className="text-emerald-400 font-semibold">Tersalin</span>
                               </>
                             ) : (
                               <>
-                                <Copy className="h-2.5 w-2.5" />
+                                <Copy className="h-3 w-3" />
                                 <span>Salin</span>
                               </>
                             )}
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
 
-                {/* Loading state */}
+                {/* Loading State Animation */}
                 {loading && (
-                  <div className="flex items-start gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-black font-bold">
-                      <Terminal className="h-3.5 w-3.5" />
+                  <div className="w-full rounded-2xl bg-[#101017]/80 border border-white/[0.08] p-4 text-xs text-zinc-400 flex items-center gap-3">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.12] p-1.5">
+                      <CopilotIntelligenceIcon className="h-full w-full object-contain animate-spin" />
                     </div>
-                    <div className="rounded-lg bg-[#141414] border border-zinc-800 px-4 py-3 text-xs text-zinc-300">
+                    <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-pulse" />
-                        <span className="text-[11px] font-mono text-zinc-400">OKKAX Copilot sedang memproses data event…</span>
+                        <div className="flex space-x-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.2s]" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.4s]" />
+                        </div>
+                        <span className="text-[11px] font-mono text-zinc-300 font-semibold">Memproses inferensi data...</span>
                       </div>
+                      <span className="text-[10px] text-zinc-500 font-mono">Menghubungkan Event Graph, alokasi budget, & SOP</span>
                     </div>
                   </div>
                 )}
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Dynamic Context Suggestions */}
+              {/* Dynamic Suggestions Strip */}
               {suggestions.length > 0 && (
-                <div className="border-t border-zinc-800/60 bg-[#0f0f0f] px-3 py-2">
-                  <p className="mb-1.5 text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
-                    <Activity className="h-3 w-3 text-zinc-400" /> Rekomendasi Pertanyaan:
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto okx-custom-scrollbar">
+                <div className="border-t border-white/[0.06] bg-[#07070b] px-3.5 py-2 shrink-0">
+                  <div className="mb-1.5 text-[9.5px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                    <Sparkles className="h-3 w-3 text-zinc-400" />
+                    <span>Rekomendasi Pertanyaan:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto okx-custom-scrollbar">
                     {suggestions.map((sug, sIdx) => (
                       <button
                         key={sIdx}
                         onClick={() => handleSend(sug)}
                         disabled={loading}
                         data-testid={`yoona-chip-${sIdx}`}
-                        className="rounded border border-zinc-800 bg-zinc-900/90 px-2 py-1 text-[11px] text-zinc-300 transition-all hover:border-white/30 hover:text-white hover:bg-zinc-800 cursor-pointer"
+                        className="rounded-xl border border-white/[0.08] bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.06] px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white transition-all text-left flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
-                        {sug}
+                        <span className="truncate">{sug}</span>
+                        <ArrowRight size={10} className="text-zinc-500 shrink-0" />
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Elevated Input Bar */}
-              <div className="border-t border-zinc-800 bg-[#121212] p-3 rounded-b-xl">
-                <div className="relative flex items-center">
+              {/* Integrated Studio Command Bar */}
+              <div className="border-t border-white/[0.08] bg-[#0c0c14] p-3 shrink-0">
+                <div className="relative rounded-2xl border border-white/[0.12] bg-[#06060a] p-2 focus-within:border-white/35 focus-within:shadow-[0_0_24px_rgba(255,255,255,0.06)] transition-all">
                   <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Tanya OKKAX Copilot seputar kalkulasi budget, brief, atau strategi acara…"
-                    rows={1}
+                    placeholder="Tanya kalkulasi anggaran, dependensi rider, SOP venue, atau strategi tiket..."
+                    rows={2}
                     data-testid="yoona-chat-input"
-                    className="w-full resize-none rounded-lg border border-zinc-800 bg-[#080808] px-3.5 py-2.5 pr-11 text-xs text-white placeholder:text-zinc-500 focus:border-white/40 focus:outline-none"
+                    className="w-full resize-none bg-transparent px-2 py-1 text-xs sm:text-[12.5px] text-white placeholder:text-zinc-500 focus:outline-none leading-relaxed"
                   />
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={!input.trim() || loading}
-                    data-testid="yoona-chat-send"
-                    className="absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-md bg-white text-black hover:bg-zinc-200 disabled:opacity-30 cursor-pointer"
-                    aria-label="Kirim Pesan"
-                  >
-                    <Send className="h-3.5 w-3.5 text-black" />
-                  </button>
+
+                  {/* Input Toolbar */}
+                  <div className="mt-1 pt-1.5 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
+                      <span className="hidden sm:inline">Enter kirim · Shift+Enter baris baru</span>
+                    </div>
+
+                    <button
+                      onClick={() => handleSend()}
+                      disabled={!input.trim() || loading}
+                      data-testid="yoona-chat-send"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 px-3.5 py-1.5 text-xs font-bold text-black transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-white cursor-pointer shadow-sm"
+                      aria-label="Kirim Pesan"
+                    >
+                      <span>Kirim</span>
+                      <Send size={11} className="text-black" />
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-1.5 flex items-center justify-between text-[9px] text-zinc-500">
-                  <span className="font-mono">Enter kirim · Shift+Enter baris baru</span>
-                  <Link to="/okkax" className="font-semibold text-zinc-400 hover:text-white transition-colors">
-                    Command Center Layar Penuh →
+
+                {/* Subfooter */}
+                <div className="mt-2 px-1 flex items-center justify-between text-[10px] text-zinc-500 font-gemini">
+                  <span className="font-mono text-[9.5px]">Mode Demo Sandbox — OKKAX OS</span>
+                  <Link
+                    to="/okkax"
+                    className="font-semibold text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
+                  >
+                    <span>Command Center Layar Penuh</span>
+                    <ArrowUpRight size={11} />
                   </Link>
                 </div>
               </div>
