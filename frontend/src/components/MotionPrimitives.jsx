@@ -237,7 +237,7 @@ export function HeroStageDepth({ imageSrc, alt, children, className = "" }) {
 // -----------------------------------------------------------------------------
 // 6. SPOTLIGHT LUMINESCENT CARD (Raycast/Linear Card Stage Lighting)
 // -----------------------------------------------------------------------------
-export function SpotlightCard({ children, className = "", spotlightColor = "rgba(255, 46, 126, 0.16)", ...rest }) {
+export function SpotlightCard({ children, className = "", spotlightColor = "rgba(255, 255, 255, 0.08)", ...rest }) {
   const divRef = useRef(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
@@ -248,17 +248,19 @@ export function SpotlightCard({ children, className = "", spotlightColor = "rgba
     setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   };
 
+  const hasExplicitOverflow = className.includes("overflow-");
+
   return (
     <div
       ref={divRef}
       onPointerMove={handlePointerMove}
       onPointerEnter={() => setOpacity(1)}
       onPointerLeave={() => setOpacity(0)}
-      className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl shadow-lg hover:border-white/25 hover:shadow-[0_20px_48px_rgba(0,0,0,0.85)] transition-all duration-300 ${className}`}
+      className={`group relative rounded-2xl border border-white/[0.08] bg-[#0c0c0e]/90 backdrop-blur-xl shadow-lg hover:border-white/25 hover:shadow-[0_20px_48px_rgba(0,0,0,0.85)] transition-all duration-300 ${hasExplicitOverflow ? "" : "overflow-hidden"} ${className}`}
       {...rest}
     >
       <div
-        className="pointer-events-none absolute -inset-px transition-opacity duration-300 z-0"
+        className="pointer-events-none absolute -inset-px rounded-2xl transition-opacity duration-300 z-0 overflow-hidden"
         style={{
           opacity,
           background: `radial-gradient(450px circle at ${position.x}px ${position.y}px, ${spotlightColor}, transparent 70%)`,

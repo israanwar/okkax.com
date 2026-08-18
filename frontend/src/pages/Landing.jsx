@@ -59,10 +59,10 @@ const HERO = "/assets/okkax-concert-hero-v2.png";
 const PREVIEW_TONE = { get: (k) => PREVIEW_COLOR(k) };
 
 const STATUS_META = {
-  Confirmed: { color: "#34d399", Icon: CheckCircle2, tooltip: "Sudah siap dan telah dikonfirmasi." },
-  Pending: { color: "#a1a1aa", Icon: Clock3, tooltip: "Sedang menunggu keputusan atau penyelesaian." },
-  "At Risk": { color: "#fbbf24", Icon: TriangleAlert, tooltip: "Memerlukan perhatian karena dapat menghambat event." },
-  Missing: { color: "#71717a", Icon: CircleOff, tooltip: "Komponen wajib belum tersedia." },
+  Confirmed: { color: "#ffffff", Icon: CheckCircle2, tooltip: "Sudah siap dan telah dikonfirmasi." },
+  Pending: { color: "#ffffff", Icon: Clock3, tooltip: "Sedang menunggu keputusan atau penyelesaian." },
+  "At Risk": { color: "#ffffff", Icon: TriangleAlert, tooltip: "Memerlukan perhatian karena dapat menghambat event." },
+  Missing: { color: "#ffffff", Icon: CircleOff, tooltip: "Komponen wajib belum tersedia." },
   Completed: { color: "#ffffff", Icon: BadgeCheck, tooltip: "Target komponen telah selesai dipenuhi." },
 };
 const STATUS_ORDER = ["Confirmed", "Pending", "At Risk", "Missing", "Completed"];
@@ -399,13 +399,13 @@ function StatusPill({ status, testId, tooltipAlign = "center" }) {
       data-testid={testId}
       tabIndex={0}
       aria-label={`${status}: ${meta.tooltip}`}
-      className="group/status relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#12121e]/90 px-3 py-1 text-[10.5px] font-bold tracking-wider text-zinc-200 outline-none hover:border-white/30 transition-all shadow-sm cursor-help"
+      className="group/status relative inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#111114]/90 px-3 py-1 text-[10.5px] font-bold tracking-wider text-white outline-none hover:border-white/30 hover:bg-white/[0.06] transition-all shadow-sm cursor-help"
     >
-      <Icon size={12} strokeWidth={2.4} style={{ color: meta.color }} aria-hidden="true" />
+      <Icon size={12} strokeWidth={2.4} className="text-zinc-300 group-hover/status:text-white transition-colors" aria-hidden="true" />
       <span>{status}</span>
       <span
         role="tooltip"
-        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-30 w-48 max-w-[calc(100vw-2.5rem)] rounded-xl border border-white/[0.18] bg-[#10101c]/98 backdrop-blur-xl px-3 py-2 text-center text-[10px] font-medium leading-4 text-zinc-200 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
+        className={`pointer-events-none absolute bottom-[calc(100%+8px)] z-50 w-48 max-w-[calc(100vw-2.5rem)] rounded-xl border border-white/[0.16] bg-[#111114]/98 backdrop-blur-2xl px-3 py-2 text-center text-[10px] font-medium leading-4 text-zinc-200 opacity-0 shadow-2xl transition-opacity group-hover/status:opacity-100 group-focus/status:opacity-100 ${tooltipPosition}`}
       >
         {meta.tooltip}
       </span>
@@ -634,11 +634,11 @@ function GraphPreview() {
       </SpotlightCard>
 
       {/* Status Legend Strip */}
-      <SpotlightCard className="p-4 sm:p-5">
+      <SpotlightCard className="p-4 sm:p-5 overflow-visible relative z-20" data-testid="graph-status-strip">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Status Komponen</div>
-            <p className="mt-1 text-xs text-zinc-400 font-gemini">Warna, ikon, dan label selalu tampil bersama. Arahkan atau fokuskan untuk membaca artinya.</p>
+            <p className="mt-1 text-xs text-zinc-400 font-gemini">Status dan ketergantungan komponen. Arahkan atau fokuskan untuk membaca artinya.</p>
           </div>
           <div className="flex flex-wrap gap-2" data-testid="graph-status-legend">
             {STATUS_ORDER.map((status, index) => (
