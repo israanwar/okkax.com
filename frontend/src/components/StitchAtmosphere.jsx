@@ -86,7 +86,7 @@ export function StitchHeroCommandCapsule({ className = "" }) {
       mode: "concert",
     },
     {
-      label: "Makassar Jazz Fest 2-Hari 3-Panggung",
+      label: "Makassar Jazz Fest 3-Panggung",
       fullPrompt:
         "Simulasikan festival jazz 2 hari di Pantai Losari Makassar dengan 3 stage paralel, alokasi 40 vendor kuliner, dan settlement sponsor.",
       mode: "festival",
@@ -127,78 +127,56 @@ export function StitchHeroCommandCapsule({ className = "" }) {
           isFocused
             ? "border-white/[0.3] bg-[#0d0d1c]/95 shadow-[0_28px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(99,102,241,0.25),inset_0_1px_0_rgba(255,255,255,0.35)]"
             : "border-white/[0.14] bg-[#0a0a14]/85 shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_40px_rgba(79,70,229,0.12),inset_0_1px_0_rgba(255,255,255,0.18)]"
-        } backdrop-blur-3xl p-3 sm:p-4`}
+        } backdrop-blur-3xl p-4 sm:p-5 text-left`}
       >
-        {/* Top Atmosphere Accent Bar */}
-        <div className="absolute top-0 left-12 right-12 h-[1px] bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none" />
+        {/* Top Atmosphere Subtle Specular Highlight */}
+        <div className="absolute top-0 left-12 right-12 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
-        {/* Mode Switcher + Model Indicator Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 px-2 pt-1 pb-2.5 border-b border-white/[0.07]">
-          {/* Mode Switcher Buttons */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
-            {MODES.map((mode) => {
-              const Icon = mode.icon;
-              const isActive = selectedMode === mode.id;
-              return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  onClick={() => setSelectedMode(mode.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
-                    isActive
-                      ? "bg-white text-black font-bold shadow-md scale-[1.02]"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
-                  }`}
-                >
-                  <Icon size={12} className={isActive ? "text-black" : "text-zinc-400"} />
-                  <span>{mode.label}</span>
-                </button>
-              );
-            })}
+        <form onSubmit={handleExecute} className="flex flex-col gap-4">
+          {/* Main Prompt Input Area (Top - Google Stitch Style) */}
+          <div className="relative">
+            <textarea
+              rows={2}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="What live event shall we design? (e.g. Konser 15.000 pax di Senayan, kalkulasi staging, rider & tiket)..."
+              className="w-full resize-none bg-transparent px-1 py-1 text-base sm:text-lg text-white placeholder-zinc-500 outline-none focus:ring-0 leading-relaxed font-gemini"
+            />
           </div>
 
-          {/* Intelligence Model Badge */}
-          <div className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.03] px-3 py-1 text-[10.5px] font-bold uppercase tracking-wider text-zinc-300 font-gemini-mono shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
-            </span>
-            <Sparkles size={11} className="text-zinc-300" />
-            <span>OKKAX Studio AI · v2.5</span>
-          </div>
-        </div>
-
-        {/* Main Prompt Input Area */}
-        <form onSubmit={handleExecute} className="relative mt-2">
-          <textarea
-            rows={2}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder="Ketik konsep live event atau pilih skenario: misal 'Konser 15.000 pax di Senayan, kalkulasi staging, rider & tiket'..."
-            className="w-full resize-none rounded-2xl bg-transparent px-3.5 py-2.5 text-sm sm:text-base text-white placeholder-zinc-500 outline-none focus:ring-0 leading-relaxed font-gemini"
-          />
-
-          {/* Action Row Inside Capsule */}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-2 pt-1 pb-1">
-            <div className="flex items-center gap-2 text-xs text-zinc-400 font-gemini">
-              <Link
-                to="/for/organizers"
-                className="inline-flex items-center gap-1 hover:text-white transition-colors"
-              >
-                <Sliders size={12} className="text-zinc-500" />
-                <span>Rancang dari Template</span>
-              </Link>
+          {/* Bottom Control Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.08]">
+            {/* Left: Mode Buttons */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+              {MODES.map((mode) => {
+                const Icon = mode.icon;
+                const isActive = selectedMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    onClick={() => setSelectedMode(mode.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                      isActive
+                        ? "bg-white text-black font-bold shadow-md scale-[1.02]"
+                        : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    <Icon size={13} className={isActive ? "text-black" : "text-zinc-400"} />
+                    <span>{mode.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex items-center gap-2">
-              <Link
-                to="/demo"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-300 border border-white/[0.1] bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.08] hover:text-white transition-all"
-              >
-                <span>Lihat Contoh</span>
-              </Link>
+            {/* Right: Engine Indicator + Simulate CTA */}
+            <div className="flex items-center gap-3">
+              <div className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-400 font-gemini-mono">
+                <Sparkles size={11} className="text-indigo-400" />
+                <span>OKKAX Studio AI · v2.5</span>
+              </div>
 
               <button
                 type="submit"
@@ -215,20 +193,17 @@ export function StitchHeroCommandCapsule({ className = "" }) {
         </form>
       </div>
 
-      {/* Floating Interactive Suggestion Chips (Under Capsule) */}
-      <div className="mt-3.5 flex flex-wrap items-center justify-center gap-2 px-1">
-        <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider font-gemini-mono mr-1">
-          Saran Cepat:
-        </span>
+      {/* Floating Interactive Suggestion Chips (Centered single/balanced row) */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5 px-1">
         {SUGGESTIONS.map((item, idx) => (
           <button
             key={idx}
             type="button"
             onClick={() => handleApplySuggestion(item)}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#0c0c16]/80 backdrop-blur-xl px-3.5 py-1.5 text-xs font-medium text-zinc-300 hover:border-white/35 hover:bg-white/[0.1] hover:text-white transition-all duration-200 shadow-sm cursor-pointer active:scale-95"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-[#0c0c16]/80 backdrop-blur-xl px-4 py-2 text-xs font-medium text-zinc-300 hover:border-white/35 hover:bg-white/[0.1] hover:text-white transition-all duration-200 shadow-sm cursor-pointer active:scale-95"
           >
             <Sparkles size={11} className="text-zinc-400 group-hover:text-white transition-colors" />
-            <span className="truncate max-w-[260px] sm:max-w-none">{item.label}</span>
+            <span>{item.label}</span>
           </button>
         ))}
       </div>
