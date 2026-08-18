@@ -43,7 +43,7 @@ export default function Pricing() {
   const jsonLd = useMemo(() => buildJsonLd(), []);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
       <PublicNav />
       <main data-testid="pricing-page" className="mx-auto max-w-7xl px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
         <Hero />

@@ -53,7 +53,7 @@ export default function EconomyMap() {
   const focus = hover ? cities.find((c) => c.city === hover) : null;
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white font-gemini">
+    <div className="min-h-screen bg-transparent text-white font-gemini">
       <ScrollProgressBar />
       <PublicNav />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">

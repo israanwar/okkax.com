@@ -17,7 +17,7 @@
 }
 
 :root {
-    --okx-bg: #0a0a0a;
+    --okx-bg: transparent;
     --okx-surface: #141414;
     --okx-surface-2: #1b1b1b;
     --okx-ivory: #fdfbf7;

@@ -1338,7 +1338,7 @@ function ProtectedPaymentProduct() {
 
 function ProductShell({ testid, title, tagline, lead, children }) {
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
       <ScrollProgressBar />
       <PublicNav />
       <main data-testid={testid}>

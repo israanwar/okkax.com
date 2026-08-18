@@ -191,7 +191,7 @@ export function Privacy() {
 // ============================================================================
 function Shell({ tagline, title, children }) {
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
       <ScrollProgressBar />
       <PublicNav />
       <main data-testid={"company-" + tagline.toLowerCase().replace(/[^a-z0-9]+/g, "-")} className="mx-auto max-w-4xl px-4 pb-24 pt-14 sm:px-6 sm:pt-20">

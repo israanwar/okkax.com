@@ -312,7 +312,7 @@ const STATE_LABEL = {
 // =============================================================================
 export default function Demo() {
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100">
+    <div className="min-h-screen bg-transparent text-zinc-100">
       <style>{`
         @keyframes okxBlockedPulse {
           0%, 100% { opacity: 0.85; }

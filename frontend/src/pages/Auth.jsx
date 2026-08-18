@@ -40,13 +40,17 @@ function Shell({ title, subtitle, children }) {
   return (
     <div
       data-testid="auth-shell"
-      className="okx-auth-shell relative min-h-[100dvh] w-full overflow-y-auto bg-cover bg-center font-gemini"
-      style={{ backgroundImage: `url(${AUTH_BACKGROUND_URL})`, backgroundPosition: "78% center" }}
+      className="okx-auth-shell relative min-h-[100dvh] w-full overflow-y-auto bg-black font-gemini"
     >
-      <div className="fixed inset-0 bg-black/65 backdrop-blur-[1px]" aria-hidden="true" />
-      <div className="okx-aurora-field fixed inset-0 pointer-events-none" data-testid="auth-aurora" aria-hidden="true">
-        <div className="okx-aurora-blob" />
-      </div>
+      {/* High-Precision Blueprint Dot Matrix Grid */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-100 stitch-grid-canvas"
+        style={{
+          backgroundImage: "radial-gradient(circle at center, rgba(255, 255, 255, 0.18) 1.25px, transparent 1.25px)",
+          backgroundSize: "28px 28px",
+        }}
+        aria-hidden="true"
+      />
 
       <div className="relative z-10 grid min-h-[100dvh] lg:grid-cols-[0.88fr_1.12fr]">
         {/* Left Branding Column */}

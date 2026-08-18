@@ -492,7 +492,7 @@ export default function YoonaPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070707] text-white flex flex-col font-gemini">
+    <div className="min-h-screen bg-transparent text-white flex flex-col font-gemini">
       <ScrollProgressBar />
       <PublicNav />
 
