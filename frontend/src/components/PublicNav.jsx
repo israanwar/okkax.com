@@ -336,16 +336,16 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
             top: `${panelTop}px`,
             width: "min(840px, calc(100vw - 32px))",
           }}
-          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden rounded-3xl border border-white/[0.22] ring-1 ring-white/[0.08] bg-[#10101a]/98 shadow-[0_24px_80px_rgba(0,0,0,0.95),0_0_40px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.22)] backdrop-blur-3xl"
+          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden rounded-3xl border border-white/[0.14] bg-[#0c0c0e]/98 shadow-[0_32px_90px_rgba(0,0,0,0.98),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-3xl"
           onMouseEnter={openNow}
           onMouseLeave={scheduleClose}
         >
           {/* Top ambient lighting accent */}
-          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
           <div className="grid lg:grid-cols-[200px_minmax(0,1fr)]">
-            <div className="border-b border-white/[0.12] bg-gradient-to-b from-[#1c1c2e] via-[#141424] to-[#0d0d16] p-6 lg:border-b-0 lg:border-r">
-              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.15] bg-white/[0.06] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.22em] text-zinc-200 font-gemini-mono shadow-sm">
+            <div className="border-b border-white/[0.08] bg-gradient-to-b from-[#141418] to-[#0a0a0c] p-6 lg:border-b-0 lg:border-r">
+              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.22em] text-zinc-300 font-gemini-mono shadow-sm">
                 <Sparkles size={11} className="text-zinc-300" aria-hidden="true" />
                 {meta.eyebrow}
               </div>
@@ -354,12 +354,12 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
                 {meta.title}
               </div>
 
-              <p className="mt-2.5 text-[11.5px] leading-relaxed text-zinc-300 font-medium">
+              <p className="mt-2.5 text-[11.5px] leading-relaxed text-zinc-400 font-medium">
                 {meta.text}
               </p>
             </div>
 
-            <ul className={`grid ${gridClass} bg-[#0b0b14]/95 p-3.5 gap-2`}>
+            <ul className={`grid ${gridClass} bg-[#08080a]/95 p-3.5 gap-2`}>
               {item.children?.map((c) => (
                 <li key={c.to}>
                   <Link
@@ -370,7 +370,7 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
                       onNavigate?.();
                     }}
                     data-testid={`nav-${item.id}-${slug(c.label)}`}
-                    className="group flex min-h-[76px] h-full flex-col justify-between rounded-2xl border border-white/[0.1] bg-[#161626]/90 p-3.5 transition-all duration-200 hover:border-white/40 hover:bg-white/[0.12] hover:shadow-[0_8px_24px_rgba(0,0,0,0.7)] hover:-translate-y-0.5 cursor-pointer shadow-sm"
+                    className="group flex min-h-[76px] h-full flex-col justify-between rounded-2xl border border-white/[0.08] bg-[#111114]/90 p-3.5 transition-all duration-200 hover:border-white/30 hover:bg-white/[0.08] hover:shadow-[0_8px_24px_rgba(0,0,0,0.9)] hover:-translate-y-0.5 cursor-pointer shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-[13px] font-bold text-white tracking-tight transition-colors group-hover:text-white drop-shadow-sm">
@@ -379,12 +379,12 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
 
                       <ArrowUpRight
                         size={14}
-                        className="mt-0.5 text-zinc-400 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
+                        className="mt-0.5 text-zinc-500 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
                         aria-hidden="true"
                       />
                     </div>
 
-                    <span className="mt-1.5 text-[11px] leading-snug text-zinc-300 font-medium group-hover:text-zinc-100 transition-colors">
+                    <span className="mt-1.5 text-[11px] leading-snug text-zinc-400 font-medium group-hover:text-zinc-200 transition-colors">
                       {c.note || MENU_NOTES[c.label] || ""}
                     </span>
                   </Link>
@@ -580,7 +580,7 @@ function MobileMenu({ onClose, isItemActive }) {
 function MobileAccordion({ item, onNavigate }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-2xl border border-white/[0.1] bg-[#12121e]/90 p-2.5 shadow-sm">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c0e]/95 p-2.5 shadow-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -599,10 +599,10 @@ function MobileAccordion({ item, onNavigate }) {
                 to={c.to}
                 onClick={onNavigate}
                 data-testid={`mnav-${item.id}-${slug(c.label)}`}
-                className="block rounded-xl border border-white/[0.08] bg-[#181828]/95 px-3.5 py-2.5 text-[13px] hover:border-white/30 hover:bg-white/[0.1] transition-all"
+                className="block rounded-xl border border-white/[0.08] bg-[#141418]/90 px-3.5 py-2.5 text-[13px] hover:border-white/30 hover:bg-white/[0.08] transition-all"
               >
                 <div className="font-bold text-white">{c.label}</div>
-                {c.note && <div className="text-[11px] text-zinc-300 font-medium mt-0.5">{c.note}</div>}
+                {c.note && <div className="text-[11px] text-zinc-400 font-medium mt-0.5">{c.note}</div>}
               </Link>
             </li>
           ))}
