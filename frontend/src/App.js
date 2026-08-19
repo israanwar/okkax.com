@@ -29,6 +29,7 @@ const EventWorkspace = lazy(() => import("@/pages/EventWorkspace"));
 const SponsorPortal = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.SponsorPortal })));
 const TenantPortal = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.TenantPortal })));
 const AdminPanel = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.AdminPanel })));
+const OpportunitiesDealsPortal = lazy(() => import("@/pages/Portals").then((m) => ({ default: m.OpportunitiesDealsPortal })));
 const MoneyMovement = lazy(() => import("@/pages/MoneyMovement"));
 const RoleWorkspace = lazy(() => import("@/pages/RoleWorkspace"));
 const PaymentSuccess = lazy(() => import("@/pages/PaymentResult").then((m) => ({ default: m.PaymentSuccess })));
@@ -38,6 +39,12 @@ const PublicCalendar = lazy(() => import("@/pages/CalendarEngine").then((m) => (
 const WorkspaceCalendar = lazy(() => import("@/pages/CalendarEngine").then((m) => ({ default: m.WorkspaceCalendar })));
 const ControlPlane = lazy(() => import("@/pages/ControlPlane"));
 const Network = lazy(() => import("@/pages/Network"));
+const WorkforceJobsPage = lazy(() => import("@/pages/WorkforceJobsPage"));
+const PersonalWalletPage = lazy(() => import("@/pages/PersonalWalletPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const OrganizerTicketingPage = lazy(() => import("@/pages/OrganizerTicketingPage"));
+const LiveOperationsPage = lazy(() => import("@/pages/LiveOperationsPage"));
+const OrganizerFinancePage = lazy(() => import("@/pages/OrganizerFinancePage"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
 const Products = lazy(() => import("@/pages/Products"));
 const About = lazy(() => import("@/pages/Company").then((m) => ({ default: m.About })));
@@ -99,15 +106,24 @@ function RouterBody() {
         <Route path="/app/events" element={shell(<EventsList />)} />
         <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
         <Route path="/app/events/:eventId/:tab" element={shell(<EventWorkspace />)} />
+        <Route path="/app/ticketing" element={shell(<OrganizerTicketingPage />)} />
+        <Route path="/app/operations" element={shell(<LiveOperationsPage />)} />
+        <Route path="/app/finance" element={shell(<OrganizerFinancePage />)} />
         <Route path="/app/tickets" element={shell(<MyTickets />)} />
         <Route path="/app/orders" element={shell(<MyOrders />)} />
         <Route path="/app/validator" element={shell(<Validator />)} />
         <Route path="/app/sponsor" element={shell(<SponsorPortal />)} />
         <Route path="/app/tenant" element={shell(<TenantPortal />)} />
+        <Route path="/app/opportunities" element={shell(<OpportunitiesDealsPortal />)} />
+        <Route path="/app/deals" element={shell(<OpportunitiesDealsPortal />)} />
         <Route path="/app/admin" element={shell(<AdminPanel />)} />
         <Route path="/app/admin/finance" element={shell(<MoneyMovement />)} />
         <Route path="/app/admin/control" element={shell(<ControlPlane />)} />
         <Route path="/app/me" element={shell(<RoleWorkspace />)} />
+        <Route path="/app/attendance" element={shell(<RoleWorkspace />)} />
+        <Route path="/app/jobs" element={shell(<WorkforceJobsPage />)} />
+        <Route path="/app/wallet" element={shell(<PersonalWalletPage />)} />
+        <Route path="/app/settings" element={shell(<SettingsPage />)} />
         <Route path="/app/network" element={shell(<Network />)} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
         <Route path="/payment/cancel" element={<PaymentCancel />} />

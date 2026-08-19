@@ -371,3 +371,194 @@ export function AdminPanel() {
     </div>
   );
 }
+
+export function OpportunitiesDealsPortal() {
+  const [tab, setTab] = useState("opportunities");
+  const [opps, setOpps] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [{ data: o }, { data: d }] = await Promise.all([
+        api.get("/opportunities").catch(() => ({ data: { items: [] } })),
+        api.get("/deals").catch(() => ({ data: { items: [] } })),
+      ]);
+      setOpps(o.items || []);
+      setDeals(d.items || []);
+    } catch {
+      // Ignore
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const acceptOpportunity = async (oppId) => {
+    setBusyId(oppId);
+    try {
+      await api.post(`/opportunities/${oppId}/accept`, { notes: "Peluang diterima dan masuk ke tahap deal." });
+      toast.success("Peluang diterima — Commercial Deal berhasil dibuat");
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4 font-gemini" data-testid="opportunities-deals-page">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-4.5 shadow-sm">
+        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+          Commercial Operations
+        </div>
+        <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
+          Opportunities & Commercial Deals
+        </h1>
+        <p className="mt-1 text-xs text-zinc-400">
+          Kelola penawaran kemitraan, booking talent, RFQ vendor, dan milestone pembayaran kontrak.
+        </p>
+
+        <div className="mt-3.5 flex gap-2 border-t border-white/[0.06] pt-3">
+          <button
+            onClick={() => setTab("opportunities")}
+            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              tab === "opportunities"
+                ? "bg-white text-black font-bold shadow-sm"
+                : "border border-white/[0.1] bg-white/[0.02] text-zinc-400 hover:text-white"
+            }`}
+          >
+            Peluang Masuk ({opps.length})
+          </button>
+          <button
+            onClick={() => setTab("deals")}
+            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              tab === "deals"
+                ? "bg-white text-black font-bold shadow-sm"
+                : "border border-white/[0.1] bg-white/[0.02] text-zinc-400 hover:text-white"
+            }`}
+          >
+            Commercial Deals ({deals.length})
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="p-8 text-center text-xs text-zinc-400 font-gemini">Memuat data peluang & deals…</div>
+      ) : tab === "opportunities" ? (
+        <div className="space-y-3">
+          {Array.from(new Map(opps.map((o) => [o.id, o])).values()).length === 0 ? (
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 p-8 text-center text-xs text-zinc-400">
+              Belum ada peluang terbuka saat ini.
+            </div>
+          ) : (
+            Array.from(new Map(opps.map((o) => [o.id, o])).values()).map((o) => (
+              <div
+                key={o.id}
+                className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-4 shadow-sm"
+                data-testid={`opportunity-card-${o.id}`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="num text-[11px] text-zinc-400 font-gemini-mono">
+                      {o.event_id} · Target: <span className="uppercase text-white font-semibold">{o.target_role}</span>
+                    </div>
+                    <h3 className="text-sm font-bold text-white mt-0.5">{o.target_name || o.message}</h3>
+                    <p className="text-xs text-zinc-300 mt-1">{o.message}</p>
+                    <div className="num text-xs font-semibold text-white font-gemini-mono mt-1">
+                      Estimasi Budget: {idr(o.budget_estimate)}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={o.status === "accepted" ? "Confirmed" : o.status === "sent" ? "Pending" : o.status} />
+                    {o.status !== "accepted" && (
+                      <button
+                        disabled={busyId === o.id}
+                        onClick={() => acceptOpportunity(o.id)}
+                        className="rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {busyId === o.id ? "Memproses…" : "Terima Peluang"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {Array.from(new Map(deals.map((d) => [d.id, d])).values()).length === 0 ? (
+            <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 p-8 text-center text-xs text-zinc-400">
+              Belum ada commercial deal aktif.
+            </div>
+          ) : (
+            Array.from(new Map(deals.map((d) => [d.id, d])).values()).map((d) => (
+              <div
+                key={d.id}
+                className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-4 shadow-sm space-y-3"
+                data-testid={`deal-card-${d.id}`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.06] pb-3">
+                  <div>
+                    <div className="num text-[11px] text-zinc-400 font-gemini-mono">
+                      {d.event_id} · Counterpart: <span className="uppercase text-white font-semibold">{d.counterpart_role}</span>
+                    </div>
+                    <h3 className="text-sm sm:text-base font-bold text-white mt-0.5">
+                      {d.counterpart_name} — {d.category}
+                    </h3>
+                    <p className="text-xs text-zinc-300 mt-0.5">{d.scope_of_work}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="num text-base sm:text-lg font-bold text-white font-gemini-mono">
+                      {idr(d.total_amount)}
+                    </div>
+                    <div className="mt-1">
+                      <StatusBadge status={d.status === "completed" ? "Confirmed" : d.status === "negotiating" ? "Pending" : d.status} />
+                    </div>
+                  </div>
+                </div>
+
+                {d.latest_notes && (
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-xs text-zinc-300">
+                    <span className="text-[10px] uppercase font-bold text-zinc-400 font-gemini-mono block">Catatan Negosiasi:</span>
+                    {d.latest_notes}
+                  </div>
+                )}
+
+                {d.milestones?.length > 0 && (
+                  <div className="rounded-xl border border-white/[0.06] bg-black/40 p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono mb-2">
+                      Payment Milestones ({d.milestones.length})
+                    </div>
+                    <div className="space-y-1.5">
+                      {d.milestones.map((m) => (
+                        <div key={m.id} className="flex items-center justify-between text-xs py-1 border-b border-white/[0.04] last:border-0">
+                          <span className="text-zinc-200">{m.title || m.description}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="num font-gemini-mono font-bold text-white">{idr(m.amount)}</span>
+                            <span className="text-[10px] font-gemini-mono uppercase px-2 py-0.5 rounded bg-white/[0.05] text-zinc-400">
+                              {m.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+

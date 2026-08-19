@@ -168,6 +168,26 @@ export default function RoleWorkspace() {
     }
   };
 
+  const handleShiftCheckIn = async (shiftId, eventId) => {
+    try {
+      const res = await api.post("/workforce/check-in", { shift_id: shiftId, event_id: eventId });
+      toast.success(res.data?.message || "Check-in shift berhasil diverifikasi");
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
+  const handleShiftCheckOut = async (shiftId) => {
+    try {
+      const res = await api.post("/workforce/check-out", { shift_id: shiftId });
+      toast.success(res.data?.message || "Check-out shift berhasil dicatat");
+      load();
+    } catch (e) {
+      toast.error(apiError(e));
+    }
+  };
+
   if (!d) return <div className="text-sm text-zinc-500 p-8 font-gemini">Memuat dashboard peran…</div>;
 
   const totalItems = d.sections.reduce((sum, s) => sum + (s.items?.length || 0), 0);
@@ -291,12 +311,35 @@ export default function RoleWorkspace() {
                     <div>
                       <h3 className="text-sm font-bold text-white md:text-base">{w.event_name}</h3>
                       <div className="num text-[11px] text-zinc-400 mt-0.5 font-gemini-mono">
-                        {w.role} · {w.job?.shift || "shift menyusul"} · perkiraan upah {idr(w.earning)} · pembayaran {w.payment_status}
+                        {w.role} · {w.job?.shift || "Shift Festival"} · perkiraan upah {idr(w.earning)} · pembayaran {w.payment_status}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <StatusBadge status={w.check_in_at ? "Confirmed" : "Pending"} />
-                      <span className="num text-[11px] text-zinc-400 font-gemini-mono">{w.check_in_at ? `Check-in ${String(w.check_in_at).slice(11, 16)}` : "Belum check-in"}</span>
+                      <StatusBadge status={w.attendance_status === "Completed" ? "Confirmed" : w.attendance_status === "Checked In" || w.check_in_at ? "Confirmed" : "Pending"} />
+                      {w.attendance_status !== "Completed" && (
+                        w.check_in_at || w.attendance_status === "Checked In" ? (
+                          <button
+                            onClick={() => handleShiftCheckOut(w.id)}
+                            className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer"
+                            data-testid={`worker-checkout-${w.id}`}
+                          >
+                            Clock-Out Shift
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleShiftCheckIn(w.id, w.event_id)}
+                            className="rounded-xl bg-white px-3 py-1 text-xs font-bold text-black hover:bg-zinc-200 transition-all cursor-pointer shadow-sm"
+                            data-testid={`worker-checkin-${w.id}`}
+                          >
+                            Clock-In Shift
+                          </button>
+                        )
+                      )}
+                      {w.check_in_at && (
+                        <span className="num text-[11px] text-zinc-400 font-gemini-mono">
+                          In: {String(w.check_in_at).slice(11, 16)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}

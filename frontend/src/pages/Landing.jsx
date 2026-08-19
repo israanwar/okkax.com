@@ -402,10 +402,83 @@ function StatusPill({ status, testId }) {
   );
 }
 
+const DEFAULT_DEMO_SUMMARY = {
+  event: {
+    id: DEMO_EVENT_ID,
+    event_code: "EVT-MKS-2026-0001",
+    name: "Aruna Bold Live Makassar",
+    city: "Makassar",
+    start_date: "2026-09-18",
+    end_date: "2026-09-20",
+    capacity: 5000,
+    event_type: "Music Festival",
+    organizer_name: "Aruna Live ID",
+    venue_name: "Phinisi Convention Hall",
+    status: "published",
+  },
+  key_numbers: {
+    total_event_cost: 750000000,
+    confirmed_funding: 850000000,
+    funding_gap: 0,
+    economic_activity: 1250000000,
+  },
+  network: {
+    talents: 4,
+    vendors: 6,
+    rider_items: 8,
+    sponsor_commitments: 3,
+    sponsor_value: 350000000,
+    booths_total: 20,
+    booths_occupied: 18,
+    tenant_revenue: 80000000,
+    workforce_needed: 50,
+    tickets_sold: 4200,
+    ticket_capacity: 5000,
+    ticket_gmv: 420000000,
+  },
+  operations: {
+    readiness: 92,
+    rider_matched: 8,
+    rider_total: 8,
+    workforce_filled: 45,
+    workforce_needed: 50,
+    vendors_confirmed: 6,
+    vendors_total: 6,
+  },
+  brief: {
+    city: "Makassar",
+    headliner: "Noah & Sheila on 7",
+    headliner_landed_cost: 350000000,
+    sponsor_tiers: 4,
+  },
+  ripple: {
+    venue_income: 120000000,
+    vendor_payout: 280000000,
+    workforce_payout: 75000000,
+    ticket_gmv: 420000000,
+    economic_activity: 1250000000,
+  },
+};
+
+const DEFAULT_CATALOG_EVENTS = [
+  {
+    id: DEMO_EVENT_ID,
+    name: "Aruna Bold Live Makassar",
+    organizer_name: "Aruna Live ID",
+    headline_talent: "Noah & Sheila on 7",
+    city: "Makassar",
+    event_code: "EVT-MKS-2026-0001",
+    venue_name: "Phinisi Convention Hall",
+    budget: 750000000,
+    status: "published",
+  },
+];
+
 function GraphPreview() {
   const graphScrollRef = useRef(null);
-  const [summary, setSummary] = useState(null);
-  const [catalogEvents, setCatalogEvents] = useState([]);
+  // Initialize with DEFAULT_DEMO_SUMMARY so graph renders instantly (< 50ms) without blank blocks
+  const [summary, setSummary] = useState(DEFAULT_DEMO_SUMMARY);
+  const [catalogEvents, setCatalogEvents] = useState(DEFAULT_CATALOG_EVENTS);
   const [selectedEventId, setSelectedEventId] = useState(DEMO_EVENT_ID);
   const [loadError, setLoadError] = useState(false);
   const [active, setActive] = useState("event");
@@ -423,23 +496,21 @@ function GraphPreview() {
     const loadGraphData = async () => {
       try {
         const [sumData, eventsData] = await Promise.all([
-          fetchCached("/demo/summary", 120_000).catch(() => null),
-          fetchCached("/discover/events", 60_000).catch(() => null),
+          fetchCached("/demo/summary", 60_000).catch(() => null),
+          fetchCached("/public/graph-events", 60_000).catch(() =>
+            fetchCached("/discover/events", 60_000).catch(() => null)
+          ),
         ]);
         if (!mounted) return;
         if (sumData) setSummary(sumData);
-        else setLoadError(true);
-        if (eventsData?.items) setCatalogEvents(eventsData.items);
+        if (eventsData?.items?.length) setCatalogEvents(eventsData.items);
       } catch {
-        if (mounted) setLoadError(true);
+        // keep pre-rendered default summary
       }
     };
 
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(loadGraphData, { timeout: 1500 });
-    } else {
-      setTimeout(loadGraphData, 50);
-    }
+    // Parallel immediate fetch on mount (zero artificial delay)
+    loadGraphData();
 
     return () => { mounted = false; };
   }, []);
@@ -996,7 +1067,9 @@ export default function Landing() {
   const [ripple, setRipple] = useState(null);
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    api.get(`/events/${DEMO_EVENT_ID}/ripple`).then(({ data }) => setRipple(data.metrics)).catch(() => {});
+    fetchCached(`/events/${DEMO_EVENT_ID}/ripple`, 60_000)
+      .then((data) => setRipple(data?.metrics || data))
+      .catch(() => {});
   }, []);
 
   return (
@@ -1045,7 +1118,7 @@ export default function Landing() {
 
           {/* Subtitle */}
           <Reveal delay={0.25} y={12}>
-            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base font-gemini">
+            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base font-gemini font-normal">
               Dari brief ide hingga settlement panggung. OKKAX menyatukan seluruh komponen, rider, tiket,
               dan workflow live event dalam satu koordinasi terpusat.
             </p>

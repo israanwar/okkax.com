@@ -1889,6 +1889,86 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
                        "tickets_sold": sum(e["sold"] for e in out)}}
 
 
+# In-memory caches for homepage public telemetry
+_ticker_cache = {"data": None, "ts": 0}
+_graph_events_cache = {"data": None, "ts": 0}
+
+@api.get("/discover/ticker")
+async def discover_ticker():
+    """Endpoint super-ringan untuk LiveTicker homepage publik.
+    Hanya mengembalikan field minimal (id, name, event_type, city, is_live, days_to_event, this_week, economic_ripple).
+    Ukuran payload: ~1.2 KB (dibandingkan 422 KB full discover).
+    Latency: < 2 ms (in-memory cached 30s).
+    """
+    import time
+    now = time.time()
+    if _ticker_cache["data"] and (now - _ticker_cache["ts"] < 30):
+        return _ticker_cache["data"]
+
+    f = {"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}}
+    events = await db.events.find(
+        f,
+        {"_id": 0, "id": 1, "name": 1, "event_type": 1, "city": 1, "start_date": 1, "status": 1, "budget": 1}
+    ).sort("start_date", 1).to_list(40)
+
+    today = datetime.now().date()
+    items = []
+    for ev in events:
+        try:
+            start = datetime.fromisoformat(ev["start_date"]).date()
+        except Exception:
+            start = today
+        days_to = (start - today).days
+        is_live = ev.get("status") == "live" or days_to == 0
+        this_week = 0 <= days_to <= 7
+        items.append({
+            "id": ev["id"],
+            "name": ev["name"],
+            "event_type": ev.get("event_type", "Music Festival"),
+            "city": ev.get("city", "Jakarta"),
+            "is_live": is_live,
+            "days_to_event": days_to,
+            "this_week": this_week,
+            "economic_ripple": ev.get("budget", 500000000)
+        })
+
+    # Prioritas: Live -> Minggu ini -> Economic Ripple
+    items.sort(key=lambda x: (
+        1 if x["is_live"] else 0,
+        1 if x["this_week"] else 0,
+        x["economic_ripple"] or 0
+    ), reverse=True)
+
+    result = {"items": items[:20], "total": len(items[:20])}
+    _ticker_cache["data"] = result
+    _ticker_cache["ts"] = now
+    return result
+
+
+@api.get("/public/graph-events")
+async def public_graph_events():
+    """Endpoint ringan untuk dropdown & switch event pada Event Graph homepage.
+    Mengembalikan katalog event yang diperlukan tanpa payload mendalam yang membebani browser.
+    Ukuran payload: ~7 KB (dibandingkan 422 KB full discover).
+    """
+    import time
+    now = time.time()
+    if _graph_events_cache["data"] and (now - _graph_events_cache["ts"] < 30):
+        return _graph_events_cache["data"]
+
+    f = {"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}}
+    events = await db.events.find(
+        f,
+        {"_id": 0, "id": 1, "name": 1, "organizer_name": 1, "headline_talent": 1, "city": 1,
+         "event_code": 1, "venue_name": 1, "budget": 1, "status": 1}
+    ).sort("name", 1).to_list(150)
+
+    result = {"items": events, "total": len(events)}
+    _graph_events_cache["data"] = result
+    _graph_events_cache["ts"] = now
+    return result
+
+
 @api.get("/public/events/{event_id}")
 async def public_event(event_id: str):
     ev = await get_event_or_404(event_id)
@@ -3449,6 +3529,12 @@ from extras import extras as extras_router  # noqa: E402
 app.include_router(extras_router)
 from calendar_engine import calendar as calendar_router  # noqa: E402
 app.include_router(calendar_router)
+from member_os_endpoints import router as member_os_router  # noqa: E402
+app.include_router(member_os_router)
+from member_os_services import services_router  # noqa: E402
+app.include_router(services_router)
+from intelligence_engine import router as intelligence_router  # noqa: E402
+app.include_router(intelligence_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -3733,6 +3819,97 @@ async def startup():
     from seed_network import seed_network_expansion
     network_stats = await seed_network_expansion()
     logger.info(f"OKKAX startup network catalog: {network_stats}")
+
+    # Seed canonical workforce job listings if empty
+    if await db.workforce_jobs.count_documents({}) == 0:
+        demo_jobs = [
+            {
+                "id": "JOB-MKS-FOH-01",
+                "title": "Front of House (FOH) Sound Engineer",
+                "department": "Audio & Sound Engineering",
+                "role": "FOH Engineer",
+                "event_id": "EVT-MKS-2026-0001",
+                "event_name": "Aruna Bold Live Makassar",
+                "city": "Makassar",
+                "venue": "Phinisi Convention Hall",
+                "shift_date": "2026-09-18",
+                "call_time": "08:00 WITA",
+                "rate_per_day": 2500000.0,
+                "requirements": [
+                    "Pengalaman minimal 3 tahun mengoperasikan d&b audiotechnik / Meyer Sound",
+                    "Menguasai digital mixer DiGiCo SD series / Yamaha CL5",
+                    "Memahami live multi-track recording & Dante routing"
+                ],
+                "slots_open": 2,
+                "status": "open",
+                "created_at": now_iso()
+            },
+            {
+                "id": "JOB-MKS-STG-02",
+                "title": "Stage Manager & Rigging Coordinator",
+                "department": "Stage Management",
+                "role": "Stage Manager",
+                "event_id": "EVT-MKS-2026-0001",
+                "event_name": "Aruna Bold Live Makassar",
+                "city": "Makassar",
+                "venue": "Phinisi Convention Hall",
+                "shift_date": "2026-09-18",
+                "call_time": "07:30 WITA",
+                "rate_per_day": 1800000.0,
+                "requirements": [
+                    "Pengalaman stage management festival musik skala >5.000 penonton",
+                    "Memiliki sertifikasi K3 / Rigging Safety",
+                    "Kemampuan komunikasi cepat via HT/intercom"
+                ],
+                "slots_open": 4,
+                "status": "open",
+                "created_at": now_iso()
+            },
+            {
+                "id": "JOB-MKS-LO-03",
+                "title": "Liaison Officer (LO) Artist & VIP",
+                "department": "Hospitality & Artist Relations",
+                "role": "Liaison Officer",
+                "event_id": "EVT-MKS-2026-0001",
+                "event_name": "Aruna Bold Live Makassar",
+                "city": "Makassar",
+                "venue": "Phinisi Convention Hall",
+                "shift_date": "2026-09-18",
+                "call_time": "10:00 WITA",
+                "rate_per_day": 950000.0,
+                "requirements": [
+                    "Komunikasi lancar Bahasa Indonesia & Inggris",
+                    "Paham etika hospitality musisi dan penjemputan bandara",
+                    "Cekatan, rapi, dan solutif di backstage"
+                ],
+                "slots_open": 6,
+                "status": "open",
+                "created_at": now_iso()
+            },
+            {
+                "id": "JOB-MKS-LGT-04",
+                "title": "Lighting & Visual Technician (GrandMA3 Operator)",
+                "department": "Lighting & Multimedia",
+                "role": "Lighting Operator",
+                "event_id": "EVT-MKS-2026-0001",
+                "event_name": "Aruna Bold Live Makassar",
+                "city": "Makassar",
+                "venue": "Phinisi Convention Hall",
+                "shift_date": "2026-09-18",
+                "call_time": "09:00 WITA",
+                "rate_per_day": 1600000.0,
+                "requirements": [
+                    "Mahir console GrandMA3 / ChamSys MagicQ",
+                    "Paham timecode sync (SMPTE/MTC) untuk show musik live",
+                    "Kesiapan standby sepanjang gladi resik hingga closing show"
+                ],
+                "slots_open": 3,
+                "status": "open",
+                "created_at": now_iso()
+            }
+        ]
+        await db.workforce_jobs.insert_many(demo_jobs)
+        logger.info(f"OKKAX startup workforce jobs seeded: {len(demo_jobs)}")
 
 
 @app.on_event("shutdown")

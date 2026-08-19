@@ -231,10 +231,18 @@ async def stripe_webhook(request: Request):
     return {"status": "ok"}
 
 
+# In-memory cache for demo_summary with 30s TTL
+_demo_summary_cache = {"data": None, "ts": 0}
+
 # ------------------------------------------------------------------ role workspaces
 @extras.get("/demo/summary")
 async def demo_summary():
-    """Angka kunci publik untuk halaman Platform Demo — semuanya dari database demo."""
+    """Angka kunci publik untuk halaman Platform Demo — in-memory cached (30s TTL)."""
+    import time
+    now = time.time()
+    if _demo_summary_cache["data"] and (now - _demo_summary_cache["ts"] < 30):
+        return _demo_summary_cache["data"]
+
     import seed_data
     from server import compute_budget
 
@@ -286,7 +294,7 @@ async def demo_summary():
         {"label": "Pengunjung", "email": "audience@okkax.id", "scope": "Discover, checkout sandbox, QR ticket, refund"},
         {"label": "Supervisor", "email": "supervisor@okkax.id", "scope": "Command Center, run of show, incident"},
     ]
-    return {
+    res = {
         "event": {"id": ev["id"], "event_code": ev["event_code"], "name": ev["name"], "city": ev["city"],
                   "start_date": ev["start_date"], "end_date": ev.get("end_date"), "capacity": ev["capacity"],
                   "event_type": ev["event_type"], "organizer_name": ev.get("organizer_name"),
@@ -341,6 +349,9 @@ async def demo_summary():
         "sample_qr": "OKKAX|" + ev["event_code"] + "|OKX-TIX-000001",
         "disclaimer": seed_data.DISCLAIMER,
     }
+    _demo_summary_cache["data"] = res
+    _demo_summary_cache["ts"] = now
+    return res
 
 
 
@@ -407,29 +418,40 @@ async def my_workspace(user: dict = Depends(get_current_user)):
 
 
 PERSONA_EMAILS = {
+    "Penyelenggara": "organizer@okkax.id",
+    "penyelenggara": "organizer@okkax.id",
+    "Penyelenggara Event": "organizer@okkax.id",
     "organizer": "organizer@okkax.id",
     "Organizer": "organizer@okkax.id",
     "promoter": "organizer@okkax.id",
     "promotor": "organizer@okkax.id",
     "Promotor": "organizer@okkax.id",
     "Promoter": "organizer@okkax.id",
+    "Promotor Musik": "organizer@okkax.id",
     "Sponsor": "sponsor@okkax.id",
     "sponsor": "sponsor@okkax.id",
+    "Sponsor Brand": "sponsor@okkax.id",
     "Tenant": "tenant@okkax.id",
     "tenant": "tenant@okkax.id",
+    "Tenant F&B": "tenant@okkax.id",
     "audience": "audience@okkax.id",
     "Audience": "audience@okkax.id",
+    "Pembeli Tiket": "audience@okkax.id",
     "Talent": "talent@okkax.id",
     "talent": "talent@okkax.id",
+    "Artis / Talent": "talent@okkax.id",
     "talent_management": "talent@okkax.id",
     "Venue": "venue@okkax.id",
     "venue": "venue@okkax.id",
+    "Pengelola Venue": "venue@okkax.id",
     "Vendor": "vendor@okkax.id",
     "vendor": "vendor@okkax.id",
+    "Vendor Produksi": "vendor@okkax.id",
     "Workforce": "worker@okkax.id",
     "workforce": "worker@okkax.id",
     "Worker": "worker@okkax.id",
     "worker": "worker@okkax.id",
+    "Worker / Kru": "worker@okkax.id",
     "Finance": "finance@okkax.id",
     "finance": "finance@okkax.id",
 }

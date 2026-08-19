@@ -430,3 +430,4 @@ ROLES = [
     ("supervisor", "Event Supervisor"),
 ]
 ROLE_KEYS = [r[0] for r in ROLES]
+DEMO_EVENT_ID = "EVT-MKS-2026-0001"

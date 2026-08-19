@@ -9,68 +9,93 @@ import { Logo } from "@/components/PublicNav";
 import WorkspaceSelector from "@/components/WorkspaceSelector";
 import NotificationPopover from "@/components/NotificationPopover";
 import NotificationHistoryModal from "@/components/NotificationHistoryModal";
+import ActionCenterModal from "@/components/ActionCenterModal";
+import MessagingDrawer from "@/components/MessagingDrawer";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 
-const NAV = {
+export const NAV = {
   organizer: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/intelligence", "OKKAX Intelligence", Sparkles],
     ["/app/studio", "Event Studio", Wand2],
-    ["/app/me", "My Assignments", Settings],
-    ["/app/validator", "Ticket Validator", ScanLine],
-    ["/app/tickets", "My Tickets", Ticket],
+    ["/app/ticketing", "Ticketing", Ticket],
+    ["/app/operations", "Live Operations", ScanLine],
+    ["/app/opportunities", "Opportunities & Deals", Handshake],
+    ["/app/finance", "Finance & Escrow", Wallet],
+    ["/app/settings", "Settings", Settings],
   ],
-  role: [
+  promoter: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/intelligence", "OKKAX Intelligence", Sparkles],
-    ["/app/events", "Events", ListOrdered],
-    ["/app/network", "Network", Globe2],
+    ["/app/studio", "Event Studio", Wand2],
+    ["/app/ticketing", "Ticketing", Ticket],
+    ["/app/operations", "Live Operations", ScanLine],
+    ["/app/opportunities", "Opportunities & Deals", Handshake],
+    ["/app/finance", "Finance & Settlement", Wallet],
+    ["/app/settings", "Settings", Settings],
+  ],
+  talent: [
+    ["/app", "Overview", LayoutDashboard],
+    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/opportunities", "Booking Requests", Handshake],
+    ["/app/me", "My Bookings & Rider", Mic2],
     ["/app/calendar", "Calendar", CalendarDays],
-    ["/app/me", "My Assignments", Settings],
-    ["/app/tickets", "My Tickets", Ticket],
+    ["/app/wallet", "Wallet & Payouts", Wallet],
+    ["/app/settings", "Settings", Settings],
+  ],
+  workforce: [
+    ["/app", "Overview", LayoutDashboard],
+    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/jobs", "Available Jobs", HardHat],
+    ["/app/me", "My Assignments", ListOrdered],
+    ["/app/calendar", "Shifts & Schedule", CalendarDays],
+    ["/app/wallet", "Wallet & Earnings", Wallet],
+    ["/app/settings", "Settings", Settings],
+  ],
+  vendor: [
+    ["/app", "Overview", LayoutDashboard],
+    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/opportunities", "RFQ & Requests", Wrench],
+    ["/app/me", "Projects & Deliverables", ListOrdered],
+    ["/app/network", "Services & Inventory", Globe2],
+    ["/app/calendar", "Resource Calendar", CalendarDays],
+    ["/app/wallet", "Wallet & Receivables", Wallet],
+    ["/app/settings", "Settings", Settings],
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/intelligence", "OKKAX Intelligence", Sparkles],
-    ["/app/sponsor", "Opportunities", Handshake],
-    ["/app/events", "Events", ListOrdered],
-    ["/app/network", "Network", Globe2],
-    ["/app/calendar", "Calendar", CalendarDays],
-    ["/app/tickets", "My Tickets", Ticket],
+    ["/discover", "Discover Events", Globe2],
+    ["/app/sponsor", "Sponsorship Inventory", Handshake],
+    ["/app/me", "Activations & Portfolio", Activity],
+    ["/app/finance", "Finance & Commitments", Wallet],
+    ["/app/settings", "Settings", Settings],
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
     ["/app/intelligence", "OKKAX Intelligence", Sparkles],
-    ["/app/tenant", "Opportunities", Store],
-    ["/app/events", "Events", ListOrdered],
-    ["/app/network", "Network", Globe2],
-    ["/app/calendar", "Calendar", CalendarDays],
-    ["/app/tickets", "My Tickets", Ticket],
+    ["/discover", "Discover Events", Globe2],
+    ["/app/tenant", "Applications & Booths", Store],
+    ["/app/calendar", "Event Schedule", CalendarDays],
+    ["/app/finance", "Payments & Invoices", Wallet],
+    ["/app/settings", "Settings", Settings],
   ],
   audience: [
-    ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/discover", "Discover Events", Globe2],
     ["/app/tickets", "My Tickets", Ticket],
     ["/app/orders", "Orders & Refunds", Wallet],
+    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/settings", "Settings", Settings],
   ],
   admin: [
     ["/app/admin", "Admin Panel", ShieldCheck],
     ["/app/admin/control", "Control Plane", Activity],
+    ["/app/admin/finance", "Pergerakan Dana", Wallet],
     ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/settings", "Settings", Settings],
   ],
 };
-
-
-const SUPER_ADMIN_NAV = [
-  ["/app", "Overview", LayoutDashboard],
-  ["/app/intelligence", "OKKAX Intelligence", Sparkles],
-  ["/app/admin/control", "Control Plane", Activity],
-  ["/app/admin/finance", "Pergerakan Dana", Wallet],
-  ["/app/admin", "Admin Panel", ShieldCheck],
-  ["/app/events", "Events", ListOrdered],
-  ["/app/calendar", "Calendar", CalendarDays],
-];
 
 export const EVENT_TABS = [
   ["blueprint", "Blueprint", Wand2],
@@ -95,6 +120,8 @@ export default function AppShell({ children }) {
   const [notif, setNotif] = useState({ items: [], unread: 0, total: 0 });
   const [showNotif, setShowNotif] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showActionCenter, setShowActionCenter] = useState(false);
+  const [actionCount, setActionCount] = useState(0);
   const notifBtnRef = useRef(null);
   const nav = useNavigate();
 
@@ -102,8 +129,15 @@ export default function AppShell({ children }) {
   const fetchNotifs = useCallback(async () => {
     if (!userId) return;
     try {
-      const { data } = await api.get("/notifications?limit=12");
-      setNotif(data || { items: [], unread: 0, total: 0 });
+      const [{ data: notifData }, { data: actionData }] = await Promise.all([
+        api.get("/notifications?limit=12").catch(() => ({ data: { items: [], unread: 0, total: 0 } })),
+        api.get("/overview/actions").catch(() => ({ data: { items: [] } })),
+      ]);
+      setNotif(notifData || { items: [], unread: 0, total: 0 });
+      const pending = (actionData?.items || []).filter(
+        (a) => a.status === "pending" || a.status === "action_required"
+      ).length;
+      setActionCount(pending);
     } catch {
       // Ignore
     }
@@ -116,23 +150,25 @@ export default function AppShell({ children }) {
   if (loading) return <div className="p-10 text-sm text-zinc-500">Memuat OKKAX…</div>;
   if (!user) return <Navigate to="/login" replace />;
 
-  const currentRole = activeWorkspace?.role || user?.role || (user?.roles && user.roles[0]) || "audience";
+  const currentRole = (activeWorkspace?.role || user?.role || (user?.roles && user.roles[0]) || "audience").toLowerCase();
 
-  let links = [];
-  if (["organizer", "event_organizer", "promoter", "supervisor", "finance_approver"].includes(currentRole)) {
+  let links = NAV[currentRole] || NAV.audience;
+  if (user.roles?.includes("super_admin") || user.roles?.includes("platform_admin")) {
+    links = NAV.admin;
+  } else if (["organizer", "event_organizer", "supervisor", "finance_approver"].includes(currentRole)) {
     links = NAV.organizer;
+  } else if (currentRole === "promoter") {
+    links = NAV.promoter;
+  } else if (["talent", "talent_management", "artist", "band"].includes(currentRole)) {
+    links = NAV.talent;
+  } else if (["workforce", "worker", "crew"].includes(currentRole)) {
+    links = NAV.workforce;
+  } else if (["vendor", "supplier", "venue_manager"].includes(currentRole)) {
+    links = NAV.vendor;
   } else if (currentRole === "sponsor") {
     links = NAV.sponsor;
   } else if (currentRole === "tenant") {
     links = NAV.tenant;
-  } else if (["talent", "talent_management", "venue_manager", "vendor", "worker"].includes(currentRole)) {
-    links = NAV.role;
-  } else if (user.roles?.includes("super_admin")) {
-    links = SUPER_ADMIN_NAV;
-  } else if (user.roles?.includes("platform_admin")) {
-    links = [...NAV.organizer, ...NAV.admin];
-  } else if (hasRole("organizer", "event_organizer", "promoter", "supervisor", "finance_approver")) {
-    links = NAV.organizer;
   } else {
     links = NAV.audience;
   }
@@ -195,8 +231,8 @@ export default function AppShell({ children }) {
   );
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#07070a] font-gemini">
-      <header className="z-50 shrink-0 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
+    <div className="min-h-screen flex flex-col bg-[#07070a] font-gemini">
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
         <div className="flex items-center justify-between px-3.5 py-2 sm:px-5">
           <div className="flex items-center gap-2.5">
             <button data-testid="shell-drawer-toggle" onClick={() => setOpen(true)} className="p-1.5 text-zinc-300 lg:hidden rounded-lg hover:bg-white/[0.05]" aria-label="Buka menu">
@@ -206,8 +242,42 @@ export default function AppShell({ children }) {
             <span className="hidden text-[11px] text-zinc-400 sm:block font-gemini-mono">Live Event Operating Network</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/discover" className="hidden text-xs font-semibold text-zinc-400 hover:text-white sm:block px-2.5 py-1 rounded-lg hover:bg-white/[0.04] transition-colors">Discover</Link>
-            
+            {/* Permission-Gated Professional Messaging */}
+            <MessagingDrawer />
+
+            {/* Universal Action Center Trigger */}
+            <div className="relative">
+              <button
+                data-testid="action-center-btn"
+                onClick={() => setShowActionCenter(true)}
+                className={`relative p-1.5 rounded-lg border transition-all cursor-pointer ${
+                  showActionCenter
+                    ? "border-white/40 bg-white/15 text-white shadow-sm"
+                    : "border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-white/20 hover:text-white"
+                }`}
+                aria-label="Universal Action Center"
+                title="Universal Action Center"
+              >
+                <Sparkles size={14.5} />
+                {actionCount > 0 && (
+                  <span
+                    data-testid="action-center-badge"
+                    className="num absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-extrabold text-black shadow-sm font-gemini-mono"
+                  >
+                    {actionCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            <ActionCenterModal
+              isOpen={showActionCenter}
+              onClose={() => {
+                setShowActionCenter(false);
+                fetchNotifs();
+              }}
+            />
+
             {/* Notification Bell Trigger */}
             <div className="relative">
               <button
@@ -271,8 +341,8 @@ export default function AppShell({ children }) {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden h-full w-56 shrink-0 overflow-y-auto border-r border-white/[0.08] bg-[#060609]/70 py-3.5 lg:block">
+      <div className="pt-[56px] flex min-h-screen flex-1">
+        <aside className="sticky top-[56px] hidden h-[calc(100vh-56px)] w-56 shrink-0 overflow-y-auto border-r border-white/[0.08] bg-[#060609]/70 py-3.5 lg:block">
           <SidebarLinks />
           <div className="mt-6 px-3 text-[10px] leading-relaxed text-zinc-400 font-gemini-mono">
             Mode demo kompetisi. Pembayaran sandbox, tanpa uang nyata.
@@ -293,7 +363,7 @@ export default function AppShell({ children }) {
         )}
 
         <main
-          className="okx-scroll-pane min-w-0 flex-1 overflow-y-auto px-3.5 py-4 sm:px-5 sm:py-4.5"
+          className="okx-scroll-pane min-w-0 flex-1 px-3.5 py-4 sm:px-5 sm:py-4.5 pb-16"
         >
           {children}
         </main>

@@ -9,54 +9,24 @@ import {
   Layers,
   Sliders,
 } from "lucide-react";
+import OkkaxConcertMotion from "./OkkaxConcertMotion";
 
 /**
  * -----------------------------------------------------------------------------
  * STITCH AURORA BACKGROUND
- * Pure CSS/SVG high-performance ambient fluid wave & dot grid (60fps hardware accelerated).
+ * Pure CSS/SVG & Canvas high-performance ambient fluid wave, concert motion & dot grid (60fps).
  * -----------------------------------------------------------------------------
  */
 export function StitchAuroraBackground({ children, className = "", showGrid = true }) {
   return (
     <div className={`relative overflow-hidden bg-transparent ${className}`}>
-      {/* 1. Pure Stealth Atmosphere (Subtle Studio Gradients) */}
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
-        {/* Soft Radial Ambient Spotlight behind Center Stage */}
-        <div
-          className="absolute top-[10%] left-1/2 -translate-x-1/2 h-[750px] w-[90%] max-w-[1200px] rounded-full opacity-35 blur-[130px]"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.09), rgba(30, 41, 59, 0.18), transparent 70%)",
-          }}
-        />
+      {/* 1. Cinematic Concert Motion (Photo Foundation, Moving Beams, Lasers, Crowd Lights, Network Pulses) */}
+      <OkkaxConcertMotion />
 
-        {/* Ultra-Subtle Deep Midnight Sheen */}
-        <div
-          className="absolute top-[20%] -left-[10%] h-[500px] w-[50%] rounded-full opacity-15 blur-[140px]"
-          style={{
-            background: "radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute top-[15%] -right-[10%] h-[500px] w-[50%] rounded-full opacity-10 blur-[140px]"
-          style={{
-            background: "radial-gradient(circle, rgba(255, 255, 255, 0.04), transparent 70%)",
-          }}
-        />
-
-        {/* Studio Top-Down Vignette */}
-        <div
-          className="absolute inset-0 opacity-50"
-          style={{
-            background: "linear-gradient(180deg, rgba(8, 8, 12, 0.4) 0%, rgba(0, 0, 0, 0.85) 100%)",
-          }}
-        />
-      </div>
-
-      {/* 2. High-Precision Blueprint Dot Matrix Grid */}
+      {/* 2. High-Precision Blueprint Dot Matrix Grid (Layered ON TOP of Concert Motion) */}
       {showGrid && (
         <div
-          className="pointer-events-none absolute inset-0 z-0 opacity-100"
+          className="pointer-events-none absolute inset-0 z-[3] opacity-100 stitch-grid-canvas"
           style={{
             backgroundImage: "radial-gradient(circle at center, rgba(255, 255, 255, 0.22) 1.25px, transparent 1.25px)",
             backgroundSize: "28px 28px",
@@ -67,7 +37,7 @@ export function StitchAuroraBackground({ children, className = "", showGrid = tr
 
       {/* 3. Seamless Bottom Gradient Fade into Canvas */}
       <div
-        className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-transparent z-10"
+        className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-b from-transparent to-[#07070a] z-[5]"
         aria-hidden="true"
       />
 

@@ -1312,7 +1312,7 @@ function NodeLabel({ node, textColor }) {
         textAnchor="middle"
         fill={textColor}
         fontSize="11.5"
-        fontFamily="ui-sans-serif, system-ui"
+        fontFamily="var(--font-gemini, 'Google Sans Text', 'Plus Jakarta Sans', system-ui, sans-serif)"
         letterSpacing="0.06em"
         pointerEvents="none"
       >
@@ -1328,7 +1328,7 @@ function NodeLabel({ node, textColor }) {
         textAnchor="middle"
         fill={textColor}
         fontSize="11"
-        fontFamily="ui-sans-serif, system-ui"
+        fontFamily="var(--font-gemini, 'Google Sans Text', 'Plus Jakarta Sans', system-ui, sans-serif)"
         letterSpacing="0.05em"
         pointerEvents="none"
       >
@@ -1340,7 +1340,7 @@ function NodeLabel({ node, textColor }) {
         textAnchor="middle"
         fill={textColor}
         fontSize="11"
-        fontFamily="ui-sans-serif, system-ui"
+        fontFamily="var(--font-gemini, 'Google Sans Text', 'Plus Jakarta Sans', system-ui, sans-serif)"
         letterSpacing="0.05em"
         pointerEvents="none"
       >

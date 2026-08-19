@@ -37,7 +37,15 @@ export default function PublicEvent() {
         </div>
       </div>
     );
-  if (!d) return <div className="min-h-screen bg-[var(--okx-bg)] p-10 text-zinc-400">Memuat event…</div>;
+  if (!d)
+    return (
+      <div className="min-h-screen bg-[var(--okx-bg)]">
+        <PublicNav />
+        <div className="mx-auto max-w-3xl px-4 py-24 text-center text-xs text-zinc-400 font-gemini">
+          Memuat data event…
+        </div>
+      </div>
+    );
 
   const { event: ev, tiers, talents, venue, sponsors, tenant_highlights, schedule, readiness, organizer } = d;
 

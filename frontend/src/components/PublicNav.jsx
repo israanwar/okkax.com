@@ -438,83 +438,90 @@ export default function PublicNav() {
   };
 
   return (
-    <header className="okx-public-nav sticky top-0 z-50 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(255,255,255,0.04)] transition-all font-gemini px-4 sm:px-6">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-3">
-        <div className="flex items-center gap-5 sm:gap-7 xl:gap-9">
-          <Logo />
-          <nav className="hidden items-center gap-1.5 lg:flex xl:gap-2.5" aria-label="Navigasi utama">
-            {NAV.map((item) =>
-              item.children ? (
-                <DesktopDropdown key={item.id} item={item} isActive={isItemActive(item)} />
-              ) : (
-                <NavLink
-                  key={item.id}
-                  to={item.to}
-                  end={item.to === "/"}
-                  data-testid={`nav-${item.id}`}
-                  className={({ isActive }) =>
-                    `relative rounded-lg px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 ${
-                      isActive
-                        ? "bg-white/[0.08] text-white"
-                        : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
-                    }`
-                  }
+    <>
+      <header
+        data-testid="public-nav"
+        className="okx-public-nav fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(255,255,255,0.04)] font-gemini px-4 sm:px-6 w-full"
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-3">
+          <div className="flex items-center gap-5 sm:gap-7 xl:gap-9">
+            <Logo />
+            <nav className="hidden items-center gap-1.5 lg:flex xl:gap-2.5" aria-label="Navigasi utama">
+              {NAV.map((item) =>
+                item.children ? (
+                  <DesktopDropdown key={item.id} item={item} isActive={isItemActive(item)} />
+                ) : (
+                  <NavLink
+                    key={item.id}
+                    to={item.to}
+                    end={item.to === "/"}
+                    data-testid={`nav-${item.id}`}
+                    className={({ isActive }) =>
+                      `relative rounded-lg px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 ${
+                        isActive
+                          ? "bg-white/[0.08] text-white"
+                          : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+                      }`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                )
+              )}
+            </nav>
+          </div>
+          <div className="flex items-center gap-3">
+            {user ? (
+              <>
+                <Link
+                  to="/app"
+                  data-testid="nav-workspace-btn"
+                  className="hidden rounded-xl bg-white hover:bg-zinc-200 px-5 py-2.5 text-xs font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] sm:block"
                 >
-                  {item.label}
-                </NavLink>
-              )
+                  Workspace
+                </Link>
+                <button
+                  data-testid="nav-logout-btn"
+                  onClick={() => { logout(); nav("/"); }}
+                  className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2.5 text-xs font-semibold text-zinc-300 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  data-testid="nav-signin-btn"
+                  className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 text-xs sm:text-[13px] font-semibold text-zinc-200 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/register"
+                  data-testid="nav-register-btn"
+                  className="rounded-xl bg-white hover:bg-zinc-200 px-3 sm:px-5 py-2 sm:py-2.5 text-[11.5px] sm:text-[13px] font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] whitespace-nowrap"
+                >
+                  Build an Event
+                </Link>
+              </>
             )}
-          </nav>
+            <button
+              data-testid="nav-mobile-toggle"
+              aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((v) => !v)}
+              className="p-2 sm:p-2.5 text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer shrink-0"
+            >
+              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {user ? (
-            <>
-              <Link
-                to="/app"
-                data-testid="nav-workspace-btn"
-                className="hidden rounded-xl bg-white hover:bg-zinc-200 px-5 py-2.5 text-xs font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] sm:block"
-              >
-                Workspace
-              </Link>
-              <button
-                data-testid="nav-logout-btn"
-                onClick={() => { logout(); nav("/"); }}
-                className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2.5 text-xs font-semibold text-zinc-300 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all cursor-pointer"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                data-testid="nav-signin-btn"
-                className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 text-xs sm:text-[13px] font-semibold text-zinc-200 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all"
-              >
-                Sign In
-              </Link>
-              <Link
-                to="/register"
-                data-testid="nav-register-btn"
-                className="rounded-xl bg-white hover:bg-zinc-200 px-3 sm:px-5 py-2 sm:py-2.5 text-[11.5px] sm:text-[13px] font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] whitespace-nowrap"
-              >
-                Build an Event
-              </Link>
-            </>
-          )}
-          <button
-            data-testid="nav-mobile-toggle"
-            aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
-            aria-expanded={mobileOpen}
-            onClick={() => setMobileOpen((v) => !v)}
-            className="p-2 sm:p-2.5 text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer shrink-0"
-          >
-            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
-        </div>
-      </div>
-      {mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} isItemActive={isItemActive} />}
-    </header>
+        {mobileOpen && <MobileMenu onClose={() => setMobileOpen(false)} isItemActive={isItemActive} />}
+      </header>
+      {/* Flow Spacer to ensure ZERO content overlap behind fixed header */}
+      <div className="h-[65px] w-full shrink-0 pointer-events-none" aria-hidden="true" />
+    </>
   );
 }
 
