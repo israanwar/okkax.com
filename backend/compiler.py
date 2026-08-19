@@ -140,39 +140,74 @@ def resolve_engine(engine: str | None) -> dict:
 
 
 async def compile_blueprint(brief: dict, engine: str | None = None) -> dict:
-    key = os.environ.get("EMERGENT_LLM_KEY")
     eng = resolve_engine(engine)
-    if not key:
-        return _fallback(brief)
-    try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
 
-        chat = LlmChat(
-            api_key=key,
-            session_id=f"okkax-compile-{brief.get('event_id')}",
-            system_message=SYSTEM,
-        ).with_model(eng["provider"], eng["model"]).with_params(max_tokens=14000)
-        msg = UserMessage(text="Event brief (JSON):\n" + json.dumps(brief, default=str, ensure_ascii=False))
-        raw = await asyncio.wait_for(chat.send_message(msg), timeout=150)
-        text = raw if isinstance(raw, str) else str(raw)
-        text = text.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        start, end = text.find("{"), text.rfind("}")
-        data = json.loads(text[start:end + 1])
-        base = _fallback(brief)
-        base.update({k: v for k, v in data.items() if v})
-        base["source"] = eng["model"]
-        base["ai_engine"] = eng["model"]
-        base["ai_vendor"] = eng["vendor"]
-        return base
+    # 1. First attempt via modular AI Router
+    try:
+        from integrations.ai.router import ai_router
+        prompt = (
+            f"Event brief (JSON):\n{json.dumps(brief, default=str, ensure_ascii=False)}\n\n"
+            f"Please generate the complete structured Event Blueprint for this event."
+        )
+        res = await ai_router.generate_text(
+            prompt=prompt,
+            system_instruction=SYSTEM,
+            preferred_engine=eng["model"],
+            fallback_deterministic_fn=None,
+            timeout_seconds=60.0,
+        )
+        if res and res.ok and res.provider != "deterministic_engine" and res.data and "text" in res.data:
+            text = res.data["text"].strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            start, end = text.find("{"), text.rfind("}")
+            if start != -1 and end != -1:
+                data = json.loads(text[start : end + 1])
+                base = _fallback(brief)
+                base.update({k: v for k, v in data.items() if v})
+                base["source"] = res.provenance.get("model", eng["model"]) if res.provenance else eng["model"]
+                base["ai_engine"] = base["source"]
+                base["ai_vendor"] = res.provenance.get("provider", eng["vendor"]) if res.provenance else eng["vendor"]
+                base["provenance"] = res.provenance
+                return base
     except Exception as e:
-        logger.warning(f"AI compile failed, using deterministic fallback: {e}")
-        fb = _fallback(brief)
-        fb["source"] = "rule_based_fallback"
-        fb["ai_engine"] = eng["model"]
-        fb["ai_vendor"] = eng["vendor"]
-        fb["ai_error"] = str(e)[:200]
-        return fb
+        logger.info(f"Modular ai_router not configured or failed ({e}), checking legacy fallback.")
+
+    # 2. Legacy Emergent LLM key fallback
+    key = os.environ.get("EMERGENT_LLM_KEY")
+    if key:
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+            chat = LlmChat(
+                api_key=key,
+                session_id=f"okkax-compile-{brief.get('event_id')}",
+                system_message=SYSTEM,
+            ).with_model(eng["provider"], eng["model"]).with_params(max_tokens=14000)
+            msg = UserMessage(text="Event brief (JSON):\n" + json.dumps(brief, default=str, ensure_ascii=False))
+            raw = await asyncio.wait_for(chat.send_message(msg), timeout=150)
+            text = raw if isinstance(raw, str) else str(raw)
+            text = text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            start, end = text.find("{"), text.rfind("}")
+            data = json.loads(text[start : end + 1])
+            base = _fallback(brief)
+            base.update({k: v for k, v in data.items() if v})
+            base["source"] = eng["model"]
+            base["ai_engine"] = eng["model"]
+            base["ai_vendor"] = eng["vendor"]
+            return base
+        except Exception as e:
+            logger.warning(f"Legacy AI compile failed: {e}")
+
+    # 3. Deterministic rule-based fallback
+    fb = _fallback(brief)
+    fb["source"] = "rule_based_fallback"
+    fb["ai_engine"] = eng["model"]
+    fb["ai_vendor"] = eng["vendor"]
+    return fb

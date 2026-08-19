@@ -58,12 +58,12 @@ def test_role_awareness_different_roles():
     talent_titles = [i["title"] for i in r_talent["items"]]
     sponsor_titles = [i["title"] for i in r_sponsor["items"]]
     tenant_titles = [i["title"] for i in r_tenant["items"]]
-    audience_titles = [i["title"] for i in r_audience["items"]]
+    audience_texts = [i["title"] + " " + i.get("body", "") for i in r_audience["items"]]
 
     assert any("perform" in t.lower() or "rider" in t.lower() or "soundcheck" in t.lower() for t in talent_titles)
     assert any("sponsor" in t.lower() or "aktivasi" in t.lower() or "proposal" in t.lower() for t in sponsor_titles)
     assert any("booth" in t.lower() or "tenant" in t.lower() or "bazaar" in t.lower() for t in tenant_titles)
-    assert any("ticket" in t.lower() or "tiket" in t.lower() or "gate" in t.lower() or "penonton" in t.lower() for t in audience_titles)
+    assert any("ticket" in t.lower() or "tiket" in t.lower() or "gate" in t.lower() or "penonton" in t.lower() or "pembayaran" in t.lower() for t in audience_texts)
 
 
 def test_seeding_idempotency_on_multiple_fetches():

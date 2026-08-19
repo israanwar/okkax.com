@@ -42,6 +42,7 @@ export default function OrganizerFinancePage() {
         }
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceVersion]);
 
   const loadFinanceData = async () => {

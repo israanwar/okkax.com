@@ -261,8 +261,11 @@ def ensure_account_active(user: dict) -> None:
 
 
 def is_demo_mode() -> bool:
-    raw = os.environ.get("OKKAX_DEMO_MODE", "true").strip().lower()
-    return raw not in ("0", "false", "no", "off")
+    """Apakah demo-only endpoints (persona login, seed reset) diaktifkan.
+    Default False unless explicitly set to truthy value (1, true, yes, on).
+    """
+    raw = os.environ.get("OKKAX_DEMO_MODE", "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
 
 
 async def audit(event_id: Optional[str], user: Optional[dict], action: str, detail: dict = None):

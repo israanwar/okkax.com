@@ -12,7 +12,10 @@ import pytest
 import httpx
 import uuid
 
-API = "http://127.0.0.1:8000/api"
+import os
+
+BASE = os.environ.get("TEST_BASE_URL", "http://127.0.0.1:8001").rstrip("/")
+API = f"{BASE}/api"
 
 
 def get_auth_headers(label: str) -> tuple[dict, dict]:

@@ -125,3 +125,101 @@ def test_event_studio_lifecycle_and_requirements():
     )
     assert next_actions_res.status_code == 200
     assert len(next_actions_res.json()["actions"]) > 0
+
+
+def test_brief_numeric_validation_rejects_invalid_values():
+    token = get_organizer_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    event_id = "evt-aruna-2026"
+
+    base_brief = {
+        "name": "Festival Aruna Musik Makassar 2026",
+        "event_type": "Konser",
+        "objective": "Validation Test",
+        "city": "Makassar",
+        "venue_preference": "Indoor",
+        "start_date": "2026-08-14",
+        "days": 2,
+        "setup_days": 1,
+        "capacity": 3000,
+        "budget": 950000000,
+        "currency": "IDR",
+    }
+
+    # Negative capacity
+    r_neg_cap = requests.put(f"{API}/events/{event_id}/brief", headers=headers, json={**base_brief, "capacity": -100})
+    assert r_neg_cap.status_code == 422
+
+    # Negative budget
+    r_neg_bud = requests.put(f"{API}/events/{event_id}/brief", headers=headers, json={**base_brief, "budget": -50000000})
+    assert r_neg_bud.status_code == 422
+
+    # Zero days
+    r_zero_days = requests.put(f"{API}/events/{event_id}/brief", headers=headers, json={**base_brief, "days": 0})
+    assert r_zero_days.status_code == 422
+
+    # Negative days
+    r_neg_days = requests.put(f"{API}/events/{event_id}/brief", headers=headers, json={**base_brief, "days": -3})
+    assert r_neg_days.status_code == 422
+
+    # Negative setup days
+    r_neg_setup = requests.put(f"{API}/events/{event_id}/brief", headers=headers, json={**base_brief, "setup_days": -1})
+    assert r_neg_setup.status_code == 422
+
+    # Valid brief passes
+    r_valid = requests.put(f"{API}/events/{event_id}/brief", headers=headers, json=base_brief)
+    assert r_valid.status_code == 200
+
+
+def test_requirement_dependency_validation():
+    token = get_organizer_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    event_id = "evt-aruna-2026"
+
+    # 1. Create requirement A
+    r_a = requests.post(f"{API}/events/{event_id}/requirements", headers=headers, json={
+        "category": "Stage",
+        "title": "Dep Validation - Stage Setup",
+        "description": "Main stage",
+        "quantity": 1,
+        "priority": "High"
+    })
+    assert r_a.status_code == 200
+    req_a_id = r_a.json()["item"]["id"]
+
+    try:
+        # 2. Create requirement B with valid dependency on A
+        r_b = requests.post(f"{API}/events/{event_id}/requirements", headers=headers, json={
+            "category": "Sound",
+            "title": "Dep Validation - Sound Line Array",
+            "description": "FOH Sound",
+            "quantity": 1,
+            "priority": "High",
+            "dependencies": [req_a_id, req_a_id]  # Contains duplicate to test deduplication
+        })
+        assert r_b.status_code == 200
+        req_b = r_b.json()["item"]
+        req_b_id = req_b["id"]
+        assert req_b["dependencies"] == [req_a_id]
+
+        try:
+            # 3. Create requirement with non-existent dependency ID -> 400
+            r_bad_dep = requests.post(f"{API}/events/{event_id}/requirements", headers=headers, json={
+                "category": "Lighting",
+                "title": "Dep Validation - Lighting",
+                "dependencies": ["req-non-existent-99999"]
+            })
+            assert r_bad_dep.status_code == 400
+            assert "do not exist" in r_bad_dep.json()["detail"]
+
+            # 4. Patch with self-dependency -> 400
+            r_self_dep = requests.patch(f"{API}/events/{event_id}/requirements/{req_b_id}", headers=headers, json={
+                "dependencies": [req_b_id]
+            })
+            assert r_self_dep.status_code == 400
+            assert "Self-dependency is not allowed" in r_self_dep.json()["detail"]
+
+        finally:
+            requests.delete(f"{API}/events/{event_id}/requirements/{req_b_id}", headers=headers)
+    finally:
+        requests.delete(f"{API}/events/{event_id}/requirements/{req_a_id}", headers=headers)

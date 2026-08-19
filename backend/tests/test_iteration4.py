@@ -111,8 +111,11 @@ class TestFundingGapMutation:
         after = requests.get(f"{API}/demo/summary").json()["key_numbers"]["funding_gap"]
         assert after == before - 25000000, f"expected gap to drop by 25M ({before}->{after})"
 
-        # cleanup via demo reset
-        rr = requests.post(f"{API}/demo/reset")
+        # cleanup via demo reset (admin auth)
+        adm_pw = os.environ.get("ADMIN_PASSWORD", "SuperAdminSecret_2026!")
+        adm_r = requests.post(f"{API}/auth/login", json={"email": os.environ.get("ADMIN_EMAIL", "admin@okkax.id"), "password": adm_pw})
+        adm_h = {"Authorization": f"Bearer {adm_r.json()['token']}"} if adm_r.status_code == 200 else {}
+        rr = requests.post(f"{API}/demo/reset", headers=adm_h)
         assert rr.status_code in (200, 201)
 
 
@@ -156,5 +159,8 @@ class TestQRRegression:
         j = v2.json()
         assert j.get("valid") is False or "used" in str(j).lower()
 
-        # reset demo to keep state clean
-        requests.post(f"{API}/demo/reset")
+        # reset demo to keep state clean (admin auth)
+        adm_pw = os.environ.get("ADMIN_PASSWORD", "SuperAdminSecret_2026!")
+        adm_r = requests.post(f"{API}/auth/login", json={"email": os.environ.get("ADMIN_EMAIL", "admin@okkax.id"), "password": adm_pw})
+        adm_h = {"Authorization": f"Bearer {adm_r.json()['token']}"} if adm_r.status_code == 200 else {}
+        requests.post(f"{API}/demo/reset", headers=adm_h)

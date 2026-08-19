@@ -68,6 +68,7 @@ export default function OrganizerTicketingPage() {
         }
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceVersion]);
 
   // Load event-specific ticketing data

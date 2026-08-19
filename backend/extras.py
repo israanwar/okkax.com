@@ -17,6 +17,7 @@ from reportlab.pdfgen import canvas
 from core import (db, nid, now_iso, create_access_token, issue_access_token, clean,
                   get_current_user, is_admin, is_demo_mode, ensure_account_active,
                   get_event_or_404, assert_event_access, audit, notify, ROLE_KEYS)
+from admission_engine import calculate_ticketing_fees, get_active_ticketing_fee_policy
 
 logger = logging.getLogger("okkax.extras")
 extras = APIRouter(prefix="/api")
@@ -142,10 +143,17 @@ async def stripe_create_checkout(payload: StripeCheckoutIn, request: Request,
     if qty > remaining:
         raise HTTPException(status_code=400, detail=f"Sisa tiket hanya {remaining}")
 
-    gross = tier["price"] * qty
-    platform_fee = int(gross * 0.03)
-    tax = int(gross * 0.11)
-    total_idr = gross + platform_fee + tax
+    active_policy = await get_active_ticketing_fee_policy(db)
+    fees = calculate_ticketing_fees(
+        price=tier["price"],
+        quantity=qty,
+        policy=active_policy,
+        custom_policy=ev.get("fee_policy"),
+    )
+    gross = fees["gross"]
+    platform_fee = fees["platform_fee"]
+    tax = fees["tax"]
+    total_idr = fees["total"]
     amount_usd = round(total_idr / IDR_PER_USD, 2)
     if amount_usd < 0.5:
         amount_usd = 0.5
@@ -157,6 +165,21 @@ async def stripe_create_checkout(payload: StripeCheckoutIn, request: Request,
              "buyer_email": user["email"], "quantity": qty,
              "attendees": payload.attendees or [{"name": user["name"]}], "gross": gross,
              "platform_fee": platform_fee, "tax": tax, "total": total_idr, "currency": "IDR",
+             "fee_bearer": fees["fee_bearer"],
+             "fee_policy_snapshot": {
+                 "policy_key": fees["policy_key"],
+                 "policy_name": fees["policy_name"],
+                 "policy_version": fees["policy_version"],
+                 "policy_type": fees["policy_type"],
+                 "fee_rate": fees["fee_rate"],
+                 "platform_fee_amount": fees["platform_fee"],
+                 "tax_rate": fees["tax_rate"],
+                 "tax_amount": fees["tax"],
+                 "tax_status": fees["tax_status"],
+                 "gateway_fee": fees["gateway_fee"],
+                 "gateway_fee_type": fees["gateway_fee_type"],
+                 "fee_bearer": fees["fee_bearer"],
+             },
              "status": "awaiting_payment", "payment_id": payment_id, "created_at": now_iso()}
     await db.ticket_orders.insert_one(dict(order))
     payment = {"id": payment_id, "payment_ref": f"OKX-PAY-{count:06d}", "order_id": order_id, "event_id": ev["id"],
@@ -233,6 +256,11 @@ async def stripe_webhook(request: Request):
 
 # In-memory cache for demo_summary with 30s TTL
 _demo_summary_cache = {"data": None, "ts": 0}
+
+
+def invalidate_demo_summary_cache():
+    _demo_summary_cache["data"] = None
+    _demo_summary_cache["ts"] = 0
 
 # ------------------------------------------------------------------ role workspaces
 @extras.get("/demo/summary")
@@ -437,6 +465,8 @@ PERSONA_EMAILS = {
     "audience": "audience@okkax.id",
     "Audience": "audience@okkax.id",
     "Pembeli Tiket": "audience@okkax.id",
+    "Pengunjung": "audience@okkax.id",
+    "pengunjung": "audience@okkax.id",
     "Talent": "talent@okkax.id",
     "talent": "talent@okkax.id",
     "Artis / Talent": "talent@okkax.id",
@@ -452,6 +482,8 @@ PERSONA_EMAILS = {
     "Worker": "worker@okkax.id",
     "worker": "worker@okkax.id",
     "Worker / Kru": "worker@okkax.id",
+    "Supervisor": "supervisor@okkax.id",
+    "supervisor": "supervisor@okkax.id",
     "Finance": "finance@okkax.id",
     "finance": "finance@okkax.id",
 }

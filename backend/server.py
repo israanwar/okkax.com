@@ -25,10 +25,52 @@ from core import (db, nid, now_iso, hash_password, verify_password, create_acces
                   ROLES, ROLE_KEYS)
 from compiler import (compile_blueprint, _fallback as baseline_blueprint,
                       AI_ENGINES, DEFAULT_ENGINE, resolve_engine)
-from okkax_copilot import ask_okkax_copilot, get_smart_suggestions
+from okkax_copilot import (
+    ask_okkax_copilot,
+    get_smart_suggestions,
+    gather_event_ground_truth,
+    sanitize_history,
+    COPILOT_TOOLS,
+    get_copilot_tool_schemas,
+    get_or_create_copilot_quota,
+    increment_copilot_quota,
+    upsert_reference_copilot_calculator_policy,
+    CANONICAL_COPILOT_CALCULATOR_KEY,
+)
+from admission_engine import (
+    ADMISSION_TYPES,
+    PRICING_TYPES,
+    CREDENTIAL_TYPES,
+    DEFAULT_TIER_TEMPLATES,
+    get_default_tier_templates,
+    get_suggested_templates,
+    calculate_ticketing_fees,
+    get_active_ticketing_fee_policy,
+    CANONICAL_TICKETING_FEE_POLICY_KEY,
+    DEFAULT_TICKETING_FEE_POLICY_DOC,
+)
 import asyncio
 import seed_data
 from control_plane import router as control_router
+from compliance_engine import (
+    derive_required_compliance,
+    compute_coverage_status,
+    summarize_compliance_for_graph,
+    get_active_compliance_rules,
+    upsert_reference_compliance_rules,
+    is_transition_allowed,
+    APPROVER_TRANSITIONS,
+    ORGANIZER_TRANSITIONS,
+    STATUS_NOT_CONFIGURED,
+    STATUS_DRAFT,
+    STATUS_SUBMITTED,
+    STATUS_ISSUED,
+    STATUS_REJECTED,
+    STATUS_REVOKED,
+    STATUS_EXPIRED,
+    DEFAULT_RULES_VERSION as COMPLIANCE_RULES_SEED_VERSION,
+    AUTHORITY_CATEGORIES,
+)
 
 
 async def refine_blueprint(event_id: str, brief: dict, doc_id: str, engine: str | None = None):
@@ -69,14 +111,15 @@ PAYMENT_METHODS = [
 
 # ---------------------------------------------------------------- models
 class RegisterIn(BaseModel):
+    name: str
     email: EmailStr
     password: str = Field(min_length=6)
-    name: str
     role: str = "audience"
     roles: Optional[List[str]] = None
     organization_name: Optional[str] = None
     organization_type: Optional[str] = None
     city: Optional[str] = None
+    phone: Optional[str] = None
     terms_accepted: bool = True
 
 
@@ -102,12 +145,12 @@ class BriefIn(BaseModel):
     city: str
     venue_preference: str = "Indoor"
     start_date: str
-    days: int = 1
-    setup_days: int = 1
-    capacity: int = 500
+    days: int = Field(default=1, ge=1)
+    setup_days: int = Field(default=1, ge=0)
+    capacity: int = Field(default=500, ge=0)
     audience_profile: str = ""
     target_age: str = ""
-    budget: int = 0
+    budget: int = Field(default=0, ge=0)
     currency: str = "IDR"
     talent_preference: str = ""
     talent_category: str = ""
@@ -132,6 +175,16 @@ class CheckoutIn(BaseModel):
     attendees: List[Dict[str, str]] = []
     method: str
     method_channel: str
+    fee_bearer: Optional[str] = "buyer_absorbs"
+
+
+class RegistrationIn(BaseModel):
+    tier_id: str
+    quantity: int = Field(default=1, ge=1, le=10)
+    attendee_name: Optional[str] = None
+    attendee_email: Optional[str] = None
+    credential_type: Optional[str] = "registration_pass"
+    notes: Optional[str] = ""
 
 
 # ---------------------------------------------------------------- auth
@@ -571,6 +624,16 @@ async def get_blueprint(event_id: str, user: dict = Depends(get_current_user)):
     return {"blueprint": bp}
 
 
+@api.patch("/events/{event_id}/blueprint")
+async def patch_blueprint(event_id: str, patch: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    await db.event_blueprints.update_one({"event_id": ev["id"]}, {"$set": patch}, upsert=True)
+    bp = await db.event_blueprints.find_one({"event_id": ev["id"]}, {"_id": 0})
+    await audit(ev["id"], user, "blueprint.patch", patch)
+    return {"blueprint": bp}
+
+
 @api.put("/events/{event_id}/brief")
 async def update_brief(event_id: str, brief: BriefIn, user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
@@ -671,24 +734,63 @@ async def list_event_requirements(event_id: str, user: dict = Depends(get_curren
     return {"items": [clean(r) for r in rows], "total": len(rows)}
 
 
+async def _validate_requirement_dependencies(event_id: str, req_id: Optional[str], raw_deps: Any) -> List[str]:
+    if not raw_deps:
+        return []
+    if not isinstance(raw_deps, list):
+        raise HTTPException(status_code=400, detail="Dependencies must be a list of requirement IDs")
+
+    seen = set()
+    cleaned_deps = []
+    for d in raw_deps:
+        if not isinstance(d, str) or not d.strip():
+            continue
+        dep_id = d.strip()
+        if req_id and dep_id == req_id:
+            raise HTTPException(status_code=400, detail=f"Self-dependency is not allowed ({dep_id})")
+        if dep_id not in seen:
+            seen.add(dep_id)
+            cleaned_deps.append(dep_id)
+
+    if cleaned_deps:
+        count = await db.event_requirements.count_documents({
+            "event_id": event_id,
+            "id": {"$in": cleaned_deps}
+        })
+        if count != len(cleaned_deps):
+            existing = await db.event_requirements.find(
+                {"event_id": event_id, "id": {"$in": cleaned_deps}},
+                {"id": 1}
+            ).to_list(len(cleaned_deps))
+            existing_ids = {doc["id"] for doc in existing}
+            missing = [d for d in cleaned_deps if d not in existing_ids]
+            raise HTTPException(
+                status_code=400,
+                detail=f"Referenced requirement dependencies do not exist in this event: {missing}"
+            )
+
+    return cleaned_deps
+
+
 @api.post("/events/{event_id}/requirements")
 async def create_event_requirement(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user, write=True)
     if not body.get("title"):
         raise HTTPException(status_code=400, detail="Judul requirement wajib diisi")
+    deps = await _validate_requirement_dependencies(ev["id"], None, body.get("dependencies", []))
     doc = {
         "id": nid(),
         "event_id": ev["id"],
         "category": body.get("category", "Vendor/Produksi"),
         "title": body["title"],
         "description": body.get("description", ""),
-        "quantity": int(body.get("quantity") or 1),
+        "quantity": max(1, int(body.get("quantity") or 1)),
         "priority": body.get("priority", "Medium"),
-        "budget_estimate": int(body.get("budget_estimate") or 0),
+        "budget_estimate": max(0, int(body.get("budget_estimate") or 0)),
         "deadline": body.get("deadline") or ev.get("start_date") or "2026-09-12",
         "status": body.get("status", "Open"),
-        "dependencies": body.get("dependencies", []),
+        "dependencies": deps,
         "assigned_resource_id": body.get("assigned_resource_id"),
         "assigned_resource_name": body.get("assigned_resource_name"),
         "assigned_resource_type": body.get("assigned_resource_type"),
@@ -705,6 +807,8 @@ async def patch_event_requirement(event_id: str, req_id: str, patch: Dict[str, A
     await assert_event_access(ev, user, write=True)
     patch.pop("id", None)
     patch.pop("event_id", None)
+    if "dependencies" in patch:
+        patch["dependencies"] = await _validate_requirement_dependencies(ev["id"], req_id, patch["dependencies"])
     patch["updated_at"] = now_iso()
     res = await db.event_requirements.update_one({"id": req_id, "event_id": ev["id"]}, {"$set": patch})
     if res.matched_count == 0:
@@ -766,6 +870,238 @@ async def autogenerate_event_requirements(event_id: str, user: dict = Depends(ge
         await db.event_requirements.insert_many(new_docs)
     await audit(ev["id"], user, "requirement.autogenerate", {"count": len(new_docs)})
     return {"items": [clean(d) for d in new_docs], "total": len(new_docs)}
+
+
+# ---------------------------------------------------------------- Phase 06A Compliance & Readiness Foundation
+# Read-only rule-based compliance derivation. Implements Contract V5 §2.7
+# "Event → Classification → Permit Requirement Engine → …" for the derive
+# side only. Submission/evidence/approval workflow, government-API
+# integration, and Event Graph blocker propagation are deferred to future
+# micro-phases (F6B/F6C/F6D) per the audit report.
+@api.get("/events/{event_id}/compliance")
+async def get_event_compliance(event_id: str, user: dict = Depends(get_current_user)):
+    """Return the deterministic list of compliance items required by the
+    event under the currently-active rule set, plus provenance and a
+    coverage roll-up. When no rule matches, returns an empty list with
+    ``coverage_status="not_configured"`` — NEVER a fabricated permit.
+
+    Access: same tenant-isolated policy as other private event data
+    (`assert_event_access`). Audience / cross-org callers are rejected.
+    """
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user)
+
+    active_rules = await get_active_compliance_rules(db)
+    venue_link = await db.event_venues.find_one({"event_id": ev["id"]}, {"_id": 0})
+    venue = None
+    if venue_link and venue_link.get("venue_id"):
+        venue = await db.venues.find_one({"id": venue_link["venue_id"]}, {"_id": 0})
+
+    derived = derive_required_compliance(ev, rules=active_rules, venue=venue)
+
+    # Idempotent persistence keyed by (event_id, rule_id). Rows carry the
+    # full provenance block so future micro-phases can attach evidence/
+    # status without re-deriving.
+    persisted_items: List[Dict[str, Any]] = []
+    for row in derived:
+        key = {"event_id": ev["id"], "rule_id": row["rule_id"]}
+        existing = await db.event_compliance.find_one(key, {"_id": 0})
+        if existing:
+            # Refresh derived-only fields when the rule version bumps.
+            update = {
+                "$set": {
+                    "rule_version": row["rule_version"],
+                    "rule_source": row["rule_source"],
+                    "authority_category": row["authority_category"],
+                    "authority_category_label": row["authority_category_label"],
+                    "title": row["title"],
+                    "description": row["description"],
+                    "evidence_required": row["evidence_required"],
+                    "jurisdiction": row["jurisdiction"],
+                    "matched_on": row["matched_on"],
+                    "last_derived_at": now_iso(),
+                }
+            }
+            await db.event_compliance.update_one(key, update)
+            merged = {**existing, **update["$set"]}
+            persisted_items.append(clean(merged))
+        else:
+            doc = {
+                "id": nid(),
+                "event_id": ev["id"],
+                **row,
+                "derived_at": now_iso(),
+                "last_derived_at": now_iso(),
+            }
+            await db.event_compliance.insert_one(doc)
+            persisted_items.append(clean(doc))
+
+    coverage = compute_coverage_status(persisted_items)
+
+    provenance = {
+        "rule_source_versions": sorted({r.get("version", COMPLIANCE_RULES_SEED_VERSION)
+                                        for r in active_rules}),
+        "rule_count_active": len(active_rules),
+        "rule_seed_version": COMPLIANCE_RULES_SEED_VERSION,
+        "derived_at": now_iso(),
+        "engine": "compliance_engine.derive_required_compliance",
+        "authority_categories_supported": list(AUTHORITY_CATEGORIES.keys()),
+    }
+
+    return {
+        "event_id": ev["id"],
+        "items": persisted_items,
+        "total": len(persisted_items),
+        "coverage_status": coverage,
+        "provenance": provenance,
+    }
+
+
+@api.post("/events/{event_id}/compliance/{item_id}/evidence")
+async def submit_compliance_evidence(
+    event_id: str,
+    item_id: str,
+    body: Dict[str, Any],
+    user: dict = Depends(get_current_user),
+):
+    """Phase 06B — organizer attaches evidence (file_ref / URL / note) to a
+    compliance item and, optionally, transitions the item into `draft` or
+    `submitted`. Evidence rows are append-only; the row `id` is stable
+    across future decisions.
+
+    Body: { file_ref?: str, note?: str, transition_to?: 'draft'|'submitted' }
+    """
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    item = await db.event_compliance.find_one({"id": item_id, "event_id": ev["id"]}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Compliance item tidak ditemukan")
+
+    file_ref = str(body.get("file_ref") or "").strip()
+    note = str(body.get("note") or "").strip()
+    if not file_ref and not note:
+        raise HTTPException(status_code=400, detail="Evidence memerlukan file_ref atau note")
+
+    evidence_entry = {
+        "id": nid(),
+        "file_ref": file_ref or None,
+        "note": note or None,
+        "submitted_by": user["id"],
+        "submitted_by_email": user.get("email"),
+        "submitted_at": now_iso(),
+    }
+
+    transition = body.get("transition_to")
+    updates: Dict[str, Any] = {
+        "last_evidence_at": now_iso(),
+        "last_evidence_by": user.get("email"),
+    }
+    if transition:
+        if transition not in ORGANIZER_TRANSITIONS:
+            raise HTTPException(status_code=400, detail=f"Transisi '{transition}' bukan hak organizer")
+        current = item.get("status", STATUS_NOT_CONFIGURED)
+        if not is_transition_allowed(current, transition):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Transisi tidak sah: {current} → {transition}",
+            )
+        updates["status"] = transition
+        if transition == STATUS_SUBMITTED:
+            updates["submitted_at"] = now_iso()
+            updates["submitted_by"] = user["id"]
+
+    await db.event_compliance.update_one(
+        {"id": item_id, "event_id": ev["id"]},
+        {"$push": {"evidences": evidence_entry}, "$set": updates},
+    )
+    await audit(ev["id"], user, "compliance.evidence.submit", {
+        "item_id": item_id, "rule_id": item.get("rule_id"),
+        "transition_to": transition, "has_file_ref": bool(file_ref),
+    })
+    refreshed = await db.event_compliance.find_one({"id": item_id, "event_id": ev["id"]}, {"_id": 0})
+    return {"ok": True, "item": clean(refreshed)}
+
+
+@api.post("/events/{event_id}/compliance/{item_id}/decision")
+async def decide_compliance_item(
+    event_id: str,
+    item_id: str,
+    body: Dict[str, Any],
+    user: dict = Depends(get_current_user),
+):
+    """Phase 06B — approver (platform admin) transitions a submitted item
+    to `issued`, `rejected`, or `revoked`. Requires a decision reason for
+    rejection/revocation (Contract V5 §6: "actor/time/reason/evidence").
+    Every decision is appended to the item's decision log AND to the
+    global audit trail.
+
+    Body: { action: 'issue'|'reject'|'revoke', reason?: str, expires_at?: str }
+    """
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="Hanya approver berwenang yang boleh memutuskan compliance item")
+
+    ev = await get_event_or_404(event_id)
+    item = await db.event_compliance.find_one({"id": item_id, "event_id": ev["id"]}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Compliance item tidak ditemukan")
+
+    action = str(body.get("action") or "").strip().lower()
+    action_to_status = {
+        "issue": STATUS_ISSUED,
+        "reject": STATUS_REJECTED,
+        "revoke": STATUS_REVOKED,
+    }
+    if action not in action_to_status:
+        raise HTTPException(status_code=400, detail="action harus salah satu dari: issue, reject, revoke")
+    target_status = action_to_status[action]
+
+    current = item.get("status", STATUS_NOT_CONFIGURED)
+    if not is_transition_allowed(current, target_status):
+        raise HTTPException(status_code=400, detail=f"Transisi tidak sah: {current} → {target_status}")
+
+    reason = str(body.get("reason") or "").strip()
+    if target_status in (STATUS_REJECTED, STATUS_REVOKED) and not reason:
+        raise HTTPException(status_code=400, detail="Alasan wajib untuk reject/revoke")
+
+    decision_entry = {
+        "id": nid(),
+        "action": action,
+        "from_status": current,
+        "to_status": target_status,
+        "reason": reason or None,
+        "actor_id": user["id"],
+        "actor_email": user.get("email"),
+        "decided_at": now_iso(),
+    }
+    set_updates: Dict[str, Any] = {
+        "status": target_status,
+        "last_decision_at": now_iso(),
+        "last_decision_by": user.get("email"),
+    }
+    if target_status == STATUS_ISSUED:
+        set_updates["issued_at"] = now_iso()
+        set_updates["issued_by"] = user.get("email")
+        if body.get("expires_at"):
+            set_updates["expires_at"] = str(body["expires_at"])
+    elif target_status == STATUS_REJECTED:
+        set_updates["rejected_at"] = now_iso()
+        set_updates["rejected_by"] = user.get("email")
+        set_updates["rejection_reason"] = reason
+    elif target_status == STATUS_REVOKED:
+        set_updates["revoked_at"] = now_iso()
+        set_updates["revoked_by"] = user.get("email")
+        set_updates["revocation_reason"] = reason
+
+    await db.event_compliance.update_one(
+        {"id": item_id, "event_id": ev["id"]},
+        {"$push": {"decisions": decision_entry}, "$set": set_updates},
+    )
+    await audit(ev["id"], user, "compliance.decision", {
+        "item_id": item_id, "rule_id": item.get("rule_id"),
+        "action": action, "from_status": current, "to_status": target_status,
+    })
+    refreshed = await db.event_compliance.find_one({"id": item_id, "event_id": ev["id"]}, {"_id": 0})
+    return {"ok": True, "item": clean(refreshed)}
 
 
 @api.post("/events/{event_id}/studio/ai-action")
@@ -1685,32 +2021,76 @@ async def decide_application(app_id: str, body: Dict[str, Any], user: dict = Dep
     return {"ok": True, "budget": await compute_budget(ev["id"])}
 
 
-# ---------------------------------------------------------------- ticketing
-@api.get("/events/{event_id}/ticket-tiers")
-async def list_tiers(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
-    # Step 6C. was fully public. Now serves normally for published/live
-    # events (marketplace flow) but returns 404 for draft events unless
-    # the caller is authorized on that event (owner/admin/member).
+# ---------------------------------------------------------------- ticketing & admission
+@api.get("/ticket-tiers/templates")
+async def list_tier_templates(category: Optional[str] = None):
+    """Returns canonical default tier templates library, optionally filtered by category."""
+    templates = get_default_tier_templates(category)
+    return {"items": templates, "total": len(templates)}
+
+
+@api.get("/events/{event_id}/suggested-tiers")
+async def suggested_event_tiers(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
+    """Returns recommended default tier templates tailored to the event's category/type."""
     ev = await get_event_or_404(event_id)
     if not await _event_visible_to_public_caller(ev, user):
         raise HTTPException(status_code=404, detail="Event not found")
-    return {"items": await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).to_list(50)}
+    category = ev.get("event_type") or ev.get("category") or ""
+    suggested = get_suggested_templates(category)
+    return {"items": suggested, "event_type": category, "total": len(suggested)}
+
+
+@api.get("/events/{event_id}/ticket-tiers")
+async def list_tiers(event_id: str, user: Optional[dict] = Depends(get_optional_user)):
+    ev = await get_event_or_404(event_id)
+    if not await _event_visible_to_public_caller(ev, user):
+        raise HTTPException(status_code=404, detail="Event not found")
+    tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    return {"items": tiers, "total": len(tiers)}
 
 
 @api.post("/events/{event_id}/ticket-tiers")
 async def create_tier(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
     ev = await get_event_or_404(event_id)
     await assert_event_access(ev, user, write=True)
-    doc = {"id": nid(), "event_id": ev["id"], "name": body["name"], "ticket_type": body.get("ticket_type", "Regular"),
-           "price": int(body.get("price") or 0), "quantity": int(body.get("quantity") or 100), "sold": 0,
-           "sale_start": body.get("sale_start", now_iso()[:10]), "sale_end": body.get("sale_end", ev["start_date"]),
-           "benefits": body.get("benefits", []), "purchase_limit": int(body.get("purchase_limit") or 4),
-           "age_rule": body.get("age_rule", ev.get("age_limit", "All ages")),
-           "transfer_rule": body.get("transfer_rule", "Tidak dapat dipindahtangankan"),
-           "refund_rule": body.get("refund_rule", "Refund penuh hingga H-14"), "active": True,
-           "created_at": now_iso()}
+    name = str(body.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Nama ticket tier wajib diisi")
+
+    price = int(body.get("price") or 0)
+    if price < 0:
+        raise HTTPException(status_code=400, detail="Harga tiket tidak boleh negatif")
+    quantity = int(body.get("quantity") or 100)
+    if quantity < 1:
+        raise HTTPException(status_code=400, detail="Kuota tiket minimal 1")
+
+    doc = {
+        "id": nid(),
+        "event_id": ev["id"],
+        "name": name,
+        "ticket_type": str(body.get("ticket_type") or "Regular").strip(),
+        "pricing_type": str(body.get("pricing_type") or ("free" if price == 0 else "paid")),
+        "price": price,
+        "quantity": quantity,
+        "sold": 0,
+        "sale_start": body.get("sale_start", now_iso()[:10]),
+        "sale_end": body.get("sale_end", ev.get("start_date") or now_iso()[:10]),
+        "benefits": body.get("benefits", []),
+        "purchase_limit": max(1, int(body.get("purchase_limit") or 4)),
+        "age_rule": body.get("age_rule", ev.get("age_limit", "All ages")),
+        "transfer_rule": body.get("transfer_rule", "Tidak dapat dipindahtangankan"),
+        "refund_rule": body.get("refund_rule", "Refund penuh hingga H-14" if price > 0 else "Non-refundable"),
+        "zone": body.get("zone", ""),
+        "session_days": int(body.get("session_days") or ev.get("days", 1)),
+        "is_multi_day": bool(body.get("is_multi_day", int(ev.get("days", 1)) > 1)),
+        "sort_order": int(body.get("sort_order") or 0),
+        "is_custom": body.get("is_custom", True),
+        "template_id": body.get("template_id"),
+        "active": True,
+        "created_at": now_iso(),
+    }
     await db.ticket_tiers.insert_one(doc)
-    await audit(ev["id"], user, "tier.create", {"name": doc["name"], "price": doc["price"]})
+    await audit(ev["id"], user, "tier.create", {"name": doc["name"], "price": doc["price"], "tier_id": doc["id"]})
     return {"item": clean(doc)}
 
 
@@ -1723,8 +2103,9 @@ async def patch_tier(event_id: str, tier_id: str, body: Dict[str, Any], user: di
         raise HTTPException(status_code=404, detail="Ticket tier tidak ditemukan")
 
     allowed = {k: v for k, v in body.items() if k in (
-        "name", "ticket_type", "price", "quantity", "active", "sale_end", "benefits",
-        "purchase_limit", "age_rule", "transfer_rule", "refund_rule",
+        "name", "ticket_type", "pricing_type", "price", "quantity", "active", "sale_start", "sale_end",
+        "benefits", "purchase_limit", "age_rule", "transfer_rule", "refund_rule", "zone",
+        "session_days", "is_multi_day", "sort_order",
     )}
     if "name" in allowed:
         allowed["name"] = str(allowed["name"]).strip()
@@ -1767,6 +2148,151 @@ async def patch_tier(event_id: str, tier_id: str, body: Dict[str, Any], user: di
         "changes": {k: v for k, v in allowed.items() if k != "updated_at"},
     })
     return {"ok": True, "item": updated}
+
+
+@api.delete("/events/{event_id}/ticket-tiers/{tier_id}")
+async def delete_tier(event_id: str, tier_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+
+    # Check if attempting to delete a canonical default template
+    if any(t["id"] == tier_id for t in DEFAULT_TIER_TEMPLATES):
+        raise HTTPException(status_code=400, detail="Cannot delete canonical default tier template")
+
+    tier = await db.ticket_tiers.find_one({"id": tier_id, "event_id": ev["id"]}, {"_id": 0})
+    if not tier:
+        raise HTTPException(status_code=404, detail="Ticket tier tidak ditemukan")
+
+    sold_count = int(tier.get("sold") or 0)
+    order_refs = await db.ticket_orders.count_documents({"tier_id": tier_id, "event_id": ev["id"]})
+    ticket_refs = await db.tickets.count_documents({"tier_id": tier_id, "event_id": ev["id"]})
+
+    if sold_count > 0 or order_refs > 0 or ticket_refs > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete tier with existing sales or orders. Please archive or deactivate the tier instead."
+        )
+
+    await db.ticket_tiers.delete_one({"id": tier_id, "event_id": ev["id"]})
+    await audit(ev["id"], user, "tier.delete", {"tier_id": tier_id, "name": tier["name"]})
+    return {"ok": True, "deleted_tier_id": tier_id}
+
+
+@api.post("/events/{event_id}/ticket-tiers/{tier_id}/archive")
+async def archive_tier(event_id: str, tier_id: str, user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    tier = await db.ticket_tiers.find_one({"id": tier_id, "event_id": ev["id"]}, {"_id": 0})
+    if not tier:
+        raise HTTPException(status_code=404, detail="Ticket tier tidak ditemukan")
+    await db.ticket_tiers.update_one(
+        {"id": tier_id, "event_id": ev["id"]},
+        {"$set": {"active": False, "archived": True, "archived_at": now_iso(), "updated_at": now_iso()}}
+    )
+    updated = await db.ticket_tiers.find_one({"id": tier_id, "event_id": ev["id"]}, {"_id": 0})
+    await audit(ev["id"], user, "tier.archive", {"tier_id": tier_id, "name": tier["name"]})
+    return {"ok": True, "item": updated}
+
+
+@api.post("/events/{event_id}/ticket-tiers/reorder")
+async def reorder_tiers(event_id: str, body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    ev = await get_event_or_404(event_id)
+    await assert_event_access(ev, user, write=True)
+    tier_ids = body.get("tier_ids", [])
+    for order, tid in enumerate(tier_ids):
+        await db.ticket_tiers.update_one({"id": tid, "event_id": ev["id"]}, {"$set": {"sort_order": order}})
+    updated_tiers = await db.ticket_tiers.find({"event_id": ev["id"]}, {"_id": 0}).sort("sort_order", 1).to_list(100)
+    return {"ok": True, "items": updated_tiers}
+
+
+@api.post("/events/{event_id}/register")
+@api.post("/events/{event_id}/credentials/issue")
+async def register_event_credential(event_id: str, payload: RegistrationIn, user: dict = Depends(get_current_user)):
+    """Issues zero-cost credential passes (Free registration, invitation, complimentary, accreditation).
+    Note: Credential passes are pure domain access tickets and do NOT grant backend/platform RBAC permissions.
+    """
+    ev = await get_event_or_404(event_id)
+    tier = await db.ticket_tiers.find_one({"id": payload.tier_id, "event_id": ev["id"]}, {"_id": 0})
+    if not tier:
+        raise HTTPException(status_code=404, detail="Ticket tier tidak ditemukan")
+    if not tier.get("active"):
+        raise HTTPException(status_code=400, detail="Tier ini sedang tidak aktif")
+    if int(tier.get("price") or 0) > 0:
+        raise HTTPException(status_code=400, detail="Tier berbayar harus melalui rute /api/checkout")
+
+    remaining = int(tier["quantity"]) - int(tier.get("sold") or 0)
+    if payload.quantity > remaining:
+        raise HTTPException(status_code=400, detail=f"Sisa kuota hanya {remaining}")
+
+    # Atomic inventory decrement
+    res = await db.ticket_tiers.update_one(
+        {"id": tier["id"], "event_id": ev["id"], "sold": {"$lte": tier["quantity"] - payload.quantity}},
+        {"$inc": {"sold": payload.quantity}}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=400, detail="Kuota registrasi telah habis (oversell prevented)")
+
+    count = await db.ticket_orders.count_documents({}) + 1
+    order_id = nid()
+    att_name = payload.attendee_name or user["name"]
+    att_email = payload.attendee_email or user["email"]
+
+    order = {
+        "id": order_id,
+        "order_code": f"OKX-REG-{count:06d}",
+        "event_id": ev["id"],
+        "event_name": ev["name"],
+        "tier_id": tier["id"],
+        "tier_name": tier["name"],
+        "user_id": user["id"],
+        "buyer_name": att_name,
+        "buyer_email": att_email,
+        "quantity": payload.quantity,
+        "attendees": [{"name": att_name}],
+        "gross": 0,
+        "platform_fee": 0,
+        "tax": 0,
+        "total": 0,
+        "currency": "IDR",
+        "status": "paid",
+        "credential_type": payload.credential_type or "registration_pass",
+        "created_at": now_iso(),
+    }
+    await db.ticket_orders.insert_one(order)
+
+    total_tickets = await db.tickets.count_documents({})
+    tickets = []
+    for i in range(payload.quantity):
+        tno = f"OKX-TIX-{total_tickets + i + 1:06d}"
+        t = {
+            "id": nid(),
+            "ticket_number": tno,
+            "qr_code": f"OKKAX|{ev['event_code']}|{tno}",
+            "order_id": order["id"],
+            "event_id": ev["id"],
+            "event_name": ev["name"],
+            "tier_id": tier["id"],
+            "tier_name": tier["name"],
+            "attendee_name": att_name,
+            "user_id": user["id"],
+            "status": "valid",
+            "credential_type": payload.credential_type or "registration_pass",
+            "session_days": tier.get("session_days", ev.get("days", 1)),
+            "is_multi_day": tier.get("is_multi_day", False),
+            "checkin_history": [],
+            "used_at": None,
+            "created_at": now_iso(),
+        }
+        await db.tickets.insert_one(t)
+        tickets.append(clean(t))
+
+    await audit(ev["id"], user, "credential.register", {
+        "order": order["order_code"],
+        "tier": tier["name"],
+        "quantity": payload.quantity,
+        "credential_type": order["credential_type"],
+    })
+    return {"ok": True, "order": clean(order), "tickets": tickets}
 
 
 @api.post("/events/{event_id}/publish")
@@ -1990,6 +2516,10 @@ async def public_event(event_id: str):
                                                 {"_id": 0, "amount": 0, "documents": 0}).to_list(100)
     schedule = await db.schedule_items.find({"event_id": ev["id"]}, {"_id": 0}).to_list(100)
     org = await db.organizations.find_one({"id": ev.get("organizer_org_id")}, {"_id": 0})
+    # Phase 06C — compliance-derived readiness flags. Only surfaces when
+    # compliance rows exist for the event; otherwise the block stays
+    # exactly as before F6C (additive, non-breaking for existing callers).
+    compliance_rows_public = await db.event_compliance.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
     readiness = {
         "organizer_verified": bool((org or {}).get("verified")),
         "venue_confirmed": bool(venue_link and venue_link.get("status") == "Confirmed"),
@@ -1998,6 +2528,11 @@ async def public_event(event_id: str):
         "refund_policy_available": bool(ev.get("refund_policy")),
         "accessibility_info_available": bool(ev.get("accessibility")),
     }
+    if compliance_rows_public:
+        _cov = compute_coverage_status(compliance_rows_public)
+        readiness["compliance_coverage_status"] = _cov
+        readiness["compliance_ready"] = _cov == "complete"
+        readiness["compliance_blocked"] = _cov == "blocked"
     return {"event": ev, "tiers": tiers, "talents": talent_details, "venue": venue, "sponsors": sponsors,
             "tenant_highlights": tenants[:12], "schedule": schedule, "organizer": clean(org) if org else None,
             "readiness": readiness, "disclaimer": DISCLAIMER if ev.get("is_demo") else None}
@@ -2019,11 +2554,22 @@ async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
     method_valid = any(m["key"] == payload.method and m["available"] for m in PAYMENT_METHODS)
     if not method_valid:
         raise HTTPException(status_code=400, detail="Metode pembayaran belum tersedia pada MVP sandbox")
-    gross = tier["price"] * payload.quantity
-    platform_fee = int(gross * 0.03)
-    tax = int(gross * 0.11)
-    gateway_fee = 4000 if gross else 0
-    total = gross + platform_fee + tax
+    active_policy = await get_active_ticketing_fee_policy(db)
+    try:
+        fees = calculate_ticketing_fees(
+            price=tier["price"],
+            quantity=payload.quantity,
+            policy=active_policy,
+            custom_policy=ev.get("fee_policy"),
+            fee_bearer_override=payload.fee_bearer,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    gross = fees["gross"]
+    platform_fee = fees["platform_fee"]
+    tax = fees["tax"]
+    gateway_fee = fees["gateway_fee"]
+    total = fees["total"]
     count = await db.ticket_orders.count_documents({}) + 1
     order_id = nid()
     payment_id = nid()
@@ -2032,12 +2578,27 @@ async def checkout(payload: CheckoutIn, user: dict = Depends(get_current_user)):
              "buyer_email": user["email"], "quantity": payload.quantity,
              "attendees": payload.attendees or [{"name": user["name"]}], "gross": gross,
              "platform_fee": platform_fee, "tax": tax, "total": total, "currency": "IDR",
+             "fee_bearer": fees["fee_bearer"],
+             "fee_policy_snapshot": {
+                 "policy_key": fees["policy_key"],
+                 "policy_name": fees["policy_name"],
+                 "policy_version": fees["policy_version"],
+                 "policy_type": fees["policy_type"],
+                 "fee_rate": fees["fee_rate"],
+                 "platform_fee_amount": fees["platform_fee"],
+                 "tax_rate": fees["tax_rate"],
+                 "tax_amount": fees["tax"],
+                 "tax_status": fees["tax_status"],
+                 "gateway_fee": fees["gateway_fee"],
+                 "gateway_fee_type": fees["gateway_fee_type"],
+                 "fee_bearer": fees["fee_bearer"],
+             },
              "status": "awaiting_payment", "payment_id": payment_id, "created_at": now_iso()}
     await db.ticket_orders.insert_one(order)
     payment = {"id": payment_id, "payment_ref": f"OKX-PAY-{count:06d}", "order_id": order_id, "event_id": ev["id"],
                "payer_user_id": user["id"], "payer_name": user["name"], "payee": "OKKAX Sandbox Settlement",
                "purpose": "Ticket purchase", "gross": gross, "discount": 0, "tax_estimate": tax,
-               "platform_fee": platform_fee, "gateway_fee": gateway_fee, "net": total - platform_fee - gateway_fee,
+               "platform_fee": platform_fee, "gateway_fee": gateway_fee, "net": fees["net_to_organizer"],
                "currency": "IDR", "method": payload.method, "method_channel": payload.method_channel,
                "status": "Awaiting Payment", "created_at": now_iso(),
                "due_date": (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
@@ -2086,6 +2647,10 @@ async def simulate_payment(payment_id: str, body: Dict[str, Any] = None, user: d
         t = {"id": nid(), "ticket_number": tno, "qr_code": f"OKKAX|{ev['event_code']}|{tno}",
              "order_id": order["id"], "event_id": ev["id"], "event_name": ev["name"], "tier_id": tier["id"],
              "tier_name": tier["name"], "attendee_name": att, "user_id": order["user_id"], "status": "valid",
+             "credential_type": order.get("credential_type", "ticket"),
+             "session_days": tier.get("session_days", ev.get("days", 1)),
+             "is_multi_day": tier.get("is_multi_day", False),
+             "checkin_history": [],
              "used_at": None, "created_at": now_iso()}
         await db.tickets.insert_one(t)
         tickets.append(clean(t))
@@ -2120,6 +2685,84 @@ async def my_tickets(user: dict = Depends(get_current_user)):
 @api.get("/my/refunds")
 async def my_refunds(user: dict = Depends(get_current_user)):
     return {"items": await db.refunds.find({"requested_by": user["id"]}, {"_id": 0}).to_list(100)}
+
+
+# ---------------------------------------------------------------- platform fee policy governance
+@api.get("/platform/policies/ticketing")
+async def get_platform_ticketing_policy(user: dict = Depends(get_current_user)):
+    policy = await get_active_ticketing_fee_policy(db)
+    return {"item": clean(policy)}
+
+
+@api.post("/platform/policies/ticketing")
+async def update_platform_ticketing_policy(body: Dict[str, Any], user: dict = Depends(get_current_user)):
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="Hanya Platform Administrator yang berhak mengubah Global Policy")
+
+    min_floor = float(body.get("minimum_strategic_fee_rate", 0.0050))
+    if min_floor < 0.0050:
+        raise HTTPException(status_code=400, detail="Minimum strategic fee rate cannot be lower than 0.50% (0.0050)")
+
+    # Snapshot the currently-active policy BEFORE overwrite so the platform
+    # keeps a permanent, ordered history of every canonical fee policy that
+    # ever governed live orders. Historical orders already carry an immutable
+    # fee_policy_snapshot; this closes the last governance gap by making the
+    # platform-level policy evolution itself inspectable and auditable.
+    current_active = await db.platform_policies.find_one(
+        {"key": CANONICAL_TICKETING_FEE_POLICY_KEY, "active": True},
+        {"_id": 0},
+    )
+
+    doc = {
+        "id": "policy-ticketing-public-default",
+        "key": CANONICAL_TICKETING_FEE_POLICY_KEY,
+        "name": body.get("name", "OKKAX Canonical Public Tiered Fee Policy"),
+        "version": body.get("version", "2026.2"),
+        "currency": body.get("currency", "IDR"),
+        "active": True,
+        "policy_type": body.get("policy_type", "tiered_public"),
+        "fee_bearer": body.get("fee_bearer", "buyer_absorbs"),
+        "public_tiers": body.get("public_tiers", DEFAULT_TICKETING_FEE_POLICY_DOC["public_tiers"]),
+        "minimum_strategic_fee_rate": min_floor,
+        "fixed_fee": int(body.get("fixed_fee", 0)),
+        "min_fee": int(body.get("min_fee", 0)),
+        "max_fee": int(body.get("max_fee", 0)),
+        "tax_configured": bool(body.get("tax_configured", False)),
+        "tax_rate": body.get("tax_rate"),
+        "gateway_fee": body.get("gateway_fee", {"amount": 4000, "type": "sandbox_simulated"}),
+        "created_at": body.get("created_at", now_iso()),
+        "updated_at": now_iso(),
+        "updated_by": user.get("email"),
+    }
+    if current_active:
+        archived = {k: v for k, v in current_active.items() if k != "_id"}
+        archived["active"] = False
+        archived["archive_id"] = nid()
+        archived["archived_at"] = now_iso()
+        archived["archived_by"] = user.get("email")
+        archived["superseded_by_version"] = doc["version"]
+        await db.platform_policy_versions.insert_one(archived)
+    await db.platform_policies.update_one({"key": CANONICAL_TICKETING_FEE_POLICY_KEY}, {"$set": doc}, upsert=True)
+    await audit(None, user, "platform.policy.update", {
+        "key": CANONICAL_TICKETING_FEE_POLICY_KEY,
+        "version": doc["version"],
+        "previous_version": (current_active or {}).get("version"),
+    })
+    return {"item": clean(doc)}
+
+
+@api.get("/platform/policies/ticketing/history")
+async def list_platform_ticketing_policy_history(user: dict = Depends(get_current_user)):
+    """Admin-only: list archived prior versions of the canonical ticketing fee policy,
+    newest supersession first. Enables governance review of the versioned policy timeline."""
+    if not is_admin(user):
+        raise HTTPException(status_code=403, detail="Hanya Platform Administrator yang berhak melihat riwayat Global Policy")
+    rows = await db.platform_policy_versions.find(
+        {"key": CANONICAL_TICKETING_FEE_POLICY_KEY},
+        {"_id": 0},
+    ).sort("archived_at", -1).to_list(500)
+    return {"items": rows, "total": len(rows)}
+
 
 
 @api.post("/orders/{order_id}/refund")
@@ -2182,16 +2825,40 @@ async def validate_ticket(payload: ValidateIn, user: dict = Depends(get_current_
     if not ev:
         raise HTTPException(status_code=404, detail="Event untuk tiket ini tidak ditemukan")
     await assert_ticket_validator(ev, user)
-    if t["status"] == "used":
-        result = "Already Used"
-        message = f"Tiket sudah digunakan pada {t.get('used_at')}"
-    elif t["status"] in ("cancelled", "refunded"):
-        result = t["status"].capitalize()
-        message = f"Tiket berstatus {t['status']}"
+
+    is_multi_day = bool(t.get("is_multi_day") or (int(t.get("session_days") or 1) > 1))
+    today_str = now_iso()[:10]
+    checkins = t.get("checkin_history", [])
+
+    if is_multi_day:
+        today_scan = next((c for c in checkins if c.get("date") == today_str), None)
+        if today_scan:
+            result = "Already Used"
+            message = f"Tiket multi-day sudah divalidasi hari ini pada {today_scan.get('at')}"
+        elif t["status"] in ("cancelled", "refunded"):
+            result = t["status"].capitalize()
+            message = f"Tiket berstatus {t['status']}"
+        else:
+            result = "Valid"
+            message = f"Selamat masuk, {t['attendee_name']}"
+            checkins.append({"date": today_str, "at": now_iso(), "by": user["id"]})
+            total_days = int(t.get("session_days") or ev.get("days", 1))
+            new_status = "used" if len(checkins) >= total_days else "valid"
+            await db.tickets.update_one(
+                {"id": t["id"]},
+                {"$set": {"status": new_status, "used_at": now_iso(), "checkin_history": checkins}}
+            )
     else:
-        result = "Valid"
-        message = f"Selamat masuk, {t['attendee_name']}"
-        await db.tickets.update_one({"id": t["id"]}, {"$set": {"status": "used", "used_at": now_iso()}})
+        if t["status"] == "used":
+            result = "Already Used"
+            message = f"Tiket sudah digunakan pada {t.get('used_at')}"
+        elif t["status"] in ("cancelled", "refunded"):
+            result = t["status"].capitalize()
+            message = f"Tiket berstatus {t['status']}"
+        else:
+            result = "Valid"
+            message = f"Selamat masuk, {t['attendee_name']}"
+            await db.tickets.update_one({"id": t["id"]}, {"$set": {"status": "used", "used_at": now_iso()}})
     await db.ticket_validations.insert_one({"id": nid(), "ticket_id": t["id"], "event_id": t["event_id"],
                                             "result": result, "at": now_iso(), "by": user["id"],
                                             "qr_code": payload.qr_code})
@@ -2304,6 +2971,8 @@ async def add_funding_item(event_id: str, body: Dict[str, Any], user: dict = Dep
            "label": body.get("label", "Sumber baru"), "amount": int(body.get("amount") or 0),
            "state": body.get("state", "committed"), "created_at": now_iso()}
     await db.funding_items.insert_one(doc)
+    from extras import invalidate_demo_summary_cache
+    invalidate_demo_summary_cache()
     return {"item": clean(doc), "budget": await compute_budget(ev["id"])}
 
 
@@ -2457,6 +3126,21 @@ async def event_graph(event_id: str, user: dict = Depends(get_current_user)):
     payments = await db.payments.count_documents({"event_id": ev["id"], "status": "Simulated Paid"})
     add("payments", f"Payments simulated paid ({payments})", "Payment", "Completed" if payments else "Draft", {})
     edges.append({"source": "event", "target": "payments", "label": "payment"})
+
+    # Phase 06C — compliance node injection. Only rendered when at least
+    # one compliance item has been derived for the event; otherwise the
+    # graph stays exactly as before F6C.
+    compliance_rows = await db.event_compliance.find({"event_id": ev["id"]}, {"_id": 0}).to_list(200)
+    if compliance_rows:
+        summary = summarize_compliance_for_graph(compliance_rows)
+        add(
+            "compliance",
+            f"Compliance {summary['counts'].get('issued', 0)}/{summary['total']} issued",
+            "Compliance",
+            summary["graph_status"],
+            {"coverage_status": summary["coverage_status"], "counts": summary["counts"], "total": summary["total"]},
+        )
+        edges.append({"source": "event", "target": "compliance", "label": "compliance"})
 
     counts: Dict[str, int] = {}
     for n in nodes:
@@ -3304,6 +3988,8 @@ async def demo_reset(user_opt: Optional[dict] = Depends(get_optional_user)):
     if not is_admin(user_opt):
         raise HTTPException(status_code=403, detail="Only administrators can reset demo data")
     res = await seed_data.seed(force=True)
+    from extras import invalidate_demo_summary_cache
+    invalidate_demo_summary_cache()
     await audit(None, user_opt, "demo.reset")
     return {"ok": True, **res, "demo_event_code": seed_data.EVENT_CODE, "demo_event_id": seed_data.EVENT_ID}
 
@@ -3323,6 +4009,7 @@ class OkkaxChatIn(BaseModel):
     current_route: Optional[str] = ""
     event_id: Optional[str] = ""
     role: Optional[str] = ""
+    engine: Optional[str] = None  # AI_ENGINES key; None -> default
 
 YoonaChatIn = OkkaxChatIn
 
@@ -3330,14 +4017,79 @@ YoonaChatIn = OkkaxChatIn
 @api.post("/okkax/chat")
 @api.post("/yoona/chat")
 async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict] = Depends(get_optional_user)):
-    user_role = (user.get("roles") or ["audience"])[0] if user else (payload.role or "audience")
+    """Copilot chat entrypoint with server-side role derivation, tenant-safe
+    event grounding, prompt-injection defense, quota (authed callers), and
+    audit trail. Anonymous callers keep working for public knowledge questions,
+    but `event_id` is IGNORED when unauthenticated so private event data is
+    never leaked. Client-supplied `role` is never trusted for authorization.
+    """
+    # 1. Role source of truth is the server, not the client. Anonymous
+    # callers get "anonymous"; the `payload.role` field is downgraded to
+    # a hint that only affects suggestion selection.
+    if user:
+        roles = user.get("roles") or []
+        user_role = roles[0] if roles else "audience"
+    else:
+        user_role = "anonymous"
+
+    # 2. Tenant-safe event grounding. Only authenticated callers with
+    # verified access to the event receive a live snapshot. Anonymous
+    # callers or unauthorized callers see NO event data — the snapshot
+    # stays None and Copilot falls back to public knowledge mode.
+    event_snapshot = None
+    resolved_event_id = ""
+    if payload.event_id and user:
+        try:
+            ev = await get_event_or_404(payload.event_id)
+            await assert_event_access(ev, user)
+            resolved_event_id = ev["id"]
+            event_snapshot = await gather_event_ground_truth(ev["id"])
+        except HTTPException as e:
+            # Do NOT leak whether the event exists — swallow both 404/403
+            # into "no snapshot"; Copilot continues without event context.
+            logger.info(f"copilot.chat event access denied for {payload.event_id}: {e.status_code}")
+            event_snapshot = None
+        except Exception as e:
+            logger.warning(f"copilot.chat snapshot error: {e}")
+            event_snapshot = None
+
+    # 3. Sanitize client-supplied history against prompt-injection markers
+    # BEFORE it reaches the LLM/deterministic engines.
+    safe_history = sanitize_history(payload.history or [])
+
+    # 3b. Enforce per-user Copilot quota (authed only). Anonymous callers
+    # remain rate-limited only by the reverse proxy.
+    if user:
+        q = await get_or_create_copilot_quota(user)
+        if q["remaining"] <= 0:
+            raise HTTPException(status_code=429, detail=f"Kuota Copilot bulanan ({q['limit']}) untuk plan {q['plan']} tercapai. Upgrade untuk kuota lebih besar.")
+        await increment_copilot_quota(user)
+
+    # 4. Execute Copilot.
     result = await ask_okkax_copilot(
         message=payload.message,
-        history=payload.history,
+        history=safe_history,
         current_route=payload.current_route or "",
-        event_id=payload.event_id or "",
-        role=user_role
+        event_id=resolved_event_id,
+        role=user_role,
+        grounded_event_snapshot=event_snapshot,
+        authed_user=user,
+        engine_pref=payload.engine,
     )
+
+    # 5. Audit + quota — authed only. Chat by anonymous users is not
+    # persisted to keep audit surface honest (nothing to attribute).
+    if user:
+        try:
+            await audit(resolved_event_id or None, user, "copilot.chat", {
+                "route": payload.current_route or "",
+                "event_scoped": bool(resolved_event_id),
+                "intents": result.get("intents", []),
+                "engine": result.get("engine"),
+                "grounded": bool(result.get("grounded")),
+            })
+        except Exception as e:
+            logger.warning(f"copilot.chat audit failed: {e}")
     return result
 
 yoona_chat_endpoint = okkax_copilot_chat_endpoint
@@ -3347,6 +4099,26 @@ yoona_chat_endpoint = okkax_copilot_chat_endpoint
 @api.get("/yoona/suggestions")
 async def okkax_copilot_suggestions_endpoint(route: str = Query("", alias="route"), role: str = Query("")):
     return {"suggestions": get_smart_suggestions(route, role)}
+
+
+@api.get("/okkax/tools")
+async def okkax_copilot_tools_endpoint(user: dict = Depends(get_current_user)):
+    """Compact JSON tool schema (OpenAI/Anthropic function-calling shape).
+    Read-only; execution stays server-side and RBAC-gated per tool."""
+    return {"tools": get_copilot_tool_schemas(), "count": len(COPILOT_TOOLS)}
+
+
+@api.get("/okkax/quota")
+async def okkax_copilot_quota_endpoint(user: dict = Depends(get_current_user)):
+    return await get_or_create_copilot_quota(user)
+
+
+@api.get("/okkax/engines")
+async def okkax_copilot_engines_endpoint():
+    """Copilot advertises the SAME provider registry as Event Compiler
+    (`AI_ENGINES`) — never a hardcoded model. Clients can pass any key
+    from this list as `engine` in the chat payload."""
+    return {"engines": [{"key": k, **v} for k, v in AI_ENGINES.items()], "default": DEFAULT_ENGINE}
 
 yoona_suggestions_endpoint = okkax_copilot_suggestions_endpoint
 
@@ -3535,10 +4307,12 @@ from member_os_services import services_router  # noqa: E402
 app.include_router(services_router)
 from intelligence_engine import router as intelligence_router  # noqa: E402
 app.include_router(intelligence_router)
+from integrations.endpoints import router as integrations_router  # noqa: E402
+app.include_router(integrations_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_origins=[o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -3797,6 +4571,20 @@ async def startup():
     await db.control_evidence.create_index("id", unique=True, name="uniq_control_evidence_id")
     await db.control_evidence.create_index([("request_id", 1), ("created_at", 1)])
     await db.control_evidence.create_index([("risk", 1), ("created_at", -1)])
+    # Phase 06A Compliance Foundation — configurable rule registry + per-event
+    # derived rows. Indexes below enforce (event_id, rule_id) uniqueness so
+    # repeated derivations remain idempotent.
+    await db.compliance_rules.create_index("id", unique=True, name="uniq_compliance_rule_id")
+    await db.compliance_rules.create_index([("jurisdiction", 1), ("authority_category", 1)])
+    await db.event_compliance.create_index(
+        [("event_id", 1), ("rule_id", 1)], unique=True, name="uniq_event_compliance_rule"
+    )
+    await db.event_compliance.create_index([("event_id", 1), ("authority_category", 1)])
+    compliance_seed = await upsert_reference_compliance_rules(db)
+    logger.info(f"OKKAX startup compliance rules: {compliance_seed}")
+    copilot_calc_seed = await upsert_reference_copilot_calculator_policy(db)
+    logger.info(f"OKKAX startup copilot calculator policy: {copilot_calc_seed}")
+    await db.copilot_usage.create_index([("user_id", 1), ("month", 1)], unique=True, name="uniq_copilot_usage_user_month")
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
     memberships = await seed_data.ensure_demo_memberships()

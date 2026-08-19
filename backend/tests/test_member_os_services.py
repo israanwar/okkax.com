@@ -11,7 +11,10 @@ Tests:
 import pytest
 import httpx
 
-API = "http://127.0.0.1:8000/api"
+import os
+
+BASE = os.environ.get("TEST_BASE_URL", "http://127.0.0.1:8001").rstrip("/")
+API = f"{BASE}/api"
 
 
 @pytest.fixture(scope="session")

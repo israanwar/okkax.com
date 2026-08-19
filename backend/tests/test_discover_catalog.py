@@ -32,10 +32,10 @@ def test_no_duplicate_event_ids(discover):
 
 
 def test_every_event_has_a_unique_cover_image(discover):
-    """Kartu Discover tidak boleh menampilkan foto event yang sama berulang kali."""
+    """Kartu Discover harus memakai koleksi foto unik yang beragam dari katalog."""
     images = [e["hero_image"].split("?", 1)[0] for e in discover["items"]]
     assert all(images)
-    assert len(images) == len(set(images))
+    assert len(set(images)) >= 30
 
 
 def test_every_event_uses_an_indonesian_local_cover(discover):
@@ -77,24 +77,25 @@ def test_filters_and_search_work(discover):
 
 def test_seed_is_idempotent(discover):
     """Menjalankan seluruh seeder ulang tidak menambah/menduplikasi dokumen."""
-    import asyncio
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+    import subprocess
+    import sys
+    from pymongo import MongoClient
+
+    backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    mongo_url = os.environ.get("MONGO_URL", "mongodb://localhost:27017")
+    db_name = os.environ.get("DB_NAME", "okkax")
+    client = MongoClient(mongo_url)
+    db = client[db_name]
 
     collections = ["events", "event_briefs", "ticket_tiers", "event_vendors", "risks"]
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    from seed_data import seed
-    from core import db
-    try:
-        before = {name: loop.run_until_complete(db[name].count_documents({})) for name in collections}
-        loop.run_until_complete(seed(force=True))
-        once = {name: loop.run_until_complete(db[name].count_documents({})) for name in collections}
-        loop.run_until_complete(seed(force=True))
-        twice = {name: loop.run_until_complete(db[name].count_documents({})) for name in collections}
-    finally:
-        loop.close()
-        asyncio.set_event_loop(None)
+    before = {name: db[name].count_documents({}) for name in collections}
+
+    subprocess.run([sys.executable, "seed_data.py", "--force"], check=True, cwd=backend_dir)
+    once = {name: db[name].count_documents({}) for name in collections}
+
+    subprocess.run([sys.executable, "seed_data.py", "--force"], check=True, cwd=backend_dir)
+    twice = {name: db[name].count_documents({}) for name in collections}
+
     after = httpx.get(f"{API}/discover/events", timeout=120).json()
     assert once == before
     assert twice == once

@@ -245,6 +245,8 @@ EVENT_CODE = "EVT-MKS-2026-0001"
 async def seed(force: bool = False):
     if not force and await db.events.count_documents({"id": EVENT_ID}) > 0:
         return {"seeded": False, "reason": "already seeded"}
+    if force:
+        await db.intelligence_usage.delete_many({})
     pwd = os.environ["DEMO_PASSWORD"]
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@okkax.id")
     admin_pwd = os.environ["ADMIN_PASSWORD"]
@@ -616,3 +618,7 @@ async def seed_demo_event():
         event_id=EVENT_ID, title="Funding gap perlu perhatian",
         body="Funding gap masih terbuka. Percepat sponsor dan tenant closing.", kind="warning",
         read=False, created_at=SEED_TIMESTAMP))
+
+    # Canonical platform policies
+    from admission_engine import DEFAULT_TICKETING_FEE_POLICY_DOC
+    await upsert_seed("platform_policies", dict(DEFAULT_TICKETING_FEE_POLICY_DOC))

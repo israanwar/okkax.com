@@ -1,15 +1,13 @@
 """Iteration 3 backend tests: /api/demo/summary endpoint + dynamic key numbers proof."""
 import os
+from pathlib import Path
 import pytest
 import requests
+from dotenv import load_dotenv
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
-if not BASE_URL:
-    # fallback to reading from frontend/.env
-    with open("/app/frontend/.env") as f:
-        for line in f:
-            if line.startswith("REACT_APP_BACKEND_URL="):
-                BASE_URL = line.strip().split("=", 1)[1].rstrip("/")
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "http://127.0.0.1:8001").rstrip("/")
 
 DEMO_PASSWORD = os.environ["DEMO_PASSWORD"]
 ORGANIZER_EMAIL = "organizer@okkax.id"
@@ -87,9 +85,13 @@ def test_key_numbers_change_when_funding_added(s, organizer_token):
         assert before["funding_gap"] - after["funding_gap"] == 50_000_000, \
             f"funding_gap delta wrong: {before} -> {after}"
     finally:
-        # cleanup: reset demo data
-        rr = s.post(f"{BASE_URL}/api/demo/reset")
+        # cleanup: reset demo data via admin auth
+        adm_email = os.environ.get("ADMIN_EMAIL", "admin.local@okkax.id")
+        adm_pw = os.environ.get("ADMIN_PASSWORD", "gh8t6P_c1U_yFxy3uPv0cRf0")
+        adm_r = s.post(f"{BASE_URL}/api/auth/login", json={"email": adm_email, "password": adm_pw}, timeout=10)
+        adm_h = {"Authorization": f"Bearer {adm_r.json()['token']}"} if adm_r.status_code == 200 else {}
+        rr = s.post(f"{BASE_URL}/api/demo/reset", headers=adm_h, timeout=30)
         assert rr.status_code in (200, 201), rr.text
         # summary still 200 after reset
-        final = s.get(f"{BASE_URL}/api/demo/summary")
+        final = s.get(f"{BASE_URL}/api/demo/summary", timeout=15)
         assert final.status_code == 200

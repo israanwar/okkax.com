@@ -47,6 +47,7 @@ export default function LiveOperationsPage() {
         }
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceVersion]);
 
   const loadOperationsData = async () => {

@@ -8,11 +8,12 @@ import requests
 import json
 import os
 
-API = "http://127.0.0.1:8000/api"
+API = f"{os.environ.get('TEST_BASE_URL', os.environ.get('REACT_APP_BACKEND_URL', 'http://127.0.0.1:8001'))}/api"
+PASSWORD = os.environ.get("DEMO_PASSWORD", "DPOqsn1PJS1ATka0oagr8LCi")
 
 @pytest.fixture(scope="session")
 def auth_headers():
-    login_res = requests.post(f"{API}/auth/login", json={"email": "organizer@okkax.id", "password": "DPOqsn1PJS1ATka0oagr8LCi"})
+    login_res = requests.post(f"{API}/auth/login", json={"email": "organizer@okkax.id", "password": PASSWORD})
     assert login_res.status_code == 200, f"Login failed: {login_res.text}"
     token = login_res.json()["token"]
     return {"Authorization": f"Bearer {token}"}
