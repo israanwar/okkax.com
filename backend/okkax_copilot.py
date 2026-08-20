@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 from core import db
+from integrations.ai.chatgpt_provider import (CHATGPT_MODELS, SMARTER_CHATGPT_MODEL,
+                                              resolve_chatgpt_model)
 
 logger = logging.getLogger("okkax.copilot")
 
@@ -1184,8 +1186,14 @@ class CopilotSemanticReasoning(BaseModel):
     calculation_requests: List[str] = Field(default_factory=list)
 
 
+def chatgpt_engine_options() -> List[Dict[str, str]]:
+    """Daftar model ChatGPT yang tersedia untuk reasoning Copilot."""
+    return [{"key": key, "label": label, "vendor": "OpenAI"} for key, label in CHATGPT_MODELS.items()]
+
+
 def _copilot_reasoning_available() -> bool:
-    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENROUTER_API_KEY"))
+    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+                or os.environ.get("EMERGENT_LLM_KEY"))
 
 
 def _semantic_intents(plan: Dict[str, Any]) -> List[str]:
@@ -1227,10 +1235,11 @@ async def _run_primary_semantic_reasoning(
     history: List[Dict[str, str]],
     plan: Dict[str, Any],
     platform_context: str = "",
+    engine_pref: Optional[str] = None,
     thinking_budget: int = 0,
     max_tokens: int = 2048,
-    llm_timeout_seconds: float = 18.0,
-    outer_timeout_seconds: float = 25.0,
+    llm_timeout_seconds: float = 12.0,
+    outer_timeout_seconds: float = 14.0,
 ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
     """Gemini primary, OpenRouter secondary; deterministic plan on failure.
 
@@ -1247,9 +1256,15 @@ async def _run_primary_semantic_reasoning(
     try:
         from integrations.ai.router import LLMRouter
 
-        router = LLMRouter(primary="gemini", fallback_list=["openrouter"])
+        # Gemini tetap primary; ChatGPT (OpenAI via Emergent key) fallback
+        # pertama, lalu OpenRouter. Model ChatGPT mengikuti engine_pref/env.
+        router = LLMRouter(primary="gemini", fallback_list=["chatgpt", "openrouter"])
         router.providers["gemini"].enabled = True
         router.providers["openrouter"].enabled = True
+        chatgpt = router.providers.get("chatgpt")
+        if chatgpt is not None:
+            chatgpt.enabled = True
+            chatgpt.default_model = resolve_chatgpt_model(engine_pref)
         prompt = (
             "Interpretasikan percakapan OKKAX berikut menjadi semantic reasoning plan. "
             "Angka pada semantic_state sudah dinormalisasi secara deterministik: jangan ubah, "
@@ -1279,7 +1294,9 @@ async def _run_primary_semantic_reasoning(
             return plan, None
         structured = CopilotSemanticReasoning.model_validate(result.data.get("structured") or {})
         allowed_intents = {INTENT_ANALYTICAL, INTENT_SIMULATION, INTENT_KNOWLEDGE}
-        if structured.intent in allowed_intents:
+        # Intent deterministik yang sudah spesifik tidak boleh diturunkan oleh
+        # model; LLM hanya melengkapi ketika parser belum yakin.
+        if structured.intent in allowed_intents and plan.get("intent") in (INTENT_UNKNOWN, INTENT_KNOWLEDGE):
             plan["intent"] = structured.intent
         allowed_domains = {
             "budget", "sponsor", "tenant", "ticketing", "compliance", "finance",
@@ -1645,6 +1662,16 @@ def _numeric_values(value: Any) -> set[int]:
     return found
 
 
+def _format_bare_amounts(text: str) -> str:
+    """Ubah angka mentah 8-13 digit dari model menjadi format Rp ribuan."""
+    def _sub(m: re.Match) -> str:
+        prefix, digits = m.group(1), m.group(2)
+        value = int(digits)
+        return f"{prefix}Rp{value:,}" if not prefix.strip().lower().endswith("rp") else f"{prefix}{value:,}"
+
+    return re.sub(r"(\bRp\s?|\b)(\d{8,13})\b", _sub, text)
+
+
 def _grounded_reasoning_text(text: str, plan: Dict[str, Any], projection: Dict[str, Any]) -> str:
     """Reject provider prose that introduces ungrounded Rp/% claims.
 
@@ -1666,7 +1693,7 @@ def _grounded_reasoning_text(text: str, plan: Dict[str, Any], projection: Dict[s
             return ""
         if pct not in allowed:
             return ""
-    return clean
+    return _format_bare_amounts(clean)
 
 
 def _scenario_guidance(plan: Dict[str, Any], projection: Dict[str, Any]) -> List[str]:
@@ -1890,8 +1917,16 @@ def _compose_semantic_reasoning_reply(
             lines.append(f"[{LABEL_CALC}] Budget event yang dipakai: **Rp{budget:,}**" + (f" untuk **{capacity:,} pax**." if capacity else "."))
         if projection.get("saving_amount") is not None:
             lines.append(
+                f"[{LABEL_SIM}] Skenario penghematan berbasis angka yang Anda berikan (bukan dari event live)."
+            )
+            lines.append(
                 f"[{LABEL_CALC}] Target turun **Rp{projection['saving_amount']:,} ({projection['saving_pct']}%)** "
                 f"dari baseline Rp{projection['baseline_budget']:,}."
+            )
+        if not capacity:
+            lines.append(
+                f"[{LABEL_UNKNOWN}] Kapasitas tidak disebut — tidak diasumsikan; target sponsor/tenant/tiket "
+                "diturunkan dari budget saja."
             )
         funding = projection["funding"]
         lines.append(
@@ -2980,12 +3015,16 @@ async def ask_okkax_copilot(
         intent_class in (INTENT_ANALYTICAL, INTENT_SIMULATION) or plan.get("needs_graph") or plan.get("needs_intelligence")
     ):
         if resolved_reasoning_mode == "smarter":
+            # Smarter memakai model ChatGPT tertinggi yang terverifikasi
+            # accepted, dengan ceiling latency yang memang lebih longgar.
             plan, reasoning_meta = await _run_primary_semantic_reasoning(
                 message, history, plan, dynamic_context,
+                engine_pref=engine_pref or SMARTER_CHATGPT_MODEL,
                 thinking_budget=2048, max_tokens=3072, llm_timeout_seconds=28.0, outer_timeout_seconds=35.0,
             )
         else:
-            plan, reasoning_meta = await _run_primary_semantic_reasoning(message, history, plan, dynamic_context)
+            plan, reasoning_meta = await _run_primary_semantic_reasoning(
+                message, history, plan, dynamic_context, engine_pref=engine_pref)
         intent_class = plan["intent"]
         intents = _semantic_intents(plan)
         if reasoning_meta:

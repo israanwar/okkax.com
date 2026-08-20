@@ -258,7 +258,7 @@ def test_reasoning_uses_gemini_primary_openrouter_secondary_once(monkeypatch):
 
     assert len(calls) == 1
     assert calls[0]["primary"] == "gemini"
-    assert calls[0]["fallback"] == ["openrouter"]
+    assert calls[0]["fallback"] == ["chatgpt", "openrouter"]
     assert calls[0]["preferred"] == "gemini"
     assert calls[0]["system_instruction"] == AI_STUDIO_SYSTEM_INSTRUCTION
     assert calls[0]["model"] == settings.GEMINI_MODEL

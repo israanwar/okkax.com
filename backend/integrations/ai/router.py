@@ -11,6 +11,7 @@ from ..exceptions import ProviderError, ProviderNotConfigured
 from ..registry import registry
 from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
+from .chatgpt_provider import ChatGPTProvider
 from .gemini_provider import GeminiProvider
 from .openai_provider import OpenAIProvider
 from .openrouter_provider import OpenRouterProvider
@@ -34,6 +35,7 @@ class LLMRouter:
         self.providers: Dict[str, BaseLLMProvider] = {
             "gemini": GeminiProvider(),
             "openai": OpenAIProvider(),
+            "chatgpt": ChatGPTProvider(),
             "anthropic": AnthropicProvider(),
             "openrouter": OpenRouterProvider(),
             "qwen": QwenProvider(),
