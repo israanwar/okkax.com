@@ -7,7 +7,6 @@
 // Rules honored here:
 //   * Single pricing source of truth via @/lib/pricing.
 //   * Max = Everything in Pro + exclusive; Pro = Everything in Free + more.
-//   * Intelligence: Observe > Understand > Optimize.
 //   * Event Graph: See > Understand > Optimize.
 //   * Honest CTA (no Buy Now; checkout not live).
 //   * Mobile-first (390 baseline), no horizontal overflow.
@@ -18,6 +17,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Check, ChevronDown, Info, Sparkles, Waypoints } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
+import { useAuth } from "@/context/AuthContext";
 import {
   COMPARISON_GROUPS,
   PLAN_META,
@@ -50,7 +50,6 @@ export default function Pricing() {
         <RoleSelector value={role} onChange={setRole} />
         <BillingToggle value={billing} onChange={setBilling} />
         <PlanGrid role={role} activeRole={activeRole} billing={billing} />
-        <IntelligenceTiers />
         <EventGraphTiers />
         <ComparisonTable role={role} openGroups={openGroups} setOpenGroups={setOpenGroups} />
         <MiniFaq />
@@ -80,7 +79,7 @@ function Hero() {
         <span className="accent-text">Upgrade when your operation needs more intelligence.</span>
       </h1>
       <p className="mt-6 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-        Free gets you into the network. Pro helps you operate professionally. Max gives you the deepest OKKAX Intelligence for optimization and scale.
+        Free gets you into the network. Pro helps you operate professionally. Max adds advanced portfolio controls for optimization and scale.
       </p>
     </header>
   );
@@ -199,6 +198,30 @@ function PlanCard({ planId, role, billing }) {
   const bullets = ROLE_BULLETS[role][planId] || [];
   const isMax = planId === "max";
   const isFree = planId === "free";
+  const { user, effectiveRole, loading: authLoading } = useAuth();
+
+  // Free never needs a checkout — keep the original honest register CTA.
+  // Pro/Max: logged-out visitors go create/sign in to an account and are
+  // brought straight back to this exact plan+billing checkout afterwards
+  // (via `next`); a logged-in paid role goes straight to checkout; a
+  // logged-in Audience account cannot buy a subscription at all.
+  const subscribeTarget = `/app/subscribe/${planId}?billing=${billing}`;
+  let ctaHref = meta.ctaHref;
+  let ctaDisabled = false;
+  let ctaNote = null;
+  if (!isFree) {
+    if (authLoading) {
+      ctaDisabled = true;
+    } else if (!user) {
+      ctaHref = `/register?role=${role}&plan=${planId}&billing=${billing}&next=${encodeURIComponent(subscribeTarget)}`;
+    } else if (effectiveRole === "audience") {
+      ctaDisabled = true;
+      ctaNote = "Tidak tersedia untuk akun Audience";
+    } else {
+      ctaHref = subscribeTarget;
+    }
+  }
+
   return (
     <article
       data-testid={`pricing-plan-${planId}`}
@@ -256,153 +279,42 @@ function PlanCard({ planId, role, billing }) {
       </ul>
 
       <div className="mt-auto pt-8">
-        <Link
-          to={meta.ctaHref}
-          data-testid={`pricing-cta-${planId}`}
-          className={[
-            "group inline-flex w-full items-center justify-between rounded-xl px-5 py-3.5 text-sm font-bold transition-all shadow-md active:scale-[0.98]",
-            isMax
-              ? "bg-white text-black hover:bg-zinc-200"
-              : isFree
-              ? "border border-white/[0.15] bg-white/[0.04] text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08]"
-              : "bg-white text-black hover:bg-zinc-200",
-          ].join(" ")}
-        >
-          <span>{meta.cta}</span>
-          <ArrowUpRight
-            size={16}
-            className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </Link>
+        {ctaDisabled ? (
+          <button
+            type="button"
+            disabled
+            data-testid={`pricing-cta-${planId}`}
+            title={ctaNote || undefined}
+            className="group inline-flex w-full cursor-not-allowed items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-3.5 text-sm font-bold text-zinc-500 shadow-md"
+          >
+            <span>{ctaNote || meta.cta}</span>
+          </button>
+        ) : (
+          <Link
+            to={ctaHref}
+            data-testid={`pricing-cta-${planId}`}
+            className={[
+              "group inline-flex w-full items-center justify-between rounded-xl px-5 py-3.5 text-sm font-bold transition-all shadow-md active:scale-[0.98]",
+              isMax
+                ? "bg-white text-black hover:bg-zinc-200"
+                : isFree
+                ? "border border-white/[0.15] bg-white/[0.04] text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08]"
+                : "bg-white text-black hover:bg-zinc-200",
+            ].join(" ")}
+          >
+            <span>{meta.cta}</span>
+            <ArrowUpRight
+              size={16}
+              className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </Link>
+        )}
         <div className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500 font-gemini-mono">
           Event Graph: {meta.eventGraph}
         </div>
       </div>
     </article>
-  );
-}
-
-/* --------------------- INTELLIGENCE TIER DEMONSTRATION ------------------- */
-
-function IntelligenceTiers() {
-  return (
-    <section
-      aria-labelledby="pricing-intel-heading"
-      className="mt-16 border-t border-white/[0.06] pt-14 font-gemini"
-    >
-      <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[0.22em] text-zinc-300 backdrop-blur-md">
-        <Sparkles size={13} className="text-zinc-400" aria-hidden="true" />
-        <span>OKKAX Intelligence</span>
-      </div>
-      <h2 id="pricing-intel-heading" className="editorial mt-4 max-w-3xl text-[clamp(1.8rem,3.5vw,2.8rem)] leading-tight text-[#f4efec]">
-        Observe. Understand. Optimize.
-      </h2>
-      <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
-        Intelligence is grounded in your authorized event state. Each plan reveals more of the same operating truth.
-      </p>
-      <div className="mt-8 grid gap-5 md:grid-cols-3">
-        {INTELLIGENCE_DEMOS.map((demo) => (
-          <IntelligenceCard key={demo.plan} {...demo} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-const INTELLIGENCE_DEMOS = [
-  {
-    plan: "free",
-    tier: "Observe",
-    prompt: "What is happening?",
-    body: [
-      { label: "Readiness", value: "68%" },
-      { label: "Venue", value: "Ready" },
-      { label: "Vendor", value: "At risk" },
-      { label: "Workforce", value: "Blocked" },
-      { label: "Ticketing", value: "Pending" },
-    ],
-  },
-  {
-    plan: "pro",
-    tier: "Understand",
-    prompt: "Why is it happening?",
-    narrative:
-      "Gate Operations is at risk. Root cause: 12 security positions remain unfilled.",
-    path: ["Workforce", "Security", "Gate Operations", "Access Readiness"],
-  },
-  {
-    plan: "max",
-    tier: "Optimize",
-    prompt: "What is the best next action?",
-    steps: [
-      "Complete security assignment",
-      "Finalize gate configuration",
-      "Allocate validator teams",
-      "Run access-readiness check",
-    ],
-    footnote: "Scenario and impact analysis available on Max.",
-  },
-];
-
-function IntelligenceCard({ plan, tier, prompt, body, narrative, path, steps, footnote }) {
-  return (
-    <div
-      data-testid={`pricing-intel-${plan}`}
-      className="flex h-full flex-col rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 shadow-md transition-all duration-300 hover:border-white/20 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)]"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400 font-gemini-mono">
-          {PLAN_META[plan].label}
-        </span>
-        <span className="rounded-md border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
-          {tier}
-        </span>
-      </div>
-      <div className="mt-3 text-xs italic text-zinc-500">Q. {prompt}</div>
-      <div className="mt-4 flex-1 text-sm">
-        {body && (
-          <dl className="space-y-1.5 font-gemini-mono text-[12.5px] text-zinc-300">
-            {body.map((row) => (
-              <div key={row.label} className="flex justify-between border-b border-white/[0.06] py-1.5">
-                <dt className="text-zinc-500">{row.label}</dt>
-                <dd className="text-zinc-100 font-semibold">{row.value}</dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {narrative && (
-          <div className="text-zinc-200 leading-relaxed">
-            <p>{narrative}</p>
-            {path && (
-              <ol className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-gemini-mono text-[11.5px] text-zinc-500">
-                {path.map((step, i) => (
-                  <li key={step} className="flex items-center gap-2">
-                    {i > 0 && <span className="text-zinc-600" aria-hidden="true">/</span>}
-                    <span className={i === path.length - 1 ? "text-zinc-100 font-semibold" : ""}>{step}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        )}
-        {steps && (
-          <ol className="space-y-2 text-zinc-200">
-            {steps.map((step, i) => (
-              <li key={step} className="flex gap-2.5 items-center">
-                <span className="w-5 shrink-0 font-gemini-mono text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span>{step}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
-      {footnote && (
-        <div className="mt-4 text-[11px] text-zinc-500">{footnote}</div>
-      )}
-    </div>
   );
 }
 
@@ -579,8 +491,8 @@ const FAQ = [
     a: "Yes. Annual billing follows the same principle for every role: pay 10 months, use 12.",
   },
   {
-    q: "What is the difference between Free, Pro, and Max Intelligence?",
-    a: "Free observes the state, Pro explains why (root cause and dependency paths), Max recommends optimized action sequences and supports scenario analysis.",
+    q: "How do Free, Pro, and Max differ?",
+    a: "Plans differ by operational scale, collaboration, portfolio controls, and advanced Event Graph capabilities. Okkax Copilot is not governed by the retired Intelligence query quota.",
   },
   {
     q: "Are ticketing fees included?",

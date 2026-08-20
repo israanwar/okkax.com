@@ -138,7 +138,7 @@ const NODE_DETAIL = {
     deadline: "22 Aug 2026 12:00",
     impact: "Blocks Gate Operations, Access Readiness, Showtime.",
     dependency: ["requirements"],
-    next: "Ask OKKAX Intelligence for the fastest safe fix.",
+    next: "Ask Okkax Copilot for the fastest safe fix.",
   },
   gate: {
     requirement: "12 gates, dual-lane, 400 person throughput per gate.",
@@ -232,10 +232,10 @@ const PHASES = [
   },
   {
     id: "intelligence",
-    label: "Intelligence",
+    label: "Copilot",
     ordinal: "04",
     readiness: 55,
-    intro: "OKKAX Intelligence menjelaskan sebab dan menyiapkan action.",
+    intro: "Okkax Copilot menjelaskan sebab dan menyiapkan action.",
     prompt: "Baca rekomendasi. Klik Execute untuk mengubah graph.",
     focus: "workforce",
     blocker: "workforce",
@@ -707,7 +707,6 @@ function PersonaLensSection() {
                       <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                       <span>Ready</span>
                     </div>
-                    <span className="hidden sm:inline text-zinc-400">Latency &lt;45ms</span>
                   </div>
                 </div>
 
@@ -1509,7 +1508,7 @@ function PanelNodeDetail({ node, state, pathHighlight, onShowDependency, onAskIn
             data-testid="demo-panel-ask-intel"
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 text-black px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] shadow-sm transition-all active:scale-[0.98] cursor-pointer"
           >
-            <Sparkles size={13} aria-hidden="true" /> Ask Intelligence
+            <Sparkles size={13} aria-hidden="true" /> Ask Copilot
           </button>
         </div>
       )}
@@ -1538,7 +1537,7 @@ function PanelIntelligence({ onExecute }) {
   return (
     <div className="flex h-full flex-col p-6" data-testid="demo-panel-intel">
       <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-zinc-300 font-gemini-mono">
-        <Sparkles size={13} aria-hidden="true" /> OKKAX Intelligence
+        <Sparkles size={13} aria-hidden="true" /> Okkax Copilot
       </div>
       <h3 className="editorial mt-3 text-xl text-white">Grounded on state, not chat.</h3>
       <dl className="mt-4 divide-y divide-white/[0.08] border-y border-white/[0.08] text-sm">

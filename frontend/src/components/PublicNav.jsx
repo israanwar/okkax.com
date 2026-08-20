@@ -47,7 +47,7 @@ export const NAV = [
     label: "Products",
     children: [
       { label: "Event Studio",       to: "/products/event-studio",       note: "Compile brief menjadi Event Blueprint." },
-      { label: "OKKAX Intelligence", to: "/intelligence",                note: "Principal Event Intelligence & Two-Way Matching." },
+      { label: "OKKAX Copilot",      to: "/copilot",                     note: "Event reasoning, recommendations, and Two-Way Matching." },
       { label: "Network",            to: "/products/network",            note: "Talent, Venue, Vendor, Workforce, Sponsor, Tenant." },
       { label: "Ticket Studio",      to: "/products/ticket-studio",      note: "Inventory, seating, ticket products." },
       { label: "LivePass",           to: "/products/livepass",           note: "Live access entitlement, not a file." },
@@ -124,11 +124,11 @@ const SOCIAL_LINKS = [
 // -----------------------------------------------------------------------------
 // Logo. Also acts as the Home link since it points to "/".
 // -----------------------------------------------------------------------------
-export const Logo = ({ small }) => (
+export const Logo = ({ small, to = "/" }) => (
   <Link
-    to="/"
+    to={to}
     data-testid="okkax-logo"
-    aria-label="OKKAX Home"
+    aria-label={to === "/" ? "OKKAX Home" : "OKKAX Workspace"}
     className={`okkax-logo group inline-flex shrink-0 flex-col items-start ${small ? "w-[82px]" : "w-[132px]"}`}
   >
     <img
@@ -701,7 +701,7 @@ function FooterColumns() {
             <span>Event Graph Network: Active</span>
           </div>
           <div className="font-gemini-mono text-[11px] text-zinc-400">
-            Node latency &lt;200ms · 15+ Cities Synced
+            15+ Cities Synced
           </div>
         </div>
       </div>
@@ -739,44 +739,57 @@ function FooterMeta() {
   return (
     <div className="mt-14 space-y-8">
       {/* Creator & Social Ribbon */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04] text-white font-bold font-gemini-mono text-sm">
-            OK
-          </div>
-          <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
-              Designed &amp; Engineered by
+      <div className="group relative overflow-hidden rounded-[1.4rem] border border-white/[0.1] bg-[linear-gradient(120deg,rgba(20,20,27,0.96),rgba(8,8,12,0.92))] p-5 shadow-[0_20px_55px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:p-6">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-20 top-1/2 h-40 w-40 -translate-y-1/2 rounded-full bg-white/[0.055] blur-3xl transition-opacity duration-500 group-hover:opacity-80" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
+
+        <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+            <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/[0.16] bg-white/[0.07] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_10px_30px_rgba(0,0,0,0.25)] sm:h-16 sm:w-16">
+              <span className="editorial text-xl tracking-[-0.05em] text-white sm:text-2xl">OR</span>
+              <span aria-hidden="true" className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-[3px] border-[#0c0c11] bg-white shadow-[0_0_12px_rgba(255,255,255,0.65)]" />
             </div>
-            <a
-              href="https://www.instagram.com/okkarhys"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-0.5 text-sm font-bold text-white transition-colors hover:text-zinc-300 inline-flex items-center gap-1"
-              data-testid="footer-creator-link"
-            >
-              <span>Isra Anwar</span>
-              <ArrowUpRight size={14} className="text-zinc-400" />
-            </a>
+
+            <div className="min-w-0">
+              <div className="font-gemini-mono text-[9px] font-bold uppercase tracking-[0.24em] text-zinc-400 sm:text-[10px]">
+                Designed &amp; Engineered by
+              </div>
+              <a
+                href="https://www.instagram.com/okkarhys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-flex max-w-full items-center gap-2 text-white transition-colors hover:text-zinc-200"
+                data-testid="footer-creator-link"
+              >
+                <span className="editorial truncate text-[1.65rem] leading-none tracking-[-0.025em] sm:text-[2rem]">OKKA RHYS</span>
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/[0.12] bg-white/[0.05] text-zinc-300 transition-all duration-200 group-hover:border-white/25 group-hover:bg-white/[0.1] group-hover:text-white">
+                  <ArrowUpRight size={14} />
+                </span>
+              </a>
+              <div className="mt-1.5 font-gemini-mono text-[10px] tracking-[0.08em] text-zinc-500">Isra Anwar · @okkarhys</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 border-t border-white/[0.07] pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+            <span className="hidden font-gemini-mono text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 lg:block">Connect</span>
+            <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2">
+              {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  title={label}
+                  data-testid={`footer-social-${label.split(" ")[0].toLowerCase()}`}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.035] text-zinc-400 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.09] hover:text-white active:translate-y-0 active:scale-95"
+                >
+                  <Icon size={17} />
+                </a>
+              ))}
+            </nav>
           </div>
         </div>
-
-        <nav aria-label="Sosial media Isra Anwar" className="flex items-center gap-2">
-          {SOCIAL_LINKS.map(({ label, href, Icon }) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={label}
-              title={label}
-              data-testid={`footer-social-${label.split(" ")[0].toLowerCase()}`}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] text-zinc-400 hover:border-white/25 hover:bg-white/[0.08] hover:text-white transition-all duration-200 active:scale-95"
-            >
-              <Icon size={17} />
-            </a>
-          ))}
-        </nav>
       </div>
 
       {/* Disclaimer & Copyright */}

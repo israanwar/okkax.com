@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { api, apiError, idr } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 
 export default function PersonalWalletPage() {
   const [wallet, setWallet] = useState(null);
@@ -87,26 +88,21 @@ export default function PersonalWalletPage() {
   };
 
   return (
-    <div className="space-y-5 font-gemini" data-testid="personal-wallet-page">
-      {/* Top Banner */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-              Member Payout & Escrow
-            </div>
-            <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
-              Dompet & Pencairan Penghasilan
-            </h1>
-            <p className="mt-1 text-xs text-zinc-400">
+    <div className="space-y-4 font-gemini" data-testid="personal-wallet-page">
+      <PageIntro testId="wallet-page-intro">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow>Member Payout & Escrow</PageIntroEyebrow>
+            <PageIntroTitle>Dompet & Pencairan Penghasilan</PageIntroTitle>
+            <PageIntroDescription>
               Pantau honor shift, pelunasan fee talent, termin kontrak vendor, dan ajukan penarikan ke rekening bank Anda.
-            </p>
+            </PageIntroDescription>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               onClick={() => setMethodOpen(true)}
-              className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-semibold text-zinc-300 hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
               data-testid="edit-payout-method-btn"
             >
               Ubah Rekening Payout
@@ -114,14 +110,14 @@ export default function PersonalWalletPage() {
             <button
               disabled={!wallet?.can_withdraw}
               onClick={() => setWithdrawOpen(true)}
-              className="rounded-xl bg-white px-4 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 transition-all disabled:opacity-40 cursor-pointer shadow-sm active:scale-[0.98]"
+              className="rounded-lg bg-white px-3 py-1 text-[11px] font-bold text-black hover:bg-zinc-200 transition-all disabled:opacity-40 cursor-pointer shadow-sm active:scale-[0.98]"
               data-testid="withdraw-cta-btn"
             >
               Tarik Saldo
             </button>
           </div>
         </div>
-      </div>
+      </PageIntro>
 
       {loading ? (
         <div className="p-12 text-center text-xs text-zinc-400 font-gemini">Memuat status saldo dompet…</div>

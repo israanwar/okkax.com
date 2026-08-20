@@ -472,11 +472,11 @@
 }
 
 @media (min-width: 1024px) {
-  .okx-scroll-pane:has(> .okx-workspace-page) {
+  .okx-scroll-pane:has(> .okx-workspace-page > .okx-workspace-content) {
     overflow-y: hidden;
   }
 
-  .okx-workspace-page {
+  .okx-workspace-page:has(> .okx-workspace-content) {
     display: flex;
     flex-direction: column;
 

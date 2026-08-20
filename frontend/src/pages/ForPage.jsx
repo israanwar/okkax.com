@@ -296,7 +296,7 @@ export default function ForPage() {
   const { audience } = useParams();
   const c = AUDIENCES[audience] || AUDIENCES.organizers;
   return (
-    <div className="min-h-screen bg-transparent text-zinc-100">
+    <div key={audience || "organizers"} className="min-h-screen bg-transparent text-zinc-100">
       <ScrollProgressBar />
       <PublicNav />
       <main data-testid={`for-${audience || "organizers"}`} className="mx-auto max-w-5xl px-4 pb-24 pt-14 sm:px-6 sm:pt-20">

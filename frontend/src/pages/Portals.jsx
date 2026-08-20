@@ -1,12 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
+
+const SPONSOR_PAGE_SIZE = 4;
+const SPONSOR_ACTIVITY_PAGE_SIZE = 6;
+
+function Pagination({ page, totalItems, pageSize, onChange, testId }) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  if (totalPages <= 1) return null;
+  return (
+    <nav className="flex items-center justify-between gap-3 pt-2" aria-label="Pagination">
+      <span className="text-[10.5px] text-zinc-500 font-gemini-mono">
+        Halaman {page} dari {totalPages}
+      </span>
+      <div className="flex gap-1.5">
+        <button
+          type="button"
+          data-testid={`${testId}-prev`}
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+          className="rounded-lg border border-white/[0.1] px-2.5 py-1 text-[11px] font-semibold text-zinc-300 hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          Sebelumnya
+        </button>
+        <button
+          type="button"
+          data-testid={`${testId}-next`}
+          disabled={page >= totalPages}
+          onClick={() => onChange(page + 1)}
+          className="rounded-lg border border-white/[0.1] px-2.5 py-1 text-[11px] font-semibold text-zinc-300 hover:border-white/25 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          Selanjutnya
+        </button>
+      </div>
+    </nav>
+  );
+}
 
 export function SponsorPortal() {
   const [ops, setOps] = useState([]);
   const [mine, setMine] = useState({ interests: [], commitments: [] });
+  const [opportunityPage, setOpportunityPage] = useState(1);
+  const [interestPage, setInterestPage] = useState(1);
+  const [commitmentPage, setCommitmentPage] = useState(1);
 
   const load = async () => {
     const [{ data: o }, { data: m }] = await Promise.all([
@@ -15,6 +54,9 @@ export function SponsorPortal() {
     ]);
     setOps(o.items || []);
     setMine(m || { interests: [], commitments: [] });
+    setOpportunityPage(1);
+    setInterestPage(1);
+    setCommitmentPage(1);
   };
   useEffect(() => {
     load();
@@ -30,15 +72,26 @@ export function SponsorPortal() {
     }
   };
 
+  const visibleOps = useMemo(
+    () => ops.slice((opportunityPage - 1) * SPONSOR_PAGE_SIZE, opportunityPage * SPONSOR_PAGE_SIZE),
+    [ops, opportunityPage]
+  );
+  const visibleInterests = useMemo(
+    () => mine.interests.slice((interestPage - 1) * SPONSOR_ACTIVITY_PAGE_SIZE, interestPage * SPONSOR_ACTIVITY_PAGE_SIZE),
+    [mine.interests, interestPage]
+  );
+  const visibleCommitments = useMemo(
+    () => mine.commitments.slice((commitmentPage - 1) * SPONSOR_ACTIVITY_PAGE_SIZE, commitmentPage * SPONSOR_ACTIVITY_PAGE_SIZE),
+    [mine.commitments, commitmentPage]
+  );
+
   return (
-    <div className="space-y-4 font-gemini">
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-4.5 shadow-sm">
-        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-          Sponsor Opportunity Exchange
-        </div>
-        <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">Sponsor Exchange</h1>
-        <p className="mt-1 text-xs text-zinc-400">Temukan event, lihat inventory sponsor, dan ajukan minat kemitraan.</p>
-      </div>
+    <div className="space-y-3 font-gemini" data-testid="sponsor-inventory-page">
+      <PageIntro testId="sponsor-page-intro">
+        <PageIntroEyebrow>Sponsor Opportunity Exchange</PageIntroEyebrow>
+        <PageIntroTitle>Sponsor Exchange</PageIntroTitle>
+        <PageIntroDescription>Temukan event, lihat inventory sponsor, dan ajukan minat kemitraan.</PageIntroDescription>
+      </PageIntro>
 
       {ops.length === 0 && (
         <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 p-6 text-center text-xs text-zinc-400 font-gemini">
@@ -46,9 +99,9 @@ export function SponsorPortal() {
         </div>
       )}
 
-      {ops.map(({ event, packages }) => (
-        <div key={event.id} className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-3.5 sm:p-4 shadow-sm" data-testid={`sponsor-opportunity-${event.id}`}>
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-3">
+      {visibleOps.map(({ event, packages }) => (
+        <div key={event.id} className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl p-3 shadow-sm" data-testid={`sponsor-opportunity-${event.id}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] pb-2.5">
             <div>
               <h2 className="text-sm font-bold text-white md:text-base">{event.name}</h2>
               <div className="num text-[11px] text-zinc-400 mt-0.5 font-gemini-mono">
@@ -57,15 +110,15 @@ export function SponsorPortal() {
             </div>
             <span className="num rounded-lg border border-white/[0.12] bg-white/[0.03] px-2 py-0.5 text-[11px] font-gemini-mono text-zinc-300">{event.event_code}</span>
           </div>
-          <div className="mt-3.5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
             {packages.map((p) => (
-              <div key={p.id} className="flex flex-col justify-between rounded-xl border border-white/[0.08] bg-[#14141a]/60 p-3 transition-all hover:border-white/20">
+              <div key={p.id} className="flex min-h-[168px] flex-col justify-between rounded-xl border border-white/[0.08] bg-[#14141a]/60 p-2.5 transition-all hover:border-white/20">
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-white">{p.name}</h3>
                   <div className="num mt-1 text-base font-bold text-white font-gemini-mono">{idr(p.price)}</div>
                   <div className="num text-[10.5px] text-zinc-400 mt-0.5 font-gemini-mono">Sisa {p.quantity - p.sold} slot · {p.exclusivity}</div>
                   <ul className="mt-2 space-y-0.5 text-[10.5px] text-zinc-400">
-                    {(p.rights || []).slice(0, 4).map((r) => <li key={r} className="line-clamp-1">· {r}</li>)}
+                    {(p.rights || []).slice(0, 3).map((r) => <li key={r} className="line-clamp-1">· {r}</li>)}
                   </ul>
                 </div>
                 <button
@@ -81,11 +134,13 @@ export function SponsorPortal() {
         </div>
       ))}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <Pagination page={opportunityPage} totalItems={ops.length} pageSize={SPONSOR_PAGE_SIZE} onChange={setOpportunityPage} testId="sponsor-opportunities-page" />
+
+      <div className="grid gap-3 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl overflow-hidden shadow-sm" data-testid="my-sponsor-interests">
           <div className="border-b border-white/[0.08] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">Interests saya</div>
           <div className="divide-y divide-white/[0.06]">
-            {mine.interests.map((i) => (
+            {visibleInterests.map((i) => (
               <div key={i.id} className="flex items-center justify-between gap-3 p-3 hover:bg-white/[0.02]">
                 <div>
                   <div className="text-xs sm:text-sm font-semibold text-white">{i.event_name} — {i.package_name}</div>
@@ -96,17 +151,23 @@ export function SponsorPortal() {
             ))}
             {mine.interests.length === 0 && <div className="p-4 text-xs text-zinc-500 font-gemini">Belum ada pengajuan interest.</div>}
           </div>
+          <div className="px-3 pb-3">
+            <Pagination page={interestPage} totalItems={mine.interests.length} pageSize={SPONSOR_ACTIVITY_PAGE_SIZE} onChange={setInterestPage} testId="sponsor-interests-page" />
+          </div>
         </div>
         <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 backdrop-blur-xl overflow-hidden shadow-sm" data-testid="my-sponsor-commitments">
           <div className="border-b border-white/[0.08] px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">Commitments & deliverables</div>
           <div className="divide-y divide-white/[0.06]">
-            {mine.commitments.map((c) => (
+            {visibleCommitments.map((c) => (
               <div key={c.id} className="p-3 hover:bg-white/[0.02]">
                 <div className="text-xs sm:text-sm font-semibold text-white">{c.event_name} — {c.package_name}</div>
                 <div className="num text-[11px] text-zinc-400 mt-0.5 font-gemini-mono">{idr(c.amount)} · {c.status} · fulfillment {c.fulfillment_status}</div>
               </div>
             ))}
             {mine.commitments.length === 0 && <div className="p-4 text-xs text-zinc-500 font-gemini">Belum ada komitmen aktif.</div>}
+          </div>
+          <div className="px-3 pb-3">
+            <Pagination page={commitmentPage} totalItems={mine.commitments.length} pageSize={SPONSOR_ACTIVITY_PAGE_SIZE} onChange={setCommitmentPage} testId="sponsor-commitments-page" />
           </div>
         </div>
       </div>
@@ -145,13 +206,11 @@ export function TenantPortal() {
 
   return (
     <div className="space-y-4 font-gemini">
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-4.5 shadow-sm">
-        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-          Tenant & Booth Exchange
-        </div>
-        <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">Tenant Exchange</h1>
-        <p className="mt-1 text-xs text-zinc-400">Pilih booth, lihat audiens event, dan ajukan aplikasi tenant bisnis Anda.</p>
-      </div>
+      <PageIntro testId="tenant-page-intro">
+        <PageIntroEyebrow>Tenant & Booth Exchange</PageIntroEyebrow>
+        <PageIntroTitle>Tenant Exchange</PageIntroTitle>
+        <PageIntroDescription>Pilih booth, lihat audiens event, dan ajukan aplikasi tenant bisnis Anda.</PageIntroDescription>
+      </PageIntro>
 
       {ops.length === 0 && (
         <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/80 p-6 text-center text-xs text-zinc-400 font-gemini">
@@ -272,17 +331,17 @@ export function AdminPanel() {
 
   return (
     <div className="space-y-4 font-gemini">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-4.5">
-        <div>
-          <div className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.03] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
-            Platform Governance
+      <PageIntro testId="admin-page-intro">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow>Platform Governance</PageIntroEyebrow>
+            <PageIntroTitle>Admin Panel</PageIntroTitle>
           </div>
-          <h1 className="editorial text-xl sm:text-2xl text-white">Admin Panel</h1>
+          <button data-testid="admin-reseed-btn" onClick={reseed} className="shrink-0 rounded-lg border border-white/[0.12] bg-white/[0.03] px-2.5 py-1 text-[11px] font-semibold text-white transition-all hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.98]">
+            Reset data demo
+          </button>
         </div>
-        <button data-testid="admin-reseed-btn" onClick={reseed} className="rounded-xl border border-white/[0.12] bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:border-white/30 hover:bg-white/[0.06] active:scale-[0.98]">
-          Reset data demo
-        </button>
-      </div>
+      </PageIntro>
 
       <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-6" data-testid="admin-metrics">
         {Object.entries(m).map(([k, v]) => (
@@ -414,21 +473,19 @@ export function OpportunitiesDealsPortal() {
 
   return (
     <div className="space-y-4 font-gemini" data-testid="opportunities-deals-page">
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-4.5 shadow-sm">
-        <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-          Commercial Operations
+      <PageIntro testId="opportunities-page-intro">
+        <div className="min-w-0">
+          <PageIntroEyebrow>Commercial Operations</PageIntroEyebrow>
+          <PageIntroTitle>Opportunities & Commercial Deals</PageIntroTitle>
+          <PageIntroDescription>
+            Kelola penawaran kemitraan, booking talent, RFQ vendor, dan milestone pembayaran kontrak.
+          </PageIntroDescription>
         </div>
-        <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
-          Opportunities & Commercial Deals
-        </h1>
-        <p className="mt-1 text-xs text-zinc-400">
-          Kelola penawaran kemitraan, booking talent, RFQ vendor, dan milestone pembayaran kontrak.
-        </p>
 
-        <div className="mt-3.5 flex gap-2 border-t border-white/[0.06] pt-3">
+        <div className="flex gap-1.5 border-t border-white/[0.06] pt-1.5">
           <button
             onClick={() => setTab("opportunities")}
-            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
               tab === "opportunities"
                 ? "bg-white text-black font-bold shadow-sm"
                 : "border border-white/[0.1] bg-white/[0.02] text-zinc-400 hover:text-white"
@@ -438,7 +495,7 @@ export function OpportunitiesDealsPortal() {
           </button>
           <button
             onClick={() => setTab("deals")}
-            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
               tab === "deals"
                 ? "bg-white text-black font-bold shadow-sm"
                 : "border border-white/[0.1] bg-white/[0.02] text-zinc-400 hover:text-white"
@@ -447,7 +504,7 @@ export function OpportunitiesDealsPortal() {
             Commercial Deals ({deals.length})
           </button>
         </div>
-      </div>
+      </PageIntro>
 
       {loading ? (
         <div className="p-8 text-center text-xs text-zinc-400 font-gemini">Memuat data peluang & deals…</div>
@@ -561,4 +618,3 @@ export function OpportunitiesDealsPortal() {
     </div>
   );
 }
-

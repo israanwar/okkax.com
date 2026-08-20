@@ -16,7 +16,7 @@ const READINESS_LABEL = {
   accessibility_info_available: "Accessibility Information Available",
 };
 
-export default function PublicEvent() {
+export default function PublicEvent({ embedded = false }) {
   const { id } = useParams();
   const nav = useNavigate();
   const { user } = useAuth();
@@ -29,18 +29,18 @@ export default function PublicEvent() {
 
   if (err)
     return (
-      <div className="min-h-screen bg-[var(--okx-bg)]">
-        <PublicNav />
+      <div className={embedded ? "bg-[var(--okx-bg)]" : "min-h-screen bg-[var(--okx-bg)]"}>
+        {!embedded && <PublicNav />}
         <div className="mx-auto max-w-3xl px-4 py-24 text-center">
           <h1 className="text-xl font-semibold">{err}</h1>
-          <Link to="/discover" className="mt-4 inline-block accent-text underline">Kembali ke Discover</Link>
+          <Link to={embedded ? "/app/discover" : "/discover"} className="mt-4 inline-block accent-text underline">Kembali ke Discover</Link>
         </div>
       </div>
     );
   if (!d)
     return (
-      <div className="min-h-screen bg-[var(--okx-bg)]">
-        <PublicNav />
+      <div className={embedded ? "bg-[var(--okx-bg)]" : "min-h-screen bg-[var(--okx-bg)]"}>
+        {!embedded && <PublicNav />}
         <div className="mx-auto max-w-3xl px-4 py-24 text-center text-xs text-zinc-400 font-gemini">
           Memuat data event…
         </div>
@@ -51,12 +51,12 @@ export default function PublicEvent() {
 
   const buy = (tierId) => {
     if (!user) return nav(`/login?next=/events/${ev.id}`);
-    nav(`/checkout/${ev.id}/${tierId}`);
+    nav(`${embedded ? "/app/checkout" : "/checkout"}/${ev.id}/${tierId}`);
   };
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
-      <PublicNav />
+    <div className={embedded ? "bg-[var(--okx-bg)]" : "min-h-screen bg-[var(--okx-bg)]"} data-testid={embedded ? "audience-event-detail" : "public-event-detail"}>
+      {!embedded && <PublicNav />}
       <div className="relative border-b border-[var(--okx-border)]">
         <img src={imageFor(ev)} alt={ev.name} className="h-64 w-full object-cover opacity-40 sm:h-80" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a99] to-transparent" />
@@ -277,7 +277,7 @@ export default function PublicEvent() {
           )}
         </aside>
       </div>
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 }

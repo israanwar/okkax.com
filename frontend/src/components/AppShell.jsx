@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Link, NavLink, useNavigate, Navigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate, Navigate } from "react-router-dom";
 import {
   LayoutDashboard, Wand2, Network, Mic2, Building2, Wrench, HardHat, Handshake, Store, Ticket,
   Wallet, Activity, LineChart, Bell, Menu, X, ShieldCheck, LogOut, ScanLine, ListOrdered, Settings,
@@ -17,7 +17,7 @@ import { api } from "@/lib/api";
 export const NAV = {
   organizer: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/copilot", "OKKAX Copilot", Sparkles],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/ticketing", "Ticketing", Ticket],
     ["/app/operations", "Live Operations", ScanLine],
@@ -27,7 +27,6 @@ export const NAV = {
   ],
   promoter: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/ticketing", "Ticketing", Ticket],
     ["/app/operations", "Live Operations", ScanLine],
@@ -37,7 +36,7 @@ export const NAV = {
   ],
   talent: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/copilot", "OKKAX Copilot", Sparkles],
     ["/app/opportunities", "Booking Requests", Handshake],
     ["/app/me", "My Bookings & Rider", Mic2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -46,7 +45,7 @@ export const NAV = {
   ],
   workforce: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/copilot", "OKKAX Copilot", Sparkles],
     ["/app/jobs", "Available Jobs", HardHat],
     ["/app/me", "My Assignments", ListOrdered],
     ["/app/calendar", "Shifts & Schedule", CalendarDays],
@@ -55,7 +54,7 @@ export const NAV = {
   ],
   vendor: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/copilot", "OKKAX Copilot", Sparkles],
     ["/app/opportunities", "RFQ & Requests", Wrench],
     ["/app/me", "Projects & Deliverables", ListOrdered],
     ["/app/network", "Services & Inventory", Globe2],
@@ -65,7 +64,7 @@ export const NAV = {
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/copilot", "OKKAX Copilot", Sparkles],
     ["/discover", "Discover Events", Globe2],
     ["/app/sponsor", "Sponsorship Inventory", Handshake],
     ["/app/me", "Activations & Portfolio", Activity],
@@ -74,7 +73,7 @@ export const NAV = {
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/copilot", "OKKAX Copilot", Sparkles],
     ["/discover", "Discover Events", Globe2],
     ["/app/tenant", "Applications & Booths", Store],
     ["/app/calendar", "Event Schedule", CalendarDays],
@@ -82,17 +81,17 @@ export const NAV = {
     ["/app/settings", "Settings", Settings],
   ],
   audience: [
-    ["/discover", "Discover Events", Globe2],
+    ["/app", "Overview", LayoutDashboard],
+    ["/app/discover", "Discover Events", Globe2],
     ["/app/tickets", "My Tickets", Ticket],
-    ["/app/orders", "Orders & Refunds", Wallet],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
+    ["/app/orders", "Orders & Payments", Wallet],
     ["/app/settings", "Settings", Settings],
   ],
   admin: [
+    ["/app", "Overview", LayoutDashboard],
     ["/app/admin", "Admin Panel", ShieldCheck],
     ["/app/admin/control", "Control Plane", Activity],
     ["/app/admin/finance", "Pergerakan Dana", Wallet],
-    ["/app/intelligence", "OKKAX Intelligence", Sparkles],
     ["/app/settings", "Settings", Settings],
   ],
 };
@@ -115,7 +114,7 @@ export const EVENT_TABS = [
 ];
 
 export default function AppShell({ children }) {
-  const { user, org, loading, logout, hasRole, activeWorkspace } = useAuth();
+  const { user, org, loading, logout, hasRole, activeWorkspace, effectiveRole } = useAuth();
   const [open, setOpen] = useState(false);
   const [notif, setNotif] = useState({ items: [], unread: 0, total: 0 });
   const [showNotif, setShowNotif] = useState(false);
@@ -124,14 +123,18 @@ export default function AppShell({ children }) {
   const [actionCount, setActionCount] = useState(0);
   const notifBtnRef = useRef(null);
   const nav = useNavigate();
+  const location = useLocation();
 
   const userId = user?.id;
+  const isAudienceWorkspace = effectiveRole === "audience";
   const fetchNotifs = useCallback(async () => {
     if (!userId) return;
     try {
       const [{ data: notifData }, { data: actionData }] = await Promise.all([
         api.get("/notifications?limit=12").catch(() => ({ data: { items: [], unread: 0, total: 0 } })),
-        api.get("/overview/actions").catch(() => ({ data: { items: [] } })),
+        isAudienceWorkspace
+          ? Promise.resolve({ data: { items: [] } })
+          : api.get("/overview/actions").catch(() => ({ data: { items: [] } })),
       ]);
       setNotif(notifData || { items: [], unread: 0, total: 0 });
       const pending = (actionData?.items || []).filter(
@@ -141,7 +144,7 @@ export default function AppShell({ children }) {
     } catch {
       // Ignore
     }
-  }, [userId]);
+  }, [isAudienceWorkspace, userId]);
 
   useEffect(() => {
     fetchNotifs();
@@ -152,8 +155,25 @@ export default function AppShell({ children }) {
 
   const currentRole = (activeWorkspace?.role || user?.role || (user?.roles && user.roles[0]) || "audience").toLowerCase();
 
+  const audiencePathAllowed =
+    [
+      "/app",
+      "/app/discover",
+      "/app/tickets",
+      "/app/orders",
+      "/app/settings",
+      "/app/payment/success",
+      "/app/payment/cancel",
+    ].includes(location.pathname) ||
+    /^\/app\/discover\/events\/[^/]+\/?$/.test(location.pathname) ||
+    /^\/app\/checkout\/[^/]+\/[^/]+\/?$/.test(location.pathname);
+
+  if (isAudienceWorkspace && !audiencePathAllowed) {
+    return <Navigate to="/app" replace />;
+  }
+
   let links = NAV[currentRole] || NAV.audience;
-  if (user.roles?.includes("super_admin") || user.roles?.includes("platform_admin")) {
+  if (["admin", "super_admin", "platform_admin"].includes(currentRole) || user.roles?.includes("super_admin") || user.roles?.includes("platform_admin")) {
     links = NAV.admin;
   } else if (["organizer", "event_organizer", "supervisor", "finance_approver"].includes(currentRole)) {
     links = NAV.organizer;
@@ -163,7 +183,7 @@ export default function AppShell({ children }) {
     links = NAV.talent;
   } else if (["workforce", "worker", "crew"].includes(currentRole)) {
     links = NAV.workforce;
-  } else if (["vendor", "supplier", "venue_manager"].includes(currentRole)) {
+  } else if (["vendor", "supplier", "venue", "venue_manager"].includes(currentRole)) {
     links = NAV.vendor;
   } else if (currentRole === "sponsor") {
     links = NAV.sponsor;
@@ -231,22 +251,22 @@ export default function AppShell({ children }) {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07070a] font-gemini">
+    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[#07070a] font-gemini">
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
         <div className="flex items-center justify-between px-3.5 py-2 sm:px-5">
           <div className="flex items-center gap-2.5">
             <button data-testid="shell-drawer-toggle" onClick={() => setOpen(true)} className="p-1.5 text-zinc-300 lg:hidden rounded-lg hover:bg-white/[0.05]" aria-label="Buka menu">
               <Menu size={18} />
             </button>
-            <Logo small />
+            <Logo small to="/app" />
             <span className="hidden text-[11px] text-zinc-400 sm:block font-gemini-mono">Live Event Operating Network</span>
           </div>
           <div className="flex items-center gap-2">
             {/* Permission-Gated Professional Messaging */}
-            <MessagingDrawer />
+            {!isAudienceWorkspace && <MessagingDrawer />}
 
             {/* Universal Action Center Trigger */}
-            <div className="relative">
+            {!isAudienceWorkspace && <div className="relative">
               <button
                 data-testid="action-center-btn"
                 onClick={() => setShowActionCenter(true)}
@@ -268,15 +288,15 @@ export default function AppShell({ children }) {
                   </span>
                 )}
               </button>
-            </div>
+            </div>}
 
-            <ActionCenterModal
+            {!isAudienceWorkspace && <ActionCenterModal
               isOpen={showActionCenter}
               onClose={() => {
                 setShowActionCenter(false);
                 fetchNotifs();
               }}
-            />
+            />}
 
             {/* Notification Bell Trigger */}
             <div className="relative">
@@ -341,8 +361,8 @@ export default function AppShell({ children }) {
         </div>
       </header>
 
-      <div className="pt-[56px] flex min-h-screen flex-1">
-        <aside className="sticky top-[56px] hidden h-[calc(100vh-56px)] w-56 shrink-0 overflow-y-auto border-r border-white/[0.08] bg-[#060609]/70 py-3.5 lg:block">
+      <div className="flex min-h-0 flex-1 overflow-hidden pt-[56px]">
+        <aside className="hidden h-full w-56 shrink-0 overflow-y-auto overscroll-contain border-r border-white/[0.08] bg-[#060609]/70 py-3.5 lg:block">
           <SidebarLinks />
           <div className="mt-6 px-3 text-[10px] leading-relaxed text-zinc-400 font-gemini-mono">
             Mode demo kompetisi. Pembayaran sandbox, tanpa uang nyata.
@@ -352,18 +372,20 @@ export default function AppShell({ children }) {
         {open && (
           <div className="fixed inset-0 z-50 lg:hidden font-gemini">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setOpen(false)} />
-            <div className="absolute left-0 top-0 h-full w-64 border-r border-white/[0.1] bg-[#09090f] p-4 shadow-2xl">
+            <div className="absolute left-0 top-0 flex h-full w-64 min-h-0 flex-col overflow-hidden border-r border-white/[0.1] bg-[#09090f] p-4 shadow-2xl">
               <div className="mb-4 flex items-center justify-between">
-                <Logo small />
+                <Logo small to="/app" />
                 <button onClick={() => setOpen(false)} aria-label="Tutup menu" className="p-1 text-zinc-400 hover:text-white"><X size={16} /></button>
               </div>
-              <SidebarLinks onClick={() => setOpen(false)} />
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <SidebarLinks onClick={() => setOpen(false)} />
+              </div>
             </div>
           </div>
         )}
 
         <main
-          className="okx-scroll-pane min-w-0 flex-1 px-3.5 py-4 sm:px-5 sm:py-4.5 pb-16"
+          className="okx-scroll-pane min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3.5 py-4 pb-16 sm:px-5 sm:py-4.5"
         >
           {children}
         </main>

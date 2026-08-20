@@ -117,9 +117,11 @@ async def fulfill_stripe_order(order_id: str, session_id: str) -> Dict[str, Any]
         await db.tickets.insert_one(dict(t))
         tickets.append(t)
     await notify(order["user_id"], "Pembayaran kartu (Stripe test mode) berhasil",
-                 f"{order['quantity']} tiket {tier['name']} untuk {ev['name']} telah diterbitkan.", "success", ev["id"])
+                 f"{order['quantity']} tiket {tier['name']} untuk {ev['name']} telah diterbitkan.", "success", ev["id"],
+                 notif_type="payment", destination="/app/orders", event_name=ev["name"], notification_role="audience")
     await notify(ev["owner_user_id"], "Penjualan tiket baru",
-                 f"{order['quantity']} tiket {tier['name']} terjual via kartu (Stripe test mode).", "info", ev["id"])
+                 f"{order['quantity']} tiket {tier['name']} terjual via kartu (Stripe test mode).", "info", ev["id"],
+                 notif_type="ticket_sale", destination=f"/app/events/{ev['id']}/tickets", event_name=ev["name"], notification_role="organizer")
     return {"fulfilled": True, "tickets": tickets}
 
 
@@ -695,4 +697,3 @@ async def payment_schedule_pdf(event_id: str, user: dict = Depends(get_current_u
 
     await audit(ev["id"], user, "document.payment_schedule")
     return _pdf_response_from_bytes(pdf_bytes, f"OKKAX-Payment-Schedule-{ev['event_code']}.pdf")
-

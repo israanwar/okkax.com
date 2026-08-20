@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { api, fetchCached } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { canAccessMemberCopilot } from "@/lib/memberRoles";
 
 // -----------------------------------------------------------------------------
 // Official OKKAX Brand Mark (Identical to Favicon / Brand Identity)
@@ -236,7 +237,7 @@ export default function OkkaxChat() {
     {
       role: "assistant",
       content:
-        "### Halo! Saya OKKAX Copilot — Principal Event Intelligence & Copilot Resmi OKKAX.\n\nSaya menguasai seluruh aspek operasional live event, kalkulasi budget, arsitektur Event Graph, monetisasi sponsor/tenant, hingga SOP gate scanner di 15+ kota Indonesia.\n\nPilih modul skenario di atas atau tanyakan langsung rencana acara Anda.",
+        "### Halo! Saya Okkax Copilot, asisten operasional resmi OKKAX.\n\nSaya menguasai seluruh aspek operasional live event, kalkulasi budget, arsitektur Event Graph, monetisasi sponsor/tenant, hingga SOP gate scanner di 15+ kota Indonesia.\n\nPilih modul skenario di atas atau tanyakan langsung rencana acara Anda.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -247,7 +248,7 @@ export default function OkkaxChat() {
     "Bagaimana pembagian benefit untuk Presenting Sponsor?",
   ]);
 
-  const { user } = useAuth();
+  const { user, effectiveRole, loading: authLoading } = useAuth();
   const location = useLocation();
   const chatEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -260,7 +261,9 @@ export default function OkkaxChat() {
   }, [location.search]);
 
   const userRole = user?.roles?.[0] || "audience";
+  const memberCopilotAllowed = !authLoading && (!user || canAccessMemberCopilot(effectiveRole));
   useEffect(() => {
+    if (!memberCopilotAllowed) return;
     fetchCached(`/okkax/suggestions?route=${encodeURIComponent(location.pathname)}&role=${userRole}`, 300_000)
       .then((data) => {
         if (data?.suggestions?.length > 0) {
@@ -268,7 +271,7 @@ export default function OkkaxChat() {
         }
       })
       .catch(() => {});
-  }, [location.pathname, userRole]);
+  }, [location.pathname, memberCopilotAllowed, userRole]);
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
@@ -293,7 +296,7 @@ export default function OkkaxChat() {
     try {
       const payload = {
         message: query.trim(),
-        history: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+        history: messages.map((m) => ({ role: m.role, content: m.content })),
         current_route: location.pathname,
         role: user?.roles?.[0] || "organizer",
       };
@@ -349,6 +352,8 @@ export default function OkkaxChat() {
       },
     ]);
   };
+
+  if (!memberCopilotAllowed) return null;
 
   return (
     <>

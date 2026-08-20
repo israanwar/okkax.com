@@ -281,7 +281,7 @@ function EventStudioProduct() {
                     <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                       <div>
                         <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
-                          03 · OKKAX INTELLIGENCE
+                          03 · OKKAX COPILOT
                         </div>
                         {!resolved ? (
                           <>
@@ -741,7 +741,7 @@ function NetworkProduct() {
 }
 
 // ============================================================================
-// OKKAX INTELLIGENCE  (deterministic canonical event state)
+// OKKAX COPILOT (deterministic canonical event state)
 // ============================================================================
 
 const INTEL_TIERS = [
@@ -829,7 +829,7 @@ function IntelligenceProduct() {
   const tier = INTEL_TIERS.find((t) => t.id === active) || INTEL_TIERS[0];
 
   return (
-    <ProductShell testid="intelligence-product" title="Grounded on state. Not chat." tagline="OKKAX INTELLIGENCE" lead="Intelligence terikat pada state Event Graph yang berwenang. Rekomendasi memiliki evidence, dependency path, impact, dan action yang otorisasinya tetap melalui domain service." interactive>
+    <ProductShell testid="intelligence-product" title="Grounded on state. Not chat." tagline="OKKAX COPILOT" lead="Okkax Copilot terikat pada state Event Graph yang berwenang. Rekomendasi memiliki evidence, dependency path, impact, dan action yang otorisasinya tetap melalui domain service." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <SpotlightCard className="overflow-hidden">
           {/* Anchored event ID from canonical demo backend */}
@@ -1407,7 +1407,8 @@ const PRODUCT_ROUTES = {
   yoona:               () => <Navigate to="/okkax" replace />,
   okkaji:              () => <Navigate to="/okkax" replace />,
   network:             NetworkProduct,
-  intelligence:        IntelligenceProduct,
+  copilot:             IntelligenceProduct,
+  intelligence:        () => <Navigate to="/products/copilot" replace />,
   "ticket-studio":     TicketStudioProduct,
   livepass:            LivePassProduct,
   "protected-payment": ProtectedPaymentProduct,

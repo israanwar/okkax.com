@@ -28,6 +28,23 @@ logger = logging.getLogger("okkax.member_os_services")
 services_router = APIRouter(prefix="/api")
 
 
+def _is_personal_audience(user: Optional[Dict[str, Any]]) -> bool:
+    if not user:
+        return False
+    workspace = user.get("_workspace_ctx") or {}
+    if workspace.get("kind") == "personal":
+        return True
+    return set(user.get("roles") or []) == {"audience"}
+
+
+def _assert_professional_wallet_access(user: dict) -> None:
+    if _is_personal_audience(user):
+        raise HTTPException(
+            status_code=403,
+            detail="Wallet dan payout hanya tersedia di workspace profesional.",
+        )
+
+
 # =============================================================================
 # PYDANTIC SCHEMAS
 # =============================================================================
@@ -487,6 +504,7 @@ async def get_personal_wallet(user: dict = Depends(get_current_user)):
     Menghitung saldo dompet personal dari ledger mutasi sebagai single source of truth.
     Mencegah saldo divergen dari catatan pembukuan transaksi.
     """
+    _assert_professional_wallet_access(user)
     rec = await reconcile_user_ledger(user["id"], user)
 
     method = await db.wallet_payout_methods.find_one({"user_id": user["id"]}, {"_id": 0})
@@ -515,6 +533,7 @@ async def get_personal_wallet(user: dict = Depends(get_current_user)):
 @services_router.get("/wallet/transactions")
 async def get_wallet_transactions(user: dict = Depends(get_current_user)):
     """Riwayat mutasi transaksi kredit & debet dompet personal dari ledger."""
+    _assert_professional_wallet_access(user)
     await reconcile_user_ledger(user["id"], user)
     txs = await db.wallet_transactions.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"items": [clean(t) for t in txs], "total": len(txs)}
@@ -523,6 +542,7 @@ async def get_wallet_transactions(user: dict = Depends(get_current_user)):
 @services_router.get("/wallet/payouts")
 async def get_wallet_payouts(user: dict = Depends(get_current_user)):
     """Riwayat penarikan dana ke rekening bank / e-wallet."""
+    _assert_professional_wallet_access(user)
     payouts = await db.wallet_payouts.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return {"items": [clean(p) for p in payouts], "total": len(payouts)}
 
@@ -538,6 +558,7 @@ async def request_wallet_withdraw(
     - Saldo dihitung langsung dari derived ledger balance
     - Penarikan langsung mendebit ledger secara atomik
     """
+    _assert_professional_wallet_access(user)
     rec = await reconcile_user_ledger(user["id"], user)
     if body.amount > rec["available_balance"]:
         raise HTTPException(
@@ -594,6 +615,7 @@ async def request_wallet_withdraw(
 @services_router.get("/wallet/payout-method")
 async def get_payout_method(user: dict = Depends(get_current_user)):
     """Mengambil informasi rekening pencairan dana."""
+    _assert_professional_wallet_access(user)
     method = await db.wallet_payout_methods.find_one({"user_id": user["id"]}, {"_id": 0})
     if not method:
         method = {
@@ -615,6 +637,7 @@ async def update_payout_method(
     Update rekening pencairan dana personal.
     Strict Authorization: Hanya dapat diubah oleh pemilik akun (authorized principal).
     """
+    _assert_professional_wallet_access(user)
     doc = {
         "user_id": user["id"],
         "bank_name": body.bank_name,
@@ -634,17 +657,19 @@ async def update_payout_method(
 # =============================================================================
 
 @services_router.get("/settings/me")
-async def get_settings_me(user: dict = Depends(get_current_user)):
+async def get_settings_me(request: Request, user: dict = Depends(get_current_user)):
     """Mengambil seluruh data preferensi, profil, organisasi, dan keamanan akun."""
-    profile = await db.user_profiles.find_one({"user_id": user["id"]}, {"_id": 0}) or {
+    is_audience = _is_personal_audience(user)
+    stored_profile = await db.user_profiles.find_one({"user_id": user["id"]}, {"_id": 0})
+    profile = stored_profile or ({} if is_audience else {
         "bio": "Profesional live event pada jaringan ekosistem OKKAX.",
         "phone": "+62 812-3456-7890",
         "city": "Makassar",
         "genre_or_skills": ["Event Management", "Audio Engineering", "Production"],
         "portfolio_links": ["https://instagram.com/okkax.id"]
-    }
+    })
 
-    org = await db.user_organizations.find_one({"user_id": user["id"]}, {"_id": 0}) or {
+    org = None if is_audience else await db.user_organizations.find_one({"user_id": user["id"]}, {"_id": 0}) or {
         "org_name": "Aruna Nusantara Productions",
         "legal_name": "PT Aruna Nusantara Berdaya",
         "tax_id": "01.234.567.8-901.000",
@@ -659,18 +684,33 @@ async def get_settings_me(user: dict = Depends(get_current_user)):
         "commercial_updates": True
     }
 
-    method = await get_payout_method(user)
+    method = None if is_audience else await get_payout_method(user)
 
-    sessions = [
-        {
-            "id": "sess-cur-1",
-            "device": "macOS — Chrome 128",
-            "ip": "180.252.12.89",
-            "location": "Makassar, ID",
-            "last_active": "Saat ini",
-            "is_current": True
-        }
-    ]
+    if is_audience:
+        current_session_id = getattr(request.state, "session_id", None)
+        session_rows = await db.sessions.find(
+            {"user_id": user["id"], "revoked_at": None}, {"_id": 0}
+        ).sort("issued_at", -1).to_list(20)
+        sessions = [
+            {
+                "id": session.get("id"),
+                "device": "Sesi browser",
+                "last_active": session.get("issued_at"),
+                "is_current": session.get("id") == current_session_id,
+            }
+            for session in session_rows
+        ]
+    else:
+        sessions = [
+            {
+                "id": "sess-cur-1",
+                "device": "macOS — Chrome 128",
+                "ip": "180.252.12.89",
+                "location": "Makassar, ID",
+                "last_active": "Saat ini",
+                "is_current": True
+            }
+        ]
 
     return {
         "user": clean(user),
@@ -707,6 +747,12 @@ async def update_organization(
     - Audience role CANNOT edit organization data (403)
     - Non-admin members cannot hijack/edit another user's or organization's legal records (403)
     """
+    if _is_personal_audience(user):
+        raise HTTPException(
+            status_code=403,
+            detail="Akses ditolak: workspace Audience tidak dapat mengelola profil organisasi.",
+        )
+
     user_roles = set(user.get("roles") or ["member"])
     org_capable_roles = {"organizer", "promoter", "vendor", "sponsor", "tenant", "admin"}
 
@@ -740,7 +786,7 @@ async def update_notifications(
     """Update communication preferences."""
     await db.user_notification_settings.update_one(
         {"user_id": user["id"]},
-        {"$set": {**body.model_dump(), "updated_at": now_iso()}},
+        {"$set": {**body.model_dump(exclude_unset=True), "updated_at": now_iso()}},
         upsert=True
     )
     return {"status": "success", "message": "Preferensi notifikasi disimpan"}

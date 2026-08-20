@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { api, apiError, idr } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 
 export default function WorkforceJobsPage() {
   const [jobs, setJobs] = useState([]);
@@ -65,26 +66,21 @@ export default function WorkforceJobsPage() {
   };
 
   return (
-    <div className="space-y-5 font-gemini" data-testid="workforce-jobs-page">
-      {/* Header Banner */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-              Workforce Opportunity Board
-            </div>
-            <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
-              Bursa Lowongan Kru & Shift Event
-            </h1>
-            <p className="mt-1 text-xs text-zinc-400">
+    <div className="space-y-4 font-gemini" data-testid="workforce-jobs-page">
+      <PageIntro testId="workforce-jobs-page-intro">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow>Workforce Opportunity Board</PageIntroEyebrow>
+            <PageIntroTitle>Bursa Lowongan Kru & Shift Event</PageIntroTitle>
+            <PageIntroDescription>
               Cari dan lamar posisi teknisi audio, stage hand, liaison officer, lighting operator, dan kru festival live.
-            </p>
+            </PageIntroDescription>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               onClick={() => setTab("open_jobs")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
                 tab === "open_jobs"
                   ? "bg-white text-black font-bold shadow-sm"
                   : "border border-white/[0.1] bg-white/[0.02] text-zinc-400 hover:text-white"
@@ -95,7 +91,7 @@ export default function WorkforceJobsPage() {
             </button>
             <button
               onClick={() => setTab("my_applications")}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all ${
                 tab === "my_applications"
                   ? "bg-white text-black font-bold shadow-sm"
                   : "border border-white/[0.1] bg-white/[0.02] text-zinc-400 hover:text-white"
@@ -106,7 +102,7 @@ export default function WorkforceJobsPage() {
             </button>
           </div>
         </div>
-      </div>
+      </PageIntro>
 
       {loading ? (
         <div className="p-12 text-center text-xs text-zinc-400 font-gemini">Memuat daftar lowongan pekerjaan…</div>

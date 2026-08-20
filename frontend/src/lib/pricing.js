@@ -351,41 +351,6 @@ export const COMPARISON_GROUPS = [
     ],
   },
   {
-    title: "OKKAX Intelligence",
-    rows: [
-      {
-        capability: "Depth",
-        organizer: { free: "Observe", pro: "Understand", max: "Optimize" },
-        talent:    { free: "Observe", pro: "Understand", max: "Optimize" },
-        venue:     { free: "Observe", pro: "Understand", max: "Optimize" },
-        vendor:    { free: "Observe", pro: "Understand", max: "Optimize" },
-        workforce: { free: "Observe", pro: "Understand", max: "Optimize" },
-        sponsor:   { free: "Observe", pro: "Understand", max: "Optimize" },
-        tenant:    { free: "Observe", pro: "Understand", max: "Optimize" },
-      },
-      {
-        capability: "Root cause and recommendations",
-        organizer: { free: "-", pro: "Included", max: "Advanced sequencing" },
-        talent:    { free: "-", pro: "Included", max: "Advanced sequencing" },
-        venue:     { free: "-", pro: "Included", max: "Advanced sequencing" },
-        vendor:    { free: "-", pro: "Included", max: "Advanced sequencing" },
-        workforce: { free: "-", pro: "Included", max: "Advanced sequencing" },
-        sponsor:   { free: "-", pro: "Included", max: "Advanced sequencing" },
-        tenant:    { free: "-", pro: "Included", max: "Advanced sequencing" },
-      },
-      {
-        capability: "Forecasting and scenario analysis",
-        organizer: { free: "-", pro: "-", max: "Included" },
-        talent:    { free: "-", pro: "-", max: "Included" },
-        venue:     { free: "-", pro: "-", max: "Included" },
-        vendor:    { free: "-", pro: "-", max: "Included" },
-        workforce: { free: "-", pro: "-", max: "Included" },
-        sponsor:   { free: "-", pro: "-", max: "Included" },
-        tenant:    { free: "-", pro: "-", max: "Included" },
-      },
-    ],
-  },
-  {
     title: "Analytics, automation, and collaboration",
     rows: [
       {
@@ -421,6 +386,29 @@ export const COMPARISON_GROUPS = [
     ],
   },
 ];
+
+// Account roles carry aliases (e.g. "talent_management", "event_organizer")
+// that this table's keys don't use directly. Mirrors the backend's
+// subscriptions.py _ROLE_ALIASES so a member's effective role always
+// resolves to the same pricing-table key on both sides.
+const ROLE_PRICING_ALIASES = {
+  event_organizer: "organizer",
+  supervisor: "organizer",
+  finance_approver: "organizer",
+  promoter: "organizer",
+  talent_management: "talent",
+  artist: "talent",
+  band: "talent",
+  worker: "workforce",
+  crew: "workforce",
+  supplier: "vendor",
+  venue_manager: "venue",
+};
+
+export function normalizeRoleForPricing(role) {
+  const key = String(role || "").toLowerCase();
+  return ROLE_PRICING_ALIASES[key] || key;
+}
 
 // Formatting helper. Indonesian locale gives dots as thousands separator.
 export function formatIDR(amount) {

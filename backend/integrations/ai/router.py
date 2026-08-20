@@ -13,6 +13,8 @@ from .anthropic_provider import AnthropicProvider
 from .base import BaseLLMProvider
 from .gemini_provider import GeminiProvider
 from .openai_provider import OpenAIProvider
+from .openrouter_provider import OpenRouterProvider
+from .qwen_provider import QwenProvider
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,8 @@ class LLMRouter:
             "gemini": GeminiProvider(),
             "openai": OpenAIProvider(),
             "anthropic": AnthropicProvider(),
+            "openrouter": OpenRouterProvider(),
+            "qwen": QwenProvider(),
         }
 
         # Register in central registry
@@ -121,6 +125,11 @@ class LLMRouter:
         system_instruction: Optional[str] = None,
         preferred_engine: Optional[str] = None,
         fallback_deterministic_fn: Optional[Callable[[], BaseModel]] = None,
+        model: Optional[str] = None,
+        temperature: float = 0.1,
+        top_p: float = 0.8,
+        max_tokens: int = 4000,
+        thinking_budget: Optional[int] = None,
         timeout_seconds: float = 30.0,
     ) -> ProviderResult:
         """Execute structured output generation through the fallback chain."""
@@ -133,12 +142,21 @@ class LLMRouter:
                 continue
 
             try:
-                res = await provider.generate_structured(
+                provider_kwargs = dict(
                     prompt=prompt,
                     schema_cls=schema_cls,
                     system_instruction=system_instruction,
                     timeout_seconds=timeout_seconds,
                 )
+                if provider.name == "gemini":
+                    provider_kwargs.update(
+                        model=model,
+                        temperature=temperature,
+                        top_p=top_p,
+                        max_tokens=max_tokens,
+                        thinking_budget=thinking_budget,
+                    )
+                res = await provider.generate_structured(**provider_kwargs)
                 registry.record_call(provider.name, res)
                 if res.provenance:
                     res.provenance["fallback_used"] = idx > 0

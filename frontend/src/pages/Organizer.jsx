@@ -26,6 +26,8 @@ import { api, apiError, compact, num, idr, DEMO_EVENT_ID } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
+import { canAccessMemberCopilot } from "@/lib/memberRoles";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 
 export function Overview() {
   const { user, hasRole, workspaceVersion, activeWorkspace, effectiveRole } = useAuth();
@@ -38,6 +40,7 @@ export function Overview() {
   const [resolvingId, setResolvingId] = useState(null);
 
   const role = (effectiveRole || "audience").toLowerCase();
+  const canUseCopilot = canAccessMemberCopilot(role);
 
   const organizerContext = hasRole(
     "organizer",
@@ -103,39 +106,36 @@ export function Overview() {
   );
 
   return (
-    <div className="space-y-6 font-gemini pb-8" data-testid="overview-page">
-      {/* SECTION 1: PRIMARY — COMMAND HEADER & PRIMARY ACTIONS */}
-      <section
-        className="okx-overview-command rounded-2xl border border-white/[0.08] p-4.5 sm:p-6 bg-[#0c0c12]/90 backdrop-blur-xl shadow-sm"
-        data-testid="overview-command-surface"
-      >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-1 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-              <Sparkles size={11} className="text-zinc-400" />
-              Member OS Universal Command
-            </div>
-            <h1 className="editorial text-2xl sm:text-3xl lg:text-4xl text-white font-bold tracking-tight">
-              Selamat datang, {user.name}
-            </h1>
-            <p className="mt-1.5 text-xs sm:text-[13px] text-zinc-400 leading-relaxed max-w-3xl">
-              Workspace aktif: <span className="font-semibold text-white uppercase font-gemini-mono tracking-wider">{activeWorkspace?.name || "Personal"}</span> · Peran: <span className="font-semibold text-white uppercase font-gemini-mono tracking-wider">{role}</span>.{" "}
-              Semua operasi terkoordinasi secara aman dan terhubung ke jaringan ekonomi OKKAX.
-            </p>
+    <div className="space-y-4 font-gemini pb-8" data-testid="overview-page">
+      <PageIntro testId="overview-page-intro">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow icon={Sparkles}>Member OS Universal Command</PageIntroEyebrow>
+            <PageIntroTitle>Selamat datang, {user.name}</PageIntroTitle>
+            <PageIntroDescription>
+              Workspace aktif: {activeWorkspace?.name || "Personal"} · Peran: {role}. Semua operasi terkoordinasi secara aman dan terhubung ke jaringan ekonomi OKKAX.
+            </PageIntroDescription>
           </div>
 
           <button
             onClick={fetchOverviewData}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-400 hover:text-white hover:border-white/20 transition-all cursor-pointer"
             title="Refresh Data"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
+      </PageIntro>
+
+      {/* SECTION: PRIMARY ACTIONS — content, not sticky */}
+      <section
+        className="rounded-2xl border border-white/[0.08] p-3.5 sm:p-4 bg-[#0c0c12]/80 backdrop-blur-xl shadow-sm"
+        data-testid="overview-command-surface"
+      >
 
         {/* Primary Action Buttons with clear visual weight */}
-        <div className="mt-5 flex flex-wrap items-center gap-2.5 border-t border-white/[0.06] pt-4">
+        <div className="flex flex-wrap items-center gap-2.5">
           {organizerContext && (
             <>
               <Link
@@ -284,7 +284,7 @@ export function Overview() {
           {role === "audience" && (
             <>
               <Link
-                to="/discover"
+                to="/app/discover"
                 className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-black shadow-sm hover:bg-zinc-200 transition-all"
               >
                 Jelajahi Event Terdekat
@@ -298,13 +298,15 @@ export function Overview() {
             </>
           )}
 
-          <Link
-            to="/app/intelligence"
-            data-testid="overview-intelligence-btn"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-white hover:border-white/30 hover:bg-white/[0.06] transition-all ml-auto"
-          >
-            <Sparkles size={13} className="text-zinc-400" /> OKKAX Intelligence
-          </Link>
+          {canUseCopilot && (
+            <Link
+              to="/app/copilot"
+              data-testid="overview-intelligence-btn"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-white hover:border-white/30 hover:bg-white/[0.06] transition-all ml-auto"
+            >
+              <Sparkles size={13} className="text-zinc-400" /> OKKAX Copilot
+            </Link>
+          )}
         </div>
       </section>
 

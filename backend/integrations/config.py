@@ -22,6 +22,7 @@ class IntegrationSettings:
         if s.strip()
     ]
     GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
+    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash").strip()
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "").strip()
     ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     EMERGENT_LLM_KEY: str = os.environ.get("EMERGENT_LLM_KEY", "").strip()
@@ -45,6 +46,11 @@ class IntegrationSettings:
     # Location (Google Maps / Places / Routes)
     MAPS_ENABLED: bool = _to_bool(os.environ.get("OKKAX_MAPS_ENABLED"), default=False)
     GOOGLE_MAPS_API_KEY: str = os.environ.get("GOOGLE_MAPS_API_KEY", "").strip()
+    SERPAPI_API_KEY: str = os.environ.get("SERPAPI_API_KEY", "").strip()
+    SERPAPI_MAPS_ENABLED: bool = _to_bool(
+        os.environ.get("OKKAX_SERPAPI_MAPS_ENABLED"),
+        default=bool(SERPAPI_API_KEY),
+    )
 
     # Weather (BMKG) - enabled by default as open data
     WEATHER_ENABLED: bool = _to_bool(os.environ.get("OKKAX_WEATHER_ENABLED"), default=True)

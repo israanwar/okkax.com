@@ -236,3 +236,47 @@ class TestAIRouterFailureMatrix:
             assert bp["source"] in ("rule_based_fallback", "gemini-2.5-flash")
 
         asyncio.run(_test())
+
+
+def test_gemini_ai_studio_generation_config_exact(monkeypatch):
+    from google import genai
+
+    captured = {}
+
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            captured.update(model=model, contents=contents, config=config)
+            return type("FakeResponse", (), {
+                "text": "OKKAX_GEMINI_CONFIG_TEST",
+                "model_version": model,
+            })()
+
+    class FakeClient:
+        def __init__(self, *, api_key):
+            assert api_key == "test-key-not-live"
+            self.models = FakeModels()
+
+    monkeypatch.setattr(genai, "Client", FakeClient)
+
+    async def _test():
+        provider = GeminiProvider(enabled=True, api_key="test-key-not-live")
+        result = await provider.generate_text(
+            prompt="config test",
+            system_instruction="EXACT SYSTEM",
+            model="gemini-2.5-flash",
+            temperature=0.2,
+            top_p=0.8,
+            max_tokens=2048,
+            thinking_budget=0,
+        )
+        assert result.ok is True
+        assert result.data["model"] == "gemini-2.5-flash"
+
+    asyncio.run(_test())
+    config = captured["config"]
+    assert captured["model"] == "gemini-2.5-flash"
+    assert config.system_instruction == "EXACT SYSTEM"
+    assert config.temperature == 0.2
+    assert config.top_p == 0.8
+    assert config.max_output_tokens == 2048
+    assert config.thinking_config.thinking_budget == 0

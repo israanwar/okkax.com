@@ -290,6 +290,7 @@ async def notify(
     destination: str = None,
     event_name: str = None,
     metadata: dict = None,
+    notification_role: str = None,
 ):
     doc = {
         "id": nid(),
@@ -305,6 +306,8 @@ async def notify(
         "metadata": metadata or {},
         "created_at": now_iso(),
     }
+    if notification_role:
+        doc["notification_role"] = notification_role
     await db.notifications.insert_one(doc)
     return doc
 

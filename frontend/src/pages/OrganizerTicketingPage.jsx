@@ -22,6 +22,7 @@ import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
 import OkxDropdown from "@/components/OkxDropdown";
 import { useAuth } from "@/context/AuthContext";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 
 const TICKET_TYPES = [
   "Regular",
@@ -168,26 +169,20 @@ export default function OrganizerTicketingPage() {
 
   return (
     <div className="okx-workspace-page space-y-4 font-gemini" data-testid="organizer-ticketing-page">
-      {/* Header Chrome */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-              <Ticket size={11} className="text-zinc-400" />
-              Ticketing & Inventory Engine
-            </div>
-            <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
-              Ticketing Management
-            </h1>
-            <p className="mt-1 text-xs text-zinc-400 max-w-2xl leading-relaxed">
+      <PageIntro testId="ticketing-page-intro">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow icon={Ticket}>Ticketing & Inventory Engine</PageIntroEyebrow>
+            <PageIntroTitle>Ticketing Management</PageIntroTitle>
+            <PageIntroDescription>
               Kelola kelas tiket, kuota kapasitas, monitoring penjualan real-time, order transaksi, dan kontrol gate access.
-            </p>
+            </PageIntroDescription>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-1.5">
             <button
               onClick={loadTicketingData}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
             >
               <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
               <span className="hidden sm:inline">Refresh</span>
@@ -196,27 +191,27 @@ export default function OrganizerTicketingPage() {
             <Link
               to="/app/validator"
               data-testid="ticketing-validator-link"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-1.5 text-xs font-semibold text-white hover:border-white/30 hover:bg-white/[0.06] transition-all"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.12] bg-white/[0.03] px-2.5 py-1 text-[11px] font-semibold text-white hover:border-white/30 hover:bg-white/[0.06] transition-all"
             >
-              <ScanLine size={13} /> Gate Scanner
+              <ScanLine size={12} /> Gate Scanner
             </Link>
 
             <button
               data-testid="create-tier-toggle-btn"
               onClick={() => setShowCreate((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-black shadow-sm transition-all hover:bg-zinc-200 active:scale-[0.98]"
             >
-              <Plus size={14} /> Tambah Tier
+              <Plus size={13} /> Tambah Tier
             </button>
           </div>
         </div>
 
         {/* Event Selector Strip */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/[0.06] pt-3.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+        <div className="flex flex-wrap items-center gap-2.5 border-t border-white/[0.06] pt-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-gemini-mono">
             Event Aktif:
           </span>
-          <div className="min-w-[280px]">
+          <div className="min-w-[240px] max-w-[280px]">
             <OkxDropdown
               items={eventOptions}
               value={selectedEventId}
@@ -225,12 +220,12 @@ export default function OrganizerTicketingPage() {
             />
           </div>
           {event && (
-            <div className="num text-[11px] text-zinc-400 font-gemini-mono">
+            <div className="num text-[10.5px] text-zinc-400 font-gemini-mono">
               {event.city} · {event.start_date} · Status: <span className="text-white font-bold">{event.status}</span>
             </div>
           )}
         </div>
-      </div>
+      </PageIntro>
 
       {/* KPI Overview Metrics */}
       <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4" data-testid="ticketing-kpis">

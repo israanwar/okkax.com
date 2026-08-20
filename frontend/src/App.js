@@ -2,12 +2,13 @@ import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import "@/App.css";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import AppShell from "@/components/AppShell";
 import Landing from "@/pages/Landing";
 import AuthCallback from "@/pages/AuthCallback";
 import OkkaxChat from "@/components/OkkaxChat";
 import GlobalScrollRestoration from "@/components/GlobalScrollRestoration";
+import { canAccessMemberCopilot, canAccessFinanceWorkspace } from "@/lib/memberRoles";
 
 // Route-level code-splitting for high-speed initial bundle & instant navigation
 const Discover = lazy(() => import("@/pages/Discover"));
@@ -16,11 +17,13 @@ const PublicEvent = lazy(() => import("@/pages/PublicEvent"));
 const ForPage = lazy(() => import("@/pages/ForPage"));
 const Demo = lazy(() => import("@/pages/Demo"));
 const Checkout = lazy(() => import("@/pages/Checkout"));
+const SubscribeCheckout = lazy(() => import("@/pages/SubscribeCheckout"));
 const Login = lazy(() => import("@/pages/Auth").then((m) => ({ default: m.Login })));
 const Register = lazy(() => import("@/pages/Auth").then((m) => ({ default: m.Register })));
 const ForgotPassword = lazy(() => import("@/pages/Auth").then((m) => ({ default: m.ForgotPassword })));
 const MyTickets = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.MyTickets })));
 const MyOrders = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.MyOrders })));
+const AudienceOverview = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.AudienceOverview })));
 const Validator = lazy(() => import("@/pages/Tickets").then((m) => ({ default: m.Validator })));
 const Overview = lazy(() => import("@/pages/Organizer").then((m) => ({ default: m.Overview })));
 const EventsList = lazy(() => import("@/pages/Organizer").then((m) => ({ default: m.EventsList })));
@@ -65,6 +68,33 @@ const RouteFallback = () => (
 
 const shell = (el) => <AppShell>{el}</AppShell>;
 
+function CopilotAccessRoute({ member = false }) {
+  const { user, loading, effectiveRole } = useAuth();
+  if (loading) return <RouteFallback />;
+  if (user && !canAccessMemberCopilot(effectiveRole)) {
+    return <Navigate to="/app" replace />;
+  }
+  return member ? shell(<IntelligencePage />) : <IntelligencePage />;
+}
+
+function FinanceAccessRoute() {
+  const { user, loading, effectiveRole } = useAuth();
+  if (loading) return <RouteFallback />;
+  if (user && !canAccessFinanceWorkspace(effectiveRole)) {
+    return <Navigate to="/app" replace />;
+  }
+  return shell(<OrganizerFinancePage />);
+}
+
+function WorkspaceOverviewRoute() {
+  const { user, loading, effectiveRole } = useAuth();
+  if (loading) return <RouteFallback />;
+  if (!user) return shell(<Overview />);
+  return effectiveRole === "audience"
+    ? shell(<AudienceOverview />)
+    : shell(<Overview />);
+}
+
 function RouterBody() {
   const location = useLocation();
   // Detect Google OAuth callback synchronously during render, before protected routes run.
@@ -74,11 +104,11 @@ function RouterBody() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/discover" element={<Discover />} />
-        <Route path="/intelligence" element={<IntelligencePage />} />
-        <Route path="/okkax" element={<IntelligencePage />} />
-        <Route path="/copilot" element={<IntelligencePage />} />
-        <Route path="/yoona" element={<IntelligencePage />} />
-        <Route path="/okkaji" element={<IntelligencePage />} />
+        <Route path="/intelligence" element={<CopilotAccessRoute />} />
+        <Route path="/okkax" element={<CopilotAccessRoute />} />
+        <Route path="/copilot" element={<CopilotAccessRoute />} />
+        <Route path="/yoona" element={<CopilotAccessRoute />} />
+        <Route path="/okkaji" element={<CopilotAccessRoute />} />
         <Route path="/peta" element={<EconomyMap />} />
         <Route path="/map" element={<EconomyMap />} />
         <Route path="/calendar" element={<PublicCalendar />} />
@@ -96,19 +126,25 @@ function RouterBody() {
         <Route path="/reset-password" element={<ForgotPassword />} />
         <Route path="/checkout/:eventId/:tierId" element={<Checkout />} />
         <Route path="/validator" element={shell(<Validator />)} />
-        <Route path="/app" element={shell(<Overview />)} />
-        <Route path="/app/intelligence" element={shell(<IntelligencePage />)} />
-        <Route path="/app/okkax" element={<Navigate to="/app/intelligence" replace />} />
-        <Route path="/app/copilot" element={<Navigate to="/app/intelligence" replace />} />
-        <Route path="/app/yoona" element={<Navigate to="/app/intelligence" replace />} />
-        <Route path="/app/okkaji" element={<Navigate to="/app/intelligence" replace />} />
+        <Route path="/app" element={<WorkspaceOverviewRoute />} />
+        <Route path="/app/discover" element={shell(<Discover embedded />)} />
+        <Route path="/app/discover/events/:id" element={shell(<PublicEvent embedded />)} />
+        <Route path="/app/checkout/:eventId/:tierId" element={shell(<Checkout embedded />)} />
+        <Route path="/app/subscribe/:plan" element={shell(<SubscribeCheckout />)} />
+        <Route path="/app/payment/success" element={shell(<PaymentSuccess embedded />)} />
+        <Route path="/app/payment/cancel" element={shell(<PaymentCancel embedded />)} />
+        <Route path="/app/intelligence" element={<Navigate to="/app/copilot" replace />} />
+        <Route path="/app/okkax" element={<Navigate to="/app/copilot" replace />} />
+        <Route path="/app/copilot" element={<CopilotAccessRoute member />} />
+        <Route path="/app/yoona" element={<Navigate to="/app/copilot" replace />} />
+        <Route path="/app/okkaji" element={<Navigate to="/app/copilot" replace />} />
         <Route path="/app/studio" element={shell(<EventStudio />)} />
         <Route path="/app/events" element={shell(<EventsList />)} />
         <Route path="/app/calendar" element={shell(<WorkspaceCalendar />)} />
         <Route path="/app/events/:eventId/:tab" element={shell(<EventWorkspace />)} />
         <Route path="/app/ticketing" element={shell(<OrganizerTicketingPage />)} />
         <Route path="/app/operations" element={shell(<LiveOperationsPage />)} />
-        <Route path="/app/finance" element={shell(<OrganizerFinancePage />)} />
+        <Route path="/app/finance" element={<FinanceAccessRoute />} />
         <Route path="/app/tickets" element={shell(<MyTickets />)} />
         <Route path="/app/orders" element={shell(<MyOrders />)} />
         <Route path="/app/validator" element={shell(<Validator />)} />

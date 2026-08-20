@@ -28,6 +28,15 @@ logger = logging.getLogger("okkax.member_os")
 router = APIRouter(prefix="/api")
 
 
+def _is_personal_audience(user: Optional[Dict[str, Any]]) -> bool:
+    if not user:
+        return False
+    workspace = user.get("_workspace_ctx") or {}
+    if workspace.get("kind") == "personal":
+        return True
+    return set(user.get("roles") or []) == {"audience"}
+
+
 # =============================================================================
 # PYDANTIC SCHEMAS
 # =============================================================================
@@ -143,6 +152,8 @@ async def get_overview_summary(user: Optional[Dict[str, Any]] = Depends(get_opti
 @router.get("/overview/actions")
 async def get_priority_actions(user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     """Returns prioritized actionable tasks needing organizer review/approval."""
+    if _is_personal_audience(user):
+        return {"items": [], "total": 0}
     actions = await db.priority_actions.find().to_list(100)
     if not actions:
         # Canonical baseline action center items
@@ -193,6 +204,8 @@ async def get_priority_actions(user: Optional[Dict[str, Any]] = Depends(get_opti
 @router.post("/overview/actions/{action_id}/resolve")
 async def resolve_priority_action(action_id: str, payload: ActionResolveIn, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     """Approves or marks a priority action resolved."""
+    if _is_personal_audience(user):
+        raise HTTPException(status_code=403, detail="Audience workspace cannot resolve operational actions")
     updated = {
         "status": payload.decision,
         "resolved_at": now_iso(),

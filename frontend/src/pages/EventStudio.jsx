@@ -124,16 +124,16 @@ export default function EventStudio() {
   const defaultSub = paramDomain === "EVENT" ? "brief" : paramDomain === "NETWORK" ? "talent" : "schedule";
   const paramSubview = searchParams.get("view") || defaultSub;
 
-  const [domain, setDomain] = useState(paramDomain);
-  const [subview, setSubview] = useState(paramSubview);
-
-  // Sync state when searchParams changes from external/back-forward navigation
-  useEffect(() => {
-    const d = searchParams.get("domain");
-    if (d && d !== domain) setDomain(d);
-    const v = searchParams.get("view");
-    if (v && v !== subview) setSubview(v);
-  }, [searchParams, domain, subview]);
+  // Single authoritative source for domain/subview: the URL itself.
+  // Previously these were a separate useState pair kept in sync via a
+  // useEffect that watched `searchParams`. On rapid tab switching, that
+  // effect could fire with a searchParams snapshot that hadn't caught up
+  // yet with the latest click, briefly forcing `domain`/`subview` back to a
+  // stale value — the exact flicker/stale-render reported. Deriving them
+  // directly from `searchParams` on every render removes the second state
+  // copy entirely, so there is nothing left to race or fall out of sync.
+  const domain = paramDomain;
+  const subview = paramSubview;
 
   // URL & Storage Hydration for active Event ID
   const paramEventId = searchParams.get("event_id");
@@ -229,8 +229,6 @@ export default function EventStudio() {
   // Navigation Switchers updating state and SearchParams with smooth replace
   const switchDomain = useCallback((newDomain) => {
     const targetSub = newDomain === "EVENT" ? "brief" : newDomain === "NETWORK" ? "talent" : "schedule";
-    setDomain(newDomain);
-    setSubview(targetSub);
     setSearchParams(
       {
         event_id: isNewEventMode ? "new" : selectedEventId,
@@ -242,7 +240,6 @@ export default function EventStudio() {
   }, [isNewEventMode, selectedEventId, setSearchParams]);
 
   const switchSubview = useCallback((newSubview) => {
-    setSubview(newSubview);
     setSearchParams(
       {
         event_id: isNewEventMode ? "new" : selectedEventId,

@@ -1,6 +1,7 @@
 """Unit tests for Location, Routes, and BMKG Weather with Outdoor Risk Engine."""
 
 import asyncio
+import importlib
 from pathlib import Path
 import sys
 import pytest
@@ -13,6 +14,7 @@ if str(BACKEND_DIR) not in sys.path:
 from integrations.location.bmkg_client import BMKGWeatherClient, calculate_deterministic_outdoor_risk
 from integrations.location.google_places_client import GooglePlacesClient
 from integrations.location.google_routes_client import GoogleRoutesClient
+from integrations.location.serpapi_maps_client import SerpApiMapsClient
 
 
 class TestGooglePlacesAdapter:
@@ -60,6 +62,50 @@ class TestGoogleRoutesAdapter:
             assert res_err.error_code == "INVALID_COORDINATES"
 
         asyncio.run(_test())
+
+
+class TestSerpApiMapsAdapter:
+    def test_google_maps_normalization_only(self, monkeypatch):
+        class FakeResponse:
+            status_code = 200
+
+            @staticmethod
+            def json():
+                return {"local_results": [{
+                    "title": "Jakarta Concert Hall",
+                    "address": "Menteng, Jakarta Pusat",
+                    "rating": 4.7,
+                }]}
+
+        class FakeAsyncClient:
+            def __init__(self, **kwargs):
+                pass
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                return None
+
+            async def get(self, url, params):
+                assert params["engine"] == "google_maps"
+                assert params["type"] == "search"
+                return FakeResponse()
+
+        serpapi_module = importlib.import_module("integrations.location.serpapi_maps_client")
+        monkeypatch.setattr(serpapi_module.httpx, "AsyncClient", FakeAsyncClient)
+        client = SerpApiMapsClient(enabled=True, api_key="test-key-not-live")
+        result = asyncio.run(client.search_venues("concert venue Jakarta"))
+
+        assert result.ok is True
+        assert result.data == [{
+            "name": "Jakarta Concert Hall",
+            "address": "Menteng, Jakarta Pusat",
+            "area": "",
+            "rating": 4.7,
+            "source": "SerpApi",
+        }]
+        assert result.provenance["engine"] == "google_maps"
 
 
 class TestBMKGWeatherAndOutdoorRisk:

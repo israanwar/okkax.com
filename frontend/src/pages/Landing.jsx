@@ -326,7 +326,7 @@ function PricingPreview() {
               Start free. Scale with intelligence.
             </h2>
             <p className="mt-4 text-sm leading-6 text-zinc-400 sm:text-base">
-              Free gets you into the network. Pro helps you operate professionally. Max gives you the deepest OKKAX Intelligence for optimization and scale.
+              Free gets you into the network. Pro helps you operate professionally. Max adds advanced portfolio controls for optimization and scale.
             </p>
           </div>
           <Link
@@ -1275,12 +1275,12 @@ export default function Landing() {
               },
               {
                 num: "03",
-                slug: "intelligence",
-                title: "OKKAX Intelligence",
+                slug: "copilot",
+                title: "OKKAX Copilot",
                 badge: "Observability",
                 desc: "Tiga tingkatan analitik: Observe (telemetri), Understand (deteksi blocker otomatis), dan Optimize (rekomendasi efisiensi biaya).",
                 icon: Sparkles,
-                link: "/products/intelligence",
+                link: "/products/copilot",
               },
               {
                 num: "04",
@@ -1359,7 +1359,7 @@ export default function Landing() {
               <div className="lg:col-span-7">
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-xs font-bold text-zinc-300">
                   <Layers size={14} className="text-zinc-400" />
-                  <span>Principal Event Intelligence Copilot</span>
+                  <span>Okkax Copilot</span>
                 </div>
                 <h2 className="editorial mt-5 text-3xl sm:text-5xl text-white leading-tight">
                   Temui OKKAX Copilot — Asisten Cerdas Operasional Acara.
@@ -1378,7 +1378,7 @@ export default function Landing() {
                     <ArrowRight size={14} />
                   </Link>
                   <Link
-                    to="/products/intelligence"
+                    to="/products/copilot"
                     className="inline-flex items-center gap-2 rounded-xl border border-white/[0.15] bg-white/[0.04] px-5 py-3.5 text-sm font-semibold text-zinc-200 hover:border-white/[0.3] hover:text-white transition-all"
                   >
                     Pelajari Arsitektur AI

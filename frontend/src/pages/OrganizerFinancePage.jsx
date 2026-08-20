@@ -18,6 +18,7 @@ import { api, apiError, idr, compact, num, DEMO_EVENT_ID } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 import OkxDropdown from "@/components/OkxDropdown";
 import { useAuth } from "@/context/AuthContext";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 
 export default function OrganizerFinancePage() {
   const { workspaceVersion } = useAuth();
@@ -101,39 +102,31 @@ export default function OrganizerFinancePage() {
 
   return (
     <div className="okx-workspace-page space-y-4 font-gemini" data-testid="organizer-finance-page">
-      {/* Header Chrome */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-              <Wallet size={11} className="text-zinc-400" />
-              Financial Command & Protected Settlement
-            </div>
-            <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
-              Finance & Escrow
-            </h1>
-            <p className="mt-1 text-xs text-zinc-400 max-w-2xl leading-relaxed">
+      <PageIntro testId="finance-page-intro">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow icon={Wallet}>Financial Command & Protected Settlement</PageIntroEyebrow>
+            <PageIntroTitle>Finance & Escrow</PageIntroTitle>
+            <PageIntroDescription>
               Pusat komando finansial event: total revenue, biaya teralokasi, saldo escrow terlindungi, hutang piutang, dan otorisasi settlement pencairan dana.
-            </p>
+            </PageIntroDescription>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={loadFinanceData}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
-            >
-              <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
-          </div>
+          <button
+            onClick={loadFinanceData}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+          >
+            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
         </div>
 
         {/* Event Selector Strip */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/[0.06] pt-3.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+        <div className="flex flex-wrap items-center gap-2.5 border-t border-white/[0.06] pt-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-gemini-mono">
             Event Aktif:
           </span>
-          <div className="min-w-[280px]">
+          <div className="min-w-[240px] max-w-[280px]">
             <OkxDropdown
               items={eventOptions}
               value={selectedEventId}
@@ -142,12 +135,12 @@ export default function OrganizerFinancePage() {
             />
           </div>
           {overview && (
-            <div className="num text-[11px] text-zinc-400 font-gemini-mono">
+            <div className="num text-[10.5px] text-zinc-400 font-gemini-mono">
               Net Margin Est: <span className="text-emerald-400 font-bold">{idr(overview.projected_net_margin)}</span>
             </div>
           )}
         </div>
-      </div>
+      </PageIntro>
 
       {/* KPI Overview Metrics */}
       {overview && (

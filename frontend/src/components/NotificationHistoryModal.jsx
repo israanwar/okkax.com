@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { formatRelativeTime, getCategoryMeta } from "./NotificationPopover";
+import { useAuth } from "@/context/AuthContext";
 
 const CATEGORY_TABS = [
   { id: "all", label: "Semua" },
@@ -25,12 +26,21 @@ const CATEGORY_TABS = [
   { id: "venue_booking", label: "Venue & Izin" },
 ];
 
+const AUDIENCE_CATEGORY_TABS = [
+  { id: "all", label: "Semua" },
+  { id: "ticket_issue", label: "Tiket" },
+  { id: "payment", label: "Pembayaran" },
+  { id: "event_reminder", label: "Pengingat" },
+  { id: "schedule_update", label: "Perubahan Event" },
+];
+
 export default function NotificationHistoryModal({
   isOpen,
   onClose,
   onMarkAllRead,
   onMarkSingleRead,
 }) {
+  const { effectiveRole } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,6 +52,12 @@ export default function NotificationHistoryModal({
   const [search, setSearch] = useState("");
 
   const limit = 25;
+  const categoryTabs = effectiveRole === "audience" ? AUDIENCE_CATEGORY_TABS : CATEGORY_TABS;
+
+  useEffect(() => {
+    setCategory("all");
+    setPage(1);
+  }, [effectiveRole]);
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
@@ -166,7 +182,7 @@ export default function NotificationHistoryModal({
         {/* Toolbar: Category Tabs & Search */}
         <div className="flex flex-col gap-2 border-b border-white/[0.06] bg-[#07070b]/60 px-5 py-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-            {CATEGORY_TABS.map((tab) => (
+            {categoryTabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"

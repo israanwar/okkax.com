@@ -66,6 +66,53 @@ def test_role_awareness_different_roles():
     assert any("ticket" in t.lower() or "tiket" in t.lower() or "gate" in t.lower() or "penonton" in t.lower() or "pembayaran" in t.lower() for t in audience_texts)
 
 
+def test_personal_audience_scope_uses_workspace_role_and_blocks_operational_types():
+    from notifications import (
+        AUDIENCE_NOTIFICATION_TYPES,
+        notification_role_for_user,
+        notification_scope_query,
+    )
+
+    user = {
+        "id": "usr-multi-role",
+        "roles": ["organizer", "sponsor", "audience"],
+        "_workspace_ctx": {
+            "kind": "personal",
+            "organization_id": None,
+            "role": "audience",
+            "source": "session",
+        },
+    }
+
+    assert notification_role_for_user(user) == "audience"
+    query = notification_scope_query(user)
+    assert "ticket_sale" not in AUDIENCE_NOTIFICATION_TYPES
+    assert "sponsor_confirmed" not in AUDIENCE_NOTIFICATION_TYPES
+    assert "talent_rider" not in AUDIENCE_NOTIFICATION_TYPES
+    assert query["type"]["$in"] == sorted(AUDIENCE_NOTIFICATION_TYPES)
+    assert {"notification_role": "audience"} in query["$or"]
+
+
+def test_workspace_switch_does_not_inherit_unscoped_primary_role_notifications():
+    from notifications import notification_scope_query
+
+    user = {
+        "id": "usr-multi-role",
+        "roles": ["organizer", "vendor"],
+        "_workspace_ctx": {
+            "kind": "org",
+            "organization_id": "org-vendor",
+            "role": "vendor",
+            "source": "session",
+        },
+    }
+
+    assert notification_scope_query(user) == {
+        "user_id": "usr-multi-role",
+        "notification_role": "vendor",
+    }
+
+
 def test_seeding_idempotency_on_multiple_fetches():
     """Ensure fetching notifications 10x in a row does NOT increase total count."""
     token = _login("organizer@okkax.id")

@@ -27,13 +27,13 @@ const ROLE_OPTIONS = [
 
 const DEMO_ACCOUNTS = [
   { key: "organizer", label: "Organizer", roleName: "Organizer", email: "organizer@okkax.id", defaultNext: "/app" },
-  { key: "promotor", label: "Promotor", roleName: "Promotor", email: "organizer@okkax.id", defaultNext: "/app/events" },
-  { key: "sponsor", label: "Sponsor", roleName: "Sponsor", email: "sponsor@okkax.id", defaultNext: "/app/sponsor" },
-  { key: "tenant", label: "Tenant", roleName: "Tenant", email: "tenant@okkax.id", defaultNext: "/app/tenant" },
-  { key: "audience", label: "Audience", roleName: "Audience", email: "audience@okkax.id", defaultNext: "/app/tickets" },
-  { key: "talent", label: "Talent", roleName: "Talent", email: "talent@okkax.id", defaultNext: "/app/me" },
-  { key: "vendor", label: "Vendor", roleName: "Vendor", email: "vendor@okkax.id", defaultNext: "/app/me" },
-  { key: "workforce", label: "Workforce", roleName: "Workforce", email: "worker@okkax.id", defaultNext: "/app/me" },
+  { key: "promotor", label: "Promotor", roleName: "Promotor", email: "organizer@okkax.id", defaultNext: "/app" },
+  { key: "sponsor", label: "Sponsor", roleName: "Sponsor", email: "sponsor@okkax.id", defaultNext: "/app" },
+  { key: "tenant", label: "Tenant", roleName: "Tenant", email: "tenant@okkax.id", defaultNext: "/app" },
+  { key: "audience", label: "Audience", roleName: "Audience", email: "audience@okkax.id", defaultNext: "/app" },
+  { key: "talent", label: "Talent", roleName: "Talent", email: "talent@okkax.id", defaultNext: "/app" },
+  { key: "vendor", label: "Vendor", roleName: "Vendor", email: "vendor@okkax.id", defaultNext: "/app" },
+  { key: "workforce", label: "Workforce", roleName: "Workforce", email: "worker@okkax.id", defaultNext: "/app" },
 ];
 
 function Shell({ title, subtitle, children }) {
@@ -74,7 +74,7 @@ function Shell({ title, subtitle, children }) {
                 "Event Blueprint Compiler",
                 "15+ Kota Verified Network",
                 "Anti-Scalp Dynamic LivePass",
-                "OKKAX Copilot Intelligence",
+                "Okkax Copilot",
               ].map((feat, idx) => (
                 <div key={idx} className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/50 px-3 py-2 text-xs text-zinc-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--okx-accent)] shrink-0" />
@@ -331,6 +331,12 @@ export function Login() {
   const { login, loginWithGoogle, adoptSession } = useAuth();
   const nav = useNavigate();
 
+  // Only accept an internal relative path (e.g. returning to a checkout in
+  // progress) — never an absolute/external URL, so `next` can't be turned
+  // into an open-redirect.
+  const rawNext = sp.get("next") || "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app";
+
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -338,7 +344,7 @@ export function Login() {
     try {
       await login(email, password);
       toast.success("Berhasil masuk ke OKKAX");
-      nav(sp.get("next") || (matchingPersona ? matchingPersona.defaultNext : "/app"));
+      nav(next, { replace: true });
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -353,7 +359,7 @@ export function Login() {
       const { data } = await api.post("/demo/persona-login", { label: item.key || item.label });
       await adoptSession(data.token);
       toast.success(`Masuk langsung sebagai ${item.roleName || item.label}`);
-      nav(sp.get("next") || item.defaultNext || "/app");
+      nav(next, { replace: true });
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -413,7 +419,16 @@ export function Login() {
             Lupa kata sandi?
           </Link>
           <Link
-            to={targetRole ? `/register?role=${targetRole}` : "/register"}
+            to={{
+              pathname: "/register",
+              search: (() => {
+                const params = new URLSearchParams();
+                if (targetRole) params.set("role", targetRole);
+                if (rawNext) params.set("next", rawNext);
+                const s = params.toString();
+                return s ? `?${s}` : "";
+              })(),
+            }}
             className="text-[var(--okx-accent-soft)] hover:underline font-semibold"
           >
             Belum punya akun? Buat akun →
@@ -484,6 +499,10 @@ export function Register() {
   const nav = useNavigate();
   const { cities } = useCatalogCities();
 
+  // Same internal-only guard as Login — never honor an absolute/external `next`.
+  const rawNext = sp.get("next") || "";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app";
+
   const submit = async (e) => {
     e.preventDefault();
     if (!form.terms_accepted) return setError("Anda harus menyetujui Terms dan Privacy Notice.");
@@ -492,7 +511,7 @@ export function Register() {
     try {
       await register(form);
       toast.success("Akun OKKAX berhasil dibuat");
-      nav("/app");
+      nav(next);
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -629,7 +648,10 @@ export function Register() {
 
         <div className="text-center text-xs text-zinc-400 pt-2">
           Sudah punya akun?{" "}
-          <Link to="/login" className="text-[var(--okx-accent-soft)] hover:underline font-semibold">
+          <Link
+            to={{ pathname: "/login", search: rawNext ? `?next=${encodeURIComponent(rawNext)}` : "" }}
+            className="text-[var(--okx-accent-soft)] hover:underline font-semibold"
+          >
             Sign in di sini →
           </Link>
         </div>

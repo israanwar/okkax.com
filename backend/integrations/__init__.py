@@ -24,6 +24,7 @@ from .messaging.fcm_client import fcm_client
 from .location.google_places_client import places_client
 from .location.google_routes_client import routes_client
 from .location.bmkg_client import weather_client
+from .location.serpapi_maps_client import serpapi_maps_client
 from .storage.r2_client import storage_client
 from .media.spotify_client import spotify_client
 from .media.youtube_client import youtube_client
@@ -47,6 +48,7 @@ __all__ = [
     "places_client",
     "routes_client",
     "weather_client",
+    "serpapi_maps_client",
     "storage_client",
     "spotify_client",
     "youtube_client",

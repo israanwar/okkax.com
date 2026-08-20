@@ -380,7 +380,7 @@ export default function OkkaxPage() {
     {
       role: "assistant",
       content:
-        "### Selamat Datang di OKKAX Event Intelligence Command Center!\n\nSaya adalah asisten operasional resmi OKKAX yang menguasai seluruh spektrum operasional, arsitektur data, dan komputasi ekonomi live event di Indonesia.\n\n#### Ruang Lingkup Konsultasi OKKAX Copilot:\n- **Komputasi Finansial & Alokasi Anggaran**: Perhitungan pos biaya (Talent 28%, Produksi 24%, Venue 14%, Marketing 8%, Kru 6%, Contingency 5%).\n- **Analisis Ketergantungan Event Graph**: Mendeteksi potensi blocker antara rider talent, venue, dan vendor teknis.\n- **Valuasi Sponsorship & Zonasi Tenant**: Perancangan hak eksklusif brand & monetisasi booth kuliner.\n- **SOP Gate Management & Validator Scanner**: Prosedur validasi tiket QR cepat anti-duplikasi.\n- **Simulasi Multiplier Effect Regional**: Analisis perputaran ekonomi lokal di 15+ kota besar.\n\nPilih salah satu modul konsultasi di panel kiri atau ketik langsung pertanyaan Anda di bawah.",
+        "### Selamat Datang di Okkax Copilot Command Center!\n\nSaya adalah asisten operasional resmi OKKAX yang menguasai seluruh spektrum operasional, arsitektur data, dan komputasi ekonomi live event di Indonesia.\n\n#### Ruang Lingkup Konsultasi Okkax Copilot:\n- **Komputasi Finansial & Alokasi Anggaran**: Perhitungan pos biaya (Talent 28%, Produksi 24%, Venue 14%, Marketing 8%, Kru 6%, Contingency 5%).\n- **Analisis Ketergantungan Event Graph**: Mendeteksi potensi blocker antara rider talent, venue, dan vendor teknis.\n- **Valuasi Sponsorship & Zonasi Tenant**: Perancangan hak eksklusif brand & monetisasi booth kuliner.\n- **SOP Gate Management & Validator Scanner**: Prosedur validasi tiket QR cepat anti-duplikasi.\n- **Simulasi Multiplier Effect Regional**: Analisis perputaran ekonomi lokal di 15+ kota besar.\n\nPilih salah satu modul konsultasi di panel kiri atau ketik langsung pertanyaan Anda di bawah.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -423,7 +423,7 @@ export default function OkkaxPage() {
     try {
       const payload = {
         message: query.trim(),
-        history: messages.slice(-8).map((m) => ({ role: m.role, content: m.content })),
+        history: messages.map((m) => ({ role: m.role, content: m.content })),
         current_route: location.pathname,
         role: activePersona || user?.roles?.[0] || "organizer",
       };
@@ -505,7 +505,7 @@ export default function OkkaxPage() {
               OKKAX Operations Engine · Online
             </span>
             <span className="hidden sm:inline text-zinc-600">|</span>
-            <span className="hidden sm:inline text-zinc-300 font-gemini">Principal Event Intelligence</span>
+            <span className="hidden sm:inline text-zinc-300 font-gemini">Okkax Copilot</span>
           </div>
           <div className="flex items-center gap-4 text-[10px] font-gemini-mono">
             <span className="text-zinc-300">Mode: {personaObj.label} Lens</span>
@@ -647,7 +647,7 @@ export default function OkkaxPage() {
                 >
                   <div className="flex items-center justify-between gap-4 mb-2 pb-1 border-b border-white/[0.06] text-[10px] text-zinc-500 font-gemini-mono">
                     <span className="font-semibold text-zinc-400">
-                      {m.role === "user" ? "Anda" : "OKKAX Copilot Intelligence"}
+                      {m.role === "user" ? "Anda" : "Okkax Copilot"}
                     </span>
                     <div className="flex items-center gap-2">
                       <span>{m.timestamp}</span>
@@ -754,7 +754,7 @@ export default function OkkaxPage() {
             </div>
             <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500 font-gemini-mono">
               <span>Tekan Enter untuk mengirim · Shift+Enter untuk baris baru</span>
-              <span>OKKAX Event Intelligence Core v2.4</span>
+              <span>Okkax Copilot</span>
             </div>
           </div>
         </section>

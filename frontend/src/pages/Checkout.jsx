@@ -6,7 +6,7 @@ import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, apiError, idr, SANDBOX_NOTICE } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-export default function Checkout() {
+export default function Checkout({ embedded = false }) {
   const { eventId, tierId } = useParams();
   const nav = useNavigate();
   const { user } = useAuth();
@@ -39,7 +39,7 @@ export default function Checkout() {
     setAttendees((prev) => Array.from({ length: qty }, (_, i) => prev[i] || { name: "" }));
   }, [qty]);
 
-  if (!tier || !event) return <div className="min-h-screen bg-[var(--okx-bg)] p-10 text-zinc-400">Memuat checkout…</div>;
+  if (!tier || !event) return <div className={`${embedded ? "" : "min-h-screen"} bg-[var(--okx-bg)] p-10 text-zinc-400`}>Memuat checkout…</div>;
 
   const gross = tier.price * qty;
   const fee = Math.round(gross * 0.03);
@@ -55,7 +55,9 @@ export default function Checkout() {
           tier_id: tier.id,
           quantity: qty,
           attendees: attendees.map((a) => ({ name: a.name || user?.name || "Attendee" })),
-          origin_url: window.location.origin,
+          // Keep the Stripe round-trip inside the workspace shell for logged-in
+          // members instead of dropping them back on the public marketing site.
+          origin_url: embedded ? `${window.location.origin}/app` : window.location.origin,
         });
         toast.success("Mengalihkan ke Stripe test mode…");
         window.location.href = data.checkout_url;
@@ -98,8 +100,8 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
-      <PublicNav />
+    <div className={embedded ? "bg-[var(--okx-bg)]" : "min-h-screen bg-[var(--okx-bg)]"} data-testid={embedded ? "audience-checkout-page" : "public-checkout-page"}>
+      {!embedded && <PublicNav />}
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
         <div className="border border-white/20 bg-[#141419] px-4 py-3 text-sm text-zinc-300" data-testid="sandbox-notice">
           <ShieldAlert size={15} className="mr-2 inline text-white" />
@@ -129,8 +131,8 @@ export default function Checkout() {
               <Link to="/app/tickets" data-testid="goto-mytickets-btn" className="bg-white px-5 py-2.5 text-center text-sm font-bold text-black hover:bg-zinc-200 shadow-md">
                 Buka My Tickets
               </Link>
-              <Link to="/validator" className="border border-[var(--okx-border)] px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/[0.04]">
-                Validasi QR
+              <Link to={embedded ? "/app/discover" : "/validator"} className="border border-[var(--okx-border)] px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/[0.04]">
+                {embedded ? "Discover Events" : "Validasi QR"}
               </Link>
             </div>
           </div>
@@ -327,7 +329,7 @@ export default function Checkout() {
           </div>
         )}
       </div>
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 }

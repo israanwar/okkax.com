@@ -13,7 +13,79 @@ from typing import List, Dict, Any, Optional
 from core import db, now_iso, clean
 
 
-SEED_VERSION = 1
+SEED_VERSION = 2
+
+AUDIENCE_NOTIFICATION_TYPES = frozenset({
+    "ticket_issue",
+    "ticket_order",
+    "order_update",
+    "payment",
+    "refund",
+    "event_reminder",
+    "event_update",
+    "event_change",
+    "schedule_update",
+    "gate_update",
+    "gate_access",
+    "access_update",
+})
+
+
+def _normalize_notification_role(role: Optional[str]) -> str:
+    role = (role or "audience").lower()
+    if role in {"event_organizer", "supervisor", "finance_approver"}:
+        return "organizer"
+    if role in {"talent_management", "artist", "band"}:
+        return "talent"
+    if role in {"worker", "crew"}:
+        return "workforce"
+    if role in {"supplier"}:
+        return "vendor"
+    if role in {"venue_manager"}:
+        return "venue"
+    return role
+
+
+def notification_role_for_user(user: dict) -> str:
+    """Resolve notification scope from the authoritative active workspace."""
+    workspace = user.get("_workspace_ctx") or {}
+    if workspace.get("kind") == "personal":
+        return "audience"
+    if workspace.get("role"):
+        return _normalize_notification_role(workspace["role"])
+    roles = user.get("roles") or []
+    return _normalize_notification_role(roles[0] if roles else "audience")
+
+
+def notification_scope_query(user: dict) -> Dict[str, Any]:
+    """Build a role-safe Mongo query, including constrained legacy rows."""
+    role = notification_role_for_user(user)
+    primary_role = _normalize_notification_role((user.get("roles") or ["audience"])[0])
+    query: Dict[str, Any] = {"user_id": user["id"]}
+
+    if role == "audience":
+        allowed_destinations = ["/app/tickets", "/app/orders", "/app/discover"]
+        query["type"] = {"$in": sorted(AUDIENCE_NOTIFICATION_TYPES)}
+        query["$or"] = [
+            {"notification_role": "audience"},
+            {
+                "notification_role": {"$exists": False},
+                "$or": [
+                    {"destination": {"$in": allowed_destinations}},
+                    {"destination": {"$regex": r"^/app/discover/events/"}},
+                ],
+            },
+        ]
+    elif role != primary_role:
+        # A workspace switch must never inherit unscoped rows from the
+        # account's primary role.
+        query["notification_role"] = role
+    else:
+        query["$or"] = [
+            {"notification_role": role},
+            {"notification_role": {"$exists": False}},
+        ]
+    return query
 
 
 def seed_notif_id(user_id: str, index: int, extra: str = "") -> str:
@@ -276,28 +348,27 @@ async def ensure_user_notifications(user: dict, force: bool = False) -> int:
         return 0
 
     # Fast O(1) idempotency check
-    db_user = await db.users.find_one({"id": user_id}, {"notification_seed_version": 1})
-    if not force and db_user and db_user.get("notification_seed_version", 0) >= SEED_VERSION:
-        return await db.notifications.count_documents({"user_id": user_id})
+    notification_role = notification_role_for_user(user)
+    db_user = await db.users.find_one({"id": user_id}, {"notification_seed_versions": 1})
+    seeded_versions = (db_user or {}).get("notification_seed_versions") or {}
+    if not force and seeded_versions.get(notification_role, 0) >= SEED_VERSION:
+        return await db.notifications.count_documents(notification_scope_query(user))
 
     # Fetch events for context
     events = await db.events.find({"deleted": {"$ne": True}}, {"_id": 0, "id": 1, "name": 1}).to_list(10)
 
-    roles = user.get("roles", [])
-    primary_role = roles[0] if roles else "organizer"
-
-    if any(r in ("organizer", "promoter", "event_organizer", "supervisor", "finance_approver") for r in roles):
+    if notification_role in ("organizer", "promoter"):
         template_list = _generate_organizer_templates(events)
-    elif any(r in ("talent", "talent_management") for r in roles):
+    elif notification_role == "talent":
         template_list = _generate_talent_templates()
-    elif any(r in ("sponsor",) for r in roles):
+    elif notification_role == "sponsor":
         template_list = _generate_sponsor_templates()
-    elif any(r in ("tenant",) for r in roles):
+    elif notification_role == "tenant":
         template_list = _generate_tenant_templates()
-    elif any(r in ("audience",) for r in roles):
+    elif notification_role == "audience":
         template_list = _generate_audience_templates()
     else:
-        template_list = _generate_generic_role_templates(primary_role)
+        template_list = _generate_generic_role_templates(notification_role)
 
     docs = []
     for idx, item in enumerate(template_list):
@@ -306,7 +377,8 @@ async def ensure_user_notifications(user: dict, force: bool = False) -> int:
         doc = {
             "id": notif_id,
             "user_id": user_id,
-            "organization_id": user.get("org_id"),
+            "organization_id": (user.get("_workspace_ctx") or {}).get("organization_id"),
+            "notification_role": notification_role,
             "event_id": item.get("event_id"),
             "event_name": item.get("event_name"),
             "type": item.get("type", "general"),
@@ -331,7 +403,7 @@ async def ensure_user_notifications(user: dict, force: bool = False) -> int:
     # Mark user as seeded
     await db.users.update_one(
         {"id": user_id},
-        {"$set": {"notification_seed_version": SEED_VERSION}}
+        {"$set": {f"notification_seed_versions.{notification_role}": SEED_VERSION}}
     )
 
     return len(docs)
@@ -418,14 +490,15 @@ async def get_user_notifications_payload(
     await ensure_user_notifications(user)
     user_id = user["id"]
 
-    query: Dict[str, Any] = {"user_id": user_id}
+    role = notification_role_for_user(user)
+    query = notification_scope_query(user)
     if unread_only:
         query["read"] = False
     if category and category != "all":
-        query["type"] = category
+        query["type"] = category if role != "audience" or category in AUDIENCE_NOTIFICATION_TYPES else "__forbidden__"
 
     total_count = await db.notifications.count_documents(query)
-    unread_count = await db.notifications.count_documents({"user_id": user_id, "read": False})
+    unread_count = await db.notifications.count_documents({**notification_scope_query(user), "read": False})
 
     skip = (page - 1) * limit if page > 1 else 0
 
@@ -449,30 +522,31 @@ async def get_user_notifications_payload(
     }
 
 
-async def mark_single_notification_read(user_id: str, notification_id: str) -> bool:
+async def mark_single_notification_read(user: dict, notification_id: str) -> bool:
     """Mark a single notification (or aggregated group) as read."""
+    user_id = user["id"]
     if notification_id.startswith("agg-tickets-"):
         # Handle aggregated group
         parts = notification_id.split("-")
         eid = parts[2] if len(parts) >= 3 else None
         if eid:
             await db.notifications.update_many(
-                {"user_id": user_id, "event_id": eid, "type": "ticket_sale"},
+                {**notification_scope_query(user), "event_id": eid, "type": "ticket_sale"},
                 {"$set": {"read": True}}
             )
             return True
 
     res = await db.notifications.update_one(
-        {"id": notification_id, "user_id": user_id},
+        {**notification_scope_query(user), "id": notification_id},
         {"$set": {"read": True}}
     )
     return res.modified_count > 0
 
 
-async def mark_all_user_notifications_read(user_id: str) -> int:
+async def mark_all_user_notifications_read(user: dict) -> int:
     """Mark all notifications for a given user as read."""
     res = await db.notifications.update_many(
-        {"user_id": user_id, "read": False},
+        {**notification_scope_query(user), "read": False},
         {"$set": {"read": True}}
     )
     return res.modified_count

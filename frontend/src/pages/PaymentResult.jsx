@@ -4,7 +4,7 @@ import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import { api, idr } from "@/lib/api";
 
-export function PaymentSuccess() {
+export function PaymentSuccess({ embedded = false }) {
   const [sp] = useSearchParams();
   const sessionId = sp.get("session_id");
   const [state, setState] = useState({ status: "checking", tickets: [], order: null });
@@ -39,8 +39,8 @@ export function PaymentSuccess() {
   }, [sessionId, tries]);
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
-      <PublicNav />
+    <div className={embedded ? "" : "min-h-screen bg-[var(--okx-bg)]"}>
+      {!embedded && <PublicNav />}
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
         {state.status === "checking" && (
           <div data-testid="stripe-checking" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8 text-center">
@@ -78,27 +78,27 @@ export function PaymentSuccess() {
             <p className="mt-2 text-sm text-zinc-400">
               Status Stripe belum "paid". Anda dapat mencoba lagi atau memakai metode sandbox internal OKKAX.
             </p>
-            <Link to="/discover" className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
+            <Link to={embedded ? "/app/discover" : "/discover"} className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
           </div>
         )}
       </div>
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 }
 
-export function PaymentCancel() {
+export function PaymentCancel({ embedded = false }) {
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
-      <PublicNav />
+    <div className={embedded ? "" : "min-h-screen bg-[var(--okx-bg)]"}>
+      {!embedded && <PublicNav />}
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
         <div data-testid="stripe-cancel" className="border border-[var(--okx-border)] bg-[var(--okx-surface)] p-8">
           <h1 className="editorial text-2xl">Pembayaran dibatalkan</h1>
           <p className="mt-2 text-sm text-zinc-400">Order Anda tetap berstatus awaiting payment dan tidak ada tiket yang diterbitkan.</p>
-          <Link to="/discover" className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
+          <Link to={embedded ? "/app/discover" : "/discover"} className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
         </div>
       </div>
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 }

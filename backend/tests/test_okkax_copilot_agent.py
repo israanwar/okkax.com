@@ -201,7 +201,7 @@ def test_prompt_injection_does_not_change_engine_or_source(tokens):
     }, timeout=30)
     assert r.status_code == 200
     body = r.json()
-    assert body.get("engine", "").startswith("okkax-intelligence-core")
+    assert body.get("engine") == "Okkax Copilot"
     assert body.get("source", "").startswith("internal_knowledge_brain")
 
 

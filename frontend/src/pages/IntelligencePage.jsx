@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sparkles, Send, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle,
@@ -67,30 +67,6 @@ export default function IntelligencePage() {
   const [loading, setLoading] = useState(false);
   const [activeResult, setActiveResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [quota, setQuota] = useState({
-    plan: "free",
-    usage: 0,
-    limit: 50,
-    remaining: 50,
-  });
-
-  // Fetch real quota on mount
-  useEffect(() => {
-    let mounted = true;
-    api.get("/intelligence/quota")
-      .then(({ data }) => {
-        if (mounted && data) {
-          setQuota(data);
-        }
-      })
-      .catch(() => {
-        // Fallback for non-authenticated guests
-      });
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   const runQuery = async (queryText) => {
     const q = queryText || inputQuery;
     if (!q.trim() || loading) return;
@@ -107,13 +83,10 @@ export default function IntelligencePage() {
 
       if (data) {
         setActiveResult(data);
-        if (data.entitlement) {
-          setQuota(data.entitlement);
-        }
       }
     } catch (err) {
       console.error("Intelligence query error:", err);
-      const msg = err.response?.data?.detail || "Gagal menghubungi OKKAX Intelligence Engine. Silakan coba sesaat lagi.";
+      const msg = err.response?.data?.detail || "Gagal menghubungi Okkax Copilot. Silakan coba sesaat lagi.";
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -127,30 +100,16 @@ export default function IntelligencePage() {
         <div>
           <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
             <Sparkles size={11} className="text-zinc-300" />
-            OKKAX Intelligence Engine v2
+            Okkax Copilot
           </div>
           <h1 className="editorial mt-1.5 text-xl sm:text-2xl md:text-3xl text-white font-bold tracking-tight">
-            OKKAX Intelligence
+            Okkax Copilot
           </h1>
           <p className="mt-0.5 text-xs text-zinc-400 max-w-2xl leading-relaxed">
             AI operasional terhubung langsung ke database live-event OKKAX. Menghubungkan supply dan demand secara deterministik dengan jaminan Provenance.
           </p>
         </div>
 
-        {/* Entitlement Quota Indicator */}
-        <div className="flex shrink-0 items-center gap-2.5 rounded-xl border border-white/[0.08] bg-[#0d0d14] px-3 py-2 shadow-md" data-testid="intelligence-entitlement">
-          <div className="text-right">
-            <div className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">Langganan</div>
-            <div className="text-xs font-bold text-white uppercase">{quota.plan || "Free"} Tier</div>
-          </div>
-          <div className="h-6 w-px bg-white/[0.1]" />
-          <div>
-            <div className="text-[9.5px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">Kuota Siklus</div>
-            <div className="text-xs font-bold text-zinc-200 num">
-              <span className="text-white font-extrabold">{quota.remaining ?? (quota.limit - quota.usage)}</span> / {quota.limit ?? "∞"} query
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Query Bar */}

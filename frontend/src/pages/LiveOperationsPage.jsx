@@ -18,6 +18,7 @@ import StatusBadge from "@/components/StatusBadge";
 import PremiumSelect from "@/components/PremiumSelect";
 import OkxDropdown from "@/components/OkxDropdown";
 import { useAuth } from "@/context/AuthContext";
+import PageIntro, { PageIntroEyebrow, PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 
 export default function LiveOperationsPage() {
   const { workspaceVersion } = useAuth();
@@ -127,39 +128,33 @@ export default function LiveOperationsPage() {
 
   return (
     <div className="okx-workspace-page space-y-4 font-gemini" data-testid="live-operations-page">
-      {/* Header Chrome */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-4 sm:p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-950/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.2em] text-red-400 font-gemini-mono shadow-sm">
-              <Radio size={11} className="animate-pulse text-red-400" />
+      <PageIntro testId="operations-page-intro">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <PageIntroEyebrow icon={Radio} tone="border-red-500/30 bg-red-950/20 text-red-400">
               Live Operations & Command Center
-            </div>
-            <h1 className="editorial text-xl sm:text-2xl md:text-3xl text-white">
-              Command Center
-            </h1>
-            <p className="mt-1 text-xs text-zinc-400 max-w-2xl leading-relaxed">
+            </PageIntroEyebrow>
+            <PageIntroTitle>Command Center</PageIntroTitle>
+            <PageIntroDescription>
               Monitoring hari-H: Gate access scanner, crowd occupancy, live execution timeline, risk register, dan incident escalation.
-            </p>
+            </PageIntroDescription>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={loadOperationsData}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
-            >
-              <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-              <span className="hidden sm:inline">Refresh Data</span>
-            </button>
-          </div>
+          <button
+            onClick={loadOperationsData}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+          >
+            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh Data</span>
+          </button>
         </div>
 
         {/* Event Selector Strip */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-white/[0.06] pt-3.5">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+        <div className="flex flex-wrap items-center gap-2.5 border-t border-white/[0.06] pt-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 font-gemini-mono">
             Event Aktif:
           </span>
-          <div className="min-w-[280px]">
+          <div className="min-w-[240px] max-w-[280px]">
             <OkxDropdown
               items={eventOptions}
               value={selectedEventId}
@@ -168,13 +163,13 @@ export default function LiveOperationsPage() {
             />
           </div>
           {data && (
-            <div className="num text-[11px] text-zinc-400 font-gemini-mono">
+            <div className="num text-[10.5px] text-zinc-400 font-gemini-mono">
               Status: <span className="text-white font-bold">LIVE OPERATIONAL</span> · Readiness:{" "}
               <span className="text-emerald-400 font-bold">{data.readiness_score}%</span>
             </div>
           )}
         </div>
-      </div>
+      </PageIntro>
 
       {/* Real-Time Operational Telemetry Strip */}
       {data && (

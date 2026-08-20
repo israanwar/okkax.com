@@ -212,6 +212,16 @@ async def register(payload: RegisterIn, response: Response):
             "terms_accepted": payload.terms_accepted, "onboarded": bool(org_id or "audience" in roles),
             "created_at": now_iso()}
     await db.users.insert_one(user)
+    if org_id:
+        # Make the new organization resolvable as a workspace: without a
+        # membership row, /me/workspaces never lists it, so the account's
+        # own professional role can never become the active effectiveRole
+        # (it's stuck on the personal/audience fallback). Additive only —
+        # doesn't touch `user.roles`/`user.org_id`, which stay as before.
+        try:
+            await add_organization_member(user_id=user["id"], organization_id=org_id, role=selected_role)
+        except ValueError:
+            pass
     token, _ = await issue_access_token(user["id"], email)
     await audit(None, user, "auth.register")
     return {"token": token, "user": clean(user)}
@@ -2655,9 +2665,11 @@ async def simulate_payment(payment_id: str, body: Dict[str, Any] = None, user: d
         await db.tickets.insert_one(t)
         tickets.append(clean(t))
     await notify(order["user_id"], "Pembayaran sandbox berhasil",
-                 f"{order['quantity']} tiket {tier['name']} untuk {ev['name']} telah diterbitkan.", "success", ev["id"])
+                 f"{order['quantity']} tiket {tier['name']} untuk {ev['name']} telah diterbitkan.", "success", ev["id"],
+                 notif_type="payment", destination="/app/orders", event_name=ev["name"], notification_role="audience")
     await notify(ev["owner_user_id"], "Penjualan tiket baru",
-                 f"{order['quantity']} tiket {tier['name']} terjual (sandbox).", "info", ev["id"])
+                 f"{order['quantity']} tiket {tier['name']} terjual (sandbox).", "info", ev["id"],
+                 notif_type="ticket_sale", destination=f"/app/events/{ev['id']}/tickets", event_name=ev["name"], notification_role="organizer")
     await audit(ev["id"], user, "payment.simulated_paid", {"payment_ref": pay["payment_ref"]})
     return {"payment": {**pay, "status": "Simulated Paid"}, "tickets": tickets,
             "budget": await compute_budget(ev["id"])}
@@ -2788,7 +2800,8 @@ async def request_refund(order_id: str, body: Dict[str, Any], user: dict = Depen
         "$push": {"audit": {"at": now_iso(), "action": "refunded", "amount": amount}}})
     await db.tickets.update_many({"order_id": order_id}, {"$set": {"status": "refunded"}})
     await db.ticket_tiers.update_one({"id": order["tier_id"]}, {"$inc": {"sold": -order["quantity"]}})
-    await notify(user["id"], "Refund diproses (sandbox)", f"Refund Rp{amount:,} untuk {order['order_code']}.", "info", ev["id"])
+    await notify(user["id"], "Refund diproses (sandbox)", f"Refund Rp{amount:,} untuk {order['order_code']}.", "info", ev["id"],
+                 notif_type="refund", destination="/app/orders", event_name=ev["name"], notification_role="audience")
     await audit(ev["id"], user, "refund.process", {"order": order["order_code"], "amount": amount})
     return {"refund": clean(r)}
 
@@ -3458,14 +3471,14 @@ async def notifications_history(
 @api.post("/notifications/read")
 async def read_notifications(user: dict = Depends(get_current_user)):
     from notifications import mark_all_user_notifications_read
-    count = await mark_all_user_notifications_read(user["id"])
+    count = await mark_all_user_notifications_read(user)
     return {"ok": True, "count": count}
 
 
 @api.post("/notifications/{notification_id}/read")
 async def read_single_notification(notification_id: str, user: dict = Depends(get_current_user)):
     from notifications import mark_single_notification_read
-    ok = await mark_single_notification_read(user["id"], notification_id)
+    ok = await mark_single_notification_read(user, notification_id)
     return {"ok": ok}
 
 
@@ -4057,12 +4070,9 @@ async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict]
     # BEFORE it reaches the LLM/deterministic engines.
     safe_history = sanitize_history(payload.history or [])
 
-    # 3b. Enforce per-user Copilot quota (authed only). Anonymous callers
-    # remain rate-limited only by the reverse proxy.
+    # 3b. Keep usage telemetry without applying the retired plan quota as
+    # an access gate. Abuse protection remains at the transport layer.
     if user:
-        q = await get_or_create_copilot_quota(user)
-        if q["remaining"] <= 0:
-            raise HTTPException(status_code=429, detail=f"Kuota Copilot bulanan ({q['limit']}) untuk plan {q['plan']} tercapai. Upgrade untuk kuota lebih besar.")
         await increment_copilot_quota(user)
 
     # 4. Execute Copilot.
@@ -4309,6 +4319,8 @@ from intelligence_engine import router as intelligence_router  # noqa: E402
 app.include_router(intelligence_router)
 from integrations.endpoints import router as integrations_router  # noqa: E402
 app.include_router(integrations_router)
+from subscriptions import subscriptions as subscriptions_router  # noqa: E402
+app.include_router(subscriptions_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -4703,8 +4715,6 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     pass
-
-
 
 
 

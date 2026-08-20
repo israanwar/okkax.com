@@ -18,7 +18,7 @@ import math
 import re
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from core import (
@@ -117,13 +117,10 @@ async def execute_intelligence_query(
     Performs NLU intent classification, grounds against MongoDB collections,
     computes deterministic metrics, and returns structured card payloads with Provenance.
     """
+    # Retain monthly usage telemetry, but do not use legacy subscription
+    # entitlements as an access gate. Legitimate transport/security rate
+    # limiting remains enforced outside this product-level counter.
     quota = await get_or_create_user_quota(user)
-    if quota.remaining is not None and quota.remaining <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Batas kuota query OKKAX Intelligence untuk paket {quota.plan.upper()} telah tercapai ({quota.limit} query/bulan). Upgrade ke Pro atau Max untuk kuota lebih besar."
-        )
-
     await increment_user_quota(user)
     query_text = payload.query.strip()
     q_lower = query_text.lower()
@@ -410,7 +407,7 @@ async def execute_intelligence_query(
             summary_metrics={"events_monitored": 160, "active_nodes": 1850},
             provenance=provenance
         )
-        summary_text = "OKKAX Intelligence siap membantu analisis multi-dimensi untuk operasional event Anda: pencocokan talent & vendor, penghitungan break-even finansial, mitigasi risiko teknis, dan proyeksi perputaran ekonomi regional."
+        summary_text = "Okkax Copilot siap membantu analisis multi-dimensi untuk operasional event Anda: pencocokan talent & vendor, penghitungan break-even finansial, mitigasi risiko teknis, dan proyeksi perputaran ekonomi regional."
 
     primary_provenance = structured_payload.provenance if structured_payload and structured_payload.provenance else Provenance(
         source="internal_database",

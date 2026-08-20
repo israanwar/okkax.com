@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
 import OkxDropdown from "@/components/OkxDropdown";
+import PageIntro, { PageIntroTitle, PageIntroDescription } from "@/components/PageIntro";
 import { api, compact, idr, num } from "@/lib/api";
 import { imageFor, eventDedupeKey } from "@/lib/eventImage";
 import { loadUnsplashAssignments, pickAssignedPhoto } from "@/lib/unsplash";
@@ -47,7 +48,7 @@ function FilterSelect({ testId, label, icon, value, onChange, options }) {
   );
 }
 
-function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments }) {
+function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments, detailBasePath = "/events" }) {
   const cover = pickAssignedPhoto(unsplashAssignments, ev, imageFor(ev));
   return (
     <SpotlightCard className="h-full">
@@ -134,7 +135,7 @@ function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments }) {
 
           <div className="mt-5 flex gap-2">
             <Link
-              to={`/events/${ev.id}`}
+              to={`${detailBasePath}/${ev.id}`}
               data-testid={`discover-view-btn-${ev.id}`}
               className="flex-1 rounded-xl bg-white hover:bg-zinc-200 text-black px-4 py-2.5 text-center text-xs font-bold shadow-sm transition-all active:scale-[0.98]"
             >
@@ -158,7 +159,7 @@ function EventCard({ ev, saved, onSave, compactMode, unsplashAssignments }) {
   );
 }
 
-export default function Discover() {
+export default function Discover({ embedded = false }) {
   const [data, setData] = useState({ items: [], cities: [], categories: [], highlights: {}, totals: null });
   const [q, setQ] = useState("");
   const [city, setCity] = useState("");
@@ -241,23 +242,35 @@ export default function Discover() {
     : uniqueItems.filter((event) => !featuredEventIds.has(event.id));
 
   return (
-    <div className="min-h-screen bg-[var(--okx-bg)]">
-      <ScrollProgressBar />
-      <PublicNav />
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
-        <MaskReveal delay={0.05}>
-          <h1 className="editorial text-3xl sm:text-5xl">OKKAX Discover</h1>
-        </MaskReveal>
-        <Reveal delay={0.15}>
-          <p className="mt-3 max-w-2xl text-sm text-zinc-400">
-            Event yang sedang berlangsung, akan berlangsung, hampir habis, gratis, dan berbayar — beserta organizer,
-            talent, tenant, sponsor, dan skala aktivitas eventnya. Semua berasal dari data OKKAX.
-          </p>
-        </Reveal>
+    <div className={embedded ? "okx-workspace-page bg-[var(--okx-bg)]" : "min-h-screen bg-[var(--okx-bg)]"} data-testid={embedded ? "audience-discover-page" : "public-discover-page"}>
+      {!embedded && <ScrollProgressBar />}
+      {!embedded && <PublicNav />}
+      {embedded && (
+        <PageIntro testId="discover-page-intro">
+          <PageIntroTitle>OKKAX Discover</PageIntroTitle>
+          <PageIntroDescription>
+            Event yang sedang berlangsung, akan berlangsung, hampir habis, gratis, dan berbayar — beserta organizer, talent, tenant, sponsor, dan skala aktivitas eventnya.
+          </PageIntroDescription>
+        </PageIntro>
+      )}
+      <div className={embedded ? "mx-auto max-w-7xl pb-8" : "mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14"}>
+        {!embedded && (
+          <>
+            <MaskReveal delay={0.05}>
+              <h1 className="editorial text-3xl sm:text-5xl">OKKAX Discover</h1>
+            </MaskReveal>
+            <Reveal delay={0.15}>
+              <p className="mt-3 max-w-2xl text-sm text-zinc-400">
+                Event yang sedang berlangsung, akan berlangsung, hampir habis, gratis, dan berbayar — beserta organizer,
+                talent, tenant, sponsor, dan skala aktivitas eventnya. Semua berasal dari data OKKAX.
+              </p>
+            </Reveal>
+          </>
+        )}
 
         {data.totals && (
           <section
-            className="discover-stat-panel mt-8 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl shadow-lg"
+            className={`discover-stat-panel overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl shadow-lg ${embedded ? "mt-3" : "mt-8"}`}
             data-testid="discover-network-stats"
             aria-label="Ringkasan jaringan event"
           >
@@ -450,7 +463,7 @@ export default function Discover() {
                 <div className="okx-scroll mt-4 flex gap-4 overflow-x-auto pb-2">
                   {s.items.map((ev) => (
                     <div key={`${s.key}-${ev.id}`} className="w-[290px] shrink-0">
-                      <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} compactMode unsplashAssignments={unsplashAssignments} />
+                      <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} compactMode unsplashAssignments={unsplashAssignments} detailBasePath={embedded ? "/app/discover/events" : "/events"} />
                     </div>
                   ))}
                 </div>
@@ -473,7 +486,7 @@ export default function Discover() {
               <RevealGroup stagger={0.06} className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {catalogueItems.map((ev) => (
                   <RevealItem key={ev.id}>
-                    <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} unsplashAssignments={unsplashAssignments} />
+                    <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} unsplashAssignments={unsplashAssignments} detailBasePath={embedded ? "/app/discover/events" : "/events"} />
                   </RevealItem>
                 ))}
               </RevealGroup>
@@ -481,7 +494,7 @@ export default function Discover() {
           </>
         )}
       </div>
-      <Footer />
+      {!embedded && <Footer />}
     </div>
   );
 }
