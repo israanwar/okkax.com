@@ -162,7 +162,7 @@ export default function PersonalWalletPage() {
               <div className="num text-2xl font-bold text-white font-gemini-mono mt-1">
                 {idr(wallet?.lifetime_earnings || 0)}
               </div>
-              <p className="text-[10.5px] text-zinc-400 mt-1">Histori bruto sejak bergabung di OKKAX.</p>
+              <p className="text-[10.5px] text-zinc-400 mt-1">Histori bruto sejak bergabung di Okkax.</p>
             </div>
           </div>
 

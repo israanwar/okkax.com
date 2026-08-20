@@ -17,7 +17,7 @@ import { api } from "@/lib/api";
 export const NAV = {
   organizer: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/copilot", "OKKAX Copilot", Sparkles],
+    ["/app/copilot", "Okkax Copilot", Sparkles],
     ["/app/studio", "Event Studio", Wand2],
     ["/app/ticketing", "Ticketing", Ticket],
     ["/app/operations", "Live Operations", ScanLine],
@@ -36,7 +36,7 @@ export const NAV = {
   ],
   talent: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/copilot", "OKKAX Copilot", Sparkles],
+    ["/app/copilot", "Okkax Copilot", Sparkles],
     ["/app/opportunities", "Booking Requests", Handshake],
     ["/app/me", "My Bookings & Rider", Mic2],
     ["/app/calendar", "Calendar", CalendarDays],
@@ -45,7 +45,7 @@ export const NAV = {
   ],
   workforce: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/copilot", "OKKAX Copilot", Sparkles],
+    ["/app/copilot", "Okkax Copilot", Sparkles],
     ["/app/jobs", "Available Jobs", HardHat],
     ["/app/me", "My Assignments", ListOrdered],
     ["/app/calendar", "Shifts & Schedule", CalendarDays],
@@ -54,7 +54,7 @@ export const NAV = {
   ],
   vendor: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/copilot", "OKKAX Copilot", Sparkles],
+    ["/app/copilot", "Okkax Copilot", Sparkles],
     ["/app/opportunities", "RFQ & Requests", Wrench],
     ["/app/me", "Projects & Deliverables", ListOrdered],
     ["/app/network", "Services & Inventory", Globe2],
@@ -64,7 +64,7 @@ export const NAV = {
   ],
   sponsor: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/copilot", "OKKAX Copilot", Sparkles],
+    ["/app/copilot", "Okkax Copilot", Sparkles],
     ["/discover", "Discover Events", Globe2],
     ["/app/sponsor", "Sponsorship Inventory", Handshake],
     ["/app/me", "Activations & Portfolio", Activity],
@@ -73,7 +73,7 @@ export const NAV = {
   ],
   tenant: [
     ["/app", "Overview", LayoutDashboard],
-    ["/app/copilot", "OKKAX Copilot", Sparkles],
+    ["/app/copilot", "Okkax Copilot", Sparkles],
     ["/discover", "Discover Events", Globe2],
     ["/app/tenant", "Applications & Booths", Store],
     ["/app/calendar", "Event Schedule", CalendarDays],
@@ -114,7 +114,7 @@ export const EVENT_TABS = [
 ];
 
 export default function AppShell({ children }) {
-  const { user, org, loading, logout, hasRole, activeWorkspace, effectiveRole } = useAuth();
+  const { user, org, loading, logout, hasRole, activeWorkspace, effectiveRole, notificationVersion } = useAuth();
   const [open, setOpen] = useState(false);
   const [notif, setNotif] = useState({ items: [], unread: 0, total: 0 });
   const [showNotif, setShowNotif] = useState(false);
@@ -147,10 +147,13 @@ export default function AppShell({ children }) {
   }, [isAudienceWorkspace, userId]);
 
   useEffect(() => {
+    setNotif({ items: [], unread: 0, total: 0 });
+    setActionCount(0);
+    setShowNotif(false);
     fetchNotifs();
-  }, [fetchNotifs]);
+  }, [fetchNotifs, notificationVersion]);
 
-  if (loading) return <div className="p-10 text-sm text-zinc-500">Memuat OKKAX…</div>;
+  if (loading) return <div className="p-10 text-sm text-zinc-500">Memuat Okkax…</div>;
   if (!user) return <Navigate to="/login" replace />;
 
   const currentRole = (activeWorkspace?.role || user?.role || (user?.roles && user.roles[0]) || "audience").toLowerCase();
@@ -258,7 +261,7 @@ export default function AppShell({ children }) {
             <button data-testid="shell-drawer-toggle" onClick={() => setOpen(true)} className="p-1.5 text-zinc-300 lg:hidden rounded-lg hover:bg-white/[0.05]" aria-label="Buka menu">
               <Menu size={18} />
             </button>
-            <Logo small to="/app" />
+            <Logo small to="/" ariaLabel="Kembali ke Okkax" />
             <span className="hidden text-[11px] text-zinc-400 sm:block font-gemini-mono">Live Event Operating Network</span>
           </div>
           <div className="flex items-center gap-2">

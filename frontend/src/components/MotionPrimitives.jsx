@@ -9,7 +9,7 @@ import {
 } from "framer-motion";
 
 // -----------------------------------------------------------------------------
-// EASINGS & TIMINGS (OKKAX Motion DNA: Restrained, Precise, Decisive)
+// EASINGS & TIMINGS (Okkax Motion DNA: Restrained, Precise, Decisive)
 // -----------------------------------------------------------------------------
 export const OKX_EASE = [0.22, 1, 0.36, 1]; // Smooth luxury cubic-bezier
 export const OKX_EASE_EDITORIAL = [0.16, 1, 0.3, 1]; // Editorial text reveal ease

@@ -175,7 +175,7 @@ function RouterBody() {
           element={
             <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-8 text-center">
               <h1 className="editorial text-4xl">404</h1>
-              <p className="text-sm text-zinc-400">Halaman tidak ditemukan di OKKAX.</p>
+              <p className="text-sm text-zinc-400">Halaman tidak ditemukan di Okkax.</p>
               <a href="/" className="accent-text underline">Kembali ke beranda</a>
             </div>
           }

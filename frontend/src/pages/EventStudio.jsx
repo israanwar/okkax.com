@@ -482,7 +482,7 @@ export default function EventStudio() {
         className="sticky -top-4 sm:-top-4.5 z-30 -mt-4 sm:-mt-4.5 -mx-3.5 sm:-mx-5 px-3.5 sm:px-5 pt-3 sm:pt-3.5 pb-2.5 bg-[#07070a] border-b border-white/[0.08] backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.9)] space-y-2"
         data-testid="studio-command-header"
       >
-        {/* ROW 1: [ OKKAX Event Studio ] [ Event Selector ▼ ] [ Autosave ] <-----> [ Status ] [ Unduh Quotation ] [ AI Studio ] */}
+        {/* ROW 1: [ Okkax Event Studio ] [ Event Selector ▼ ] [ Autosave ] <-----> [ Status ] [ Unduh Quotation ] [ AI Studio ] */}
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-zinc-300 font-gemini-mono shrink-0">
@@ -1100,7 +1100,7 @@ export default function EventStudio() {
                           Structured Requirements Engine ({reqStats.total} Total)
                         </h3>
                         <p className="text-xs text-zinc-400 mt-0.5">
-                          Daftar spesifikasi kebutuhan operasional yang siap dicocokkan dengan supply Network OKKAX.
+                          Daftar spesifikasi kebutuhan operasional yang siap dicocokkan dengan supply Network Okkax.
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

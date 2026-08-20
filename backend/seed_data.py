@@ -162,9 +162,10 @@ DEMO_USERS = [
     ("talent@okkax.id", "Aksara Band Management", ["talent_management"], "org-nusantara"),
     ("venue@okkax.id", "Makassar Convention Hall", ["venue_manager"], "org-mch"),
     ("vendor@okkax.id", "Sonic Timur Audio", ["vendor"], "org-sonic"),
-    ("worker@okkax.id", "Andi Saputra", ["worker"], None),
+    ("worker@okkax.id", "Andi Saputra", ["worker"], "org-sonic"),
     ("finance@okkax.id", "Aruna Finance", ["finance_approver"], "org-aruna"),
     ("supervisor@okkax.id", "Ops Supervisor", ["supervisor"], "org-aruna"),
+    ("promoter@okkax.id", "Aruna Live Promoter", ["promoter"], "org-aruna"),
 ]
 
 # links dari akun demo ke entitas katalog agar dashboard peran punya data nyata
@@ -237,6 +238,40 @@ async def ensure_demo_memberships():
         "existing": existing,
         "total": created + existing,
     }
+
+
+async def ensure_demo_accounts():
+    """Tambahkan persona demo baru secara idempotent tanpa mereset state demo."""
+    password_hash = hash_password(os.environ["DEMO_PASSWORD"])
+    created = 0
+    existing = 0
+
+    for i, (email, name, roles, organization_id) in enumerate(DEMO_USERS):
+        user_id = f"usr-{i+1}"
+        result = await db.users.update_one(
+            {"email": email},
+            {"$setOnInsert": {
+                "id": user_id,
+                "email": email,
+                "password_hash": password_hash,
+                "name": name,
+                "roles": roles,
+                "org_id": organization_id,
+                "city": "Makassar" if organization_id in ("org-aruna", "org-koparakit", "org-mch", "org-sonic") else "Jakarta",
+                "phone": "+62-000-0000",
+                "terms_accepted": True,
+                "onboarded": True,
+                "created_at": SEED_TIMESTAMP,
+                **DEMO_LINKS.get(email, {}),
+            }},
+            upsert=True,
+        )
+        if result.upserted_id is not None:
+            created += 1
+        else:
+            existing += 1
+
+    return {"created": created, "existing": existing, "total": created + existing}
 
 
 EVENT_ID = "evt-aruna-2026"

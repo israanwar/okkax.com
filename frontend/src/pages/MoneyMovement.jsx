@@ -66,7 +66,7 @@ export default function MoneyMovement() {
   if (!data) {
     return (
       <div className="text-sm text-zinc-500">
-        Memuat pergerakan dana OKKAX...
+        Memuat pergerakan dana Okkax...
       </div>
     );
   }
@@ -97,7 +97,7 @@ export default function MoneyMovement() {
 
           <p className="mt-2 max-w-3xl text-sm text-zinc-400">
             Pantau bagaimana dana, kewajiban, pembayaran, refund, dan settlement
-            bergerak melalui jaringan ekonomi OKKAX.
+            bergerak melalui jaringan ekonomi Okkax.
           </p>
         </div>
 
@@ -193,7 +193,7 @@ export default function MoneyMovement() {
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-zinc-500">
-                  Fee platform OKKAX
+                  Fee platform Okkax
                 </span>
                 <span className="num">
                   {rupiah(s.platform_fee)}
@@ -222,12 +222,12 @@ export default function MoneyMovement() {
 
           <div className="border border-[var(--okx-border)] bg-[var(--okx-accent-tint)] p-5">
             <div className="text-xs uppercase tracking-wider accent-text">
-              Prinsip ekonomi OKKAX
+              Prinsip ekonomi Okkax
             </div>
 
             <p className="mt-3 text-sm leading-relaxed text-zinc-300">
               Nilai kerja talent, venue, vendor, workforce, sponsor, dan pihak
-              lain bukan revenue OKKAX. Platform memisahkan GMV, kewajiban,
+              lain bukan revenue Okkax. Platform memisahkan GMV, kewajiban,
               release, fee infrastruktur, refund, dan settlement.
             </p>
           </div>

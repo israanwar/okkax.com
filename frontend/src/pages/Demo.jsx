@@ -1,4 +1,4 @@
-// OKKAX Platform Demo. Canonical public championship experience.
+// Okkax Platform Demo. Canonical public championship experience.
 //
 // Route: /demo   (alias /juri and /judges redirect here, see App.js)
 //
@@ -26,6 +26,7 @@ import {
   Waypoints,
   Zap,
   Store,
+  Building2,
   Mic2,
   TrendingUp,
   Workflow,
@@ -37,7 +38,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import PublicNav, { Footer } from "@/components/PublicNav";
-import { api } from "@/lib/api";
+import { api, apiError } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import {
   MotionPanel,
@@ -378,7 +379,7 @@ function Hero() {
           <span className="text-white font-bold">Yang hilang adalah satu sistem.</span>
         </h1>
         <p className="mt-6 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-          OKKAX menggabungkan brief, jaringan, jadwal, kontrak, ticketing, operasi, dan keuangan pada satu Event ID. Coba interaksinya di Event Graph di bawah.
+          Okkax menggabungkan brief, jaringan, jadwal, kontrak, ticketing, operasi, dan keuangan pada satu Event ID. Coba interaksinya di Event Graph di bawah.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <a
@@ -403,7 +404,7 @@ function Hero() {
 }
 
 // =============================================================================
-// 01.5  PERSONA LENS SWITCHER (Point of View 6 Roles + OKKAX Event Copilot)
+// 01.5  PERSONA LENS SWITCHER (Point of View 9 Roles + Okkax Event Copilot)
 // =============================================================================
 const PERSONA_LENSES = {
   organizer: {
@@ -415,7 +416,7 @@ const PERSONA_LENSES = {
     pain: "Data tersebar di puluhan grup WhatsApp, spreadsheet terpisah, dan risiko dependensi tersembunyi hingga hari H.",
     solution: "Event Studio mengompilasi brief, memetakan Event Graph, dan mengunci seluruh dependensi vendor & talent dalam satu Event ID.",
     copilotPrompt: "Deteksi blocker kritis di Event Graph konser 5.000 pax",
-    copilotOutput: "OKKAX Copilot mendeteksi 12 personil sekuriti belum terpenuhi di node Workforce. Mengusulkan alokasi vendor cadangan terverifikasi dalam 3 menit.",
+    copilotOutput: "Okkax Copilot mendeteksi 12 personil sekuriti belum terpenuhi di node Workforce. Mengusulkan alokasi vendor cadangan terverifikasi dalam 3 menit.",
     highlightNodes: ["event", "requirements", "workforce", "gate"],
     dashboardPath: "/app",
     linkLabel: "Buka Dashboard Organizer",
@@ -429,7 +430,7 @@ const PERSONA_LENSES = {
     pain: "Ketidakpastian likuiditas, lambatnya pencairan tiket pihak ketiga, dan risiko pembatalan sepihak tanpa proteksi.",
     solution: "Protected Payment dengan milestone escrow (DP, Soundcheck, Showtime) + telemetri penjualan tiket real-time lintas kota.",
     copilotPrompt: "Hitung proyeksi break-even dan optimasi tier tiket VIP",
-    copilotOutput: "OKKAX Copilot menghitung break-even point tercapai pada 68% kapasitas (3.400 tiket). Menyarankan rilis 200 kursi tambahan di tier Early Bird.",
+    copilotOutput: "Okkax Copilot menghitung break-even point tercapai pada 68% kapasitas (3.400 tiket). Menyarankan rilis 200 kursi tambahan di tier Early Bird.",
     highlightNodes: ["event", "access", "showtime"],
     dashboardPath: "/app/events",
     linkLabel: "Buka Dashboard Promotor",
@@ -443,7 +444,7 @@ const PERSONA_LENSES = {
     pain: "Ketiadaan kepastian penempatan logo, laporan ROI yang lambat, dan tumpang tindih hak aktivasi antar brand kompetitor.",
     solution: "Sponsor Inventory Marketplace terverifikasi dengan SLA kontrak otomatis dan metrik eksposur audiens terverifikasi.",
     copilotPrompt: "Valuasi paket Presenting Sponsor & estimasi audiens engagement",
-    copilotOutput: "OKKAX Copilot memproyeksikan 18.500 impresi langsung dan 4 aktivasi booth interaktif. Nilai paket rekomendasi: Rp 350 Juta.",
+    copilotOutput: "Okkax Copilot memproyeksikan 18.500 impresi langsung dan 4 aktivasi booth interaktif. Nilai paket rekomendasi: Rp 350 Juta.",
     highlightNodes: ["event", "requirements", "vendor"],
     dashboardPath: "/app/sponsor",
     linkLabel: "Buka Portal Sponsor",
@@ -457,10 +458,24 @@ const PERSONA_LENSES = {
     pain: "Lokasi booth tidak sesuai denah, daya listrik bermasalah, dan pencairan bagi hasil tertahan berminggu-minggu.",
     solution: "Peta zona tenant presisi dengan kepastian pasokan listrik + QRIS Settlement otomatis setiap shift berakhir.",
     copilotPrompt: "Rekomendasi kebutuhan daya listrik dan estimasi transaksi F&B",
-    copilotOutput: "OKKAX Copilot merekomendasikan alokasi 16A/220V per booth di Zona A dengan estimasi transaksi 450 cup/jam pada jam istirahat 19:30-20:30.",
+    copilotOutput: "Okkax Copilot merekomendasikan alokasi 16A/220V per booth di Zona A dengan estimasi transaksi 450 cup/jam pada jam istirahat 19:30-20:30.",
     highlightNodes: ["venue", "gate", "showtime"],
     dashboardPath: "/app/tenant",
     linkLabel: "Buka Portal Tenant",
+  },
+  venue: {
+    id: "venue",
+    role: "Venue",
+    badge: "Venue Readiness & Access",
+    icon: Building2,
+    tagline: "Sinkronkan kapasitas, load-in, akses, dan kesiapan teknis venue dalam satu workspace.",
+    pain: "Kapasitas operasional, jadwal loading, daya, dan aturan akses sering baru bertabrakan setelah vendor dikontrak.",
+    solution: "Venue workspace menghubungkan availability, technical capability, access window, dan dependency produksi ke Event Graph.",
+    copilotPrompt: "Validasi kesiapan venue untuk konser 5.000 pax dan load-in H-1",
+    copilotOutput: "Okkax Copilot memetakan kapasitas, daya, loading dock, soundcheck, gate, dan curfew sebagai dependency yang harus dikunci sebelum kontrak produksi.",
+    highlightNodes: ["venue", "vendor", "gate"],
+    dashboardPath: "/app/me",
+    linkLabel: "Buka Dashboard Venue",
   },
   audience: {
     id: "audience",
@@ -471,7 +486,7 @@ const PERSONA_LENSES = {
     pain: "Tiket palsu dari calo, screenshot ganda, dan antrean gate berjam-jam karena server tiket konvensional down.",
     solution: "LivePass Dynamic QR berputar tiap 15 detik (anti-screenshot) dengan gate validator offline-first berkecepatan <200ms.",
     copilotPrompt: "Jelaskan cara kerja validasi gate offline LivePass",
-    copilotOutput: "OKKAX Copilot: LivePass menggunakan enkripsi kriptografis lokal sehingga scanner gate tetap dapat memvalidasi QR tiket meski sinyal internet di venue mati total.",
+    copilotOutput: "Okkax Copilot: LivePass menggunakan enkripsi kriptografis lokal sehingga scanner gate tetap dapat memvalidasi QR tiket meski sinyal internet di venue mati total.",
     highlightNodes: ["gate", "access", "showtime"],
     dashboardPath: "/app/tickets",
     linkLabel: "Buka Dashboard Tiket (Audience)",
@@ -485,7 +500,7 @@ const PERSONA_LENSES = {
     pain: "Rider sound/lighting diabaikan di venue, jadwal panggung molor berjam-jam, dan honor terlambat dibayar penyelenggara.",
     solution: "Compatibility check rider otomatis terhadap spesifikasi venue + pencairan termin terjamin sebelum naik panggung.",
     copilotPrompt: "Periksa kompatibilitas Technical Rider audio 400 kVA dengan venue",
-    copilotOutput: "OKKAX Copilot mengonfirmasi daya venue 400 kVA dan sistem line-array D&B 100% kompatibel dengan rider talent utama.",
+    copilotOutput: "Okkax Copilot mengonfirmasi daya venue 400 kVA dan sistem line-array D&B 100% kompatibel dengan rider talent utama.",
     highlightNodes: ["talent", "vendor", "showtime"],
     dashboardPath: "/app/me",
     linkLabel: "Buka Dashboard Talent",
@@ -499,7 +514,7 @@ const PERSONA_LENSES = {
     pain: "Perubahan spektrum audio/lighting mendadak di venue, jadwal loading molor, dan termin pelunasan produksi tersendat.",
     solution: "Validasi spek teknis panggung otomatis + milestone escrow produksi terjamin (DP, Loading, Show).",
     copilotPrompt: "Validasi kebutuhan sound system Line Array 24-box dan daya genset 250 kVA",
-    copilotOutput: "OKKAX Copilot mengonfirmasi kapasitas rigging panggung utama mampu menahan beban 8.5 ton dan genset 250 kVA mencukupi 108 dB SPL di FOH.",
+    copilotOutput: "Okkax Copilot mengonfirmasi kapasitas rigging panggung utama mampu menahan beban 8.5 ton dan genset 250 kVA mencukupi 108 dB SPL di FOH.",
     highlightNodes: ["vendor", "venue", "showtime"],
     dashboardPath: "/app/me",
     linkLabel: "Buka Dashboard Vendor",
@@ -513,7 +528,7 @@ const PERSONA_LENSES = {
     pain: "Ketiadaan briefing tugas terpadu, absensi kru tercecer, dan pembayaran honor harian kru terlambat.",
     solution: "Penugasan shift digital terverifikasi QR + pencairan honor kru harian otomatis berbasis attendance verified.",
     copilotPrompt: "Hitung rasio kebutuhan usher dan security untuk kapasitas 5.000 pax",
-    copilotOutput: "OKKAX Copilot menghitung kebutuhan standar industri: 62 Usher (rasio 1:80), 50 Security (rasio 1:100), dan 2 Pos Medis ALS standby.",
+    copilotOutput: "Okkax Copilot menghitung kebutuhan standar industri: 62 Usher (rasio 1:80), 50 Security (rasio 1:100), dan 2 Pos Medis ALS standby.",
     highlightNodes: ["workforce", "gate", "showtime"],
     dashboardPath: "/app/me",
     linkLabel: "Buka Dashboard Workforce",
@@ -523,7 +538,7 @@ const PERSONA_LENSES = {
 function PersonaLensSection() {
   const [activeKey, setActiveKey] = useState("organizer");
   const [loggingIn, setLoggingIn] = useState(false);
-  const { user, adoptSession } = useAuth();
+  const { adoptSession } = useAuth();
   const nav = useNavigate();
   const p = PERSONA_LENSES[activeKey];
   const Icon = p.icon;
@@ -537,10 +552,6 @@ function PersonaLensSection() {
   };
 
   const handleOpenDashboard = async (persona) => {
-    if (user) {
-      nav(persona.dashboardPath);
-      return;
-    }
     setLoggingIn(true);
     try {
       const { data } = await api.post("/demo/persona-login", { label: persona.id });
@@ -549,8 +560,8 @@ function PersonaLensSection() {
         toast.success(`Masuk langsung ke Dashboard ${persona.role}`);
       }
       nav(persona.dashboardPath);
-    } catch {
-      nav(persona.dashboardPath);
+    } catch (error) {
+      toast.error(apiError(error));
     } finally {
       setLoggingIn(false);
     }
@@ -558,7 +569,7 @@ function PersonaLensSection() {
   return (
     <section
       id="demo-persona-lens"
-      aria-label="Kacamata Persona dan OKKAX Copilot"
+      aria-label="Kacamata Persona dan Okkax Copilot"
       className="relative border-b border-white/[0.06] bg-[#07070a] px-4 py-16 sm:px-6 sm:py-24 overflow-hidden font-gemini"
     >
       {/* Background Ambient Glows */}
@@ -577,17 +588,17 @@ function PersonaLensSection() {
 
           <h2 className="editorial mt-5 text-3xl sm:text-5xl lg:text-[52px] leading-[1.04] text-[#fbfaf8] tracking-tight">
             Satu ekosistem live.<br />
-            <span className="text-white font-bold">8 kacamata peran tanpa kompromi.</span>
+            <span className="text-white font-bold">9 kacamata peran tanpa kompromi.</span>
           </h2>
           <p className="mt-4 max-w-2xl text-sm sm:text-base leading-relaxed text-zinc-400">
             Setiap stakeholder memegang kunci operasionalnya masing-masing. Pilih peran di bawah untuk melihat bagaimana
-            OKKAX dan OKKAX Copilot menyelesaikan friksi industri secara terukur.
+            Okkax dan Okkax Copilot menyelesaikan friksi industri secara terukur.
           </p>
         </Reveal>
 
-        {/* 8-Role Segmented Audio Ribbon / Dock */}
+        {/* 9-Role Segmented Audio Ribbon / Dock */}
         <div className="mt-10 p-1.5 rounded-2xl border border-white/[0.08] bg-[#0e0e13]/90 backdrop-blur-2xl shadow-[0_16px_40px_rgba(0,0,0,0.6)]">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-1">
             {Object.values(PERSONA_LENSES).map((item) => {
               const ItemIcon = item.icon;
               const isActive = item.id === activeKey;
@@ -671,13 +682,13 @@ function PersonaLensSection() {
                   </div>
                 </div>
 
-                {/* OKKAX Architecture Card */}
+                {/* Okkax Architecture Card */}
                 <div className="rounded-2xl border border-white/[0.12] bg-[#111118]/90 p-5 sm:p-6 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-200 font-gemini-mono flex items-center gap-1.5">
                         <Sparkles size={11} className="text-zinc-300" />
-                        Solusi Terintegrasi OKKAX
+                        Solusi Terintegrasi Okkax
                       </span>
                       <span className="text-[10px] text-zinc-300 font-gemini-mono bg-white/[0.06] px-2 py-0.5 rounded border border-white/[0.1]">
                         Verified SLA
@@ -690,7 +701,7 @@ function PersonaLensSection() {
                 </div>
               </div>
 
-              {/* OKKAX Event Copilot Command Console */}
+              {/* Okkax Event Copilot Command Console */}
               <div className="rounded-2xl border border-white/[0.08] bg-[#07070b] p-5 sm:p-6 shadow-inner">
                 <div className="flex items-center justify-between gap-3 pb-3 mb-3 border-b border-white/[0.05]">
                   <div className="flex items-center gap-2.5">
@@ -698,7 +709,7 @@ function PersonaLensSection() {
                       <Terminal size={12} />
                     </div>
                     <span className="text-xs font-bold text-zinc-200 font-gemini">
-                      OKKAX Event Copilot · Live Operational Inference
+                      Okkax Event Copilot · Live Operational Inference
                     </span>
                   </div>
 
@@ -743,7 +754,7 @@ function PersonaLensSection() {
                     className="inline-flex items-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.04] px-4 py-3.5 text-xs sm:text-sm font-semibold text-zinc-200 hover:border-white/[0.25] hover:bg-white/[0.08] hover:text-white transition-all active:scale-[0.98]"
                   >
                     <Layers size={14} className="text-zinc-400" />
-                    <span>Buka OKKAX Copilot ({p.role})</span>
+                    <span>Buka Okkax Copilot ({p.role})</span>
                   </Link>
                 </div>
 
@@ -1718,7 +1729,7 @@ function FinalCta() {
             data-testid="demo-final-secondary"
             className="group inline-flex min-w-52 items-center justify-between rounded-xl border border-white/[0.15] bg-white/[0.04] px-6 py-4 text-sm font-semibold text-zinc-100 hover:border-white/[0.3] hover:bg-white/[0.08] transition-all"
           >
-            <span>Explore OKKAX</span>
+            <span>Explore Okkax</span>
             <ArrowUpRight size={16} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </Link>
         </div>

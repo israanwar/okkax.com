@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  AlertTriangle, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CircleDot,
+  AlertTriangle, CalendarDays, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleDot,
   Clock3, Crosshair, LayoutGrid, List, MapPin, Plus, Search, Sun, Ticket, Trash2,
-  Users, X, XCircle,
+  RotateCcw, SlidersHorizontal, Users, X, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, apiError, idr, num } from "@/lib/api";
@@ -291,9 +291,15 @@ function ListView({ items, selected, onSelect }) {
   );
 }
 
-function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) {
-  if (compact) return null;
-  const inputField = "w-full rounded-xl border border-white/[0.1] bg-[#0c0c14] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-white/40 transition-colors";
+const ADVANCED_PUBLIC_FILTER_KEYS = [
+  "country", "artist", "venue", "organizer", "min_price", "max_price", "min_capacity",
+  "age", "sale_status", "pricing", "format", "status", "lat", "lng", "radius_km",
+];
+
+function PublicFilters({ filters, setFilters, facets, onApply, onReset, busy, compact }) {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const rootRef = useRef(null);
+  const inputField = "h-9 w-full min-w-0 rounded-lg border border-white/[0.12] bg-[#0c0c14] px-2.5 text-[11px] text-zinc-200 outline-none transition-colors focus:border-white/40";
   const useLocation = () => {
     if (!navigator.geolocation) return toast.error("Geolokasi tidak tersedia di browser ini");
     navigator.geolocation.getCurrentPosition(({ coords }) => {
@@ -301,37 +307,76 @@ function PublicFilters({ filters, setFilters, facets, onApply, busy, compact }) 
       toast.success("Lokasi digunakan untuk filter jarak");
     }, () => toast.error("Izin lokasi tidak diberikan"));
   };
-  const label = (text) => <span className="mb-1 block text-[10px] uppercase font-bold tracking-wider text-zinc-400 font-gemini-mono">{text}</span>;
+  const label = (text) => <span className="mb-1 block text-[9px] uppercase font-bold tracking-[0.1em] text-zinc-500 font-gemini-mono">{text}</span>;
   const set = (key) => (value) => setFilters({ ...filters, [key]: value });
+  const advancedCount = ADVANCED_PUBLIC_FILTER_KEYS.filter((key) => Boolean(filters[key])).length;
   const statusOptions = [
     { value: "", label: "Semua status" },
     ...(facets.statuses || []).map((item) => ({ value: item.value, label: item.label })),
   ];
+  useEffect(() => {
+    if (!advancedOpen) return undefined;
+    const close = (event) => {
+      if (event.key === "Escape" || (event.type === "pointerdown" && !rootRef.current?.contains(event.target))) {
+        setAdvancedOpen(false);
+      }
+    };
+    document.addEventListener("keydown", close);
+    document.addEventListener("pointerdown", close);
+    return () => {
+      document.removeEventListener("keydown", close);
+      document.removeEventListener("pointerdown", close);
+    };
+  }, [advancedOpen]);
+
+  if (compact) return null;
+
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c14]/80 p-4 shadow-xl backdrop-blur-md" data-testid="calendar-public-filters">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <label>{label("Dari tanggal")}<input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className={inputField} /></label>
-        <label>{label("Sampai tanggal")}<input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className={inputField} /></label>
-        <div>{label("Kota")}<OkxDropdown value={filters.city} onChange={set("city")} options={buildFacetOptions("Semua kota", facets.cities)} placeholder="Semua kota" testId="calendar-filter-city" /></div>
-        <div>{label("Negara")}<OkxDropdown value={filters.country} onChange={set("country")} options={buildFacetOptions("Semua negara", facets.countries)} placeholder="Semua negara" testId="calendar-filter-country" /></div>
-        <div>{label("Kategori")}<OkxDropdown value={filters.category} onChange={set("category")} options={buildFacetOptions("Semua kategori", facets.categories)} placeholder="Semua kategori" testId="calendar-filter-category" /></div>
-        <div>{label("Artis")}<OkxDropdown value={filters.artist} onChange={set("artist")} options={buildFacetOptions("Semua artis", facets.artists)} placeholder="Semua artis" testId="calendar-filter-artist" /></div>
-        <div>{label("Venue")}<OkxDropdown value={filters.venue} onChange={set("venue")} options={buildFacetOptions("Semua venue", facets.venues)} placeholder="Semua venue" testId="calendar-filter-venue" /></div>
-        <div>{label("Organizer")}<OkxDropdown value={filters.organizer} onChange={set("organizer")} options={buildFacetOptions("Semua organizer", facets.organizers)} placeholder="Semua organizer" testId="calendar-filter-organizer" /></div>
-        <label>{label("Harga minimum")}<input type="number" min="0" placeholder="Rp0" value={filters.min_price} onChange={(e) => setFilters({ ...filters, min_price: e.target.value })} className={inputField} /></label>
-        <label>{label("Harga maksimum")}<input type="number" min="0" placeholder="Tanpa batas" value={filters.max_price} onChange={(e) => setFilters({ ...filters, max_price: e.target.value })} className={inputField} /></label>
-        <label>{label("Kapasitas minimum")}<input type="number" min="0" value={filters.min_capacity} onChange={(e) => setFilters({ ...filters, min_capacity: e.target.value })} className={inputField} /></label>
-        <label>{label("Usia penonton")}<input placeholder="17+, All ages…" value={filters.age} onChange={(e) => setFilters({ ...filters, age: e.target.value })} className={inputField} /></label>
-        <div>{label("Penjualan tiket")}<OkxDropdown value={filters.sale_status} onChange={set("sale_status")} placeholder="Semua status" testId="calendar-filter-sale-status" options={[{ value: "", label: "Semua status" }, { value: "on_sale", label: "Sedang dijual" }, { value: "sold_out", label: "Habis" }, { value: "closed", label: "Ditutup" }]} /></div>
-        <div>{label("Harga event")}<OkxDropdown value={filters.pricing} onChange={set("pricing")} placeholder="Gratis & berbayar" testId="calendar-filter-pricing" options={[{ value: "", label: "Gratis & berbayar" }, { value: "free", label: "Gratis" }, { value: "paid", label: "Berbayar" }]} /></div>
-        <div>{label("Format")}<OkxDropdown value={filters.format} onChange={set("format")} options={buildFacetOptions("Offline, hybrid, virtual", facets.formats)} placeholder="Offline, hybrid, virtual" testId="calendar-filter-format" /></div>
-        <div>{label("Status kalender")}<OkxDropdown value={filters.status} onChange={set("status")} options={statusOptions} placeholder="Semua status" testId="calendar-filter-status" /></div>
+    <div ref={rootRef} className="relative z-40 rounded-xl border border-white/[0.1] bg-[#09090f]/[0.98] p-2 shadow-[0_14px_34px_rgba(0,0,0,0.78)] backdrop-blur-xl sm:p-2.5" data-testid="calendar-public-filters">
+      <div className="grid min-w-0 grid-cols-2 items-end gap-1.5 md:grid-cols-4 xl:grid-cols-[minmax(8.5rem,1fr)_minmax(8.5rem,1fr)_minmax(8rem,0.9fr)_minmax(9rem,1fr)_auto]">
+        <label className="min-w-0">{label("Dari tanggal")}<input type="date" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} className={inputField} /></label>
+        <label className="min-w-0">{label("Sampai tanggal")}<input type="date" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} className={inputField} /></label>
+        <div className="min-w-0">{label("Kota")}<OkxDropdown value={filters.city} onChange={set("city")} options={buildFacetOptions("Semua kota", facets.cities)} placeholder="Semua kota" testId="calendar-filter-city" /></div>
+        <div className="min-w-0">{label("Kategori")}<OkxDropdown value={filters.category} onChange={set("category")} options={buildFacetOptions("Semua kategori", facets.categories)} placeholder="Semua kategori" testId="calendar-filter-category" /></div>
+        <div className="col-span-2 flex items-center justify-end gap-1.5 md:col-span-4 xl:col-span-1">
+          <button
+            type="button"
+            onClick={() => setAdvancedOpen((open) => !open)}
+            aria-expanded={advancedOpen}
+            aria-controls="calendar-advanced-filters"
+            data-testid="calendar-more-filters-btn"
+            className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-white/[0.12] bg-white/[0.035] px-2.5 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-white/25 hover:text-white"
+          >
+            <SlidersHorizontal size={13} />
+            <span>Filter lainnya</span>
+            {advancedCount > 0 && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-bold text-black">{advancedCount}</span>}
+            <ChevronDown size={12} className={`transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+          </button>
+          <button type="button" onClick={() => { setAdvancedOpen(false); onReset(); }} aria-label="Reset seluruh filter" title="Reset seluruh filter" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.03] text-zinc-400 transition-colors hover:border-white/25 hover:text-white" data-testid="calendar-public-reset"><RotateCcw size={13} /></button>
+          <button type="button" disabled={busy} onClick={() => { setAdvancedOpen(false); onApply(); }} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 text-[11px] font-bold text-black shadow-sm transition-colors hover:bg-zinc-200 disabled:opacity-50" data-testid="calendar-public-apply"><Search size={13} /> Terapkan</button>
+        </div>
       </div>
-      <div className="mt-3.5 flex flex-wrap items-end gap-2.5">
-        <div className="min-w-40">{label("Jarak lokasi")}<OkxDropdown value={filters.radius_km} onChange={set("radius_km")} placeholder="Tanpa batas" testId="calendar-filter-radius" options={[{ value: "", label: "Tanpa batas" }, { value: "10", label: "10 km" }, { value: "25", label: "25 km" }, { value: "50", label: "50 km" }, { value: "100", label: "100 km" }, { value: "250", label: "250 km" }]} /></div>
-        <button type="button" onClick={useLocation} className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-300 hover:border-white/25 hover:text-white transition-all"><Crosshair size={14} /> Gunakan lokasi saya</button>
-        <button type="button" disabled={busy} onClick={onApply} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-semibold text-black hover:bg-zinc-200 transition-all disabled:opacity-50 shadow-md"><Search size={14} /> Terapkan filter</button>
-      </div>
+
+      {advancedOpen && (
+        <div id="calendar-advanced-filters" className="absolute inset-x-0 top-[calc(100%+6px)] z-50 max-h-[calc(100vh-9rem)] overflow-y-auto rounded-xl border border-white/[0.12] bg-[#09090f] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.94)] okx-scroll sm:p-4" data-testid="calendar-advanced-filters">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            <div>{label("Negara")}<OkxDropdown value={filters.country} onChange={set("country")} options={buildFacetOptions("Semua negara", facets.countries)} placeholder="Semua negara" testId="calendar-filter-country" /></div>
+            <div>{label("Artis")}<OkxDropdown value={filters.artist} onChange={set("artist")} options={buildFacetOptions("Semua artis", facets.artists)} placeholder="Semua artis" testId="calendar-filter-artist" /></div>
+            <div>{label("Venue")}<OkxDropdown value={filters.venue} onChange={set("venue")} options={buildFacetOptions("Semua venue", facets.venues)} placeholder="Semua venue" testId="calendar-filter-venue" /></div>
+            <div>{label("Organizer")}<OkxDropdown value={filters.organizer} onChange={set("organizer")} options={buildFacetOptions("Semua organizer", facets.organizers)} placeholder="Semua organizer" testId="calendar-filter-organizer" /></div>
+            <label>{label("Harga minimum")}<input type="number" min="0" placeholder="Rp0" value={filters.min_price} onChange={(e) => setFilters({ ...filters, min_price: e.target.value })} className={inputField} /></label>
+            <label>{label("Harga maksimum")}<input type="number" min="0" placeholder="Tanpa batas" value={filters.max_price} onChange={(e) => setFilters({ ...filters, max_price: e.target.value })} className={inputField} /></label>
+            <label>{label("Kapasitas minimum")}<input type="number" min="0" value={filters.min_capacity} onChange={(e) => setFilters({ ...filters, min_capacity: e.target.value })} className={inputField} /></label>
+            <label>{label("Usia penonton")}<input placeholder="17+, All ages…" value={filters.age} onChange={(e) => setFilters({ ...filters, age: e.target.value })} className={inputField} /></label>
+            <div>{label("Penjualan tiket")}<OkxDropdown value={filters.sale_status} onChange={set("sale_status")} placeholder="Semua status" testId="calendar-filter-sale-status" options={[{ value: "", label: "Semua status" }, { value: "on_sale", label: "Sedang dijual" }, { value: "sold_out", label: "Habis" }, { value: "closed", label: "Ditutup" }]} /></div>
+            <div>{label("Harga event")}<OkxDropdown value={filters.pricing} onChange={set("pricing")} placeholder="Gratis & berbayar" testId="calendar-filter-pricing" options={[{ value: "", label: "Gratis & berbayar" }, { value: "free", label: "Gratis" }, { value: "paid", label: "Berbayar" }]} /></div>
+            <div>{label("Format")}<OkxDropdown value={filters.format} onChange={set("format")} options={buildFacetOptions("Offline, hybrid, virtual", facets.formats)} placeholder="Offline, hybrid, virtual" testId="calendar-filter-format" /></div>
+            <div>{label("Status kalender")}<OkxDropdown value={filters.status} onChange={set("status")} options={statusOptions} placeholder="Semua status" testId="calendar-filter-status" /></div>
+            <div>{label("Jarak lokasi")}<OkxDropdown value={filters.radius_km} onChange={set("radius_km")} placeholder="Tanpa batas" testId="calendar-filter-radius" options={[{ value: "", label: "Tanpa batas" }, { value: "10", label: "10 km" }, { value: "25", label: "25 km" }, { value: "50", label: "50 km" }, { value: "100", label: "100 km" }, { value: "250", label: "250 km" }]} /></div>
+            <button type="button" onClick={useLocation} className="mt-auto inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 text-[11px] text-zinc-300 transition-colors hover:border-white/25 hover:text-white"><Crosshair size={13} /> Gunakan lokasi saya</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -574,6 +619,32 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
     setEventFilter("");
     setResourceFilter("");
     setStatusFilter("");
+  };
+
+  const resetPublicFilters = () => {
+    const next = {
+      date_from: isoDay(addDays(startOfMonth(new Date()), -31)),
+      date_to: isoDay(addMonths(startOfMonth(new Date()), 7)),
+      city: initialCity,
+      country: "",
+      category: "",
+      artist: "",
+      venue: "",
+      organizer: "",
+      min_price: "",
+      max_price: "",
+      min_capacity: "",
+      age: "",
+      sale_status: "",
+      pricing: "",
+      format: "",
+      status: "",
+      lat: "",
+      lng: "",
+      radius_km: "",
+    };
+    setFilters(next);
+    load(next);
   };
 
   if (compact) {
@@ -819,17 +890,17 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
 
       {/* 2. Public Filters (if public mode) */}
       {!internal && (
-        <>
-          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+        <div className="sticky top-[65px] z-40 space-y-2 bg-[var(--okx-bg)]/95 pb-2 backdrop-blur-xl" data-testid="calendar-sticky-controls">
+          <div className="flex flex-col justify-between gap-2 md:flex-row md:items-end">
             <div>
               <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono">
                 <CalendarDays size={11} className="text-zinc-400" />
                 Calendar Engine
               </div>
-              <h1 className="editorial mt-1.5 text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h1 className="editorial mt-1.5 text-lg font-bold tracking-tight text-white sm:text-xl">
                 Temukan event dan momentum pentingnya.
               </h1>
-              <p className="mt-0.5 text-xs text-zinc-400 font-gemini max-w-3xl leading-relaxed">
+              <p className="mt-0.5 max-w-3xl text-[11px] leading-relaxed text-zinc-400 font-gemini sm:text-xs">
                 Lihat event, masa penjualan tiket, pembukaan tenant, peluang sponsor, dan rekrutmen workforce dalam satu kalender publik.
               </p>
             </div>
@@ -840,6 +911,7 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
             setFilters={setFilters}
             facets={data.facets || {}}
             onApply={() => load(filters)}
+            onReset={resetPublicFilters}
             busy={busy}
           />
 
@@ -905,7 +977,7 @@ export default function CalendarBoard({ mode = "public", compact = false, initia
               ))}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* 5. Main Calendar Body Grid */}

@@ -241,7 +241,7 @@ export function MyTickets() {
             <TicketIcon className="text-zinc-400" />
 
             <p className="mt-2 text-xs text-zinc-300">
-              Belum ada tiket. Jelajahi OKKAX Discover untuk membeli tiket.
+              Belum ada tiket. Jelajahi Okkax Discover untuk membeli tiket.
             </p>
           </div>
         )}
@@ -403,7 +403,7 @@ export function MyOrders() {
                         onClick={async () => {
                           try {
                             await downloadDoc(`/documents/invoice/${o.id}`, `OKKAX-Invoice-${o.order_code}.pdf`);
-                            toast.success("Invoice OKKAX diunduh");
+                            toast.success("Invoice Okkax diunduh");
                           } catch (e) {
                             toast.error(apiError(e));
                           }

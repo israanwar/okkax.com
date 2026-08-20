@@ -113,7 +113,7 @@ export function Overview() {
             <PageIntroEyebrow icon={Sparkles}>Member OS Universal Command</PageIntroEyebrow>
             <PageIntroTitle>Selamat datang, {user.name}</PageIntroTitle>
             <PageIntroDescription>
-              Workspace aktif: {activeWorkspace?.name || "Personal"} · Peran: {role}. Semua operasi terkoordinasi secara aman dan terhubung ke jaringan ekonomi OKKAX.
+              Workspace aktif: {activeWorkspace?.name || "Personal"} · Peran: {role}. Semua operasi terkoordinasi secara aman dan terhubung ke jaringan ekonomi Okkax.
             </PageIntroDescription>
           </div>
 
@@ -304,7 +304,7 @@ export function Overview() {
               data-testid="overview-intelligence-btn"
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-white hover:border-white/30 hover:bg-white/[0.06] transition-all ml-auto"
             >
-              <Sparkles size={13} className="text-zinc-400" /> OKKAX Copilot
+              <Sparkles size={13} className="text-zinc-400" /> Okkax Copilot
             </Link>
           )}
         </div>

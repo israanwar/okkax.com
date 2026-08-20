@@ -73,7 +73,7 @@ export default function EventWorkspace() {
               onClick={async () => {
                 try {
                   await downloadDoc(`/documents/quotation/${event.id}`, `OKKAX-Quotation-${event.event_code}.pdf`);
-                  toast.success("Quotation OKKAX diunduh");
+                  toast.success("Quotation Okkax diunduh");
                 } catch (e) {
                   toast.error(apiError(e));
                 }
@@ -87,7 +87,7 @@ export default function EventWorkspace() {
               onClick={async () => {
                 try {
                   await downloadDoc(`/documents/payment-schedule/${event.id}`, `OKKAX-Payment-Schedule-${event.event_code}.pdf`);
-                  toast.success("Payment schedule OKKAX diunduh");
+                  toast.success("Payment schedule Okkax diunduh");
                 } catch (e) {
                   toast.error(apiError(e));
                 }

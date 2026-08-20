@@ -1182,8 +1182,19 @@ async def _run_primary_semantic_reasoning(
     history: List[Dict[str, str]],
     plan: Dict[str, Any],
     platform_context: str = "",
+    thinking_budget: int = 0,
+    max_tokens: int = 2048,
+    llm_timeout_seconds: float = 18.0,
+    outer_timeout_seconds: float = 25.0,
 ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
-    """Gemini primary, OpenRouter secondary; deterministic plan on failure."""
+    """Gemini primary, OpenRouter secondary; deterministic plan on failure.
+
+    thinking_budget/max_tokens/timeouts default to the exact values this call
+    always used before per-request reasoning-mode existed — callers that don't
+    pass them get byte-identical behavior. `reasoning_mode="smarter"` in
+    ask_okkax_copilot() raises thinking_budget via Gemini's real
+    ThinkingConfig (see integrations/ai/gemini_provider.py) — not a fake delay.
+    """
     if os.environ.get("OKKAX_COPILOT_REASONING_ENABLED", "true").strip().lower() in ("0", "false", "no", "off"):
         return plan, None
     if not _copilot_reasoning_available():
@@ -1213,11 +1224,11 @@ async def _run_primary_semantic_reasoning(
                 model=router.providers["gemini"].default_model,
                 temperature=0.2,
                 top_p=0.8,
-                max_tokens=2048,
-                thinking_budget=0,
-                timeout_seconds=18.0,
+                max_tokens=max_tokens,
+                thinking_budget=thinking_budget,
+                timeout_seconds=llm_timeout_seconds,
             ),
-            timeout=25.0,
+            timeout=outer_timeout_seconds,
         )
         if not result.ok or result.provider == "deterministic_engine" or not result.data:
             return plan, None
@@ -1857,16 +1868,24 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
             "Ketik rencana acara atau pertanyaan teknis Anda, dan saya akan menyusun analisis komprehensif untuk Anda."
         )
 
-    # 2. Pertanyaan tentang Perancangan Event / Kalkulasi Budget.
-    # Fires ONLY when we have real quantitative signal: a budget number, a
-    # saving-intent, or an explicit budget-domain keyword. Generic "konser/
-    # festival" alone routes on to sponsor/tenant/etc. handlers below.
+    # 2. Pertanyaan tentang Perancangan Event / Kalkulasi Budget & Teknis.
+    # Fires when we have real quantitative signal: a budget number, a
+    # captured capacity (pax), a saving-intent, or an explicit budget/
+    # technical-domain keyword. "capacity is not None" mirrors the same
+    # numeric_anchor signal classify_intent() (below) already treats as
+    # sufficient for INTENT_ANALYTICAL — so a query that hands us a real
+    # pax number always gets computed here (sound wattage/crew — see
+    # branch E), never the generic "not enough data" fallback below, which
+    # would otherwise contradict its own hint line that shows the same
+    # captured capacity.
     _parsed_probe = parse_budget_prompt(query)
     if (_parsed_probe["saving_intent"]
         or _parsed_probe["budget"] is not None
+        or _parsed_probe["capacity"] is not None
         or any(k in q for k in ["anggaran", "budget", "hitung anggaran", "hitung biaya",
                                 "kalkulasi biaya", "kalkulasi anggaran", "simulasi biaya",
-                                "brief event", "buat event", "bikin event",
+                                "kalkulasi finansial", "finansial", "teknis", "sound system",
+                                "spesifikasi", "brief event", "buat event", "bikin event",
                                 "hemat", "potong", "turun", "kurangi", "kurangkan",
                                 "reduce", "trim", "cut", "target rp", "dari rp"])):
         parsed = _parsed_probe
@@ -1929,6 +1948,25 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
                 f"[{LABEL_RECO}] Untuk menerbitkan target break-even & harga tiket rata-rata terkalibrasi, lakukan lanjutan di Event Studio yang menautkan angka ke data live (sponsor commitment, tenant occupancy, tier struktur).",
             ]
             return "\n".join(body)
+
+        # E. Kapasitas eksplisit tanpa budget — jangan ulangi minta kapasitas
+        # yang sudah diberikan. sound_watt_rms/usher/security/medis dihitung
+        # murni dari kapasitas + policy ratio (tidak butuh budget), jadi tetap
+        # bisa dijawab grounded. Hanya pos Rupiah yang tetap [UNKNOWN] karena
+        # itu memang butuh budget yang belum disebut — bukan diasumsikan.
+        if cap and not budget:
+            data = calculate_advanced_event_model(0, cap, "User-supplied", policy=None)
+            ts = data["technical_specs"]
+            return "\n".join([
+                f"### Spesifikasi Teknis & Kru untuk {cap:,} pax",
+                f"[{LABEL_FACT}] Kapasitas: **{cap:,} pax** (user).",
+                "",
+                f"[{LABEL_CALC}] Sound system minimal: **{ts['sound_watt_rms']:,} Watt RMS** Line Array (SPL target 104 dB di FOH).",
+                f"[{LABEL_CALC}] Tim lapangan: **{ts['ushers']} Usher**, **{ts['security']} Security**, **{ts['medical_posts']} Pos Medis**.",
+                "",
+                f"[{LABEL_UNKNOWN}] Budget belum disebut — Copilot tidak mengasumsikan angka Rupiah. Sebutkan budget total agar Copilot dapat menghitung alokasi anggaran, target sponsor/tenant, dan harga tiket break-even.",
+                f"[{LABEL_FACT}] Sumber ratio teknis: policy `{data.get('policy_key')}` versi `{data.get('policy_version')}` (configurable via `platform_policies`).",
+            ])
 
         # C. Budget-only tanpa kapasitas — tidak menginvent capacity, ajukan klarifikasi.
         if budget and not cap:
@@ -2043,6 +2081,10 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
     _cparsed = parse_constraints(query)
     _cint = classify_intent(query, _cparsed)
     hints = []
+    if _cparsed.get("capacity"):
+        hints.append(f"kapasitas: {_cparsed['capacity']:,} pax")
+    if _cparsed.get("budget"):
+        hints.append(f"budget: Rp{_cparsed['budget']:,}")
     if _cparsed.get("event_type"):
         hints.append(f"tipe event: {_cparsed['event_type']}")
     if _cparsed.get("city"):
@@ -2458,10 +2500,23 @@ async def ask_okkax_copilot(
     grounded_event_snapshot: Optional[Dict[str, Any]] = None,
     authed_user: Optional[dict] = None,
     engine_pref: Optional[str] = None,
+    reasoning_mode: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Fungsi eksekusi utama OKKAX Copilot dengan dual-engine (LLM + High-Performance Deterministic Knowledge)."""
+    """Fungsi eksekusi utama OKKAX Copilot dengan dual-engine (LLM + High-Performance Deterministic Knowledge).
+
+    reasoning_mode is an optional per-request depth hint — "fast" | "advanced"
+    (default) | "smarter". It maps to real, already-integrated levers only:
+    "fast" skips the LLM semantic-reasoning call and answers from the
+    deterministic engine alone (genuinely faster, not an artificial delay
+    elsewhere); "advanced" is byte-identical to the pipeline's prior
+    unconditional behavior; "smarter" raises Gemini's real thinking_budget
+    (see integrations/ai/gemini_provider.py ThinkingConfig) and token/timeout
+    ceilings for a genuinely deeper single call. Any other/missing value
+    falls back to "advanced" — never a fabricated mode.
+    """
     reasoning_enabled = os.environ.get("OKKAX_COPILOT_REASONING_ENABLED", "true").strip().lower() not in ("0", "false", "no", "off")
     reasoning_available = reasoning_enabled and _copilot_reasoning_available()
+    resolved_reasoning_mode = reasoning_mode if reasoning_mode in ("fast", "advanced", "smarter") else "advanced"
     history = sanitize_history(history)
 
     pipeline_stages: List[str] = ["parse_prompt"]
@@ -2619,14 +2674,26 @@ async def ask_okkax_copilot(
 
     # Non-trivial read/reason requests get exactly one structured planning
     # call: Gemini primary, OpenRouter/Nemotron secondary. Numeric state is
-    # deterministic and cannot be rewritten by the model.
+    # deterministic and cannot be rewritten by the model. "fast" mode skips
+    # this call entirely (real latency win, not a fake one) and answers from
+    # the deterministic engine alone; "smarter" raises the real Gemini
+    # thinking_budget/token/timeout ceilings for one genuinely deeper call.
     reasoning_meta: Optional[Dict[str, Any]] = None
-    if intent_class in (INTENT_ANALYTICAL, INTENT_SIMULATION) or plan.get("needs_graph") or plan.get("needs_intelligence"):
-        plan, reasoning_meta = await _run_primary_semantic_reasoning(message, history, plan, dynamic_context)
+    if resolved_reasoning_mode != "fast" and (
+        intent_class in (INTENT_ANALYTICAL, INTENT_SIMULATION) or plan.get("needs_graph") or plan.get("needs_intelligence")
+    ):
+        if resolved_reasoning_mode == "smarter":
+            plan, reasoning_meta = await _run_primary_semantic_reasoning(
+                message, history, plan, dynamic_context,
+                thinking_budget=2048, max_tokens=3072, llm_timeout_seconds=28.0, outer_timeout_seconds=35.0,
+            )
+        else:
+            plan, reasoning_meta = await _run_primary_semantic_reasoning(message, history, plan, dynamic_context)
         intent_class = plan["intent"]
         intents = _semantic_intents(plan)
         if reasoning_meta:
             pipeline_stages.append("semantic_reasoning_plan")
+    pipeline_stages.append(f"reasoning_mode:{resolved_reasoning_mode}")
 
     grounded_block = ""
     grounded_reply: Optional[str] = venue_grounded_reply

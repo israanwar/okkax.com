@@ -39,7 +39,7 @@ const AUDIENCES = {
       ["Event Graph", "Setiap komponen terikat pada satu Event ID dengan status Draft, Pending, Confirmed, At Risk, Blocked."],
       ["Command Center", "Countdown, readiness, milestone, run of show, incident, dan aktivitas terbaru."],
     ],
-    live: { source: "events", label: "Live event pipeline", explain: "Snapshot dari event yang sudah di-publish pada catalog OKKAX." },
+    live: { source: "events", label: "Live event pipeline", explain: "Snapshot dari event yang sudah di-publish pada catalog Okkax." },
     cta: ["Build an Event", "/register"],
   },
   promoters: {
@@ -51,7 +51,7 @@ const AUDIENCES = {
       ["Protected Payment", "Funding aman, protected balance, settlement transparan."],
       ["Intelligence", "Rekomendasi berbasis state event untuk keputusan taktis dan strategis."],
     ],
-    live: { source: "events", label: "Live promoter pipeline", explain: "Event dari catalog OKKAX. Portfolio view menampilkan lintas kota dan kategori." },
+    live: { source: "events", label: "Live promoter pipeline", explain: "Event dari catalog Okkax. Portfolio view menampilkan lintas kota dan kategori." },
     cta: ["Kelola Portfolio", "/register?role=promoter"],
   },
   talent: {
@@ -63,7 +63,7 @@ const AUDIENCES = {
       ["Landed Cost", "Perhitungan biaya travel, akomodasi, dan tim otomatis dari kota event."],
       ["Reputation", "Review dan riwayat event membentuk kredibilitas jangka panjang."],
     ],
-    live: { source: "talents", label: "Peer talent on OKKAX", explain: "Peer talent lain yang terdaftar di catalog OKKAX. Detail komersial gated." },
+    live: { source: "talents", label: "Peer talent on Okkax", explain: "Peer talent lain yang terdaftar di catalog Okkax. Detail komersial gated." },
     cta: ["Buat Profil Talent", "/register?role=talent"],
   },
   venues: {
@@ -75,7 +75,7 @@ const AUDIENCES = {
       ["Operational Requirements", "Loading dock, security, medical, permit, dan gate operations."],
       ["Revenue Analytics", "Occupancy, ancillary revenue, dan comparative performance."],
     ],
-    live: { source: "venues", label: "Venue in the network", explain: "Sampel venue dari catalog OKKAX. Kapasitas dan curfew publik; harga detail gated." },
+    live: { source: "venues", label: "Venue in the network", explain: "Sampel venue dari catalog Okkax. Kapasitas dan curfew publik; harga detail gated." },
     cta: ["Daftarkan Venue", "/register?role=venue"],
   },
   vendors: {
@@ -87,7 +87,7 @@ const AUDIENCES = {
       ["Project Management", "Load-in, setup, rehearsal, show, dismantling, completion."],
       ["Payment Schedule", "Milestone payment, protected balance, dan settlement transparan."],
     ],
-    live: { source: "vendors", label: "Vendor in the network", explain: "Sampel vendor dari catalog OKKAX. Kategori dan kota publik; harga range gated." },
+    live: { source: "vendors", label: "Vendor in the network", explain: "Sampel vendor dari catalog Okkax. Kategori dan kota publik; harga range gated." },
     cta: ["Daftar Vendor", "/register?role=vendor"],
   },
   workforce: {
@@ -123,7 +123,7 @@ const AUDIENCES = {
       ["Alur aplikasi", "Apply, review organizer, approval, payment schedule, reserved, check-in, completion."],
       ["Kontribusi funding", "Pendapatan booth yang terkonfirmasi memperkuat funding event."],
     ],
-    live: { source: "tenants", label: "Tenants on OKKAX", explain: "Sampel tenant terdaftar. Booth pricing dan aplikasi terkunci untuk tenant yang terautorisasi." },
+    live: { source: "tenants", label: "Tenants on Okkax", explain: "Sampel tenant terdaftar. Booth pricing dan aplikasi terkunci untuk tenant yang terautorisasi." },
     cta: ["Masuk sebagai Tenant", "/login"],
   },
   attendees: {
@@ -135,7 +135,7 @@ const AUDIENCES = {
       ["LivePass", "Access credential live, bukan file. Sekali scan, langsung tervalidasi."],
       ["Transfer", "Pindahkan tiket ke teman dengan jejak audit."],
     ],
-    live: { source: "events", label: "Live discover feed", explain: "Event yang sedang berjalan atau segera datang di catalog OKKAX." },
+    live: { source: "events", label: "Live discover feed", explain: "Event yang sedang berjalan atau segera datang di catalog Okkax." },
     cta: ["Cari Event", "/discover"],
   },
 };
@@ -283,7 +283,7 @@ function LiveSlice({ source, label, explain, ctaHref, ctaLabel }) {
         </RevealGroup>
       )}
       <div className="mt-6 text-xs text-zinc-400">
-        Data ini publik dari catalog OKKAX. Detail komersial, kontak, dan action tetap terkunci hingga sign in dan role authorization backend.
+        Data ini publik dari catalog Okkax. Detail komersial, kontak, dan action tetap terkunci hingga sign in dan role authorization backend.
       </div>
     </section>
   );

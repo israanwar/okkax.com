@@ -14,7 +14,7 @@ export default function SubscribeCheckout() {
   const [sp] = useSearchParams();
   const billing = sp.get("billing") === "yearly" ? "yearly" : "monthly";
   const nav = useNavigate();
-  const { effectiveRole, loading: authLoading } = useAuth();
+  const { effectiveRole, loading: authLoading, refresh, invalidateNotifications } = useAuth();
 
   const [methods, setMethods] = useState([]);
   const [method, setMethod] = useState(null);
@@ -95,6 +95,8 @@ export default function SubscribeCheckout() {
       const { data } = await api.post(`/subscription/payments/${payment.id}/simulate`, { outcome });
       setPayment(data.payment);
       if (outcome === "success") {
+        await refresh();
+        invalidateNotifications();
         toast.success(`Paket ${meta.label} berhasil diaktifkan.`);
       } else {
         toast.error("Pembayaran disimulasikan gagal. Paket tidak diaktifkan.");

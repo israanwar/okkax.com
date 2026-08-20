@@ -56,94 +56,91 @@ export default function EconomyMap() {
     <div className="min-h-screen bg-transparent text-white font-gemini">
       <ScrollProgressBar />
       <PublicNav />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="max-w-3xl">
-          <Reveal delay={0.05}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
-              <MapPin size={11} className="text-zinc-400" />
-              Live Event Map
-            </span>
-          </Reveal>
-          <MaskReveal delay={0.1}>
-            <h1 className="editorial mt-4 text-3xl sm:text-5xl font-bold tracking-tight text-white">
-              Peta Kota Event
-            </h1>
-          </MaskReveal>
-          <Reveal delay={0.2}>
-            <p className="mt-2.5 text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-2xl">
-              Sebaran live event OKKAX di seluruh Indonesia beserta telemetri aktivitas per kota — biaya event,
-              GMV tiket, nilai sponsor, pendapatan tenant dan venue, hingga upah tenaga kerja lokal.
-            </p>
-          </Reveal>
-        </div>
-
-        {!data ? (
-          <div className="mt-10 text-sm text-zinc-500 font-gemini" data-testid="map-loading">
-            Memuat peta aktivitas live event…
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="sticky top-[65px] z-40 -mx-4 bg-[var(--okx-bg)]/95 px-4 pb-2 backdrop-blur-xl sm:-mx-6 sm:px-6" data-testid="map-sticky-controls">
+          <div className="max-w-3xl">
+            <Reveal delay={0.05}>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
+                <MapPin size={11} className="text-zinc-400" />
+                Live Event Map
+              </span>
+            </Reveal>
+            <MaskReveal delay={0.1}>
+              <h1 className="editorial mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                Peta Kota Event
+              </h1>
+            </MaskReveal>
+            <Reveal delay={0.2}>
+              <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-zinc-400 sm:text-xs">
+                Sebaran live event Okkax di seluruh Indonesia beserta telemetri aktivitas per kota — biaya event,
+                GMV tiket, nilai sponsor, pendapatan tenant dan venue, hingga upah tenaga kerja lokal.
+              </p>
+            </Reveal>
           </div>
-        ) : (
-          <>
+
+          {data && (
+            <>
             {/* Top Unified 5-Stat Ribbon */}
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" data-testid="map-totals">
-              <SpotlightCard className="p-4 sm:p-5">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+            <div className="okx-scroll mt-3 grid auto-cols-[minmax(132px,1fr)] grid-flow-col gap-2 overflow-x-auto pb-1 lg:grid-flow-row lg:grid-cols-5" data-testid="map-totals">
+              <SpotlightCard className="p-3">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
                   <TrendingUp size={13} className="text-zinc-300" />
-                  Total Aktivitas
+                  Total Aktivitas Event
                 </div>
-                <div className="num mt-2 text-xl sm:text-2xl font-bold text-white tracking-tight" data-testid="map-total-activity">
-                  {idr(data.totals.economic_activity)}
+                <div className="num mt-1.5 text-base font-bold tracking-tight text-white sm:text-lg" data-testid="map-total-activity">
+                  {compact(data.totals.economic_activity)}
                 </div>
               </SpotlightCard>
 
-              <SpotlightCard className="p-4 sm:p-5">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+              <SpotlightCard className="p-3">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
                   <MapPin size={13} className="text-zinc-300" />
                   Kota Aktif
                 </div>
-                <div className="num mt-2 text-xl sm:text-2xl font-bold text-white">
+                <div className="num mt-1.5 text-base font-bold text-white sm:text-lg">
                   <CounterNumber value={data.totals.cities} />
                 </div>
               </SpotlightCard>
 
-              <SpotlightCard className="p-4 sm:p-5">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+              <SpotlightCard className="p-3">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
                   <TrendingUp size={13} className="text-zinc-300" />
                   Event Terhubung
                 </div>
-                <div className="num mt-2 text-xl sm:text-2xl font-bold text-white">
+                <div className="num mt-1.5 text-base font-bold text-white sm:text-lg">
                   <CounterNumber value={data.totals.event_count} />
                 </div>
               </SpotlightCard>
 
-              <SpotlightCard className="p-4 sm:p-5">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+              <SpotlightCard className="p-3">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
                   <Building2 size={13} className="text-zinc-300" />
                   Bisnis Teraktivasi
                 </div>
-                <div className="num mt-2 text-xl sm:text-2xl font-bold text-white">
+                <div className="num mt-1.5 text-base font-bold text-white sm:text-lg">
                   <CounterNumber value={data.totals.businesses} />
                 </div>
               </SpotlightCard>
 
-              <SpotlightCard className="p-4 sm:p-5 col-span-2 sm:col-span-1">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
+              <SpotlightCard className="p-3">
+                <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400 font-gemini-mono">
                   <Users size={13} className="text-zinc-300" />
-                  Tenaga Kerja
+                  Tenaga Kerja Terisi
                 </div>
-                <div className="num mt-2 text-xl sm:text-2xl font-bold text-white">
-                  <CounterNumber value={data.totals.workers} />
+                <div className="num mt-1.5 text-base font-bold text-white sm:text-lg">
+                  <CounterNumber value={data.totals.workforce_filled} />
                 </div>
               </SpotlightCard>
             </div>
 
             {/* Metric Switcher Ribbon */}
-            <div className="mt-6 flex flex-wrap gap-2" data-testid="map-metric-switch">
+            <div className="okx-scroll mt-2 flex gap-1.5 overflow-x-auto pb-1" data-testid="map-metric-switch">
               {METRICS.map(([label, key]) => (
                 <button
                   key={key}
                   data-testid={`map-metric-${key}`}
                   onClick={() => setMetric(key)}
-                  className={`rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                  className={`shrink-0 rounded-lg border px-2.5 py-1 text-[10.5px] font-semibold transition-all duration-200 cursor-pointer ${
                     metric === key
                       ? "border-white bg-white text-black font-bold shadow-md shadow-white/10"
                       : "border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-white/25 hover:text-white"
@@ -153,6 +150,16 @@ export default function EconomyMap() {
                 </button>
               ))}
             </div>
+            </>
+          )}
+        </div>
+
+        {!data ? (
+          <div className="mt-10 text-sm text-zinc-500 font-gemini" data-testid="map-loading">
+            Memuat peta aktivitas live event…
+          </div>
+        ) : (
+          <>
 
             {/* Main Balanced 2-Column Grid */}
             <div className="mt-6 grid gap-6 lg:grid-cols-[1.5fr_1fr] items-start">
@@ -177,7 +184,7 @@ export default function EconomyMap() {
                       </defs>
                       {MAP.provinces.map((p) =>
                         p.paths.map((d, i) => (
-                          <path key={`${p.state}-${i}`} d={d} fill="#14141c]" stroke="#2c2c38" strokeWidth="0.7" />
+                          <path key={`${p.state}-${i}`} d={d} fill="#14141c" stroke="#2c2c38" strokeWidth="0.7" />
                         ))
                       )}
 
@@ -304,8 +311,8 @@ export default function EconomyMap() {
                           <dd className="font-mono text-zinc-200">{num(active.businesses)}</dd>
                         </div>
                         <div className="flex items-center justify-between gap-3 py-1">
-                          <dt className="text-zinc-400">Tenaga kerja</dt>
-                          <dd className="font-mono text-zinc-200">{num(active.workers)} orang</dd>
+                          <dt className="text-zinc-400">Tenaga kerja terisi</dt>
+                          <dd className="font-mono text-zinc-200">{num(active.workers)} / {num(active.workforce_needed)} posisi</dd>
                         </div>
                       </dl>
 

@@ -107,7 +107,7 @@ export default function PublicEvent({ embedded = false }) {
             </div>
             <p className="mt-3 flex items-start gap-2 text-xs text-zinc-400">
               <Info size={13} className="mt-0.5 shrink-0" />
-              Indikator bersifat faktual atas data yang tercatat di OKKAX. OKKAX tidak memberikan jaminan bahwa
+              Indikator bersifat faktual atas data yang tercatat di Okkax. Okkax tidak memberikan jaminan bahwa
               event tidak akan dibatalkan.
             </p>
           </section>

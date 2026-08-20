@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
   CalendarDays,
   CircleDot,
+  ChevronDown,
   Filter,
   LayoutGrid,
   MapPin,
   Mic2,
   RotateCcw,
   Search,
+  SlidersHorizontal,
   Store,
   Tags,
   TicketCheck,
@@ -166,8 +168,10 @@ export default function Discover({ embedded = false }) {
   const [category, setCategory] = useState("");
   const [priceMode, setPriceMode] = useState("");
   const [loading, setLoading] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [saved, setSaved] = useState(() => JSON.parse(localStorage.getItem("okkax_saved") || "[]"));
   const [unsplashAssignments, setUnsplashAssignments] = useState({});
+  const filterRef = useRef(null);
 
   const load = async (override = {}) => {
     setLoading(true);
@@ -187,6 +191,21 @@ export default function Discover({ embedded = false }) {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, priceMode]);
+
+  useEffect(() => {
+    if (!advancedOpen) return undefined;
+    const close = (event) => {
+      if (event.key === "Escape" || (event.type === "pointerdown" && !filterRef.current?.contains(event.target))) {
+        setAdvancedOpen(false);
+      }
+    };
+    document.addEventListener("keydown", close);
+    document.addEventListener("pointerdown", close);
+    return () => {
+      document.removeEventListener("keydown", close);
+      document.removeEventListener("pointerdown", close);
+    };
+  }, [advancedOpen]);
 
   // Assignment Unsplash dijalankan sekali per daftar event (signature-based
   // cache) sehingga setiap event mendapat foto unik dalam bucket-nya.
@@ -225,6 +244,7 @@ export default function Discover({ embedded = false }) {
   }, [data.items]);
   const byId = useMemo(() => Object.fromEntries(uniqueItems.map((e) => [e.id, e])), [uniqueItems]);
   const hasFilter = Boolean(q || city || category || priceMode);
+  const activeFilterCount = [q, city, category, priceMode].filter(Boolean).length;
   const featuredEventIds = new Set();
   const sections = SECTIONS.map(([key, title, sub]) => {
     const items = [];
@@ -247,30 +267,36 @@ export default function Discover({ embedded = false }) {
       {!embedded && <PublicNav />}
       {embedded && (
         <PageIntro testId="discover-page-intro">
-          <PageIntroTitle>OKKAX Discover</PageIntroTitle>
+          <PageIntroTitle>Okkax Discover</PageIntroTitle>
           <PageIntroDescription>
             Event yang sedang berlangsung, akan berlangsung, hampir habis, gratis, dan berbayar — beserta organizer, talent, tenant, sponsor, dan skala aktivitas eventnya.
           </PageIntroDescription>
         </PageIntro>
       )}
-      <div className={embedded ? "mx-auto max-w-7xl pb-8" : "mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14"}>
+      <div className={embedded ? "mx-auto max-w-7xl pb-8" : "mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8"}>
         {!embedded && (
           <>
             <MaskReveal delay={0.05}>
-              <h1 className="editorial text-3xl sm:text-5xl">OKKAX Discover</h1>
+              <h1 className="editorial text-3xl sm:text-4xl">Okkax Discover</h1>
             </MaskReveal>
             <Reveal delay={0.15}>
-              <p className="mt-3 max-w-2xl text-sm text-zinc-400">
+              <p className="mt-2 max-w-2xl text-xs leading-relaxed text-zinc-400 sm:text-sm">
                 Event yang sedang berlangsung, akan berlangsung, hampir habis, gratis, dan berbayar — beserta organizer,
-                talent, tenant, sponsor, dan skala aktivitas eventnya. Semua berasal dari data OKKAX.
+                talent, tenant, sponsor, dan skala aktivitas eventnya. Semua berasal dari data Okkax.
               </p>
             </Reveal>
           </>
         )}
 
+        <div
+          className={embedded
+            ? "space-y-3"
+            : "sticky top-[65px] z-40 mt-4 space-y-2 bg-[var(--okx-bg)]/95 pb-2 backdrop-blur-xl"}
+          data-testid="discover-sticky-controls"
+        >
         {data.totals && (
           <section
-            className={`discover-stat-panel overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl shadow-lg ${embedded ? "mt-3" : "mt-8"}`}
+            className="discover-stat-panel overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0c12]/95 backdrop-blur-xl shadow-lg"
             data-testid="discover-network-stats"
             aria-label="Ringkasan jaringan event"
           >
@@ -284,7 +310,7 @@ export default function Discover({ embedded = false }) {
                 Data katalog aktif
               </div>
             </div>
-            <RevealGroup stagger={0.08} className="grid sm:grid-cols-2 lg:grid-cols-4">
+            <RevealGroup stagger={0.08} className="grid grid-cols-2 lg:grid-cols-4">
               {[
                 [LayoutGrid, "Event terhubung", data.totals.events, "live & mendatang"],
                 [MapPin, "Kota aktif", data.totals.cities, "di seluruh Indonesia"],
@@ -292,9 +318,9 @@ export default function Discover({ embedded = false }) {
               ].map(([Icon, label, value, detail], index) => (
                 <RevealItem
                   key={label}
-                  className={`group relative px-5 py-5 transition-colors duration-300 hover:bg-white/[0.03] sm:px-6 ${
+                  className={`group relative px-4 py-4 transition-colors duration-300 hover:bg-white/[0.03] sm:px-5 ${
                     index > 0 ? "lg:border-l lg:border-white/[0.08]" : ""
-                  } ${index % 2 ? "sm:border-l sm:border-white/[0.08] lg:border-l" : ""} ${
+                  } ${index % 2 ? "border-l border-white/[0.08] lg:border-l" : ""} ${
                     index > 1 ? "border-t border-white/[0.08] lg:border-t-0" : ""
                   }`}
                 >
@@ -310,15 +336,15 @@ export default function Discover({ embedded = false }) {
                   <div className="mt-1.5 text-[11px] text-zinc-500">{detail}</div>
                 </RevealItem>
               ))}
-              <RevealItem className="group relative px-5 py-5 transition-colors duration-300 hover:bg-white/[0.03] sm:px-6 lg:border-l lg:border-white/[0.08] border-t border-white/[0.08] lg:border-t-0">
+              <RevealItem className="group relative border-l border-t border-white/[0.08] px-4 py-4 transition-colors duration-300 hover:bg-white/[0.03] sm:px-5 lg:border-t-0">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500 font-gemini-mono">
-                    Nilai operasional
+                    Total aktivitas event
                   </span>
                   <TicketCheck size={16} className="text-zinc-500 transition-colors group-hover:text-white" />
                 </div>
                 <div className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-[1.7rem] font-gemini-display">
-                  {compact(data.totals.economic_ripple)}
+                  {compact(data.totals.economic_activity)}
                 </div>
                 <div className="mt-1.5 text-[11px] text-zinc-500">dalam jaringan</div>
               </RevealItem>
@@ -327,34 +353,19 @@ export default function Discover({ embedded = false }) {
         )}
 
         <section
-          className="discover-filter-panel mt-7 rounded-2xl border border-white/[0.08] bg-[#0c0c12]/90 backdrop-blur-xl p-5 sm:p-6 lg:p-7 shadow-lg"
+          ref={filterRef}
+          className="discover-filter-panel relative z-40 rounded-xl border border-white/[0.1] bg-[#09090f]/[0.98] p-2 shadow-[0_14px_34px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:p-2.5"
           aria-label="Filter event"
+          data-testid="discover-filter-bar"
         >
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
-                <Filter size={13} className="text-zinc-400" /> Curated discovery
-              </div>
-              <h2 className="mt-1.5 text-base font-bold text-white font-gemini-display">Temukan event yang tepat</h2>
-            </div>
-            <span
-              data-testid="discover-result-count"
-              className="inline-flex h-8 items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-3.5 text-xs text-zinc-300 font-gemini-mono"
-            >
-              <span className="font-bold text-white">{num(data.items.length)}</span>
-              event ditemukan
-            </span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-12 xl:items-end">
-            <label className="group block min-w-0 sm:col-span-2 xl:col-span-4">
-              <span className="mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
-                Pencarian
-              </span>
+          <div className="grid min-w-0 grid-cols-2 items-end gap-1.5 md:grid-cols-[minmax(12rem,1.4fr)_minmax(7.5rem,0.75fr)_minmax(8.5rem,0.9fr)_auto]">
+            <label className="group col-span-2 block min-w-0 md:col-span-1">
+              <span className="sr-only">Pencarian</span>
               <span className="relative block">
                 <Search
                   aria-hidden="true"
-                  size={18}
-                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors"
+                  size={14}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-white"
                 />
                 <input
                   data-testid="discover-search-input"
@@ -363,11 +374,11 @@ export default function Discover({ embedded = false }) {
                   onKeyDown={(e) => e.key === "Enter" && load()}
                   placeholder="Nama event, talent, atau organizer"
                   aria-label="Cari event"
-                  className="h-12 w-full rounded-xl border border-white/[0.12] bg-[#060609] pl-11 pr-4 text-sm font-medium text-white placeholder:text-zinc-500 focus:border-white/40 focus:outline-none transition-all"
+                  className="h-9 w-full rounded-lg border border-white/[0.12] bg-[#060609] pl-8 pr-3 text-xs font-medium text-white outline-none transition-colors placeholder:text-zinc-500 focus:border-white/40"
                 />
               </span>
             </label>
-            <div className="xl:col-span-2">
+            <div className="min-w-0">
               <FilterSelect
                 testId="discover-city-select"
                 label="Kota"
@@ -377,7 +388,7 @@ export default function Discover({ embedded = false }) {
                 options={[{ value: "", label: "Semua kota" }, ...data.cities.map((c) => ({ value: c, label: c }))]}
               />
             </div>
-            <div className="xl:col-span-3">
+            <div className="min-w-0">
               <FilterSelect
                 testId="discover-category-select"
                 label="Kategori"
@@ -387,50 +398,74 @@ export default function Discover({ embedded = false }) {
                 options={[{ value: "", label: "Semua kategori" }, ...data.categories.map((c) => ({ value: c, label: c }))]}
               />
             </div>
-            <div className="xl:col-span-3">
-              <FilterSelect
-                testId="discover-price-select"
-                label="Akses tiket"
-                icon={TicketCheck}
-                value={priceMode}
-                onChange={setPriceMode}
-                options={[
-                  { value: "", label: "Gratis & berbayar" },
-                  { value: "free", label: "Gratis" },
-                  { value: "paid", label: "Berbayar" },
-                ]}
-              />
-            </div>
-          </div>
-          <div className="mt-5 flex flex-col justify-between gap-3 border-t border-white/[0.08] pt-5 sm:flex-row sm:items-center">
-            <div className="min-h-5 text-xs text-zinc-400 font-gemini">
-              {hasFilter ? (
-                <span>
-                  Filter aktif <span className="mx-2 text-zinc-600">/</span>
-                  <span className="font-semibold text-white">{[city, category, priceMode, q].filter(Boolean).join(" · ")}</span>
-                </span>
-              ) : (
-                "Tampilkan seluruh event dalam jaringan OKKAX"
+            <div className="col-span-2 flex min-w-0 items-center justify-end gap-1.5 md:col-span-1">
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen((open) => !open)}
+                aria-expanded={advancedOpen}
+                aria-controls="discover-advanced-filters"
+                data-testid="discover-more-filters-btn"
+                className="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-white/[0.12] bg-white/[0.035] px-2.5 text-[11px] font-semibold text-zinc-300 transition-colors hover:border-white/25 hover:text-white"
+              >
+                <SlidersHorizontal size={13} />
+                <span>Filter lainnya</span>
+                {priceMode && <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-bold text-black">1</span>}
+                <ChevronDown size={12} className={`transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+              </button>
+              {hasFilter && (
+                <button
+                  type="button"
+                  data-testid="discover-reset-btn"
+                  onClick={reset}
+                  aria-label="Reset filter"
+                  title="Reset filter"
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.03] text-zinc-400 transition-colors hover:border-white/25 hover:text-white"
+                >
+                  <RotateCcw size={13} />
+                </button>
               )}
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <button
-                data-testid="discover-reset-btn"
-                onClick={reset}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.03] px-5 text-sm font-semibold text-zinc-300 hover:border-white/25 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer"
-              >
-                <RotateCcw size={15} /> Reset
-              </button>
-              <button
+                type="button"
                 data-testid="discover-apply-btn"
-                onClick={() => load()}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white hover:bg-zinc-200 text-black px-6 text-sm font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                onClick={() => { setAdvancedOpen(false); load(); }}
+                className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-white px-3 text-[11px] font-bold text-black shadow-sm transition-colors hover:bg-zinc-200"
               >
-                <Filter size={15} /> Terapkan filter
+                <Filter size={13} /> Terapkan
               </button>
             </div>
           </div>
+
+          <div className="mt-1.5 flex min-h-4 items-center justify-between gap-3 px-1 text-[10px] text-zinc-500 font-gemini">
+            <span className="min-w-0 truncate">
+              {hasFilter ? <><span className="font-semibold text-zinc-300">{activeFilterCount} filter aktif</span> · {[city, category, priceMode, q].filter(Boolean).join(" · ")}</> : "Seluruh event dalam jaringan Okkax"}
+            </span>
+            <span data-testid="discover-result-count" className="shrink-0 font-gemini-mono text-zinc-400"><strong className="text-white">{num(data.items.length)}</strong> event</span>
+          </div>
+
+          {advancedOpen && (
+            <div
+              id="discover-advanced-filters"
+              data-testid="discover-advanced-filters"
+              className="absolute inset-x-0 top-[calc(100%+6px)] z-50 rounded-xl border border-white/[0.12] bg-[#09090f] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.92)]"
+            >
+              <div className="max-w-xs">
+                <FilterSelect
+                  testId="discover-price-select"
+                  label="Akses tiket"
+                  icon={TicketCheck}
+                  value={priceMode}
+                  onChange={setPriceMode}
+                  options={[
+                    { value: "", label: "Gratis & berbayar" },
+                    { value: "free", label: "Gratis" },
+                    { value: "paid", label: "Berbayar" },
+                  ]}
+                />
+              </div>
+            </div>
+          )}
         </section>
+        </div>
 
         {loading ? (
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -453,14 +488,14 @@ export default function Discover({ embedded = false }) {
         ) : (
           <>
             {!hasFilter && sections.map((s) => (
-              <section key={s.key} className="mt-12" data-testid={`discover-section-${s.key}`}>
+              <section key={s.key} className="mt-8" data-testid={`discover-section-${s.key}`}>
                 <div className="flex flex-wrap items-end justify-between gap-2">
                   <div>
                     <h2 className="text-base font-semibold md:text-lg">{s.title}</h2>
                     {s.sub && <p className="text-xs text-zinc-500">{s.sub}</p>}                  </div>
                   <span className="num text-xs text-zinc-500">{num(s.items.length)} event</span>
                 </div>
-                <div className="okx-scroll mt-4 flex gap-4 overflow-x-auto pb-2">
+                <div className="okx-scroll mt-3 flex gap-3 overflow-x-auto pb-2">
                   {s.items.map((ev) => (
                     <div key={`${s.key}-${ev.id}`} className="w-[290px] shrink-0">
                       <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} compactMode unsplashAssignments={unsplashAssignments} detailBasePath={embedded ? "/app/discover/events" : "/events"} />
@@ -470,12 +505,12 @@ export default function Discover({ embedded = false }) {
               </section>
             ))}
 
-            {catalogueItems.length > 0 && <section className="mt-14" data-testid="discover-all-section">
+            {catalogueItems.length > 0 && <section className="mt-10" data-testid="discover-all-section">
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                   <h2 className="text-base font-semibold md:text-lg">{hasFilter ? "Hasil event" : "Event lainnya"}</h2>
                   <p className="text-xs text-zinc-500">
-                    {hasFilter ? "Event yang sesuai dengan filter Anda" : "Event terpublikasi lain di jaringan OKKAX"}
+                    {hasFilter ? "Event yang sesuai dengan filter Anda" : "Event terpublikasi lain di jaringan Okkax"}
                   </p>
                 </div>
                 <span className="flex items-center gap-3 text-xs text-zinc-500">
@@ -483,7 +518,7 @@ export default function Discover({ embedded = false }) {
                   <span className="inline-flex items-center gap-1"><Store size={12} /> tenant aktif</span>
                 </span>
               </div>
-              <RevealGroup stagger={0.06} className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <RevealGroup stagger={0.06} className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {catalogueItems.map((ev) => (
                   <RevealItem key={ev.id}>
                     <EventCard ev={ev} saved={saved.includes(ev.id)} onSave={toggleSave} unsplashAssignments={unsplashAssignments} detailBasePath={embedded ? "/app/discover/events" : "/events"} />

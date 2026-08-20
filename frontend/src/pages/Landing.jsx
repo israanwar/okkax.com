@@ -10,16 +10,12 @@ import {
   CheckCircle2,
   ChevronDown,
   CircleDollarSign,
-  CircleDot,
   CircleOff,
   Clock3,
-  Info,
   LineChart,
   ListChecks,
-  MousePointerClick,
   Network,
   QrCode,
-  Route,
   Store,
   Ticket,
   TriangleAlert,
@@ -193,7 +189,7 @@ function buildPreviewNodes(summary, catalogEvent) {
 
   return [
     {
-      id: "event", label: event.name || "Event OKKAX", kind: "Event", status: eventStatus,
+      id: "event", label: event.name || "Event Okkax", kind: "Event", status: eventStatus,
       description: "Pusat kendali yang menghubungkan semua komponen pada satu Event ID.",
       owner: event.organizer_name || "Event Organizer",
       value: `${event.event_code || DEMO_EVENT_ID} · ${compact(totalCost)}`,
@@ -402,83 +398,11 @@ function StatusPill({ status, testId }) {
   );
 }
 
-const DEFAULT_DEMO_SUMMARY = {
-  event: {
-    id: DEMO_EVENT_ID,
-    event_code: "EVT-MKS-2026-0001",
-    name: "Aruna Bold Live Makassar",
-    city: "Makassar",
-    start_date: "2026-09-18",
-    end_date: "2026-09-20",
-    capacity: 5000,
-    event_type: "Music Festival",
-    organizer_name: "Aruna Live ID",
-    venue_name: "Phinisi Convention Hall",
-    status: "published",
-  },
-  key_numbers: {
-    total_event_cost: 750000000,
-    confirmed_funding: 850000000,
-    funding_gap: 0,
-    economic_activity: 1250000000,
-  },
-  network: {
-    talents: 4,
-    vendors: 6,
-    rider_items: 8,
-    sponsor_commitments: 3,
-    sponsor_value: 350000000,
-    booths_total: 20,
-    booths_occupied: 18,
-    tenant_revenue: 80000000,
-    workforce_needed: 50,
-    tickets_sold: 4200,
-    ticket_capacity: 5000,
-    ticket_gmv: 420000000,
-  },
-  operations: {
-    readiness: 92,
-    rider_matched: 8,
-    rider_total: 8,
-    workforce_filled: 45,
-    workforce_needed: 50,
-    vendors_confirmed: 6,
-    vendors_total: 6,
-  },
-  brief: {
-    city: "Makassar",
-    headliner: "Noah & Sheila on 7",
-    headliner_landed_cost: 350000000,
-    sponsor_tiers: 4,
-  },
-  ripple: {
-    venue_income: 120000000,
-    vendor_payout: 280000000,
-    workforce_payout: 75000000,
-    ticket_gmv: 420000000,
-    economic_activity: 1250000000,
-  },
-};
-
-const DEFAULT_CATALOG_EVENTS = [
-  {
-    id: DEMO_EVENT_ID,
-    name: "Aruna Bold Live Makassar",
-    organizer_name: "Aruna Live ID",
-    headline_talent: "Noah & Sheila on 7",
-    city: "Makassar",
-    event_code: "EVT-MKS-2026-0001",
-    venue_name: "Phinisi Convention Hall",
-    budget: 750000000,
-    status: "published",
-  },
-];
-
 function GraphPreview() {
   const graphScrollRef = useRef(null);
-  // Initialize with DEFAULT_DEMO_SUMMARY so graph renders instantly (< 50ms) without blank blocks
-  const [summary, setSummary] = useState(DEFAULT_DEMO_SUMMARY);
-  const [catalogEvents, setCatalogEvents] = useState(DEFAULT_CATALOG_EVENTS);
+  const [summary, setSummary] = useState(null);
+  const [catalogEvents, setCatalogEvents] = useState([]);
+  const [catalogTotals, setCatalogTotals] = useState(null);
   const [selectedEventId, setSelectedEventId] = useState(DEMO_EVENT_ID);
   const [loadError, setLoadError] = useState(false);
   const [active, setActive] = useState("event");
@@ -502,10 +426,15 @@ function GraphPreview() {
           ),
         ]);
         if (!mounted) return;
-        if (sumData) setSummary(sumData);
-        if (eventsData?.items?.length) setCatalogEvents(eventsData.items);
+        if (sumData && eventsData?.items?.length) {
+          setSummary(sumData);
+          setCatalogEvents(eventsData.items);
+          setCatalogTotals(eventsData.totals || null);
+        } else {
+          setLoadError(true);
+        }
       } catch {
-        // keep pre-rendered default summary
+        if (mounted) setLoadError(true);
       }
     };
 
@@ -520,15 +449,15 @@ function GraphPreview() {
     [catalogEvents, selectedEventId]
   );
   const catalogStats = useMemo(() => ({
-    events: catalogEvents.length,
-    promoters: new Set(catalogEvents.map((event) => event.organizer_name).filter(Boolean)).size,
-    bands: new Set(catalogEvents.map((event) => event.headline_talent).filter(Boolean)).size,
-  }), [catalogEvents]);
+    events: catalogTotals?.events ?? catalogEvents.length,
+    promoters: catalogTotals?.promoters ?? new Set(catalogEvents.map((event) => event.organizer_name).filter(Boolean)).size,
+    talents: catalogTotals?.talents ?? new Set(catalogEvents.map((event) => event.headline_talent).filter(Boolean)).size,
+  }), [catalogEvents, catalogTotals]);
   // Dedupe by name supaya event dengan nama identik (seed backend hasilkan
   // beberapa nama yang berulang) tidak muncul dua kali di dropdown.
   const eventPickerOptions = useMemo(() => {
     if (!catalogEvents.length) {
-      return [{ value: DEMO_EVENT_ID, label: "Event OKKAX" }];
+      return [{ value: DEMO_EVENT_ID, label: "Event Okkax" }];
     }
     const seen = new Set();
     const options = [];
@@ -665,7 +594,8 @@ function GraphPreview() {
   return (
     <div className="space-y-5 font-gemini" data-testid="graph-preview">
       {/* Event Switcher & Catalog Stats */}
-      <SpotlightCard className="overflow-visible relative z-30" data-testid="graph-event-switcher">
+      <div className="sticky top-[65px] z-30" data-testid="graph-event-switcher-sticky">
+      <SpotlightCard className="overflow-visible" data-testid="graph-event-switcher">
         <div className="grid xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.75fr)]">
           <div className="p-4 sm:p-5">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.2em] text-zinc-300 font-gemini-mono shadow-sm">
@@ -676,20 +606,20 @@ function GraphPreview() {
               value={selectedEventId}
               onChange={chooseEvent}
               options={eventPickerOptions}
-              placeholder="Event OKKAX"
+              placeholder="Event Okkax"
               testId="graph-event-select"
               className="mt-2.5"
             />
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400 font-gemini">
               <span data-testid="graph-active-organizer">{graphEvent.organizer_name || "Organizer belum tersedia"}</span>
               <span>· {graphEvent.city || "Kota belum tersedia"}</span>
-              <span data-testid="graph-active-talent">· {nodeMap.talent?.progress > 0 ? "Talent terhubung" : "Talent belum tersedia"}</span>
+              <span data-testid="graph-active-talent">· {graphEvent.headline_talent || (nodeMap.talent?.progress > 0 ? "Talent terhubung" : "Talent belum tersedia")}</span>
             </div>
           </div>
           <div className="grid grid-cols-3 border-t border-white/[0.08] xl:border-t-0 xl:border-l bg-white/[0.01]" data-testid="graph-catalog-stats">
             {[
               [catalogStats.events, "event"],
-              [catalogStats.bands, "talent"],
+              [catalogStats.talents, "talent"],
               [catalogStats.promoters, "promotor"],
             ].map(([value, label]) => (
               <div key={label} className="flex min-w-0 flex-col justify-center border-l border-white/[0.06] px-3 py-4 first:border-l-0 sm:px-5">
@@ -700,6 +630,7 @@ function GraphPreview() {
           </div>
         </div>
       </SpotlightCard>
+      </div>
 
       {/* Main 2-Column Section */}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.72fr)] items-start">
@@ -729,7 +660,7 @@ function GraphPreview() {
               viewBox={`0 0 ${PW} ${PH}`}
               className="block min-w-[760px] w-full"
               role="img"
-              aria-label={`Event Graph interaktif untuk ${graphEvent.name || "event OKKAX"}`}
+              aria-label={`Event Graph interaktif untuk ${graphEvent.name || "event Okkax"}`}
               data-testid="graph-preview-canvas"
             >
               <defs>
@@ -1019,23 +950,6 @@ function GraphPreview() {
         </SpotlightCard>
       </div>
 
-      {/* 4 Reading Guide Cards with modern SpotlightCards */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" data-testid="graph-reading-guide">
-        {[
-          [CircleDot, "Pusat grafik", "Event di tengah adalah satu Event ID yang menjadi pusat kendali."],
-          [MousePointerClick, "Node", "Setiap node adalah komponen operasional. Klik untuk membuka detailnya."],
-          [Route, "Garis & panah", "Garis adalah ketergantungan; panah menunjukkan arah dampaknya."],
-          [Info, "Status", "Ikon, warna, dan label menjelaskan kondisi setiap komponen."],
-        ].map(([Icon, title, description]) => (
-          <SpotlightCard key={title} className="p-4">
-            <div className="inline-flex rounded-xl border border-white/[0.1] bg-white/[0.04] p-2 text-zinc-300">
-              <Icon size={16} aria-hidden="true" />
-            </div>
-            <h4 className="mt-2.5 text-xs font-bold text-white tracking-tight">{title}</h4>
-            <p className="mt-1 text-[11px] leading-relaxed text-zinc-400 font-gemini">{description}</p>
-          </SpotlightCard>
-        ))}
-      </div>
     </div>
   );
 }
@@ -1064,11 +978,11 @@ const PROCESS_STEPS = [
 ];
 
 export default function Landing() {
-  const [ripple, setRipple] = useState(null);
+  const [networkTotals, setNetworkTotals] = useState(null);
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    fetchCached(`/events/${DEMO_EVENT_ID}/ripple`, 60_000)
-      .then((data) => setRipple(data?.metrics || data))
+    fetchCached("/public/graph-events", 60_000)
+      .then((data) => setNetworkTotals(data?.totals || null))
       .catch(() => {});
   }, []);
 
@@ -1091,7 +1005,13 @@ export default function Landing() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
             </span>
             <span className="font-mono text-[10.5px] sm:text-[11px] font-semibold tracking-wide text-zinc-300">
-              <span className="text-white font-bold">15 KOTA TERKONEKSI</span> · 42 VENUE AKTIF <span className="hidden sm:inline">· RP 4.8M GMV TERPROTEKSI</span>
+              {networkTotals ? (
+                <>
+                  <span className="font-bold text-white">{num(networkTotals.cities)} KOTA TERKONEKSI</span>
+                  {" · "}{num(networkTotals.events)} EVENT TERHUBUNG
+                  <span className="hidden sm:inline"> · {compact(networkTotals.economic_activity)} TOTAL AKTIVITAS EVENT</span>
+                </>
+              ) : "MEMUAT TELEMETRI JARINGAN"}
             </span>
           </motion.div>
 
@@ -1107,39 +1027,44 @@ export default function Landing() {
             </span>
           </motion.div>
 
-          {/* Main Hero Headline */}
-          <MaskReveal delay={0.15}>
-            <h1 className="editorial mt-6 text-[clamp(2.15rem,6.5vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
-              Every moving part,
-              <br />
-              <span className="text-zinc-300 font-normal">working as one.</span>
-            </h1>
-          </MaskReveal>
-
-          {/* Subtitle */}
-          <Reveal delay={0.25} y={12}>
-            <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base font-gemini font-normal">
-              Dari brief ide hingga settlement panggung. OKKAX menyatukan seluruh komponen, rider, tiket,
-              dan workflow live event dalam satu koordinasi terpusat.
-            </p>
-          </Reveal>
-
-          {/* Google Stitch-Grade Hero Command Capsule */}
+          {/* Google Stitch-Grade Hero Command Capsule.
+              The headline and subtitle are handed to the capsule rather than
+              rendered here, because they share one fixed-height slot with the
+              Copilot processing and response states. Only that slot swaps
+              content, so the composer and starter prompts below never move. */}
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 36, scale: 0.98 }}
+            animate={{ opacity: 1, y: 12, scale: 1 }}
             transition={{ duration: 0.65, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full mt-8"
+            className="mb-3 mt-6 w-full"
           >
-            <StitchHeroCommandCapsule />
+            <StitchHeroCommandCapsule
+              heroIntro={
+                <>
+                  <MaskReveal delay={0.15}>
+                    <h1 className="editorial text-[clamp(2.15rem,6.5vw,5.5rem)] font-bold leading-[0.98] tracking-[-0.045em] text-white">
+                      Every moving part,
+                      <br />
+                      <span className="text-zinc-300 font-normal">working as one.</span>
+                    </h1>
+                  </MaskReveal>
+                  <Reveal delay={0.25} y={12}>
+                    <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base font-gemini font-normal">
+                      Dari brief ide hingga settlement panggung. OKKAX menyatukan seluruh komponen, rider, tiket,
+                      dan workflow live event dalam satu koordinasi terpusat.
+                    </p>
+                  </Reveal>
+                </>
+              }
+            />
           </motion.div>
 
           {/* Secondary Trust & Calendar Row */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-5 text-xs text-zinc-300 font-gemini">
+          <div className="mt-2 flex min-h-8 flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10.5px] text-zinc-400 font-gemini sm:text-[11px]">
             <span>Mode demo kompetisi — pembayaran sandbox tanpa uang nyata.</span>
             <span className="text-zinc-500 hidden sm:inline">·</span>
             <div className="flex items-center gap-1.5 text-zinc-300">
-              <CalendarDays size={13} className="text-zinc-300" aria-hidden="true" />
+              <CalendarDays size={12} className="text-zinc-400" aria-hidden="true" />
               <a
                 href={`/calendar?date=${[
                   new Date().getFullYear(),
@@ -1163,49 +1088,49 @@ export default function Landing() {
 
       <LiveTicker />
 
-      <section className="border-b border-white/[0.06] bg-[#08080d]/60 backdrop-blur-md px-4 py-14 sm:px-6 sm:py-16">
+      <section className="border-b border-white/[0.06] bg-[#08080d]/60 backdrop-blur-md px-4 py-7 sm:px-6 sm:py-8">
         <div className="mx-auto max-w-7xl">
           <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] accent-text">Cara OKKAX bekerja</p>
-            <h2 className="editorial mt-4 text-3xl sm:text-4xl text-white">Dari ide menjadi panggung yang hidup.</h2>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.2em] accent-text">Cara Okkax bekerja</p>
+            <h2 className="editorial mt-1.5 text-xl text-white sm:text-2xl">Dari ide menjadi panggung yang hidup.</h2>
           </Reveal>
 
-          <div className="mt-12 sm:mt-14">
-            <RevealGroup stagger={0.06} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-4 sm:mt-5">
+            <RevealGroup stagger={0.06} className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  title: "1. Brief & Blueprint",
+                  title: "Brief & Blueprint",
                   description: "Input konsep acara Anda, dan sistem mengonversinya menjadi Event Blueprint 6 fase terstruktur.",
                   Icon: Layers,
                 },
                 {
-                  title: "2. Supply Matching",
-                  description: "Temukan talent, venue, vendor terverifikasi dari katalog 15+ kota dengan sistem scoring kecocokan.",
+                  title: "Supply Matching",
+                  description: "Temukan talent, venue, vendor terverifikasi dari katalog lintas kota dengan sistem scoring kecocokan.",
                   Icon: Network,
                 },
                 {
-                  title: "3. Komersialisasi",
+                  title: "Komersialisasi",
                   description: "Buka inventaris tiket dengan proteksi dinamis, aktivasi slot sponsor, dan seleksi tenant UMKM.",
                   Icon: Ticket,
                 },
                 {
-                  title: "4. Showtime & Settle",
+                  title: "Showtime & Settle",
                   description: "Validasi tiket offline-first di gate, pantau operasi langsung, dan cairkan termin secara otomatis.",
                   Icon: CheckCircle2,
                 },
               ].map(({ title, description, Icon }, index) => (
                 <RevealItem key={title}>
                   <article
-                    className="group rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-5 sm:p-6 shadow-md transition-all duration-300 hover:border-white/25 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(0,0,0,0.7)]"
+                    className="group h-full rounded-xl border border-white/[0.08] bg-[#0c0c11]/85 p-3 shadow-md backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-white/25 hover:shadow-[0_12px_28px_rgba(0,0,0,0.65)]"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/[0.12] bg-white/[0.04] text-white">
-                        <Icon size={18} aria-hidden="true" />
+                    <div className="flex items-start gap-2.5">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.04] text-white">
+                        <Icon size={13} aria-hidden="true" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-gemini-mono mb-1.5 text-[11px] font-bold text-zinc-400">0{index + 1}</div>
-                        <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-zinc-100 transition-colors">{title}</h3>
-                        <p className="mt-1.5 text-xs sm:text-sm leading-relaxed text-zinc-300">{description}</p>
+                        <div className="font-gemini-mono mb-0.5 text-[9px] font-bold text-zinc-500">0{index + 1}</div>
+                        <h3 className="text-xs font-bold text-white transition-colors group-hover:text-zinc-100">{title}</h3>
+                        <p className="mt-0.5 text-[10.5px] leading-[1.45] text-zinc-400">{description}</p>
                       </div>
                     </div>
                   </article>
@@ -1214,23 +1139,8 @@ export default function Landing() {
             </RevealGroup>
           </div>
 
-          <Reveal delay={0.15} className="mt-12 sm:mt-16">
+          <Reveal delay={0.15} className="mt-6 sm:mt-7">
             <GraphPreview />
-          </Reveal>
-
-          <Reveal delay={0.2} className="mt-8 grid gap-4 md:grid-cols-2" data-testid="graph-before-after">
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/80 backdrop-blur-xl p-6 shadow-md">
-              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-zinc-400">Sebelum OKKAX</div>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-300">
-                Data event tersebar di WhatsApp, spreadsheet, PDF rider, invoice, email, dan dokumen vendor tanpa visibilitas ketergantungan.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/[0.18] bg-gradient-to-b from-[#151522]/90 to-[#0c0c12]/90 backdrop-blur-xl p-6 shadow-lg">
-              <div className="font-gemini-mono text-[10.5px] font-bold uppercase tracking-[0.2em] text-white">Dengan Event Graph</div>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-200">
-                Seluruh komponen, status, ketergantungan, biaya, risiko, dan tindakan berikutnya terpusat dan tersinkronisasi dalam satu Event ID.
-              </p>
-            </div>
           </Reveal>
         </div>
       </section>
@@ -1249,7 +1159,7 @@ export default function Landing() {
               </h2>
             </div>
             <p className="max-w-md text-xs leading-relaxed text-zinc-300 sm:text-sm">
-              Setiap produk terintegrasi langsung ke dalam Event Graph dan database 15+ kota tanpa fragmentasi file atau spreadsheet terpisah.
+              Setiap produk terintegrasi langsung ke dalam Event Graph dan database jaringan aktif tanpa fragmentasi file atau spreadsheet terpisah.
             </p>
           </div>
 
@@ -1268,15 +1178,15 @@ export default function Landing() {
                 num: "02",
                 slug: "network",
                 title: "Network Supply",
-                badge: "15+ Kota",
-                desc: "Katalog publik terverifikasi untuk 300+ Talent, 500+ Venue, 240+ Vendor, Workforce, Sponsor, dan Tenant dengan sistem score-matching.",
+                badge: "Jaringan Nasional",
+                desc: "Katalog publik terverifikasi untuk Talent, Venue, Vendor, Workforce, Sponsor, dan Tenant dengan sistem score-matching.",
                 icon: Globe2,
                 link: "/products/network",
               },
               {
                 num: "03",
                 slug: "copilot",
-                title: "OKKAX Copilot",
+                title: "Okkax Copilot",
                 badge: "Observability",
                 desc: "Tiga tingkatan analitik: Observe (telemetri), Understand (deteksi blocker otomatis), dan Optimize (rekomendasi efisiensi biaya).",
                 icon: Sparkles,
@@ -1351,7 +1261,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* OKKAX COPILOT SPOTLIGHT */}
+      {/* Okkax Copilot spotlight */}
       <Reveal as="section" className="border-b border-white/[0.06] bg-transparent px-4 py-16 sm:px-6 sm:py-24 relative overflow-hidden font-gemini">
         <div className="mx-auto max-w-7xl relative z-10">
           <div className="rounded-3xl border border-white/[0.12] bg-gradient-to-b from-[#14141f] to-[#0a0a0f] p-8 sm:p-12 lg:p-14 shadow-[0_32px_80px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.08)]">
@@ -1362,10 +1272,10 @@ export default function Landing() {
                   <span>Okkax Copilot</span>
                 </div>
                 <h2 className="editorial mt-5 text-3xl sm:text-5xl text-white leading-tight">
-                  Temui OKKAX Copilot — Asisten Cerdas Operasional Acara.
+                  Temui Okkax Copilot — Asisten Cerdas Operasional Acara.
                 </h2>
                 <p className="mt-4 text-sm leading-relaxed text-zinc-300 sm:text-base">
-                  OKKAX Copilot memahami seluruh data event, mengidentifikasi dependensi berisiko di Event Graph, menghitung alokasi anggaran dan break-even, hingga menyusun SOP gate check-in hari H.
+                  Okkax Copilot memahami seluruh data event, mengidentifikasi dependensi berisiko di Event Graph, menghitung alokasi anggaran dan break-even, hingga menyusun SOP gate check-in hari H.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3.5">
                   <Link
@@ -1374,7 +1284,7 @@ export default function Landing() {
                     className="inline-flex items-center gap-2 rounded-xl bg-white hover:bg-zinc-200 px-6 py-3.5 text-sm font-bold text-black transition-all shadow-[0_4px_24px_rgba(255,255,255,0.15)] active:scale-[0.98]"
                   >
                     <Terminal size={16} />
-                    <span>Buka OKKAX Command Center</span>
+                    <span>Buka Okkax Command Center</span>
                     <ArrowRight size={14} />
                   </Link>
                   <Link
@@ -1389,7 +1299,7 @@ export default function Landing() {
               <div className="lg:col-span-5 flex flex-col gap-2.5">
                 <div className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-2 font-gemini-mono">
                   <Sparkles size={13} className="text-zinc-400" />
-                  <span>Coba Tanyakan Langsung ke OKKAX Copilot:</span>
+                  <span>Coba Tanyakan Langsung ke Okkax Copilot:</span>
                 </div>
                 {[
                   { label: "Kalkulasi Budget Konser 5.000 pax", prompt: "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar" },
@@ -1423,7 +1333,7 @@ export default function Landing() {
                 <span>Regional Economic Multiplier</span>
               </div>
               <h2 className="editorial mt-3 text-2xl sm:text-4xl text-white">
-                Dampak ekonomi riil di 15+ kota Indonesia.
+                Dampak ekonomi event di {networkTotals ? num(networkTotals.cities) : "seluruh"} kota Indonesia.
               </h2>
             </div>
             <Link
@@ -1437,27 +1347,27 @@ export default function Landing() {
 
           <RevealGroup stagger={0.08} className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Total Perputaran Ekonomi</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Total Aktivitas Event</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
-                <CounterNumber prefix="Rp " value={8.4} decimals={1} suffix=" Milyar" />
+                {networkTotals ? compact(networkTotals.economic_activity) : "—"}
               </div>
             </RevealItem>
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
               <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Bisnis Lokal Teraktivasi</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
-                <CounterNumber value={142} suffix=" UMKM & Vendor" />
+                {networkTotals ? <CounterNumber value={networkTotals.businesses} suffix=" relasi" /> : "—"}
               </div>
             </RevealItem>
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Kru & Tenaga Kerja</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Tenaga Kerja Terisi</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
-                <CounterNumber value={263} suffix=" Profesional" />
+                {networkTotals ? <CounterNumber value={networkTotals.workforce_filled} suffix=" posisi" /> : "—"}
               </div>
             </RevealItem>
             <RevealItem className="rounded-2xl border border-white/[0.08] bg-[#0c0c11]/85 backdrop-blur-xl p-6 sm:p-7 shadow-md">
-              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Okupansi Hotel & Wisata</div>
+              <div className="text-xs uppercase tracking-wider text-zinc-400 font-gemini-mono">Talent Terhubung</div>
               <div className="font-gemini-mono mt-3 text-2xl font-bold sm:text-3xl text-white">
-                <CounterNumber value={480} suffix=" Kamar/Malam" />
+                {networkTotals ? <CounterNumber value={networkTotals.talents} suffix=" talent" /> : "—"}
               </div>
             </RevealItem>
           </RevealGroup>

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, Plus, Search } from "lucide-react";
 
 /**
- * Shared Popover Dropdown untuk seluruh OKKAX.
+ * Shared Popover Dropdown untuk seluruh Okkax.
  *
  * Menggunakan React Portal ke document.body dengan fixed positioning:
  * 1. Terisolasi total dari parent stacking context (misal backdrop-filter / transform).

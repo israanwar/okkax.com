@@ -63,6 +63,24 @@ def test_events_appear_on_economy_map(discover):
     assert set(discover["cities"]) == {c["city"] for c in m["cities"]}
 
 
+def test_public_statistics_use_one_authoritative_snapshot(discover):
+    economy = httpx.get(f"{API}/economy/map", timeout=120).json()
+    graph = httpx.get(f"{API}/public/graph-events", timeout=120).json()
+    discover_totals = discover["totals"]
+    economy_totals = economy["totals"]
+    graph_totals = graph["totals"]
+
+    assert discover_totals["events"] == economy_totals["event_count"] == graph_totals["events"]
+    assert discover_totals["cities"] == economy_totals["cities"] == graph_totals["cities"]
+    assert discover_totals["economic_activity"] == economy_totals["economic_activity"] == graph_totals["economic_activity"]
+    assert discover_totals["businesses"] == economy_totals["businesses"] == graph_totals["businesses"]
+    assert discover_totals["workforce_filled"] == economy_totals["workforce_filled"] == graph_totals["workforce_filled"]
+    assert discover_totals["workforce_filled"] <= discover_totals["workforce_needed"]
+    assert graph_totals["talents"] > 0
+    assert graph_totals["promoters"] > 0
+    assert any((event.get("talent_count") or 0) > 0 for event in graph["items"])
+
+
 def test_filters_and_search_work(discover):
     city = discover["cities"][0]
     r = httpx.get(f"{API}/discover/events", params={"city": city}, timeout=120).json()

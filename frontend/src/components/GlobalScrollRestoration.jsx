@@ -2,7 +2,7 @@ import { useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 /**
- * OKKAX Global Scroll Restoration
+ * Okkax Global Scroll Restoration
  *
  * Policy:
  * - Fresh load / reload -> always start at top.

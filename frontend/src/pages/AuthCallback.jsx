@@ -42,7 +42,7 @@ export default function AuthCallback() {
           <a href="/login" className="accent-text underline">Kembali ke Sign in</a>
         </>
       ) : (
-        <p data-testid="auth-callback-loading" className="text-sm text-zinc-400">Menghubungkan akun Google Anda ke OKKAX…</p>
+        <p data-testid="auth-callback-loading" className="text-sm text-zinc-400">Menghubungkan akun Google Anda ke Okkax…</p>
       )}
     </div>
   );

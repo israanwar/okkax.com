@@ -1,0 +1,59 @@
+/* -----------------------------------------------------------------------------
+   Okkax Copilot — scoped shell styles.
+
+   Sengaja dipisah dari index.css supaya perubahan visual Copilot tidak menyentuh
+   token global website (homepage/nav/composer). Semua selector di-scope ke
+   .okx-copilot-root sehingga tidak ada kebocoran style ke komponen lain.
+----------------------------------------------------------------------------- */
+
+/* Scrollbar tipis ala referensi (6px, thumb #27272a). */
+.okx-copilot-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #27272a transparent;
+}
+.okx-copilot-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.okx-copilot-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.okx-copilot-scroll::-webkit-scrollbar-thumb {
+    background: #27272a;
+    border-radius: 9999px;
+}
+.okx-copilot-scroll::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+/* Guard anti-overflow horizontal untuk seluruh isi panel. */
+.okx-copilot-root {
+    overscroll-behavior: contain;
+}
+.okx-copilot-md {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Renderer respons: tidak ada italic sama sekali. */
+.okx-copilot-md em,
+.okx-copilot-md i,
+.okx-copilot-md blockquote {
+    font-style: normal;
+}
+
+/* Reduced motion: matikan pulse/ping/bounce di dalam Copilot. */
+@media (prefers-reduced-motion: reduce) {
+    .okx-copilot-root,
+    .okx-copilot-root *,
+    .okx-copilot-root *::before,
+    .okx-copilot-root *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .okx-copilot-root:hover,
+    .okx-copilot-root:active {
+        transform: none !important;
+    }
+}

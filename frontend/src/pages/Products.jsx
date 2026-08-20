@@ -141,7 +141,7 @@ function EventStudioProduct() {
   };
 
   return (
-    <ProductShell testid="event-studio-product" title="From event intent to executable operations." tagline="EVENT STUDIO" lead="Pilih jenis event, compile kebutuhan utamanya, lalu lihat bagaimana OKKAX membentuk Blueprint, Event ID, dependency, readiness, dan rekomendasi operasional." interactive>
+    <ProductShell testid="event-studio-product" title="From event intent to executable operations." tagline="EVENT STUDIO" lead="Pilih jenis event, compile kebutuhan utamanya, lalu lihat bagaimana Okkax membentuk Blueprint, Event ID, dependency, readiness, dan rekomendasi operasional." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <SpotlightCard className="overflow-hidden">
           <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -189,7 +189,7 @@ function EventStudioProduct() {
                     </div>
                     <h2 className="editorial mt-6 text-2xl text-white">Ready to compile.</h2>
                     <p className="mt-3 text-sm leading-6 text-zinc-400">
-                      Event Studio mengubah intent menjadi requirement, dependency, readiness, dan satu Event ID yang dapat digunakan oleh seluruh sistem OKKAX.
+                      Event Studio mengubah intent menjadi requirement, dependency, readiness, dan satu Event ID yang dapat digunakan oleh seluruh sistem Okkax.
                     </p>
                   </div>
                 </div>
@@ -281,7 +281,7 @@ function EventStudioProduct() {
                     <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                       <div>
                         <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">
-                          03 · OKKAX COPILOT
+                          03 · Okkax Copilot
                         </div>
                         {!resolved ? (
                           <>
@@ -484,7 +484,7 @@ function NetworkProduct() {
   }, [items]);
 
   return (
-    <ProductShell testid="network-product" title="The live event economy, connected." tagline="OKKAX NETWORK" lead="Cari talent, venue, vendor, workforce, dan tenant dari satu jaringan nasional. Availability, reputation, dan pengalaman event dibaca dalam konteks event." interactive>
+    <ProductShell testid="network-product" title="The live event economy, connected." tagline="Okkax NETWORK" lead="Cari talent, venue, vendor, workforce, dan tenant dari satu jaringan nasional. Availability, reputation, dan pengalaman event dibaca dalam konteks event." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <SpotlightCard className="overflow-hidden">
           {/* Type filter */}
@@ -741,7 +741,7 @@ function NetworkProduct() {
 }
 
 // ============================================================================
-// OKKAX COPILOT (deterministic canonical event state)
+// Okkax Copilot (deterministic canonical event state)
 // ============================================================================
 
 const INTEL_TIERS = [
@@ -829,7 +829,7 @@ function IntelligenceProduct() {
   const tier = INTEL_TIERS.find((t) => t.id === active) || INTEL_TIERS[0];
 
   return (
-    <ProductShell testid="intelligence-product" title="Grounded on state. Not chat." tagline="OKKAX COPILOT" lead="Okkax Copilot terikat pada state Event Graph yang berwenang. Rekomendasi memiliki evidence, dependency path, impact, dan action yang otorisasinya tetap melalui domain service." interactive>
+    <ProductShell testid="intelligence-product" title="Grounded on state. Not chat." tagline="Okkax Copilot" lead="Okkax Copilot terikat pada state Event Graph yang berwenang. Rekomendasi memiliki evidence, dependency path, impact, dan action yang otorisasinya tetap melalui domain service." interactive>
       <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
         <SpotlightCard className="overflow-hidden">
           {/* Anchored event ID from canonical demo backend */}
@@ -1298,7 +1298,7 @@ function ProtectedPaymentProduct() {
               <div className="mt-4 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
                 <div className="h-full rounded-full bg-white transition-all duration-500" style={{ width: (s.funded > 0 ? (s.protected / s.funded) * 100 : 0) + "%" }} />
               </div>
-              <div className="mt-2 text-[11px] text-zinc-400">Bukan revenue OKKAX. Ditahan hingga completion.</div>
+              <div className="mt-2 text-[11px] text-zinc-400">Bukan revenue Okkax. Ditahan hingga completion.</div>
             </div>
             <div className="p-6" data-testid="pp-released">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 font-gemini-mono">Released</div>
@@ -1314,7 +1314,7 @@ function ProtectedPaymentProduct() {
           {/* Guarantees strip */}
           <div className="grid border-t border-white/[0.08] p-6 sm:grid-cols-3 bg-[#07070b]">
             {[
-              ["Not revenue", "Protected funds bukan pendapatan OKKAX."],
+              ["Not revenue", "Protected funds bukan pendapatan Okkax."],
               ["No silent hold", "Buyer silence tidak menahan payment yang layak."],
               ["Dispute path", "Dispute punya jalur eksplisit, tidak menggantung."],
             ].map(([k, v]) => (

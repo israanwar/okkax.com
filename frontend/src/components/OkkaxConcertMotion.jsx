@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 
 /**
  * -----------------------------------------------------------------------------
- * OKKAX CINEMATIC CONCERT MOTION ENGINE (EXACT ARENA RIGGING SYSTEM)
+ * Okkax CINEMATIC CONCERT MOTION ENGINE (EXACT ARENA RIGGING SYSTEM)
  * Implements world-class arena/festival concert lighting:
  * - Overhead metal truss structure across the top.
  * - Upper-Left Cluster (4-5 fixtures: large magenta wash, crisp white spot, medium/small beams).
@@ -100,7 +100,7 @@ export default function OkkaxConcertMotion({ className = "" }) {
         phase: 0.0,
         spreadBase: isMobile ? 12 : 22,
         spreadTip: isMobile ? 160 : 310, // Large volumetric cone
-        color: { r: 255, g: 45, b: 120, a: 0.42 }, // Rich OKKAX Magenta
+        color: { r: 255, g: 45, b: 120, a: 0.42 }, // Rich Okkax Magenta
         coreColor: "rgba(255, 120, 180, 0.75)",
         coreWidth: 2.2,
         lengthRatio: 1.35,
@@ -251,7 +251,7 @@ export default function OkkaxConcertMotion({ className = "" }) {
         phase: 2.4,
         spreadBase: isMobile ? 12 : 24,
         spreadTip: isMobile ? 170 : 330, // Large volumetric cone
-        color: { r: 255, g: 45, b: 120, a: 0.44 }, // Rich OKKAX Magenta
+        color: { r: 255, g: 45, b: 120, a: 0.44 }, // Rich Okkax Magenta
         coreColor: "rgba(255, 120, 180, 0.80)",
         coreWidth: 2.4,
         lengthRatio: 1.38,

@@ -180,7 +180,7 @@
 /* Footer social tiles — "Stage Spotlight" hover metafora lampu panggung.
    Tiga lapisan berjalan bersamaan: lift (translateY -4px), radial glow
    pink di belakang tile, dan scale icon 1.08x. Semua mengikuti curve
-   `cubic-bezier(0.22, 1, 0.36, 1)` yang sama dengan animasi OKKAX lain. */
+   `cubic-bezier(0.22, 1, 0.36, 1)` yang sama dengan animasi Okkax lain. */
 .okx-social-tile {
     position: relative;
     isolation: isolate;
@@ -642,7 +642,7 @@ button:active:not(:disabled) {
 }
 
 /* -----------------------------------------------------------------------------
-   OKKAX CINEMATIC CONCERT MOTION (SCOPED)
+   Okkax CINEMATIC CONCERT MOTION (SCOPED)
 ----------------------------------------------------------------------------- */
 .okx-concert-slow-breathing {
   animation: okxConcertBreathing 22s ease-in-out infinite alternate;

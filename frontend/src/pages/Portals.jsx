@@ -423,7 +423,7 @@ export function AdminPanel() {
 
       {tab === "metrics" && (
         <p className="text-xs text-zinc-400 leading-relaxed max-w-2xl">
-          Semua metrik dihitung langsung dari database live event OKKAX. Route admin dilindungi oleh role Super Administrator
+          Semua metrik dihitung langsung dari database live event Okkax. Route admin dilindungi oleh role Super Administrator
           dan Platform Administrator.
         </p>
       )}

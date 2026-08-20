@@ -278,7 +278,7 @@ export default function PresentationMode() {
       {/* header */}
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--okx-border)] px-4 py-2.5 sm:px-8">
         <div className="flex items-center gap-2.5">
-          <img src={LOGO_URL} alt="OKKAX" className="h-5 w-auto object-contain sm:h-6" />
+          <img src={LOGO_URL} alt="Okkax" className="h-5 w-auto object-contain sm:h-6" />
           <span className="hidden text-[10px] uppercase tracking-[0.18em] text-zinc-500 sm:block">
             Live Event Operating Network
           </span>

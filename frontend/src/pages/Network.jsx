@@ -211,7 +211,7 @@ export default function Network() {
             ? "Anda tidak memiliki akses ke matching untuk event ini."
             : typeof detail === "string"
               ? detail
-              : "Gagal memuat OKKAX Network."
+              : "Gagal memuat Okkax Network."
         );
 
         setItems([]);
@@ -351,14 +351,14 @@ export default function Network() {
         className="sticky -top-4 sm:-top-4.5 z-30 -mt-4 sm:-mt-4.5 -mx-3.5 sm:-mx-5 px-3.5 sm:px-5 pt-3 sm:pt-3.5 pb-2 bg-[#07070a] border-b border-white/[0.08] backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.9)] space-y-1.5"
         data-testid="network-chrome"
       >
-        {/* ROW 1: [ LIVE EVENT SUPPLY NETWORK / OKKAX Network ] + [Talent] [Venue] [Vendor] [Workforce] [Sponsor Opportunities] [Tenant Opportunities] */}
+        {/* ROW 1: [ LIVE EVENT SUPPLY NETWORK / Okkax Network ] + [Talent] [Venue] [Vendor] [Workforce] [Sponsor Opportunities] [Tenant Opportunities] */}
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2 shrink-0">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-zinc-300 font-gemini-mono shrink-0">
               Live Event Supply Network
             </div>
             <h1 className="text-xs sm:text-sm font-bold text-white font-gemini tracking-tight truncate">
-              OKKAX Network
+              Okkax Network
             </h1>
             {eventScoped && (
               <span className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/[0.06] px-2 py-0.5 text-[9px] font-bold text-white font-gemini-mono shrink-0">
@@ -560,7 +560,7 @@ export default function Network() {
           <>
             {loading && (
               <div className="rounded-xl border border-white/[0.08] bg-[#0c0c14]/60 p-8 text-center text-xs text-zinc-400 font-gemini">
-                Memuat jaringan OKKAX…
+                Memuat jaringan Okkax…
               </div>
             )}
 
@@ -755,8 +755,8 @@ function GatewayPanel({ kind }) {
 
       <p className="mt-2 max-w-2xl text-xs sm:text-[13px] leading-relaxed text-zinc-400">
         {sponsor
-          ? "Temukan inventaris sponsorship dari event aktif, evaluasi package, ajukan interest, dan kelola commitment melalui lifecycle sponsorship OKKAX."
-          : "Temukan zona dan booth yang tersedia, evaluasi kebutuhan event, ajukan tenant application, dan kelola keputusan melalui lifecycle tenant OKKAX."}
+          ? "Temukan inventaris sponsorship dari event aktif, evaluasi package, ajukan interest, dan kelola commitment melalui lifecycle sponsorship Okkax."
+          : "Temukan zona dan booth yang tersedia, evaluasi kebutuhan event, ajukan tenant application, dan kelola keputusan melalui lifecycle tenant Okkax."}
       </p>
 
       <div className="mt-4">

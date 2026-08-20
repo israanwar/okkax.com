@@ -290,7 +290,7 @@ const PERSONAS_CONFIG = [
         prompts: [
           "Rekomendasi kebutuhan daya listrik dan estimasi transaksi F&B",
           "Berapa harga sewa wajar booth F&B kuliner di event 5.000 pax?",
-          "Bagaimana alur settlement otomatis bagi hasil QRIS di OKKAX?",
+          "Bagaimana alur settlement otomatis bagi hasil QRIS di Okkax?",
         ],
       },
     ],
@@ -308,7 +308,7 @@ const PERSONAS_CONFIG = [
         prompts: [
           "Jelaskan cara kerja validasi gate offline LivePass anti-calo",
           "Bagaimana SOP validasi scanner tiket QR di gate dan pencegahan tiket ganda?",
-          "Apa saja metode pembayaran lokal yang didukung sandbox OKKAX?",
+          "Apa saja metode pembayaran lokal yang didukung sandbox Okkax?",
         ],
       },
     ],
@@ -326,7 +326,7 @@ const PERSONAS_CONFIG = [
         prompts: [
           "Periksa kompatibilitas Technical Rider audio 400 kVA dengan venue",
           "Apa saja hal krusial yang wajib ada di Technical Rider artis internasional?",
-          "Bagaimana skema pencairan honor talent berbasis milestone termin di OKKAX?",
+          "Bagaimana skema pencairan honor talent berbasis milestone termin di Okkax?",
         ],
       },
     ],
@@ -344,7 +344,7 @@ const PERSONAS_CONFIG = [
         prompts: [
           "Validasi kebutuhan sound system Line Array 24-box dan daya genset 250 kVA",
           "Bagaimana standar rigging ground support untuk beban LED P3 12x6 meter?",
-          "Bagaimana alur milestone pembayaran vendor produksi di OKKAX?",
+          "Bagaimana alur milestone pembayaran vendor produksi di Okkax?",
         ],
       },
     ],
@@ -362,7 +362,7 @@ const PERSONAS_CONFIG = [
         prompts: [
           "Hitung rasio kebutuhan usher dan security untuk kapasitas 5.000 pax",
           "Bagaimana SOP penugasan Liaison Officer (LO) untuk headliner talent?",
-          "Bagaimana verifikasi absensi QR dan pencairan honor kru harian di OKKAX?",
+          "Bagaimana verifikasi absensi QR dan pencairan honor kru harian di Okkax?",
         ],
       },
     ],
@@ -380,7 +380,7 @@ export default function OkkaxPage() {
     {
       role: "assistant",
       content:
-        "### Selamat Datang di Okkax Copilot Command Center!\n\nSaya adalah asisten operasional resmi OKKAX yang menguasai seluruh spektrum operasional, arsitektur data, dan komputasi ekonomi live event di Indonesia.\n\n#### Ruang Lingkup Konsultasi Okkax Copilot:\n- **Komputasi Finansial & Alokasi Anggaran**: Perhitungan pos biaya (Talent 28%, Produksi 24%, Venue 14%, Marketing 8%, Kru 6%, Contingency 5%).\n- **Analisis Ketergantungan Event Graph**: Mendeteksi potensi blocker antara rider talent, venue, dan vendor teknis.\n- **Valuasi Sponsorship & Zonasi Tenant**: Perancangan hak eksklusif brand & monetisasi booth kuliner.\n- **SOP Gate Management & Validator Scanner**: Prosedur validasi tiket QR cepat anti-duplikasi.\n- **Simulasi Multiplier Effect Regional**: Analisis perputaran ekonomi lokal di 15+ kota besar.\n\nPilih salah satu modul konsultasi di panel kiri atau ketik langsung pertanyaan Anda di bawah.",
+        "### Selamat Datang di Okkax Copilot Command Center!\n\nSaya adalah asisten operasional resmi Okkax yang menguasai seluruh spektrum operasional, arsitektur data, dan komputasi ekonomi live event di Indonesia.\n\n#### Ruang Lingkup Konsultasi Okkax Copilot:\n- **Komputasi Finansial & Alokasi Anggaran**: Perhitungan pos biaya (Talent 28%, Produksi 24%, Venue 14%, Marketing 8%, Kru 6%, Contingency 5%).\n- **Analisis Ketergantungan Event Graph**: Mendeteksi potensi blocker antara rider talent, venue, dan vendor teknis.\n- **Valuasi Sponsorship & Zonasi Tenant**: Perancangan hak eksklusif brand & monetisasi booth kuliner.\n- **SOP Gate Management & Validator Scanner**: Prosedur validasi tiket QR cepat anti-duplikasi.\n- **Simulasi Multiplier Effect Regional**: Analisis perputaran ekonomi lokal lintas kota.\n\nPilih salah satu modul konsultasi di panel kiri atau ketik langsung pertanyaan Anda di bawah.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -446,7 +446,7 @@ export default function OkkaxPage() {
         {
           role: "assistant",
           content:
-            "Maaf, terjadi kendala saat menghubungkan ke mesin AI OKKAX Copilot. Pastikan backend server aktif.",
+            "Maaf, terjadi kendala saat menghubungkan ke mesin AI Okkax Copilot. Pastikan backend server aktif.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -470,7 +470,7 @@ export default function OkkaxPage() {
 
   const exportTranscript = () => {
     const transcriptText = messages
-      .map((m) => `[${m.timestamp}] ${m.role === "user" ? "Pengguna" : "OKKAX Copilot"}:\n${m.content}\n`)
+      .map((m) => `[${m.timestamp}] ${m.role === "user" ? "Pengguna" : "Okkax Copilot"}:\n${m.content}\n`)
       .join("\n---\n\n");
     const blob = new Blob([transcriptText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -485,7 +485,7 @@ export default function OkkaxPage() {
     setMessages([
       {
         role: "assistant",
-        content: `Mode **${personaObj.label}** aktif. Silakan ajukan rencana, kalkulasi, atau konsultasi operasional live event bersama OKKAX Copilot!`,
+        content: `Mode **${personaObj.label}** aktif. Silakan ajukan rencana, kalkulasi, atau konsultasi operasional live event bersama Okkax Copilot!`,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
@@ -502,7 +502,7 @@ export default function OkkaxPage() {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 text-white font-semibold font-gemini">
               <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-              OKKAX Operations Engine · Online
+              Okkax Operations Engine · Online
             </span>
             <span className="hidden sm:inline text-zinc-600">|</span>
             <span className="hidden sm:inline text-zinc-300 font-gemini">Okkax Copilot</span>
@@ -510,7 +510,7 @@ export default function OkkaxPage() {
           <div className="flex items-center gap-4 text-[10px] font-gemini-mono">
             <span className="text-zinc-300">Mode: {personaObj.label} Lens</span>
             <span>·</span>
-            <span>15+ Kota Terkoneksi</span>
+            <span>Jaringan Kota Terkoneksi</span>
           </div>
         </div>
       </div>
@@ -705,7 +705,7 @@ export default function OkkaxPage() {
                     <div className="h-2 w-2 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.2s]" />
                     <div className="h-2 w-2 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.4s]" />
                   </div>
-                  <span>OKKAX Copilot sedang melakukan komputasi data operasional...</span>
+                  <span>Okkax Copilot sedang melakukan komputasi data operasional...</span>
                 </div>
               </div>
             )}
@@ -737,7 +737,7 @@ export default function OkkaxPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={`Tanyakan pada OKKAX Copilot seputar ${personaObj.label.toLowerCase()} (e.g. kalkulasi budget, blocker graph, rider, vendor)...`}
+                placeholder={`Tanyakan pada Okkax Copilot seputar ${personaObj.label.toLowerCase()} (e.g. kalkulasi budget, blocker graph, rider, vendor)...`}
                 rows={1}
                 disabled={loading}
                 className="w-full resize-none bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none okx-custom-scrollbar max-h-32"

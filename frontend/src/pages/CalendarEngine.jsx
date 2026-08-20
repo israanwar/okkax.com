@@ -7,7 +7,7 @@ export function PublicCalendar() {
   return (
     <div className="min-h-screen bg-[var(--okx-bg)]">
       <PublicNav />
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <CalendarBoard mode="public" initialCity={params.get("city") || ""} />
       </main>
       <Footer />

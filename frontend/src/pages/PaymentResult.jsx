@@ -76,7 +76,7 @@ export function PaymentSuccess({ embedded = false }) {
             <XCircle className="text-zinc-300" />
             <h1 className="editorial mt-3 text-2xl">Pembayaran belum terkonfirmasi</h1>
             <p className="mt-2 text-sm text-zinc-400">
-              Status Stripe belum "paid". Anda dapat mencoba lagi atau memakai metode sandbox internal OKKAX.
+              Status Stripe belum "paid". Anda dapat mencoba lagi atau memakai metode sandbox internal Okkax.
             </p>
             <Link to={embedded ? "/app/discover" : "/discover"} className="mt-5 inline-block bg-[var(--okx-accent)] px-5 py-2.5 text-sm font-semibold text-black hover:bg-[var(--okx-accent-hover)]">Kembali ke Discover</Link>
           </div>

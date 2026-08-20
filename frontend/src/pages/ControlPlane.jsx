@@ -40,7 +40,7 @@ export default function ControlPlane() {
   useEffect(() => { load(); }, []);
 
   if (!overview || !policy) {
-    return <div className="text-sm text-zinc-500">Memuat OKKAX Control Plane...</div>;
+    return <div className="text-sm text-zinc-500">Memuat Okkax Control Plane...</div>;
   }
 
   const pending = requests.filter((r) => r.status === "pending");
@@ -52,7 +52,7 @@ export default function ControlPlane() {
           <ShieldCheck size={15} />
           Platform Governance
         </div>
-        <h1 className="editorial mt-2 text-2xl sm:text-4xl">OKKAX Control Plane</h1>
+        <h1 className="editorial mt-2 text-2xl sm:text-4xl">Okkax Control Plane</h1>
         <p className="mt-2 max-w-3xl text-sm text-zinc-400">
           Otoritas platform, risiko, approval, keamanan, dan bukti governance dalam satu control room.
         </p>

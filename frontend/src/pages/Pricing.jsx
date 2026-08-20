@@ -11,7 +11,7 @@
 //   * Honest CTA (no Buy Now; checkout not live).
 //   * Mobile-first (390 baseline), no horizontal overflow.
 //   * Semantic HTML for SEO/AEO/GEO; JSON-LD is truthful.
-//   * No emoji, no em-dash, black + OKKAX pink + white palette.
+//   * No emoji, no em-dash, black + Okkax pink + white palette.
 
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -479,7 +479,7 @@ function ComparisonTable({ role, openGroups, setOpenGroups }) {
 
 const FAQ = [
   {
-    q: "Does OKKAX have a free plan?",
+    q: "Does Okkax have a free plan?",
     a: "Yes. Free gives real access to the network, Event Studio basics, Calendar, basic Event Graph, and Observe-level Intelligence. No card required.",
   },
   {
@@ -556,9 +556,9 @@ function ClosingCta() {
 /* ----------------------------- JSON-LD ----------------------------------- */
 
 // Structured data must remain truthful and match visible content.
-// We describe OKKAX as an Organization and expose the three plans as
+// We describe Okkax as an Organization and expose the three plans as
 // separate Product offers so search engines and AI systems can answer
-// "How much is OKKAX Pro for Organizer?" from the visible page.
+// "How much is Okkax Pro for Organizer?" from the visible page.
 function buildJsonLd() {
   const offers = [];
   for (const roleId of Object.keys(PRICE_TABLE)) {
@@ -566,7 +566,7 @@ function buildJsonLd() {
       const p = PRICE_TABLE[roleId];
       offers.push({
         "@type": "Offer",
-        name: `OKKAX ${PLAN_META[plan].label} for ${roleId}`,
+        name: `Okkax ${PLAN_META[plan].label} for ${roleId}`,
         priceCurrency: "IDR",
         price: p[`${plan}Monthly`],
         priceSpecification: [
@@ -592,10 +592,10 @@ function buildJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: "OKKAX Subscription",
+    name: "Okkax Subscription",
     description:
-      "OKKAX subscription plans (Free, Pro, Max) for Organizer, Talent, Venue, Vendor, Workforce, Sponsor, and Tenant. Free forever. Yearly billing pays 10 months and uses 12.",
-    brand: { "@type": "Organization", name: "OKKAX", url: "https://okkax.com" },
+      "Okkax subscription plans (Free, Pro, Max) for Organizer, Talent, Venue, Vendor, Workforce, Sponsor, and Tenant. Free forever. Yearly billing pays 10 months and uses 12.",
+    brand: { "@type": "Organization", name: "Okkax", url: "https://okkax.com" },
     offers,
   };
 }

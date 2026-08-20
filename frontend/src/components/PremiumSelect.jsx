@@ -2,7 +2,7 @@ import React from "react";
 import OkxDropdown from "@/components/OkxDropdown";
 
 /*
- * OKKAX compatibility adapter.
+ * Okkax compatibility adapter.
  *
  * PremiumSelect historically rendered a native <select>.
  * It now delegates rendering to the canonical OkxDropdown while preserving

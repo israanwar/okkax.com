@@ -1,7 +1,7 @@
-// Canonical Indonesian city list for OKKAX forms (registration, filters).
+// Canonical Indonesian city list for Okkax forms (registration, filters).
 //
 // Data rule: no invented cities. Every value here is a real `city` field
-// already present in the OKKAX Network catalog collections (talent, venue,
+// already present in the Okkax Network catalog collections (talent, venue,
 // vendor, workforce, tenant) — the same canonical dataset used throughout
 // /products/network and /for/:audience. This module just unions and caches
 // it so any form can offer a real, backend-sourced city dropdown.

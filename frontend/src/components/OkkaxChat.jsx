@@ -1,38 +1,19 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  X,
-  Minus,
-  Maximize2,
-  Minimize2,
-  Send,
-  Trash2,
-  User,
-  ArrowRight,
-  ArrowUpRight,
-  Sparkles,
-  Check,
-  Copy,
-  Activity,
-  Terminal,
-  Music,
-  Ticket,
-  DollarSign,
-  ShieldCheck,
-  CornerDownLeft,
-} from "lucide-react";
+import { X, Minus, Plus, ArrowUp, Check, Copy } from "lucide-react";
 import { api, fetchCached } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { canAccessMemberCopilot } from "@/lib/memberRoles";
+import "./OkkaxChat.css";
 
 // -----------------------------------------------------------------------------
-// Official OKKAX Brand Mark (Identical to Favicon / Brand Identity)
+// Official Okkax Brand Mark (Identical to Favicon / Brand Identity)
 // -----------------------------------------------------------------------------
 export function CopilotIntelligenceIcon({ className = "h-4 w-4", ...props }) {
   return (
     <img
       src="/assets/okkax-x-mark-v3.png"
-      alt="OKKAX"
+      alt="Okkax"
       className={`object-contain ${className}`}
       {...props}
     />
@@ -40,39 +21,66 @@ export function CopilotIntelligenceIcon({ className = "h-4 w-4", ...props }) {
 }
 
 // -----------------------------------------------------------------------------
+// Response sanitizer
+// Renderer Copilot tidak menampilkan emoji/emotikon sama sekali. Sanitasi hanya
+// di layer presentasi — `m.content` di state tetap utuh sehingga payload history
+// yang dikirim ke /okkax/chat tidak berubah.
+// -----------------------------------------------------------------------------
+const EMOJI_PATTERN =
+  /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}]/gu;
+
+function sanitizeResponseText(text) {
+  if (!text) return "";
+  return text.replace(EMOJI_PATTERN, "").replace(/[^\S\r\n]+$/gm, "");
+}
+
+// -----------------------------------------------------------------------------
 // Markdown & Structured Content Renderer
+// Skala tipografi mengikuti referensi Google AI Studio (compact, tanpa heading
+// oversized, tanpa italic).
 // -----------------------------------------------------------------------------
 function renderFormattedMarkdown(text) {
   if (!text) return null;
 
-  const lines = text.split("\n");
+  const lines = sanitizeResponseText(text).split("\n");
   const elements = [];
   let inTable = false;
   let tableRows = [];
+  let inCodeFence = false;
+  let codeLines = [];
   let keyIdx = 0;
 
   const flushTable = () => {
     if (tableRows.length > 0) {
       const headerRow = tableRows[0];
-      const dataRows = tableRows.slice(2);
+      const dataRows = tableRows.length > 2 ? tableRows.slice(2) : [];
 
       elements.push(
-        <div key={`table-${keyIdx++}`} className="my-3 overflow-x-auto rounded-xl border border-white/[0.1] bg-[#0c0c14]/90 font-gemini shadow-inner">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-white/[0.1] bg-white/[0.03] font-gemini-display">
+        <div
+          key={`table-${keyIdx++}`}
+          className="okx-copilot-scroll my-3 overflow-x-auto rounded-lg border border-[#27272a]"
+        >
+          <table className="w-full border-collapse text-left text-[12px] font-gemini">
+            <thead className="border-b border-[#27272a] bg-[#18181b]">
+              <tr>
                 {headerRow.map((cell, cIdx) => (
-                  <th key={cIdx} className="px-3.5 py-2.5 font-bold text-zinc-100 uppercase tracking-wider text-[10.5px]">
+                  <th
+                    key={cIdx}
+                    className="whitespace-nowrap border-r border-[#27272a] px-3 py-2 text-[12px] font-semibold text-white last:border-r-0"
+                  >
                     {formatInlineText(cell.trim())}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.06] font-mono tabular-nums text-[11.5px]">
+            <tbody>
               {dataRows.map((row, rIdx) => (
-                <tr key={rIdx} className="hover:bg-white/[0.03] transition-colors">
+                <tr key={rIdx} className="transition-colors hover:bg-white/[0.02]">
                   {row.map((cell, cIdx) => (
-                    <td key={cIdx} className="px-3.5 py-2 text-zinc-300">
+                    <td
+                      key={cIdx}
+                      className="border-r border-t border-[#27272a] px-3 py-2 align-top text-[12px] tabular-nums text-zinc-300 last:border-r-0"
+                    >
                       {formatInlineText(cell.trim())}
                     </td>
                   ))}
@@ -87,58 +95,138 @@ function renderFormattedMarkdown(text) {
     }
   };
 
+  const flushCode = () => {
+    if (codeLines.length > 0) {
+      elements.push(
+        <div
+          key={`code-${keyIdx++}`}
+          className="okx-copilot-scroll my-2.5 overflow-x-auto rounded-lg border border-[#27272a] bg-[#09090b] p-3"
+        >
+          <pre className="font-gemini-mono text-[11px] leading-relaxed text-zinc-200">
+            {codeLines.join("\n")}
+          </pre>
+        </div>
+      );
+      codeLines = [];
+    }
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const trimmed = line.trim();
 
-    if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+    // Fenced code block
+    if (trimmed.startsWith("```")) {
+      if (inCodeFence) {
+        flushCode();
+        inCodeFence = false;
+      } else {
+        flushTable();
+        inCodeFence = true;
+      }
+      continue;
+    }
+    if (inCodeFence) {
+      codeLines.push(line);
+      continue;
+    }
+
+    // Tables
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
       inTable = true;
-      const cells = line.split("|").slice(1, -1);
-      tableRows.push(cells);
+      tableRows.push(line.split("|").slice(1, -1));
       continue;
     } else if (inTable) {
       flushTable();
     }
 
-    if (line.startsWith("### ")) {
-      elements.push(
-        <h4 key={`h3-${keyIdx++}`} className="mt-3.5 mb-2 text-[13.5px] font-bold text-white tracking-tight font-gemini-display flex items-center gap-2">
-          <span>{formatInlineText(line.replace("### ", ""))}</span>
-        </h4>
-      );
+    if (trimmed === "---" || trimmed === "***" || trimmed === "___") {
+      elements.push(<hr key={`hr-${keyIdx++}`} className="my-4 border-t border-[#27272a]" />);
     } else if (line.startsWith("#### ")) {
       elements.push(
-        <h5 key={`h4-${keyIdx++}`} className="mt-3 mb-1.5 text-[11px] font-bold text-zinc-300 uppercase tracking-[0.16em] font-mono">
+        <h5
+          key={`h4-${keyIdx++}`}
+          className="mb-1 mt-3.5 font-gemini-mono text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-400 first:mt-0"
+        >
           {formatInlineText(line.replace("#### ", ""))}
         </h5>
       );
-    } else if (line.trim().startsWith("- ") || line.trim().startsWith("* ")) {
+    } else if (line.startsWith("### ")) {
       elements.push(
-        <div key={`li-${keyIdx++}`} className="flex items-start gap-2.5 my-1 text-xs sm:text-[12.5px] text-zinc-300 font-gemini">
-          <span className="text-zinc-500 mt-1 font-bold select-none text-[9px] shrink-0">◆</span>
-          <span className="flex-1 leading-relaxed">{formatInlineText(line.trim().substring(2))}</span>
+        <h4
+          key={`h3-${keyIdx++}`}
+          className="mb-1 mt-3.5 font-gemini-display text-[13px] font-semibold tracking-tight text-[#f4f4f5] first:mt-0"
+        >
+          {formatInlineText(line.replace("### ", ""))}
+        </h4>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h3
+          key={`h2-${keyIdx++}`}
+          className="mb-1.5 mt-4 font-gemini-display text-[14px] font-semibold tracking-tight text-white first:mt-0"
+        >
+          {formatInlineText(line.replace("## ", ""))}
+        </h3>
+      );
+    } else if (line.startsWith("# ")) {
+      elements.push(
+        <h2
+          key={`h1-${keyIdx++}`}
+          className="mb-2 mt-4 font-gemini-display text-[15px] font-semibold tracking-tight text-white first:mt-0"
+        >
+          {formatInlineText(line.replace("# ", ""))}
+        </h2>
+      );
+    } else if (trimmed.startsWith("> ")) {
+      elements.push(
+        <blockquote
+          key={`bq-${keyIdx++}`}
+          className="my-2.5 border-l-2 border-zinc-600 pl-3.5 text-[13px] leading-relaxed text-zinc-400"
+        >
+          {formatInlineText(trimmed.substring(2))}
+        </blockquote>
+      );
+    } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      elements.push(
+        <div
+          key={`li-${keyIdx++}`}
+          className="my-1 flex items-start gap-2 text-[13px] leading-[1.6] text-[#e4e4e7]"
+        >
+          <span className="mt-[8px] h-[3px] w-[3px] shrink-0 select-none rounded-full bg-zinc-500" />
+          <span className="min-w-0 flex-1">{formatInlineText(trimmed.substring(2))}</span>
         </div>
       );
-    } else if (/^\d+\.\s/.test(line.trim())) {
-      const match = line.trim().match(/^(\d+)\.\s(.*)$/);
+    } else if (/^\d+\.\s/.test(trimmed)) {
+      const match = trimmed.match(/^(\d+)\.\s(.*)$/);
       elements.push(
-        <div key={`oli-${keyIdx++}`} className="flex items-start gap-2.5 my-1.5 text-xs sm:text-[12.5px] text-zinc-300 font-gemini">
-          <span className="font-mono text-zinc-400 font-semibold text-[11px] min-w-[20px] shrink-0">
+        <div
+          key={`oli-${keyIdx++}`}
+          className="my-1 flex items-start gap-2 text-[13px] leading-[1.6] text-[#e4e4e7]"
+        >
+          <span className="min-w-[16px] shrink-0 font-gemini-mono text-[11px] font-semibold text-zinc-500">
             {match[1]}.
           </span>
-          <span className="flex-1 leading-relaxed">{formatInlineText(match[2])}</span>
+          <span className="min-w-0 flex-1">{formatInlineText(match[2])}</span>
         </div>
       );
-    } else if (line.trim() === "") {
-      elements.push(<div key={`space-${keyIdx++}`} className="h-2" />);
+    } else if (trimmed === "") {
+      // Baris kosong tidak menghasilkan elemen: jarak antar-paragraf sudah
+      // ditangani margin yang saling collapse (sama seperti referensi).
+      continue;
     } else {
       elements.push(
-        <p key={`p-${keyIdx++}`} className="my-1.5 text-xs sm:text-[12.5px] leading-relaxed text-zinc-300 font-gemini">
+        <p
+          key={`p-${keyIdx++}`}
+          className="my-2.5 text-[13px] leading-[1.6] text-[#e4e4e7] first:mt-0 last:mb-0"
+        >
           {formatInlineText(line)}
         </p>
       );
     }
   }
 
+  if (inCodeFence) flushCode();
   if (inTable) flushTable();
   return elements;
 }
@@ -153,29 +241,28 @@ function formatInlineText(text) {
 
   while ((match = linkRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push(renderBoldItalic(text.substring(lastIndex, match.index)));
+      parts.push(renderEmphasis(text.substring(lastIndex, match.index), `pre-${match.index}`));
     }
     const label = match[1];
     const url = match[2];
     if (url.startsWith("/")) {
       parts.push(
         <Link
-          key={match.index}
+          key={`lnk-${match.index}`}
           to={url}
-          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-200 transition-colors"
+          className="font-medium text-white underline decoration-zinc-600 underline-offset-2 transition-colors hover:text-zinc-300"
         >
           {label}
-          <ArrowRight className="h-2.5 w-2.5 inline text-zinc-400" />
         </Link>
       );
     } else {
       parts.push(
         <a
-          key={match.index}
+          key={`ext-${match.index}`}
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-semibold text-white underline decoration-zinc-500 hover:text-zinc-200 transition-colors"
+          className="font-medium text-white underline decoration-zinc-600 underline-offset-2 transition-colors hover:text-zinc-300"
         >
           {label}
         </a>
@@ -185,32 +272,50 @@ function formatInlineText(text) {
   }
 
   if (lastIndex < text.length) {
-    parts.push(renderBoldItalic(text.substring(lastIndex)));
+    parts.push(renderEmphasis(text.substring(lastIndex), `tail-${lastIndex}`));
   }
 
   return parts;
 }
 
-function renderBoldItalic(raw) {
-  const boldParts = raw.split(/(\*\*[^*]+\*\*)/g);
-  return boldParts.map((part, idx) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
+// Bold tetap bold. Emphasis tunggal (*teks*) dirender TANPA italic sesuai
+// requirement renderer — hanya pergeseran weight/warna.
+function renderEmphasis(raw, keyPrefix = "e") {
+  const codeParts = raw.split(/(`[^`]+`)/g);
+  return codeParts.map((chunk, cIdx) => {
+    if (chunk.startsWith("`") && chunk.endsWith("`") && chunk.length > 2) {
       return (
-        <strong key={idx} className="font-bold text-white">
-          {part.slice(2, -2)}
-        </strong>
+        <code
+          key={`${keyPrefix}-c-${cIdx}`}
+          className="rounded border border-[#27272a] bg-[#18181b] px-1.5 py-0.5 font-gemini-mono text-[11.5px] text-zinc-200"
+        >
+          {chunk.slice(1, -1)}
+        </code>
       );
     }
-    const italicParts = part.split(/(\*[^*]+\*)/g);
-    return italicParts.map((sub, sIdx) => {
-      if (sub.startsWith("*") && sub.endsWith("*")) {
+    const boldParts = chunk.split(/(\*\*[^*]+\*\*)/g);
+    return boldParts.map((part, idx) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
         return (
-          <em key={`${idx}-${sIdx}`} className="italic text-zinc-200">
-            {sub.slice(1, -1)}
-          </em>
+          <strong key={`${keyPrefix}-b-${cIdx}-${idx}`} className="font-semibold text-white">
+            {part.slice(2, -2)}
+          </strong>
         );
       }
-      return sub;
+      const emParts = part.split(/(\*[^*]+\*)/g);
+      return emParts.map((sub, sIdx) => {
+        if (sub.startsWith("*") && sub.endsWith("*") && sub.length > 2) {
+          return (
+            <span
+              key={`${keyPrefix}-m-${cIdx}-${idx}-${sIdx}`}
+              className="font-medium not-italic text-zinc-100"
+            >
+              {sub.slice(1, -1)}
+            </span>
+          );
+        }
+        return sub;
+      });
     });
   });
 }
@@ -219,17 +324,20 @@ function renderBoldItalic(raw) {
 // Curated Fast Scenario Triggers
 // -----------------------------------------------------------------------------
 const FAST_SCENARIOS = [
-  { id: "concert", label: "Konser Stadion 50k", icon: Music, prompt: "Bantu rancang kalkulasi finansial dan teknis sound system konser stadion 50.000 pax" },
-  { id: "fest", label: "Festival Musik 5k", icon: Ticket, prompt: "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar" },
-  { id: "sponsor", label: "Valuasi Sponsor", icon: DollarSign, prompt: "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?" },
-  { id: "scanner", label: "SOP Scanner Gate", icon: ShieldCheck, prompt: "Bagaimana SOP validasi scanner tiket QR di gate pintu masuk saat hari H?" },
-  { id: "economy", label: "Dampak Ekonomi", icon: Activity, prompt: "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?" },
+  { id: "concert", label: "Konser Stadion 50k", prompt: "Bantu rancang kalkulasi finansial dan teknis sound system konser stadion 50.000 pax" },
+  { id: "fest", label: "Festival Musik 5k", prompt: "Hitung alokasi budget dan target tiket konser musik 5.000 pax Rp 1.25 Milyar" },
+  { id: "sponsor", label: "Valuasi Sponsor", prompt: "Bagaimana cara menentukan harga paket Presenting Sponsor dan hak aktivasi brand?" },
+  { id: "scanner", label: "SOP Scanner Gate", prompt: "Bagaimana SOP validasi scanner tiket QR di gate pintu masuk saat hari H?" },
+  { id: "economy", label: "Dampak Ekonomi", prompt: "Bagaimana formula perhitungan multiplier effect ekonomi di Live Event Map (/peta)?" },
 ];
+
+// Token warna referensi Google AI Studio.
+const CTRL_BTN =
+  "rounded-lg p-1.5 text-zinc-400 transition-colors hover:bg-[#27272a] hover:text-white focus-visible:ring-1 focus-visible:ring-white/40 cursor-pointer";
 
 export default function OkkaxChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState(null);
@@ -237,7 +345,7 @@ export default function OkkaxChat() {
     {
       role: "assistant",
       content:
-        "### Halo! Saya Okkax Copilot, asisten operasional resmi OKKAX.\n\nSaya menguasai seluruh aspek operasional live event, kalkulasi budget, arsitektur Event Graph, monetisasi sponsor/tenant, hingga SOP gate scanner di 15+ kota Indonesia.\n\nPilih modul skenario di atas atau tanyakan langsung rencana acara Anda.",
+        "Halo! Saya Okkax Copilot. Pilih modul di atas atau tanyakan langsung rencana acara Anda.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
@@ -251,6 +359,7 @@ export default function OkkaxChat() {
   const { user, effectiveRole, loading: authLoading } = useAuth();
   const location = useLocation();
   const chatEndRef = useRef(null);
+  const scrollAreaRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -273,11 +382,24 @@ export default function OkkaxChat() {
       .catch(() => {});
   }, [location.pathname, memberCopilotAllowed, userRole]);
 
+  // Scroll internal saja: set scrollTop pada container, bukan scrollIntoView,
+  // supaya dokumen di belakang panel tidak ikut ter-scroll.
+  const scrollThreadToBottom = useCallback(() => {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, []);
+
   useEffect(() => {
     if (isOpen && !isMinimized) {
-      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      const raf = requestAnimationFrame(scrollThreadToBottom);
+      return () => cancelAnimationFrame(raf);
     }
-  }, [messages, isOpen, isMinimized]);
+  }, [messages, loading, isOpen, isMinimized, scrollThreadToBottom]);
+
+  // Composer di-fix-kan default: tidak auto-grow mengikuti isi. Input yang
+  // melebihi tinggi default akan di-scroll secara internal oleh textarea itu
+  // sendiri (resize-none + overflow-y-auto), bukan memperbesar box.
 
   const handleSend = async (textToSend) => {
     const query = textToSend || input;
@@ -321,7 +443,7 @@ export default function OkkaxChat() {
         {
           role: "assistant",
           content:
-            "Maaf, terjadi kendala koneksi ke mesin inteligensi OKKAX Copilot. Pastikan backend server aktif.",
+            "Maaf, terjadi kendala koneksi ke mesin inteligensi Okkax Copilot. Pastikan backend server aktif.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
@@ -338,7 +460,7 @@ export default function OkkaxChat() {
   };
 
   const copyMessage = (text, idx) => {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(sanitizeResponseText(text));
     setCopiedIdx(idx);
     setTimeout(() => setCopiedIdx(null), 2000);
   };
@@ -347,13 +469,20 @@ export default function OkkaxChat() {
     setMessages([
       {
         role: "assistant",
-        content: "Percakapan telah direset. Ada rencana acara atau analisis teknis baru yang ingin kita bahas bersama OKKAX Copilot?",
+        content: "Percakapan telah direset. Ada rencana acara atau analisis teknis baru yang ingin kita bahas bersama Okkax Copilot?",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       },
     ]);
   };
 
   if (!memberCopilotAllowed) return null;
+
+  const padX = "px-3.5";
+
+  // Lebar panel desktop diperkecil ~10% dari referensi (440px -> 396px).
+  const shellGeometry = isMinimized
+    ? "bottom-3 left-3 right-3 h-14 rounded-2xl sm:left-auto sm:bottom-6 sm:right-6 sm:w-[288px]"
+    : "bottom-3 left-3 right-3 h-[620px] max-h-[calc(100dvh-24px)] rounded-2xl sm:left-auto sm:bottom-6 sm:right-6 sm:h-[640px] sm:w-[396px] sm:max-h-[calc(100dvh-48px)] sm:rounded-[24px]";
 
   return (
     <>
@@ -365,297 +494,255 @@ export default function OkkaxChat() {
             setIsMinimized(false);
           }}
           data-testid="okkax-copilot-trigger"
-          className="font-gemini fixed bottom-6 right-6 z-50 group flex items-center gap-3 rounded-2xl border border-white/[0.16] bg-[#09090e]/95 backdrop-blur-2xl px-4 py-2.5 text-white shadow-[0_16px_50px_rgba(0,0,0,0.85),0_0_24px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.18)] transition-all duration-300 hover:scale-[1.03] hover:border-white/40 hover:shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_36px_rgba(255,255,255,0.12)] active:scale-[0.98] cursor-pointer"
-          aria-label="Buka OKKAX Copilot"
+          className="okx-copilot-root font-gemini group fixed bottom-5 right-5 z-50 flex cursor-pointer items-center gap-2.5 rounded-2xl border border-[#27272a] bg-[#09090b]/95 py-2 pl-2 pr-3.5 text-white shadow-[0_16px_50px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-colors hover:border-zinc-500 hover:bg-[#121215] focus-visible:ring-1 focus-visible:ring-white/40 sm:bottom-6 sm:right-6"
+          aria-label="Buka Okkax Copilot"
         >
-          {/* Official OKKAX Favicon Brand Mark Tile */}
-          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.18] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_2px_8px_rgba(0,0,0,0.5)] group-hover:border-white/50 transition-all p-1.5">
-            <CopilotIntelligenceIcon className="h-full w-full object-contain group-hover:scale-110 transition-transform duration-300" />
-            <span className="absolute inset-0 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] transition-colors pointer-events-none" />
-          </div>
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#27272a] bg-[#18181b] p-1.5">
+            <CopilotIntelligenceIcon className="h-full w-full object-contain" />
+          </span>
 
-          <div className="flex flex-col text-left pr-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold tracking-wider text-white font-gemini-display">OKKAX</span>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+          <span className="flex flex-col text-left leading-none">
+            <span className="flex items-center gap-1.5">
+              <span className="font-gemini-display text-[12.5px] font-semibold tracking-tight text-white">
+                Okkax Copilot
               </span>
-            </div>
-            <span className="text-[10px] font-semibold tracking-wider text-zinc-400 font-mono uppercase group-hover:text-zinc-200 transition-colors">
-              Event Copilot
             </span>
-          </div>
+            <span className="mt-1 font-gemini-mono text-[9.5px] uppercase tracking-[0.14em] text-zinc-500 transition-colors group-hover:text-zinc-300">
+              Neural Ops Core
+            </span>
+          </span>
         </button>
       )}
 
-      {/* Floating Obsidian Command Console */}
+      {/* Floating Command Console */}
       {isOpen && (
         <div
+          role="dialog"
+          aria-label="Okkax Copilot"
           data-testid="okkax-copilot-modal"
-          className={`font-gemini fixed z-50 flex flex-col border border-white/[0.14] bg-[#09090e]/98 shadow-[0_32px_100px_rgba(0,0,0,0.95),0_0_30px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-3xl transition-all duration-200 overflow-hidden ${
-            isExpanded
-              ? "inset-4 md:inset-8 rounded-[32px]"
-              : isMinimized
-              ? "bottom-6 right-6 h-14 w-88 rounded-2xl"
-              : "bottom-6 right-6 h-[650px] max-h-[88vh] w-[460px] max-w-[calc(100vw-32px)] rounded-[28px]"
-          }`}
+          className={`okx-copilot-root font-gemini fixed z-50 flex flex-col overflow-hidden border border-[#27272a] bg-[#09090b] text-[#f4f4f5] shadow-[0_32px_100px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.05)] ${shellGeometry}`}
         >
-          {/* Top Ambient Highlight Beam */}
-          <div className="h-[1.5px] w-full bg-gradient-to-r from-transparent via-white/[0.35] to-transparent shrink-0" />
-
           {/* Unified Console Header */}
-          <div className="flex items-center justify-between border-b border-white/[0.08] bg-[#0c0c14]/90 px-4 py-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.16] shadow-sm p-1.5 shrink-0">
-                <CopilotIntelligenceIcon className="h-full w-full object-contain" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xs sm:text-[13px] font-bold tracking-tight text-white font-gemini-display">OKKAX Copilot</h3>
-                  <span className="rounded-full bg-white/[0.06] border border-white/[0.12] px-2 py-0.5 text-[9px] font-semibold text-zinc-300 font-mono">
-                    Neural Ops Core
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-mono mt-0.5">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
-                  </span>
-                  <span>Real-time Event Graph Intelligence</span>
+          <header
+            className={`flex shrink-0 select-none items-center justify-between gap-2 border-b border-[#27272a] bg-[#09090b] py-3 ${padX}`}
+          >
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#27272a] bg-[#18181b] p-1.5">
+                <CopilotIntelligenceIcon
+                  className={`h-full w-full object-contain ${loading ? "animate-pulse" : ""}`}
+                />
+              </span>
+              <div className="min-w-0">
+                <h3 className="truncate font-gemini-display text-[13px] font-semibold tracking-tight text-white">
+                  Okkax Copilot
+                </h3>
+                <div className="mt-0.5 font-gemini-mono text-[10px] text-zinc-500">
+                  <span className="truncate">Real-time Event Graph Intelligence</span>
                 </div>
               </div>
             </div>
 
-            {/* Minimalist Action Controls Pill */}
-            <div className="flex items-center gap-0.5 bg-white/[0.03] border border-white/[0.08] p-1 rounded-xl text-zinc-400">
-              <button
-                onClick={clearChat}
-                title="Reset Percakapan"
-                data-testid="okkax-copilot-btn-clear"
-                className="rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                title={isExpanded ? "Perkecil Ukuran" : "Maksimalkan Layar"}
-                data-testid="okkax-copilot-btn-expand"
-                className="hidden sm:block rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
-              >
-                {isExpanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-              </button>
+            {/* Action Controls Pill */}
+            <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-[#27272a] bg-[#121215] p-0.5">
               <button
                 onClick={() => setIsMinimized(!isMinimized)}
                 title={isMinimized ? "Buka Window" : "Minimalkan"}
+                aria-label={isMinimized ? "Buka Window" : "Minimalkan"}
                 data-testid="okkax-copilot-btn-minimize"
-                className="rounded-lg p-1.5 hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer"
+                className={CTRL_BTN}
               >
                 <Minus className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setIsOpen(false)}
                 title="Tutup"
+                aria-label="Tutup Okkax Copilot"
                 data-testid="okkax-copilot-btn-close"
-                className="rounded-lg p-1.5 hover:bg-white/[0.12] hover:text-white transition-colors cursor-pointer"
+                className={CTRL_BTN}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-          </div>
+          </header>
 
           {/* Console Body Content */}
           {!isMinimized && (
             <>
-              {/* Fast Scenario Ribbon */}
-              <div className="border-b border-white/[0.06] bg-[#07070b] px-3.5 py-2 overflow-x-auto whitespace-nowrap okx-custom-scrollbar shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest shrink-0 font-mono mr-1">
-                    Modul:
+              {/* Module / Scenario Chip Rail */}
+              <div
+                className={`okx-copilot-scroll shrink-0 overflow-x-auto whitespace-nowrap border-b border-[#27272a] bg-[#09090b] py-2 ${padX}`}
+              >
+                <div className="mx-auto flex w-full max-w-3xl items-center gap-3.5">
+                  <span className="mr-0.5 shrink-0 font-gemini-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Modul
                   </span>
-                  {FAST_SCENARIOS.map((sc) => {
-                    const IconComponent = sc.icon;
-                    return (
-                      <button
-                        key={sc.id}
-                        onClick={() => handleSend(sc.prompt)}
-                        disabled={loading}
-                        data-testid={`okkax-copilot-scenario-${sc.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] hover:border-white/30 hover:bg-white/[0.08] px-3 py-1 text-[11px] text-zinc-300 hover:text-white transition-all shrink-0 cursor-pointer active:scale-95 disabled:opacity-50"
-                      >
-                        <IconComponent size={11} className="text-zinc-400" />
-                        <span>{sc.label}</span>
-                      </button>
-                    );
-                  })}
+                  {FAST_SCENARIOS.map((sc) => (
+                    <button
+                      key={sc.id}
+                      onClick={() => handleSend(sc.prompt)}
+                      disabled={loading}
+                      data-testid={`okkax-copilot-scenario-${sc.id}`}
+                      className="shrink-0 cursor-pointer whitespace-nowrap px-1 py-1 text-[11px] font-medium text-zinc-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {sc.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Message Thread */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm okx-custom-scrollbar bg-[#050508]/60">
-                {messages.map((m, idx) => (
-                  <div
-                    key={idx}
-                    data-testid={`okkax-copilot-message-${m.role}-${idx}`}
-                    className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
-                  >
-                    {/* Role Header Indicator */}
-                    <div className="flex items-center gap-2 mb-1.5 px-1 text-[10px] text-zinc-500 font-mono">
-                      {m.role === "assistant" ? (
-                        <>
-                          <span className="flex items-center gap-1 text-zinc-300 font-bold">
-                            <Sparkles size={10} className="text-zinc-400" />
-                            OKKAX Copilot
-                          </span>
-                          <span>· {m.timestamp}</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>{m.timestamp}</span>
-                          <span className="text-zinc-400 font-bold">Anda</span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Bubble Card */}
-                    <div
-                      className={`relative rounded-2xl p-4 text-xs sm:text-[12.5px] leading-relaxed transition-all ${
-                        m.role === "user"
-                          ? "max-w-[85%] bg-white/[0.08] border border-white/[0.16] text-white rounded-tr-sm shadow-sm"
-                          : "w-full bg-[#101017]/85 border border-white/[0.08] text-zinc-200 rounded-tl-sm shadow-[0_8px_24px_rgba(0,0,0,0.4)]"
-                      }`}
-                    >
-                      {m.role === "user" ? (
-                        <p className="whitespace-pre-wrap font-medium">{m.content}</p>
-                      ) : (
-                        <div className="leading-relaxed">
-                          {renderFormattedMarkdown(m.content)}
-                        </div>
-                      )}
-
-                      {/* Card Footer Actions for Assistant */}
-                      {m.role === "assistant" && (
-                        <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-zinc-500 font-mono">
-                          <div className="flex items-center gap-1.5">
-                            {m.engine ? (
-                              <span className="text-zinc-400">{m.engine}</span>
-                            ) : (
-                              <span className="text-zinc-500">Event Graph Neural Inference</span>
-                            )}
+              {/* Conversation Canvas */}
+              <div
+                ref={scrollAreaRef}
+                role="log"
+                aria-live="polite"
+                aria-label="Percakapan Okkax Copilot"
+                className={`okx-copilot-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#09090b] py-4 ${padX}`}
+              >
+                <div className="mx-auto w-full max-w-3xl space-y-4">
+                  {messages.map((m, idx) => {
+                    const isUser = m.role === "user";
+                    return (
+                      <div
+                        key={idx}
+                        data-testid={`okkax-copilot-message-${m.role}-${idx}`}
+                        className={`flex w-full flex-col ${isUser ? "items-end" : "items-start"}`}
+                      >
+                        {isUser ? (
+                          /* User Message Bubble */
+                          <div className="max-w-[88%] break-words rounded-2xl border border-[#27272a] bg-[#18181b] px-4 py-2.5 text-[13px] leading-[1.6] text-[#f4f4f5] shadow-sm">
+                            <p className="whitespace-pre-wrap">{m.content}</p>
                           </div>
-                          <button
-                            onClick={() => copyMessage(m.content, idx)}
-                            title="Salin Respons"
-                            data-testid={`okkax-copilot-copy-btn-${idx}`}
-                            className="inline-flex items-center gap-1 text-zinc-400 hover:text-white transition-colors cursor-pointer px-1.5 py-0.5 rounded hover:bg-white/[0.06]"
-                          >
-                            {copiedIdx === idx ? (
-                              <>
-                                <Check className="h-3 w-3 text-white" />
-                                <span className="text-white font-semibold">Tersalin</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3 w-3" />
-                                <span>Salin</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        ) : (
+                          /* Assistant Message Block */
+                          <div className="w-full min-w-0">
+                            <div className="mb-2 flex select-none items-center justify-between gap-2">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <span className="shrink-0 font-gemini-display text-[11.5px] font-semibold tracking-tight text-white">
+                                  Okkax Copilot
+                                </span>
+                                {m.engine && !/^okkax copilot$/i.test(m.engine) && (
+                                  <span className="truncate rounded border border-[#27272a] bg-[#18181b] px-1.5 py-0.5 font-gemini-mono text-[9.5px] text-zinc-400">
+                                    {m.engine}
+                                  </span>
+                                )}
+                                <span className="hidden shrink-0 font-gemini-mono text-[9.5px] text-zinc-600 sm:inline">
+                                  {m.timestamp}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => copyMessage(m.content, idx)}
+                                title="Salin Respons"
+                                aria-label="Salin Respons"
+                                data-testid={`okkax-copilot-copy-btn-${idx}`}
+                                className="shrink-0 cursor-pointer rounded p-1 text-zinc-500 transition-colors hover:bg-[#18181b] hover:text-white focus-visible:ring-1 focus-visible:ring-white/40"
+                              >
+                                {copiedIdx === idx ? (
+                                  <Check className="h-3.5 w-3.5 text-white" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </button>
+                            </div>
 
-                {/* Loading State Animation */}
-                {loading && (
-                  <div className="w-full rounded-2xl bg-[#101017]/80 border border-white/[0.08] p-4 text-xs text-zinc-400 flex items-center gap-3">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] border border-white/[0.12] p-1.5">
-                      <CopilotIntelligenceIcon className="h-full w-full object-contain animate-spin" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <div className="flex space-x-1">
-                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce" />
-                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.2s]" />
-                          <div className="h-1.5 w-1.5 rounded-full bg-zinc-300 animate-bounce [animation-delay:0.4s]" />
-                        </div>
-                        <span className="text-[11px] font-mono text-zinc-300 font-semibold">Memproses inferensi data...</span>
+                            <div className="okx-copilot-md min-w-0">
+                              {renderFormattedMarkdown(m.content)}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-[10px] text-zinc-500 font-mono">Menghubungkan Event Graph, alokasi budget, & SOP</span>
+                    );
+                  })}
+
+                  {/* Loading Indicator */}
+                  {loading && (
+                    <div className="w-full px-1 py-2" data-testid="okkax-copilot-loading">
+                      <span className="animate-pulse font-gemini-mono text-[11px] text-zinc-400">
+                        Memproses inferensi Event Graph...
+                      </span>
                     </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
+                  )}
+
+                  <div ref={chatEndRef} />
+                </div>
               </div>
 
-              {/* Dynamic Suggestions Strip */}
+              {/* Recommended Question Chips */}
               {suggestions.length > 0 && (
-                <div className="border-t border-white/[0.06] bg-[#07070b] px-3.5 py-2 shrink-0">
-                  <div className="mb-1.5 text-[9.5px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 font-mono">
-                    <Sparkles className="h-3 w-3 text-zinc-400" />
-                    <span>Rekomendasi Pertanyaan:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto okx-custom-scrollbar">
+                <div
+                  className={`okx-copilot-scroll shrink-0 overflow-x-auto whitespace-nowrap border-t border-[#27272a] bg-[#09090b] py-2 ${padX}`}
+                >
+                  <div className="mx-auto flex w-full max-w-3xl items-center gap-3.5">
+                    <span className="mr-0.5 shrink-0 font-gemini-mono text-[9.5px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                      Rekomendasi
+                    </span>
                     {suggestions.map((sug, sIdx) => (
                       <button
                         key={sIdx}
                         onClick={() => handleSend(sug)}
                         disabled={loading}
+                        title={sug}
                         data-testid={`okkax-copilot-chip-${sIdx}`}
-                        className="rounded-xl border border-white/[0.08] bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.06] px-2.5 py-1 text-[11px] text-zinc-300 hover:text-white transition-all text-left flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
+                        className="max-w-[260px] shrink-0 cursor-pointer truncate px-1 py-1 text-left text-[11px] text-zinc-300 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                       >
-                        <span className="truncate">{sug}</span>
-                        <ArrowRight size={10} className="text-zinc-500 shrink-0" />
+                        {sug}
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Integrated Studio Command Bar */}
-              <div className="border-t border-white/[0.08] bg-[#0c0c14] p-3 shrink-0">
-                <div className="relative rounded-2xl border border-white/[0.12] bg-[#06060a] p-2 focus-within:border-white/35 focus-within:shadow-[0_0_24px_rgba(255,255,255,0.06)] transition-all">
-                  <textarea
-                    ref={textareaRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Tanya kalkulasi anggaran, dependensi rider, SOP venue, atau strategi tiket..."
-                    rows={2}
-                    data-testid="okkax-copilot-chat-input"
-                    className="w-full resize-none bg-transparent px-2 py-1 text-xs sm:text-[12.5px] text-white placeholder:text-zinc-500 focus:outline-none leading-relaxed"
-                  />
+              {/* Command Composer */}
+              <div className={`shrink-0 border-t border-[#27272a] bg-[#09090b] py-3 ${padX}`}>
+                <div className="mx-auto w-full max-w-3xl">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSend();
+                    }}
+                    className="flex items-center gap-1 rounded-full border border-[#27272a] bg-[#171717] pl-1.5 pr-1.5 py-1.5 transition-colors focus-within:border-zinc-500"
+                  >
+                    <button
+                      type="button"
+                      onClick={clearChat}
+                      title="Chat Baru"
+                      aria-label="Mulai Chat Baru"
+                      data-testid="okkax-copilot-btn-clear"
+                      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-1 focus-visible:ring-white/40"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
 
-                  {/* Input Toolbar */}
-                  <div className="mt-1 pt-1.5 border-t border-white/[0.06] flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-mono">
-                      <span className="hidden sm:inline">Enter kirim · Shift+Enter baris baru</span>
-                    </div>
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Tanya Okkax"
+                      rows={1}
+                      data-testid="okkax-copilot-chat-input"
+                      aria-label="Pesan untuk Okkax Copilot"
+                      className="okx-copilot-scroll h-8 w-full min-w-0 resize-none overflow-y-auto bg-transparent py-1 text-[13px] leading-relaxed text-white placeholder:text-zinc-500 focus:outline-none"
+                    />
 
                     <button
-                      onClick={() => handleSend()}
+                      type="submit"
                       disabled={!input.trim() || loading}
                       data-testid="okkax-copilot-chat-send"
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-white hover:bg-zinc-200 px-3.5 py-1.5 text-xs font-bold text-black transition-all active:scale-95 disabled:opacity-30 disabled:hover:bg-white cursor-pointer shadow-sm"
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all focus-visible:ring-1 focus-visible:ring-white/40 ${
+                        input.trim() && !loading
+                          ? "cursor-pointer bg-white text-black hover:bg-zinc-200 active:scale-95"
+                          : "cursor-not-allowed bg-transparent text-zinc-600"
+                      }`}
                       aria-label="Kirim Pesan"
                     >
-                      <span>Kirim</span>
-                      <Send size={11} className="text-black" />
+                      <ArrowUp className="h-4 w-4 stroke-[2.5]" />
                     </button>
-                  </div>
-                </div>
+                  </form>
 
-                {/* Subfooter */}
-                <div className="mt-2 px-1 flex items-center justify-between text-[10px] text-zinc-500 font-gemini">
-                  <span className="font-mono text-[9.5px]">Mode Demo Sandbox — OKKAX OS</span>
-                  <Link
-                    to="/okkax"
-                    className="font-semibold text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
-                  >
-                    <span>Command Center Layar Penuh</span>
-                    <ArrowUpRight size={11} />
-                  </Link>
+                  {/* Console Footer Meta */}
+                  <div className="mt-1.5 px-1 text-[9.5px] text-zinc-500">
+                    <span className="font-gemini-mono">Mode Demo Sandbox — Okkax OS</span>
+                  </div>
                 </div>
               </div>
             </>

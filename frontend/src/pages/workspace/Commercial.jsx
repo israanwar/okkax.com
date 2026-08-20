@@ -284,7 +284,7 @@ export function TenantsTab({ eventId, onChange }) {
                 <div className="text-[10px] uppercase tracking-widest accent-text">
                   Broadcast tenant opportunity
                 </div>
-                <h3 className="editorial mt-1 text-xl">Kirim peluang tenant ke jaringan OKKAX</h3>
+                <h3 className="editorial mt-1 text-xl">Kirim peluang tenant ke jaringan Okkax</h3>
                 <p className="mt-1 text-xs text-zinc-500">
                   Menyiapkan zona baru untuk event ini, membuka booth siap-apply,
                   dan mengirim notifikasi ke tenant fiktif yang preferensinya cocok.
@@ -564,7 +564,7 @@ export function TicketsTab({ eventId, event, onChange }) {
     setPublishing(true);
     try {
       await api.post(`/events/${eventId}/publish`);
-      toast.success("Event dipublikasikan ke OKKAX Discover");
+      toast.success("Event dipublikasikan ke Okkax Discover");
       onChange?.();
     } catch (e) {
       toast.error(apiError(e));

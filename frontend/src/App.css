@@ -1,10 +1,10 @@
-/* OKKAX app-level styles */
+/* Okkax app-level styles */
 .App {
   min-height: 100vh;
 }
 
 
-/* OKKAX APP SHELL FIXED SURFACES */
+/* Okkax APP SHELL FIXED SURFACES */
 @media (min-width: 1024px) {
   .okx-scroll-pane {
     overscroll-behavior: contain;
@@ -39,14 +39,14 @@
 
 
 /* =========================================================
-   OKKAX NETWORK — FIXED COMMAND SURFACE
+   Okkax NETWORK — FIXED COMMAND SURFACE
    Network chrome now uses the shared .okx-workspace-chrome
    flex contract. This block only carries Network-specific
    layout accents (heading, tabs, filter grid).
    ========================================================= */
 
 /* =========================================================
-   OKKAX APP PAGE COMMAND SYSTEM
+   Okkax APP PAGE COMMAND SYSTEM
    Operational navigation / tabs / filters stay visible.
    ========================================================= */
 
@@ -60,7 +60,7 @@
    Nothing Network-specific is needed here. */
 
 /* ==========================================================
-   OKKAX APPLICATION UI FOUNDATION V1
+   Okkax APPLICATION UI FOUNDATION V1
    AppShell owns vertical scrolling.
    Operational controls use explicit persistent surfaces.
    ========================================================== */
@@ -160,7 +160,7 @@
 
 
 
-/* Canonical OKKAX checkbox */
+/* Canonical Okkax checkbox */
 
 .okx-verified-filter input[type="checkbox"] {
   appearance: none;
@@ -336,7 +336,7 @@
 }
 
 /* ==========================================================
-   OKKAX EVENT WORKSPACE PERSISTENT CHROME V1
+   Okkax EVENT WORKSPACE PERSISTENT CHROME V1
 
    Desktop operating model:
    - App header fixed by AppShell
@@ -434,7 +434,7 @@
 }
 
 /* ==========================================================
-   OKKAX WORKSPACE PAGE — SHARED PERSISTENT CHROME
+   Okkax WORKSPACE PAGE — SHARED PERSISTENT CHROME
 
    Generalisation of the event workspace scroll contract.
    Any authenticated dashboard page that owns its own

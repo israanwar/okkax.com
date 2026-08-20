@@ -2418,11 +2418,46 @@ async def discover(city: str = "", category: str = "", q: str = "", free: Option
         "almost_sold_out": [e["id"] for e in sorted(out, key=lambda x: -x["sold_percentage"]) if e["sold_percentage"] >= 70][:12],
         "top_impact": [e["id"] for e in sorted(out, key=lambda x: -x["economic_ripple"])[:12]],
     }
+    active_ids = {e["id"] for e in out}
+    included_talents = [row for eid in active_ids for row in talents_by.get(eid, [])]
+    included_venues = [row for eid in active_ids for row in venues_by.get(eid, [])]
+    workforce_needed = sum(
+        int(job.get("needed") or 0)
+        for eid in active_ids
+        for job in jobs_by.get(eid, [])
+    )
+    workforce_filled = sum(
+        int(job.get("filled") or 0)
+        for eid in active_ids
+        for job in jobs_by.get(eid, [])
+    )
+    economic_activity = sum(e["economic_ripple"] for e in out)
+    totals = {
+        # Compatibility aliases remain additive while every public surface reads
+        # the same underlying catalog snapshot and metric definition.
+        "events": len(out),
+        "event_count": len(out),
+        "cities": len(cities),
+        "categories": len(categories),
+        "economic_ripple": economic_activity,
+        "economic_activity": economic_activity,
+        "tickets_sold": sum(e["sold"] for e in out),
+        "talents": len({t.get("talent_id") or t.get("talent_name") for t in included_talents if t.get("talent_id") or t.get("talent_name")}),
+        "promoters": len({e.get("organizer_org_id") or e.get("organizer_name") for e in out if e.get("organizer_org_id") or e.get("organizer_name")}),
+        "venues": len({v.get("venue_id") or v.get("venue_name") for v in included_venues if v.get("venue_id") or v.get("venue_name")}),
+        "businesses": sum(
+            len(vendors_by.get(eid, []))
+            + len(booths_by.get(eid, []))
+            + len(talents_by.get(eid, []))
+            + len(venues_by.get(eid, []))
+            for eid in active_ids
+        ),
+        "workers": workforce_filled,
+        "workforce_filled": workforce_filled,
+        "workforce_needed": workforce_needed,
+    }
     return {"items": out, "cities": cities, "categories": categories, "total": len(out),
-            "highlights": highlights,
-            "totals": {"events": len(out), "cities": len(cities), "categories": len(categories),
-                       "economic_ripple": sum(e["economic_ripple"] for e in out),
-                       "tickets_sold": sum(e["sold"] for e in out)}}
+            "highlights": highlights, "totals": totals}
 
 
 # In-memory caches for homepage public telemetry
@@ -2484,22 +2519,25 @@ async def discover_ticker():
 @api.get("/public/graph-events")
 async def public_graph_events():
     """Endpoint ringan untuk dropdown & switch event pada Event Graph homepage.
-    Mengembalikan katalog event yang diperlukan tanpa payload mendalam yang membebani browser.
-    Ukuran payload: ~7 KB (dibandingkan 422 KB full discover).
+    Mengembalikan proyeksi katalog dan total jaringan dari snapshot Discover yang
+    sama, termasuk relasi talent yang tidak disimpan langsung pada dokumen event.
     """
     import time
     now = time.time()
     if _graph_events_cache["data"] and (now - _graph_events_cache["ts"] < 30):
         return _graph_events_cache["data"]
 
-    f = {"status": {"$in": ["published", "live"]}, "deleted": {"$ne": True}}
-    events = await db.events.find(
-        f,
-        {"_id": 0, "id": 1, "name": 1, "organizer_name": 1, "headline_talent": 1, "city": 1,
-         "event_code": 1, "venue_name": 1, "budget": 1, "status": 1}
-    ).sort("name", 1).to_list(150)
-
-    result = {"items": events, "total": len(events)}
+    catalog = await discover()
+    fields = (
+        "id", "name", "organizer_name", "organizer_org_id", "headline_talent", "talent_count",
+        "city", "event_code", "venue_name", "budget", "status",
+    )
+    events = [
+        {field: event.get(field) for field in fields}
+        for event in catalog["items"]
+    ]
+    events.sort(key=lambda event: event.get("name") or "")
+    result = {"items": events, "total": catalog["total"], "totals": catalog["totals"]}
     _graph_events_cache["data"] = result
     _graph_events_cache["ts"] = now
     return result
@@ -3252,19 +3290,20 @@ async def economy_map():
         jobs = jobs_by.get(eid, [])
         booths = booths_by.get(eid, [])
         pkgs = pkgs_by.get(eid, [])
-        venue = (venues_by.get(eid) or [{}])[0] if venues_by.get(eid) else None
+        venues = venues_by.get(eid, [])
         occupied = [x for x in booths if x["status"] == "occupied"]
         ticket_gmv = sum(t["sold"] * t["price"] for t in tiers)
         tenant_revenue = sum(x.get("price") or 0 for x in occupied)
         sponsor_value = sum(p["price"] * p["sold"] for p in pkgs)
         workforce_payout = sum(j["needed"] * j["compensation_per_day"] * j.get("days", 1) for j in jobs)
-        workers = sum(j["needed"] for j in jobs)
+        workforce_needed = sum(int(j.get("needed") or 0) for j in jobs)
+        workers = sum(int(j.get("filled") or 0) for j in jobs)
 
         # Rekonstruksi total_cost/confirmed_funding/funding_gap sesuai compute_budget()
         # tanpa memanggilnya (biayanya 8 query per event).
         total_cost = (
             sum(t.get("landed_cost", 0) for t in talents)
-            + (venue.get("total_cost", 0) if venue else 0)
+            + sum(venue.get("total_cost", 0) for venue in venues)
             + sum(v.get("cost", 0) for v in vendors)
             + workforce_payout
             + sum(b.get("amount", 0) for b in budget_items_by.get(eid, []))
@@ -3282,7 +3321,7 @@ async def economy_map():
             "lng": CITY_COORDS.get(ev["city"], (-2.0, 118.0))[1], "events": [], "event_count": 0,
             "capacity": 0, "total_cost": 0, "confirmed_funding": 0, "funding_gap": 0, "ticket_gmv": 0,
             "sponsor_value": 0, "tenant_revenue": 0, "venue_income": 0, "talent_payout": 0,
-            "vendor_payout": 0, "workforce_payout": 0, "workers": 0, "businesses": 0,
+            "vendor_payout": 0, "workforce_payout": 0, "workers": 0, "workforce_needed": 0, "businesses": 0,
             "categories": [], "economic_activity": 0})
         c["events"].append({"id": ev["id"], "name": ev["name"], "event_type": ev["event_type"],
                             "start_date": ev.get("start_date"), "capacity": ev.get("capacity", 0),
@@ -3296,12 +3335,13 @@ async def economy_map():
         c["ticket_gmv"] += ticket_gmv
         c["sponsor_value"] += sponsor_value
         c["tenant_revenue"] += tenant_revenue
-        c["venue_income"] += (venue or {}).get("total_cost", 0)
+        c["venue_income"] += sum(venue.get("total_cost", 0) for venue in venues)
         c["talent_payout"] += sum(t["fee"] for t in talents)
         c["vendor_payout"] += sum(v["cost"] for v in vendors)
         c["workforce_payout"] += workforce_payout
         c["workers"] += workers
-        c["businesses"] += len(vendors) + len(occupied) + len(talents) + (1 if venue else 0)
+        c["workforce_needed"] += workforce_needed
+        c["businesses"] += len(vendors) + len(occupied) + len(talents) + len(venues)
         if ev["event_type"] not in c["categories"]:
             c["categories"].append(ev["event_type"])
         c["economic_activity"] += total_cost + ticket_gmv + tenant_revenue
@@ -3312,9 +3352,27 @@ async def economy_map():
     totals = {k: sum(c[k] for c in items) for k in
               ("event_count", "capacity", "total_cost", "confirmed_funding", "funding_gap", "ticket_gmv",
                "sponsor_value", "tenant_revenue", "venue_income", "talent_payout", "vendor_payout",
-               "workforce_payout", "workers", "businesses", "economic_activity")}
+               "workforce_payout", "workers", "workforce_needed", "businesses", "economic_activity")}
     totals["cities"] = len(items)
     totals["categories"] = len({t for c in items for t in c["categories"]})
+    totals["workforce_filled"] = totals["workers"]
+    totals["talents"] = len({
+        talent.get("talent_id") or talent.get("talent_name")
+        for rows in talents_by.values()
+        for talent in rows
+        if talent.get("talent_id") or talent.get("talent_name")
+    })
+    totals["promoters"] = len({
+        event.get("organizer_org_id") or event.get("organizer_name")
+        for event in events
+        if event.get("organizer_org_id") or event.get("organizer_name")
+    })
+    totals["venues"] = len({
+        venue.get("venue_id") or venue.get("venue_name")
+        for rows in venues_by.values()
+        for venue in rows
+        if venue.get("venue_id") or venue.get("venue_name")
+    })
     return {"cities": items, "totals": totals,
             "label": "Angka pada mode demo merupakan data fiktif untuk keperluan demonstrasi kompetisi."}
 
@@ -4023,6 +4081,7 @@ class OkkaxChatIn(BaseModel):
     event_id: Optional[str] = ""
     role: Optional[str] = ""
     engine: Optional[str] = None  # AI_ENGINES key; None -> default
+    reasoning_mode: Optional[str] = None  # "fast" | "advanced" (default) | "smarter"
 
 YoonaChatIn = OkkaxChatIn
 
@@ -4085,6 +4144,7 @@ async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict]
         grounded_event_snapshot=event_snapshot,
         authed_user=user,
         engine_pref=payload.engine,
+        reasoning_mode=payload.reasoning_mode,
     )
 
     # 5. Audit + quota — authed only. Chat by anonymous users is not
@@ -4599,6 +4659,8 @@ async def startup():
     await db.copilot_usage.create_index([("user_id", 1), ("month", 1)], unique=True, name="uniq_copilot_usage_user_month")
     res = await seed_data.seed(force=False)
     logger.info(f"OKKAX startup seed: {res}")
+    demo_accounts = await seed_data.ensure_demo_accounts()
+    logger.info(f"OKKAX canonical demo accounts: {demo_accounts}")
     memberships = await seed_data.ensure_demo_memberships()
     logger.info(f"OKKAX canonical demo memberships: {memberships}")
     users = await db.users.find({}, {"_id": 0, "id": 1, "roles": 1, "role": 1}).to_list(10000)
@@ -4715,6 +4777,4 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     pass
-
-
 

@@ -1,4 +1,4 @@
-// OKKAX Public Navigation and Footer.
+// Okkax Public Navigation and Footer.
 //
 // Single source of truth for the public taxonomy. Header, mobile drawer,
 // and footer all render from the same NAV constant so labels and routes
@@ -10,7 +10,7 @@
 //     a separate Products entry
 //   - Desktop: premium compact dropdown/mega-menu on hover or click
 //   - Mobile: drawer with accordion sections
-//   - No em-dash, no emoji, brand palette (black + white + OKKAX pink)
+//   - No em-dash, no emoji, brand palette (black + white + Okkax pink)
 
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
@@ -47,7 +47,7 @@ export const NAV = [
     label: "Products",
     children: [
       { label: "Event Studio",       to: "/products/event-studio",       note: "Compile brief menjadi Event Blueprint." },
-      { label: "OKKAX Copilot",      to: "/copilot",                     note: "Event reasoning, recommendations, and Two-Way Matching." },
+      { label: "Okkax Copilot",      to: "/copilot",                     note: "Event reasoning, recommendations, and Two-Way Matching." },
       { label: "Network",            to: "/products/network",            note: "Talent, Venue, Vendor, Workforce, Sponsor, Tenant." },
       { label: "Ticket Studio",      to: "/products/ticket-studio",      note: "Inventory, seating, ticket products." },
       { label: "LivePass",           to: "/products/livepass",           note: "Live access entitlement, not a file." },
@@ -74,7 +74,7 @@ export const NAV = [
     id: "company",
     label: "Company",
     children: [
-      { label: "About OKKAX",         to: "/about"         },
+      { label: "About Okkax",         to: "/about"         },
       { label: "How It Works",        to: "/how-it-works"  },
       { label: "Contact",             to: "/contact"       },
       { label: "Terms & Conditions",  to: "/terms"         },
@@ -89,8 +89,8 @@ export const NAV = [
 // register redirect so the button is honest.
 export const QUICK_DEMO_ROLES = [
   { id: "organizer", label: "Organizer", persona: "Penyelenggara", destination: "/app" },
-  { id: "promoter",  label: "Promoter",  persona: "Penyelenggara", destination: "/app" },
-  { id: "vendor",    label: "Vendor",    persona: null,             destination: "/register?role=vendor" },
+  { id: "promoter",  label: "Promoter",  persona: "promotor",      destination: "/app" },
+  { id: "vendor",    label: "Vendor",    persona: "vendor",        destination: "/app" },
   { id: "sponsor",   label: "Sponsor",   persona: "Sponsor",        destination: "/app/sponsor" },
   { id: "tenant",    label: "Tenant",    persona: "Tenant",         destination: "/app/tenant" },
   { id: "audience",  label: "Audience",  persona: "Pengunjung",     destination: "/app" },
@@ -124,20 +124,27 @@ const SOCIAL_LINKS = [
 // -----------------------------------------------------------------------------
 // Logo. Also acts as the Home link since it points to "/".
 // -----------------------------------------------------------------------------
-export const Logo = ({ small, to = "/" }) => (
+export const Logo = ({ small, compact, to = "/", ariaLabel }) => (
   <Link
     to={to}
     data-testid="okkax-logo"
-    aria-label={to === "/" ? "OKKAX Home" : "OKKAX Workspace"}
-    className={`okkax-logo group inline-flex shrink-0 flex-col items-start ${small ? "w-[82px]" : "w-[132px]"}`}
+    aria-label={ariaLabel || (to === "/" ? "Okkax Home" : "Okkax Workspace")}
+    title={ariaLabel}
+    className={`okkax-logo group inline-flex shrink-0 flex-col items-start transition-[width] duration-200 ease-out ${
+      small ? "w-[82px]" : compact ? "w-[112px]" : "w-[132px]"
+    }`}
   >
     <img
       src={LOGO_URL}
-      alt="OKKAX"
-      className={`okkax-logo-image ${small ? "h-[18px]" : "h-[23px]"} w-auto object-contain`}
+      alt="Okkax"
+      className={`okkax-logo-image w-auto object-contain transition-[height] duration-200 ease-out ${
+        small ? "h-[18px]" : compact ? "h-[21px]" : "h-[23px]"
+      }`}
     />
     {!small && (
-      <span className="okkax-logo-category mt-0.5 text-[7px] font-semibold uppercase leading-none tracking-[0.17em] text-zinc-400">
+      <span className={`okkax-logo-category mt-0.5 font-semibold uppercase leading-none text-zinc-400 transition-[font-size,letter-spacing] duration-200 ease-out ${
+        compact ? "text-[6px] tracking-[0.13em]" : "text-[7px] tracking-[0.17em]"
+      }`}>
         Live Event Operating Network
       </span>
     )}
@@ -175,51 +182,33 @@ function useQuickPersonaLogin() {
 
 // -----------------------------------------------------------------------------
 // Desktop dropdown menu. Opens on hover or click, closes on Escape, mouseleave
-// with grace period, or outside click. Renders premium compact panel.
+// with grace period, or outside click. Renders a compact anchored popover.
 // -----------------------------------------------------------------------------
-const MENU_META = {
+const POPOVER_LAYOUT = {
   explore: {
-    eyebrow: "EXPLORE",
-    title: "Temukan apa yang sedang terjadi.",
-    text: "Jelajahi event melalui daftar, kalender, dan peta live-event.",
+    width: "min(430px, calc(100vw - 32px))",
+    grid: "grid-cols-3",
+    anchor: "left-0",
   },
   products: {
-    eyebrow: "PRODUCTS",
-    title: "Satu sistem. Banyak kemampuan.",
-    text: "Produk inti OKKAX untuk merancang, menghubungkan, mengakses, dan mengoperasikan live event.",
+    width: "min(450px, calc(100vw - 32px))",
+    grid: "grid-cols-3",
+    anchor: "left-0",
   },
   solutions: {
-    eyebrow: "SOLUTIONS",
-    title: "Dibangun untuk seluruh ekosistem.",
-    text: "Pengalaman yang relevan untuk setiap pelaku dalam ekonomi live event.",
+    width: "min(500px, calc(100vw - 32px))",
+    grid: "grid-cols-3",
+    anchor: "left-0",
   },
   company: {
-    eyebrow: "COMPANY",
-    title: "Kenali OKKAX lebih dalam.",
-    text: "Tentang OKKAX, cara kerja platform, kontak, dan informasi legal.",
+    width: "min(450px, calc(100vw - 32px))",
+    grid: "grid-cols-3",
+    anchor: "right-0",
   },
 };
 
-const MENU_NOTES = {
-  Organizers: "Rancang dan kendalikan seluruh siklus event.",
-  Promoters: "Bangun, biayai, promosikan, dan jalankan event.",
-  Talent: "Kelola peluang, booking, jadwal, dan performa.",
-  Venues: "Kelola availability, booking, dan utilisasi venue.",
-  Vendors: "Temukan project dan kelola layanan event.",
-  Workforce: "Bangun reputasi dan temukan pekerjaan event.",
-  Sponsors: "Temukan event dan kelola peluang sponsorship.",
-  Tenants: "Temukan peluang booth dan partisipasi event.",
-  Attendees: "Temukan event, akses LivePass, dan pengalaman event.",
-  "About OKKAX": "Visi, positioning, dan alasan OKKAX dibangun.",
-  "How It Works": "Lihat bagaimana seluruh sistem OKKAX terhubung.",
-  Contact: "Hubungi tim OKKAX.",
-  "Terms & Conditions": "Ketentuan penggunaan platform.",
-  "Privacy Policy": "Cara OKKAX mengelola dan melindungi data.",
-};
-
-function DesktopDropdown({ item, isActive, onNavigate }) {
+function DesktopDropdown({ item, isActive, onNavigate, compact, closeSignal }) {
   const [open, setOpen] = useState(false);
-  const [panelTop, setPanelTop] = useState(72);
   const closeTimer = useRef(null);
   const wrapRef = useRef(null);
 
@@ -243,25 +232,8 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
   }, []);
 
   useEffect(() => {
-    if (!open) return;
-
-    const updatePosition = () => {
-      const header = wrapRef.current
-        ?.closest("header")
-        ?.getBoundingClientRect();
-
-      if (header) setPanelTop(header.bottom + 8);
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open]);
+    if (closeSignal > 0) setOpen(false);
+  }, [closeSignal]);
 
   useEffect(() => {
     if (!open) return;
@@ -274,20 +246,7 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
-  const meta = MENU_META[item.id] || {
-    eyebrow: item.label.toUpperCase(),
-    title: item.label,
-    text: "",
-  };
-
-  const gridClass =
-    item.id === "solutions"
-      ? "lg:grid-cols-3"
-      : item.id === "products"
-      ? "lg:grid-cols-3"
-      : item.id === "explore"
-      ? "lg:grid-cols-3"
-      : "lg:grid-cols-3";
+  const layout = POPOVER_LAYOUT[item.id] || POPOVER_LAYOUT.company;
 
   return (
     <div
@@ -304,10 +263,11 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
         aria-haspopup="menu"
         aria-expanded={open}
         data-testid={`nav-${item.id}`}
-        onClick={() => setOpen((v) => !v)}
+        onClick={openNow}
         onFocus={openNow}
         className={[
-          "relative inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 cursor-pointer",
+          "relative inline-flex items-center rounded-lg font-semibold tracking-wide transition-all duration-200 ease-out cursor-pointer",
+          compact ? "gap-1 px-2.5 py-1.5 text-[12px]" : "gap-1.5 px-3 py-2 text-[13px]",
           isActive
             ? "bg-white/[0.08] text-white"
             : open
@@ -331,66 +291,35 @@ function DesktopDropdown({ item, isActive, onNavigate }) {
         <div
           role="menu"
           data-testid={`nav-${item.id}-panel`}
-          style={{
-            top: `${panelTop}px`,
-            width: "min(840px, calc(100vw - 32px))",
-          }}
-          className="fixed left-1/2 z-[70] -translate-x-1/2 overflow-hidden rounded-3xl border border-white/[0.14] bg-[#0c0c0e]/98 shadow-[0_32px_90px_rgba(0,0,0,0.98),inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-3xl"
+          style={{ width: layout.width }}
+          className={`absolute top-[calc(100%+8px)] z-[70] overflow-hidden rounded-2xl border border-white/[0.14] bg-[#09090b] p-1.5 shadow-[0_24px_60px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-xl ${layout.anchor}`}
           onMouseEnter={openNow}
           onMouseLeave={scheduleClose}
         >
-          {/* Top ambient lighting accent */}
-          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-
-          <div className="grid lg:grid-cols-[200px_minmax(0,1fr)]">
-            <div className="border-b border-white/[0.08] bg-gradient-to-b from-[#141418] to-[#0a0a0c] p-6 lg:border-b-0 lg:border-r">
-              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-white/[0.12] bg-white/[0.04] px-2.5 py-0.5 text-[9.5px] font-bold uppercase tracking-[0.22em] text-zinc-300 font-gemini-mono shadow-sm">
-                <Sparkles size={11} className="text-zinc-300" aria-hidden="true" />
-                {meta.eyebrow}
-              </div>
-
-              <div className="mt-2 text-[15px] font-bold leading-snug text-white">
-                {meta.title}
-              </div>
-
-              <p className="mt-2.5 text-[11.5px] leading-relaxed text-zinc-400 font-medium">
-                {meta.text}
-              </p>
-            </div>
-
-            <ul className={`grid ${gridClass} bg-[#08080a]/95 p-3.5 gap-2`}>
-              {item.children?.map((c) => (
-                <li key={c.to}>
-                  <Link
-                    role="menuitem"
-                    to={c.to}
-                    onClick={() => {
-                      setOpen(false);
-                      onNavigate?.();
-                    }}
-                    data-testid={`nav-${item.id}-${slug(c.label)}`}
-                    className="group flex min-h-[76px] h-full flex-col justify-between rounded-2xl border border-white/[0.08] bg-[#111114]/90 p-3.5 transition-all duration-200 hover:border-white/30 hover:bg-white/[0.08] hover:shadow-[0_8px_24px_rgba(0,0,0,0.9)] hover:-translate-y-0.5 cursor-pointer shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-[13px] font-bold text-white tracking-tight transition-colors group-hover:text-white drop-shadow-sm">
-                        {c.label}
-                      </span>
-
-                      <ArrowUpRight
-                        size={14}
-                        className="mt-0.5 text-zinc-500 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
-                        aria-hidden="true"
-                      />
-                    </div>
-
-                    <span className="mt-1.5 text-[11px] leading-snug text-zinc-400 font-medium group-hover:text-zinc-200 transition-colors">
-                      {c.note || MENU_NOTES[c.label] || ""}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <ul className={`grid ${layout.grid} gap-1`}>
+            {item.children?.map((child) => (
+              <li key={child.to}>
+                <Link
+                  role="menuitem"
+                  to={child.to}
+                  onClick={() => {
+                    setOpen(false);
+                    onNavigate?.();
+                  }}
+                  data-testid={`nav-${item.id}-${slug(child.label)}`}
+                  className="group flex h-9 w-full items-center justify-between gap-1.5 rounded-lg border border-white/[0.08] bg-[#111114] px-2.5 text-[11px] font-semibold tracking-tight text-zinc-200 transition-all duration-200 hover:border-white/25 hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45"
+                >
+                  <span>{child.label}</span>
+                  <ArrowUpRight
+                    size={12}
+                    className="shrink-0 text-zinc-600 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-zinc-200"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
@@ -421,11 +350,115 @@ function QuickDemoGrid({ onDone, testidPrefix }) {
   );
 }
 
+const COPILOT_PHASE_SELECTOR = '[data-testid="hero-interaction-slot"]';
+const COPILOT_ROOT_SELECTOR = '[data-testid="stitch-command-capsule"]';
+const COOKIE_CONSENT_KEY = "okkax_public_cookie_consent_v1";
+
+function CookieConsent() {
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(COOKIE_CONSENT_KEY) !== "accepted";
+    } catch {
+      return true;
+    }
+  });
+
+  if (!visible) return null;
+
+  const accept = () => {
+    try {
+      window.localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
+    } catch {
+      // Consent still dismisses for this page when storage is unavailable.
+    }
+    setVisible(false);
+  };
+
+  return (
+    <aside
+      data-testid="public-cookie-consent"
+      aria-label="Cookie consent"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.1] bg-[#07070a]/[0.98] px-3 py-2 shadow-[0_-12px_36px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:px-5"
+    >
+      <div className="mx-auto flex max-w-7xl flex-col items-start gap-2 pr-[176px] sm:flex-row sm:items-center sm:gap-4 sm:pr-[190px]">
+        <p className="max-w-4xl text-[9.5px] leading-[1.45] text-zinc-400 sm:text-[10.5px]">
+          We use cookies and similar technologies to operate our website, improve performance, and analyze usage. By continuing to use this site, you agree to the use of cookies as described in our{" "}
+          <Link to="/privacy" className="font-semibold text-zinc-200 underline decoration-white/30 underline-offset-2 transition-colors hover:text-white">
+            Privacy policy
+          </Link>
+          .
+        </p>
+        <button
+          type="button"
+          onClick={accept}
+          data-testid="public-cookie-accept"
+          className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-[10.5px] font-bold text-black transition-colors hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+        >
+          Accept
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+function useHomepageCopilotNavState() {
+  const [phase, setPhase] = useState("idle");
+  const [closeSignal, setCloseSignal] = useState(0);
+  const lastPhaseRef = useRef("idle");
+
+  useEffect(() => {
+    const readPhase = () =>
+      document.querySelector(COPILOT_PHASE_SELECTOR)?.getAttribute("data-phase") || "idle";
+
+    const syncPhase = () => {
+      const nextPhase = readPhase();
+      if (lastPhaseRef.current === nextPhase) return;
+      lastPhaseRef.current = nextPhase;
+      setPhase(nextPhase);
+      setCloseSignal((signal) => signal + 1);
+    };
+
+    const closeFromComposerInteraction = (event) => {
+      if (event.target instanceof Element && event.target.closest(COPILOT_ROOT_SELECTOR)) {
+        setCloseSignal((signal) => signal + 1);
+      }
+    };
+
+    const observer = new MutationObserver(syncPhase);
+    observer.observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["data-phase"],
+    });
+
+    document.addEventListener("pointerdown", closeFromComposerInteraction, true);
+    document.addEventListener("focusin", closeFromComposerInteraction, true);
+    document.addEventListener("submit", closeFromComposerInteraction, true);
+    syncPhase();
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("pointerdown", closeFromComposerInteraction, true);
+      document.removeEventListener("focusin", closeFromComposerInteraction, true);
+      document.removeEventListener("submit", closeFromComposerInteraction, true);
+    };
+  }, []);
+
+  return {
+    phase,
+    compact: phase === "thinking" || phase === "response",
+    closeSignal,
+  };
+}
+
 // -----------------------------------------------------------------------------
 // Header Component
 // -----------------------------------------------------------------------------
 export default function PublicNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { phase, compact, closeSignal } = useHomepageCopilotNavState();
   const { user, logout } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
@@ -437,19 +470,42 @@ export default function PublicNav() {
     return false;
   };
 
+  useEffect(() => {
+    if (closeSignal > 0) setMobileOpen(false);
+  }, [closeSignal]);
+
   return (
     <>
       <header
         data-testid="public-nav"
-        className="okx-public-nav fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] bg-[#06060a]/90 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(255,255,255,0.04)] font-gemini px-4 sm:px-6 w-full"
+        data-copilot-phase={phase}
+        data-compact={compact ? "true" : "false"}
+        className={`okx-public-nav fixed top-0 left-0 right-0 z-50 w-full border-b border-white/[0.08] bg-[#06060a]/90 font-gemini shadow-[0_8px_32px_rgba(0,0,0,0.6),inset_0_-1px_0_rgba(255,255,255,0.04)] backdrop-blur-2xl transition-[padding,background-color] duration-200 ease-out ${
+          compact ? "px-3 sm:px-5" : "px-4 sm:px-6"
+        }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 py-3">
-          <div className="flex items-center gap-5 sm:gap-7 xl:gap-9">
-            <Logo />
-            <nav className="hidden items-center gap-1.5 lg:flex xl:gap-2.5" aria-label="Navigasi utama">
+        <div
+          data-testid="public-nav-inner"
+          className={`mx-auto flex max-w-7xl items-center justify-between transition-[min-height,padding,gap] duration-200 ease-out ${
+            compact ? "min-h-[55px] gap-2 py-1.5" : "min-h-[64px] gap-4 py-3"
+          }`}
+        >
+          <div className={`flex items-center transition-[gap] duration-200 ease-out ${
+            compact ? "gap-3 sm:gap-5 xl:gap-6" : "gap-5 sm:gap-7 xl:gap-9"
+          }`}>
+            <Logo compact={compact} />
+            <nav className={`hidden items-center transition-[gap] duration-200 ease-out lg:flex ${
+              compact ? "gap-0.5 xl:gap-1" : "gap-1.5 xl:gap-2.5"
+            }`} aria-label="Navigasi utama">
               {NAV.map((item) =>
                 item.children ? (
-                  <DesktopDropdown key={item.id} item={item} isActive={isItemActive(item)} />
+                  <DesktopDropdown
+                    key={item.id}
+                    item={item}
+                    isActive={isItemActive(item)}
+                    compact={compact}
+                    closeSignal={closeSignal}
+                  />
                 ) : (
                   <NavLink
                     key={item.id}
@@ -457,7 +513,9 @@ export default function PublicNav() {
                     end={item.to === "/"}
                     data-testid={`nav-${item.id}`}
                     className={({ isActive }) =>
-                      `relative rounded-lg px-3 py-2 text-[13px] font-semibold tracking-wide transition-all duration-200 ${
+                      `relative rounded-lg font-semibold tracking-wide transition-all duration-200 ease-out ${
+                        compact ? "px-2.5 py-1.5 text-[12px]" : "px-3 py-2 text-[13px]"
+                      } ${
                         isActive
                           ? "bg-white/[0.08] text-white"
                           : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
@@ -470,20 +528,24 @@ export default function PublicNav() {
               )}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className={`flex items-center transition-[gap] duration-200 ease-out ${compact ? "gap-2" : "gap-3"}`}>
             {user ? (
               <>
                 <Link
                   to="/app"
                   data-testid="nav-workspace-btn"
-                  className="hidden rounded-xl bg-white hover:bg-zinc-200 px-5 py-2.5 text-xs font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] sm:block"
+                  className={`rounded-xl bg-white font-bold text-black shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition-all duration-200 hover:bg-zinc-200 active:scale-[0.98] ${
+                    compact ? "px-3 py-2 text-[11.5px] sm:px-4 sm:py-2 sm:text-xs" : "px-3 py-2 text-[11.5px] sm:px-5 sm:py-2.5 sm:text-xs"
+                  }`}
                 >
                   Workspace
                 </Link>
                 <button
                   data-testid="nav-logout-btn"
                   onClick={() => { logout(); nav("/"); }}
-                  className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-3.5 py-2.5 text-xs font-semibold text-zinc-300 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all cursor-pointer"
+                  className={`hidden rounded-xl border border-white/[0.12] bg-white/[0.03] text-xs font-semibold text-zinc-300 transition-all duration-200 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block cursor-pointer ${
+                    compact ? "px-3 py-2" : "px-3.5 py-2.5"
+                  }`}
                 >
                   Sign Out
                 </button>
@@ -493,14 +555,18 @@ export default function PublicNav() {
                 <Link
                   to="/login"
                   data-testid="nav-signin-btn"
-                  className="hidden rounded-xl border border-white/[0.12] bg-white/[0.03] px-4 py-2.5 text-xs sm:text-[13px] font-semibold text-zinc-200 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block transition-all"
+                  className={`hidden rounded-xl border border-white/[0.12] bg-white/[0.03] font-semibold text-zinc-200 transition-all duration-200 hover:text-white hover:border-white/[0.25] hover:bg-white/[0.06] sm:block ${
+                    compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-xs sm:text-[13px]"
+                  }`}
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
                   data-testid="nav-register-btn"
-                  className="rounded-xl bg-white hover:bg-zinc-200 px-3 sm:px-5 py-2 sm:py-2.5 text-[11.5px] sm:text-[13px] font-bold text-black transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] active:scale-[0.98] whitespace-nowrap"
+                  className={`rounded-xl bg-white font-bold text-black shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition-all duration-200 hover:bg-zinc-200 active:scale-[0.98] whitespace-nowrap ${
+                    compact ? "px-3 py-2 text-[11.5px] sm:px-4 sm:text-xs" : "px-3 py-2 text-[11.5px] sm:px-5 sm:py-2.5 sm:text-[13px]"
+                  }`}
                 >
                   Build an Event
                 </Link>
@@ -511,7 +577,9 @@ export default function PublicNav() {
               aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen((v) => !v)}
-              className="p-2 sm:p-2.5 text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-colors cursor-pointer shrink-0"
+              className={`text-zinc-300 lg:hidden rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white transition-[padding,color,background-color] duration-200 cursor-pointer shrink-0 ${
+                compact ? "p-2" : "p-2 sm:p-2.5"
+              }`}
             >
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -521,6 +589,7 @@ export default function PublicNav() {
       </header>
       {/* Flow Spacer to ensure ZERO content overlap behind fixed header */}
       <div className="h-[65px] w-full shrink-0 pointer-events-none" aria-hidden="true" />
+      <CookieConsent />
     </>
   );
 }
@@ -598,17 +667,16 @@ function MobileAccordion({ item, onNavigate }) {
         <ChevronDown size={16} className={"text-zinc-400 transition-transform duration-200 " + (open ? "rotate-180 text-white" : "")} aria-hidden="true" />
       </button>
       {open && (
-        <ul className="mt-2 flex flex-col gap-1.5 px-1 pb-1">
+        <ul className="mt-1.5 flex flex-col gap-1 px-1 pb-1">
           {item.children.map((c) => (
             <li key={c.to}>
               <Link
                 to={c.to}
                 onClick={onNavigate}
                 data-testid={`mnav-${item.id}-${slug(c.label)}`}
-                className="block rounded-xl border border-white/[0.08] bg-[#141418]/90 px-3.5 py-2.5 text-[13px] hover:border-white/30 hover:bg-white/[0.08] transition-all"
+                className="block rounded-lg border border-white/[0.08] bg-[#141418]/90 px-3 py-2 text-[12.5px] font-semibold text-white hover:border-white/30 hover:bg-white/[0.08] transition-all"
               >
-                <div className="font-bold text-white">{c.label}</div>
-                {c.note && <div className="text-[11px] text-zinc-400 font-medium mt-0.5">{c.note}</div>}
+                {c.label}
               </Link>
             </li>
           ))}
@@ -798,7 +866,7 @@ function FooterMeta() {
           Seluruh nama, organisasi, talent, harga, rider, transaksi, tiket, dan metrik pada mode demo merupakan data fiktif untuk demonstrasi kompetisi. Pembayaran bersifat sandbox; tidak ada uang nyata yang ditagihkan.
         </div>
         <div className="shrink-0 lg:text-right font-gemini-mono text-zinc-300">
-          <div>© 2026 OKKAX</div>
+          <div>© 2026 Okkax</div>
           <div className="mt-1 text-zinc-400 text-[11px]">One event. Every moving part.</div>
         </div>
       </div>

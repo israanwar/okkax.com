@@ -1,8 +1,8 @@
-// OKKAX single pricing source of truth.
+// Okkax single pricing source of truth.
 //
-// Authority: docs/32_OKKAX_SUBSCRIPTION_AND_ENTITLEMENT_ARCHITECTURE_MASTER.md
-//            docs/33_OKKAX_PRICING_PACKAGING_AND_MONETIZATION_MASTER.md
-//            docs/34_OKKAX_PUBLIC_SUBSCRIPTION_EXPERIENCE_MASTER.md
+// Authority: docs/32_Okkax_SUBSCRIPTION_AND_ENTITLEMENT_ARCHITECTURE_MASTER.md
+//            docs/33_Okkax_PRICING_PACKAGING_AND_MONETIZATION_MASTER.md
+//            docs/34_Okkax_PUBLIC_SUBSCRIPTION_EXPERIENCE_MASTER.md
 //
 // Any public price must consume this file. Do NOT hard-code Rupiah values
 // in components, JSON-LD, homepage previews, signup, or checkout. Changing

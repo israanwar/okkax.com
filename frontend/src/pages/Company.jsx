@@ -22,9 +22,9 @@ import {
 // ============================================================================
 export function About() {
   return (
-    <Shell tagline="About OKKAX" title="Kami membangun operating network untuk live event.">
+    <Shell tagline="About Okkax" title="Kami membangun operating network untuk live event.">
       <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-        OKKAX menyatukan brief, jaringan, jadwal, kontrak, ticketing, operasi, dan keuangan pada satu Event ID. Kami percaya industri event tidak kekurangan pihak yang kompeten. Yang hilang adalah satu sistem yang menghubungkan mereka.
+        Okkax menyatukan brief, jaringan, jadwal, kontrak, ticketing, operasi, dan keuangan pada satu Event ID. Kami percaya industri event tidak kekurangan pihak yang kompeten. Yang hilang adalah satu sistem yang menghubungkan mereka.
       </p>
       <RevealGroup stagger={0.08} className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
@@ -130,15 +130,15 @@ export function Terms() {
   return (
     <Shell tagline="Legal" title="Terms & Conditions">
       <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400 sm:text-base">
-        Ringkasan berikut menjelaskan aturan utama penggunaan OKKAX. Terms lengkap akan diterbitkan pada versi rilis publik dan mengikat sejak akun dibuat.
+        Ringkasan berikut menjelaskan aturan utama penggunaan Okkax. Terms lengkap akan diterbitkan pada versi rilis publik dan mengikat sejak akun dibuat.
       </p>
       <div className="mt-10 space-y-6 text-sm leading-6 text-zinc-300">
         {[
-          ["Layanan", "OKKAX adalah operating network untuk industri live event. Fitur, kapasitas, dan integrasi dapat berbeda per subscription tier."],
+          ["Layanan", "Okkax adalah operating network untuk industri live event. Fitur, kapasitas, dan integrasi dapat berbeda per subscription tier."],
           ["Akun", "Pengguna wajib menjaga keamanan kredensial dan bertanggung jawab atas aktivitas yang berjalan di akunnya."],
           ["Konten", "Setiap organisasi memegang kendali atas data privat event dan tidak akan dibagikan tanpa izin eksplisit atau kewajiban hukum."],
           ["Pembayaran", "Pada mode demo semua pembayaran bersifat sandbox. Pada mode produksi, biaya subscription dan ticketing tunduk pada Pricing yang berlaku."],
-          ["Batas Tanggung Jawab", "OKKAX menyediakan platform. Keputusan operasional dan komersial tetap di tangan organisasi pengguna."],
+          ["Batas Tanggung Jawab", "Okkax menyediakan platform. Keputusan operasional dan komersial tetap di tangan organisasi pengguna."],
         ].map(([t, b]) => (
           <div key={t}>
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--okx-accent-soft)]">{t}</div>

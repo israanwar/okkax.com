@@ -186,7 +186,7 @@ export default function Checkout({ embedded = false }) {
                         onClick={() => setUseStripe(false)}
                         className={`border px-3 py-3 text-left text-sm font-semibold ${!useStripe ? "border-white bg-white/[0.08] text-white" : "border-[var(--okx-border)] text-zinc-300"}`}
                       >
-                        Sandbox internal OKKAX
+                        Sandbox internal Okkax
                         <div className="text-[11px] text-zinc-300 mt-0.5 font-normal">VA, QRIS, e-wallet, retail, corporate</div>
                       </button>
                       <button

@@ -27,11 +27,12 @@ const ROLE_OPTIONS = [
 
 const DEMO_ACCOUNTS = [
   { key: "organizer", label: "Organizer", roleName: "Organizer", email: "organizer@okkax.id", defaultNext: "/app" },
-  { key: "promotor", label: "Promotor", roleName: "Promotor", email: "organizer@okkax.id", defaultNext: "/app" },
+  { key: "promotor", label: "Promotor", roleName: "Promotor", email: "promoter@okkax.id", defaultNext: "/app" },
   { key: "sponsor", label: "Sponsor", roleName: "Sponsor", email: "sponsor@okkax.id", defaultNext: "/app" },
   { key: "tenant", label: "Tenant", roleName: "Tenant", email: "tenant@okkax.id", defaultNext: "/app" },
   { key: "audience", label: "Audience", roleName: "Audience", email: "audience@okkax.id", defaultNext: "/app" },
   { key: "talent", label: "Talent", roleName: "Talent", email: "talent@okkax.id", defaultNext: "/app" },
+  { key: "venue", label: "Venue", roleName: "Venue", email: "venue@okkax.id", defaultNext: "/app" },
   { key: "vendor", label: "Vendor", roleName: "Vendor", email: "vendor@okkax.id", defaultNext: "/app" },
   { key: "workforce", label: "Workforce", roleName: "Workforce", email: "worker@okkax.id", defaultNext: "/app" },
 ];
@@ -72,7 +73,7 @@ function Shell({ title, subtitle, children }) {
             <div className="mt-8 grid grid-cols-2 gap-2.5 max-w-md">
               {[
                 "Event Blueprint Compiler",
-                "15+ Kota Verified Network",
+                "Jaringan Kota Terverifikasi",
                 "Anti-Scalp Dynamic LivePass",
                 "Okkax Copilot",
               ].map((feat, idx) => (
@@ -85,7 +86,7 @@ function Shell({ title, subtitle, children }) {
           </div>
 
           <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-zinc-400 font-gemini-mono">
-            <span className="h-2 w-2 rounded-full bg-[var(--okx-accent)] shadow-[0_0_8px_var(--okx-accent)]" /> Built for live operations • 15+ Kota
+            <span className="h-2 w-2 rounded-full bg-[var(--okx-accent)] shadow-[0_0_8px_var(--okx-accent)]" /> Built for live operations • Jaringan nasional
           </div>
         </aside>
 
@@ -99,7 +100,7 @@ function Shell({ title, subtitle, children }) {
 
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">OKKAX Access</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--okx-accent-soft)]">Okkax Access</div>
                 <h1 className="editorial mt-1.5 text-2xl sm:text-3xl text-[#f5f0ed]">{title}</h1>
                 <p className="mt-1 text-xs sm:text-sm text-zinc-300">{subtitle}</p>
               </div>
@@ -343,7 +344,7 @@ export function Login() {
     setError("");
     try {
       await login(email, password);
-      toast.success("Berhasil masuk ke OKKAX");
+      toast.success("Berhasil masuk ke Okkax");
       nav(next, { replace: true });
     } catch (err) {
       setError(apiError(err));
@@ -370,7 +371,7 @@ export function Login() {
   return (
     <Shell
       title="Sign in"
-      subtitle={matchingPersona ? `Masuk ke OKKAX workspace ${matchingPersona.roleName} Anda.` : "Masuk ke OKKAX workspace Anda."}
+      subtitle={matchingPersona ? `Masuk ke Okkax workspace ${matchingPersona.roleName} Anda.` : "Masuk ke Okkax workspace Anda."}
     >
       <GoogleButton mode="login" onClick={loginWithGoogle} />
       <Divider>atau email</Divider>
@@ -510,7 +511,7 @@ export function Register() {
     setError("");
     try {
       await register(form);
-      toast.success("Akun OKKAX berhasil dibuat");
+      toast.success("Akun Okkax berhasil dibuat");
       nav(next);
     } catch (err) {
       setError(apiError(err));
@@ -627,7 +628,7 @@ export function Register() {
             className="mt-0.5 h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-[var(--okx-accent)] accent-[var(--okx-accent)] shrink-0"
           />
           <span className="leading-snug">
-            Saya menyetujui <span className="text-zinc-200">Terms of Service</span> OKKAX dan telah membaca <span className="text-zinc-200">Privacy Notice</span>. Data sensitif tidak ditampilkan publik.
+            Saya menyetujui <span className="text-zinc-200">Terms of Service</span> Okkax dan telah membaca <span className="text-zinc-200">Privacy Notice</span>. Data sensitif tidak ditampilkan publik.
           </span>
         </label>
 
@@ -676,7 +677,7 @@ export function ForgotPassword() {
   };
 
   return (
-    <Shell title="Reset kata sandi" subtitle="Masukkan email akun OKKAX Anda.">
+    <Shell title="Reset kata sandi" subtitle="Masukkan email akun Okkax Anda.">
       {!submitted ? (
         <form onSubmit={request} className="mt-6 space-y-4">
           <FieldLabel label="Email Terdaftar">

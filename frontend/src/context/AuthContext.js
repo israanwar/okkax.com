@@ -1,15 +1,18 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [workspaces, setWorkspaces] = useState([]);
   const [activeWorkspace, setActiveWorkspace] = useState(null);
   const [workspaceVersion, setWorkspaceVersion] = useState(0);
+  const [notificationVersion, setNotificationVersion] = useState(0);
 
   const refreshPromiseRef = useRef(null);
 
@@ -106,10 +109,13 @@ export function AuthProvider({ children }) {
     // counter so any workspace-scoped page (dashboard, /api/events)
     // re-fetches.
     const { data } = await api.post("/me/workspace/activate", payload);
+    await queryClient.cancelQueries();
+    queryClient.clear();
     await refreshWorkspaces();
     setWorkspaceVersion((v) => v + 1);
+    setNotificationVersion((v) => v + 1);
     return data?.workspace || null;
-  }, [refreshWorkspaces]);
+  }, [queryClient, refreshWorkspaces]);
 
   useEffect(() => {
     // CRITICAL: if returning from Google OAuth callback, skip /auth/me — AuthCallback exchanges session_id first.
@@ -121,9 +127,35 @@ export function AuthProvider({ children }) {
   }, [refresh]);
 
   const adoptSession = async (token) => {
+    setLoading(true);
+    setUser(null);
+    setOrg(null);
+    setWorkspaces([]);
+    setActiveWorkspace(null);
+    refreshPromiseRef.current = null;
+    await queryClient.cancelQueries();
+    queryClient.clear();
     localStorage.setItem("okkax_token", token);
-    await refresh();
+    try {
+      const { data } = await api.get("/auth/me");
+      setUser(data.user);
+      setOrg(data.organization);
+      await refreshWorkspaces();
+      setWorkspaceVersion((v) => v + 1);
+      setNotificationVersion((v) => v + 1);
+      return data.user;
+    } catch (error) {
+      localStorage.removeItem("okkax_token");
+      setUser(false);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const invalidateNotifications = useCallback(() => {
+    setNotificationVersion((v) => v + 1);
+  }, []);
 
   // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const loginWithGoogle = () => {
@@ -133,17 +165,13 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const { data } = await api.post("/auth/login", { email, password });
-    localStorage.setItem("okkax_token", data.token);
-    setUser(data.user);
-    await refresh();
+    await adoptSession(data.token);
     return data.user;
   };
 
   const register = async (payload) => {
     const { data } = await api.post("/auth/register", payload);
-    localStorage.setItem("okkax_token", data.token);
-    setUser(data.user);
-    await refresh();
+    await adoptSession(data.token);
     return data.user;
   };
 
@@ -153,7 +181,9 @@ export function AuthProvider({ children }) {
     setOrg(null);
     setWorkspaces([]);
     setActiveWorkspace(null);
+    queryClient.clear();
     setWorkspaceVersion((v) => v + 1);
+    setNotificationVersion((v) => v + 1);
   };
 
   // Active workspace adalah execution context frontend.
@@ -181,9 +211,9 @@ export function AuthProvider({ children }) {
       value={{
         user, org, loading, login, register, logout, refresh, hasRole,
         adoptSession, loginWithGoogle,
-        workspaces, activeWorkspace, workspaceVersion,
+        workspaces, activeWorkspace, workspaceVersion, notificationVersion,
         effectiveRole, effectiveWorkspaceKind,
-        refreshWorkspaces, switchWorkspace,
+        refreshWorkspaces, switchWorkspace, invalidateNotifications,
       }}
     >
       {children}
