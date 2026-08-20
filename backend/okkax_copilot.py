@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import json
@@ -509,6 +510,34 @@ _EVENT_TYPE_TOKENS = ("konser", "festival", "expo", "konferensi", "seminar", "wo
 _CANCEL_TOKENS = ("batal", "cancel", "batalkan", "mundur", "withdraw")
 
 
+_CITY_ALIASES = {"yogya": "Yogyakarta", "yogyakarta": "Yogyakarta", "jogja": "Yogyakarta",
+                 "bali": "Bali", "denpasar": "Denpasar"}
+# Koordinat kota (lat, lng) untuk routing tour deterministik.
+_CITY_GEO = {"Jakarta": (-6.2088, 106.8456), "Bandung": (-6.9175, 107.6191),
+             "Surabaya": (-7.2575, 112.7521), "Yogyakarta": (-7.7956, 110.3695),
+             "Bali": (-8.6705, 115.2126), "Denpasar": (-8.6705, 115.2126),
+             "Medan": (3.5952, 98.6722), "Semarang": (-6.9932, 110.4203),
+             "Makassar": (-5.1477, 119.4327), "Malang": (-7.9666, 112.6326),
+             "Palembang": (-2.9761, 104.7754), "Manado": (1.4748, 124.8421),
+             "Batam": (1.0456, 104.0305), "Bogor": (-6.5950, 106.8166),
+             "Pekanbaru": (0.5071, 101.4478)}
+
+
+def _extract_cities(q: str) -> List[str]:
+    """Semua kota yang disebut, urut kemunculan, tanpa collapse ke satu kota."""
+    hits: List[tuple] = []
+    for token in _INDO_CITIES:
+        for m in re.finditer(rf"(?<!\w){re.escape(token)}(?!\w)", q):
+            hits.append((m.start(), _CITY_ALIASES.get(token, token.capitalize())))
+    out: List[str] = []
+    for _, name in sorted(hits):
+        if name not in out:
+            out.append(name)
+    if "Bali" in out and "Denpasar" in out:
+        out.remove("Denpasar")
+    return out
+
+
 def parse_constraints(text: str) -> Dict[str, Any]:
     """Extract structured constraints — money (baseline/target/budget), pax,
     quantity, city, event_type, date, action verbs, cancellation, plus P0
@@ -528,7 +557,9 @@ def parse_constraints(text: str) -> Dict[str, Any]:
     action_verbs = [v for v in _ACTION_VERBS if v in q]
     if qty and "qr" in q and not action_verbs:
         action_verbs = ["generate"]
-    city = next((c.capitalize() for c in _INDO_CITIES if c in q), None)
+    cities = _extract_cities(q)
+    city = cities[0] if cities else None
+    per_city = bool(re.search(r"per\s+kota|tiap\s+kota|setiap\s+kota|masing-masing\s+kota|/kota", q))
     ev_type = next((t for t in _EVENT_TYPE_TOKENS if re.search(rf"(?<!\w){re.escape(t)}(?!\w)", q)), None)
     h_minus = None
     hm = _DATE_HMINUS_RE.search(q)
@@ -730,6 +761,8 @@ def parse_constraints(text: str) -> Dict[str, Any]:
             "constraint_tags": ctags,
             "action_verbs": action_verbs,
             "city": city,
+            "cities": cities,
+            "per_city": per_city,
             "event_type": ev_type,
             "days_before": h_minus,
             "iso_date": iso_date,
@@ -958,6 +991,7 @@ def build_semantic_plan(text: str, parsed: Optional[Dict[str, Any]] = None,
 
     entities = {
         "city": p.get("city"),
+        "cities": p.get("cities") or ([p["city"]] if p.get("city") else []),
         "event_type": p.get("event_type"),
         "quantity_tickets": p.get("quantity_tickets"),
         "ticket_tier": p.get("ticket_tier"),
@@ -976,6 +1010,7 @@ def build_semantic_plan(text: str, parsed: Optional[Dict[str, Any]] = None,
         "soundcheck_hours": p.get("soundcheck_hours"),
     }
     constraints = {
+        "per_city": p.get("per_city"),
         "baseline": p.get("baseline"),
         "target": p.get("target"),
         "budget": p.get("budget"),
@@ -1072,6 +1107,7 @@ def merge_multi_turn_state(plan: Dict[str, Any], history: Optional[List[Dict[str
     ordered = prior_plans + [plan]
     accumulated_entities = {k: None for k in merged["entities"]}
     accumulated_entities["action_verbs"] = []
+    accumulated_entities["cities"] = []
     accumulated_entities["cancellation_intent"] = False
     accumulated_constraints = {k: None for k in merged["constraints"]}
     accumulated_constraints["saving_intent"] = False
@@ -1087,7 +1123,12 @@ def merge_multi_turn_state(plan: Dict[str, Any], history: Optional[List[Dict[str
             if domain not in domains:
                 domains.append(domain)
         for key, value in candidate.get("entities", {}).items():
-            if key == "action_verbs":
+            if key == "cities":
+                # Kota bersifat akumulatif antar-turn: state tidak boleh menyusut.
+                for c in value or []:
+                    if c not in accumulated_entities["cities"]:
+                        accumulated_entities["cities"].append(c)
+            elif key == "action_verbs":
                 if value:
                     accumulated_entities[key] = value
             elif key == "cancellation_intent":
@@ -1095,7 +1136,9 @@ def merge_multi_turn_state(plan: Dict[str, Any], history: Optional[List[Dict[str
             elif value is not None:
                 accumulated_entities[key] = value
         for key, value in candidate.get("constraints", {}).items():
-            if key == "saving_intent":
+            if key == "per_city":
+                accumulated_constraints[key] = bool(accumulated_constraints.get(key) or value)
+            elif key == "saving_intent":
                 accumulated_constraints[key] = bool(accumulated_constraints[key] or value)
             elif key == "constraint_tags":
                 for tag in value or []:
@@ -1106,6 +1149,8 @@ def merge_multi_turn_state(plan: Dict[str, Any], history: Optional[List[Dict[str
             elif value is not None:
                 accumulated_constraints[key] = value
     merged["domains"] = domains
+    if accumulated_entities.get("cities") and not accumulated_entities.get("city"):
+        accumulated_entities["city"] = accumulated_entities["cities"][0]
     merged["entities"] = accumulated_entities
     merged["constraints"] = accumulated_constraints
     if plan["intent"] in (INTENT_UNKNOWN, INTENT_KNOWLEDGE) and latest_signal is not None:
@@ -1384,6 +1429,192 @@ def _build_semantic_projection(plan: Dict[str, Any], policy: Dict[str, Any]) -> 
             "security_protected": "security" in (constraints.get("constraint_tags") or []),
         }
     return projection
+
+
+# -----------------------------------------------------------------------------
+# Multi-city (tour) planner — decompose satu prompt menjadi subtask per kota,
+# hitung proyeksi deterministik per kota, lalu bandingkan. Tidak ada jawaban
+# hardcode: semua angka berasal dari calculate_advanced_event_model + policy.
+# -----------------------------------------------------------------------------
+def is_multi_city_plan(plan: Dict[str, Any]) -> bool:
+    return len((plan.get("entities") or {}).get("cities") or []) >= 2
+
+
+def _haversine_km(a: tuple, b: tuple) -> int:
+    lat1, lng1, lat2, lng2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+    h = (math.sin((lat2 - lat1) / 2) ** 2
+         + math.cos(lat1) * math.cos(lat2) * math.sin((lng2 - lng1) / 2) ** 2)
+    return int(round(2 * 6371 * math.asin(math.sqrt(h))))
+
+
+def build_multi_city_projection(plan: Dict[str, Any], policy: Dict[str, Any]) -> Dict[str, Any]:
+    """Satu subtask per kota: kapasitas, budget kerja, BEP, produksi, routing."""
+    entities = plan.get("entities") or {}
+    constraints = plan.get("constraints") or {}
+    cities: List[str] = list(entities.get("cities") or [])
+    if len(cities) < 2:
+        return {}
+    capacity = constraints.get("capacity")
+    per_city_flag = bool(constraints.get("per_city"))
+    budget = constraints.get("target") or constraints.get("budget")
+    funding_policy = policy.get("funding_targets") or DEFAULT_COPILOT_CALCULATOR_POLICY_DOC["funding_targets"]
+    per_pax = int(funding_policy.get("planning_budget_per_pax", 200000))
+    capacity_per_city = int(capacity) if capacity else None
+    if capacity and not per_city_flag and len(cities) > 1:
+        # Tanpa penanda "per kota", kapasitas dianggap total tour dan dibagi rata.
+        capacity_per_city = int(int(capacity) / len(cities))
+    rows: List[Dict[str, Any]] = []
+    for city in cities:
+        cap = capacity_per_city or 0
+        if budget:
+            city_budget = int(budget) if per_city_flag else int(int(budget) / len(cities))
+            planning = False
+        else:
+            city_budget = int(cap * per_pax) if cap else 0
+            planning = bool(city_budget)
+        if not city_budget:
+            rows.append({"city": city, "capacity": cap, "budget": 0, "planning_estimate": True})
+            continue
+        model = calculate_advanced_event_model(city_budget, cap, entities.get("event_type") or "Event", policy=policy)
+        funding = model["funding"]
+        rows.append({
+            "city": city,
+            "capacity": cap,
+            "budget": city_budget,
+            "planning_estimate": planning,
+            "break_even_pax": funding["break_even_pax"],
+            "break_even_pct": round(funding["break_even_pax"] / cap * 100) if cap else None,
+            "avg_ticket_price": funding["avg_ticket_price"],
+            "sponsor_target": funding["sponsor_target"],
+            "tenant_target": funding["tenant_target"],
+            "ticket_revenue_target": funding["ticket_revenue_target"],
+            "production_budget": model["breakdown"]["Produksi Teknis"]["amount"],
+            "technical_specs": dict(model["technical_specs"]),
+        })
+    known = [c for c in cities if c in _CITY_GEO]
+    route: List[Dict[str, Any]] = []
+    total_km = 0
+    if len(known) >= 2:
+        ordered = sorted(known, key=lambda c: _CITY_GEO[c][1])  # barat → timur
+        for i, city in enumerate(ordered):
+            leg = 0 if i == 0 else _haversine_km(_CITY_GEO[ordered[i - 1]], _CITY_GEO[city])
+            total_km += leg
+            route.append({"leg": i + 1, "city": city, "distance_from_prev_km": leg})
+    return {
+        "cities": cities,
+        "capacity_per_city": capacity_per_city,
+        "per_city_capacity_explicit": per_city_flag,
+        "total_capacity": (capacity_per_city or 0) * len(cities),
+        "rows": rows,
+        "total_budget": sum(r.get("budget") or 0 for r in rows),
+        "planning_budget_per_pax": None if budget else per_pax,
+        "route": route,
+        "route_total_km": total_km,
+    }
+
+
+def compose_multi_city_answer(plan: Dict[str, Any], multi: Dict[str, Any],
+                              discovery: Optional[Dict[str, Any]] = None) -> str:
+    """Sintesis akhir: cakupan → subtask → perbandingan → trade-off →
+    rekomendasi → next action. Bukan dump raw tool output."""
+    entities = plan.get("entities") or {}
+    latest = str(plan.get("latest_message") or "").lower()
+    cities = multi["cities"]
+    rows = multi["rows"]
+    cap = multi.get("capacity_per_city")
+    discovery = discovery or {}
+    lines = [f"### Rencana tour {len(cities)} kota — {' · '.join(cities)}"]
+    scope = [f"{len(cities)} kota dipertahankan"]
+    if cap:
+        scope.append(f"{cap:,} pax per kota (total {multi['total_capacity']:,} pax)")
+    if entities.get("event_type"):
+        scope.append(str(entities["event_type"]))
+    lines.append(f"[{LABEL_FACT}] Cakupan aktif: " + " · ".join(scope) + ".")
+
+    lines.extend(["", "#### Subtask per kota"])
+    for i, row in enumerate(rows, start=1):
+        d = discovery.get(row["city"]) or {}
+        found = len(d.get("items") or [])
+        if d and d.get("ok") and found:
+            status = f"venue discovery selesai — {found} kandidat"
+        elif d:
+            status = "venue discovery dijalankan — provider tidak mengembalikan kandidat"
+        else:
+            status = "kebutuhan venue dihitung dari kapasitas & spesifikasi teknis"
+        lines.append(f"{i}. **{row['city']}** — {status}.")
+
+    lines.extend(["", "#### Perbandingan kebutuhan antar kota",
+                  "| Kota | Kapasitas | Budget kerja | BEP tiket | % kapasitas | Harga rata-rata min | Produksi teknis | Sound (W RMS) | Security | Kandidat venue |",
+                  "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"])
+    for row in rows:
+        if not row.get("budget"):
+            lines.append(f"| {row['city']} | {row.get('capacity') or 0:,} | belum ada ceiling | - | - | - | - | - | - | "
+                         f"{len(((discovery.get(row['city']) or {}).get('items')) or [])} |")
+            continue
+        tech = row.get("technical_specs") or {}
+        lines.append(
+            f"| {row['city']} | {row['capacity']:,} | Rp{row['budget']:,} | {row['break_even_pax']:,} | "
+            f"{row['break_even_pct']}% | Rp{row['avg_ticket_price']:,} | Rp{row['production_budget']:,} | "
+            f"{tech.get('sound_watt_rms', 0):,} | {tech.get('security', 0)} | "
+            f"{len(((discovery.get(row['city']) or {}).get('items')) or [])} |"
+        )
+    if multi.get("planning_budget_per_pax"):
+        lines.append(f"[{LABEL_ESTIMATE}] Budget kerja per kota memakai planning baseline Rp{multi['planning_budget_per_pax']:,}/pax "
+                     "karena ceiling belum diberikan; ganti dengan ceiling nyata untuk BEP final.")
+    else:
+        lines.append(f"[{LABEL_CALC}] Total budget seluruh kota: **Rp{multi['total_budget']:,}**.")
+
+    if discovery:
+        lines.extend(["", "#### Kandidat venue per kota"])
+        for city in cities:
+            d = discovery.get(city) or {}
+            items = (d.get("items") or [])[:3]
+            if not d.get("ok"):
+                lines.append(f"- **{city}**: discovery live tidak tersedia; Copilot tidak mengarang nama venue.")
+            elif not items:
+                lines.append(f"- **{city}**: tidak ada kandidat dari provider untuk query ini.")
+            else:
+                parts_v = []
+                for it in items:
+                    tag = ""
+                    if it.get("rating") is not None:
+                        tag = f" (rating {it['rating']})"
+                    elif it.get("capacity"):
+                        fit = "memenuhi" if it.get("meets_capacity") else "di bawah target"
+                        tag = f" ({int(it['capacity']):,} pax — {fit})"
+                    parts_v.append(f"{it.get('name')}{tag}")
+                source = ((d.get("provenance") or {}).get("source")) or "provider"
+                lines.append(f"- **{city}**: {'; '.join(parts_v)}. Sumber: {source}.")
+        lines.append(f"[{LABEL_FACT}] Hasil discovery, bukan venue terkontrak; verifikasi kapasitas, curfew, dan availability sebelum hold.")
+
+    if multi.get("route"):
+        lines.extend(["", "#### Routing tour (barat → timur, jarak great-circle)"])
+        for leg in multi["route"]:
+            extra = "" if leg["leg"] == 1 else f" — {leg['distance_from_prev_km']:,} km dari kota sebelumnya"
+            lines.append(f"{leg['leg']}. {leg['city']}{extra}")
+        lines.append(f"[{LABEL_CALC}] Total jarak rute: **{multi['route_total_km']:,} km**; urutan ini meminimalkan lompatan mundur logistik produksi.")
+
+    priced = [r for r in rows if r.get("budget")]
+    if priced:
+        hi = max(priced, key=lambda r: r["production_budget"])
+        lo = min(priced, key=lambda r: r["production_budget"])
+        lines.extend(["", "#### Trade-off (estimasi)",
+                      f"- Kebutuhan produksi tertinggi di **{hi['city']}** (Rp{hi['production_budget']:,}) dan terendah di **{lo['city']}** "
+                      f"(Rp{lo['production_budget']:,}); menyamakan spesifikasi lintas kota menaikkan biaya, sedangkan menurunkannya memotong kualitas dan safety.",
+                      f"- BEP {priced[0]['break_even_pct']}% kapasitas berarti okupansi di bawah angka itu membuat kota tersebut rugi; menaikkan harga tiket menekan volume di pasar yang lebih tipis.",
+                      "- Menggabungkan pengadaan sound/lighting satu vendor untuk semua kota menurunkan biaya per kota, tetapi menambah risiko jadwal jika satu leg tertunda."])
+        anchor = max(priced, key=lambda r: r["capacity"])
+        lines.extend(["", f"[{LABEL_RECO}] Jadikan **{anchor['city']}** sebagai anchor show (kapasitas {anchor['capacity']:,} pax) untuk mengikat sponsor nasional, "
+                          f"lalu kunci venue kota lain mengikuti urutan rute agar biaya mobilisasi produksi tetap satu arah."])
+    lines.extend(["", "#### Next action",
+                  f"1. Kirim RFP kapasitas {cap:,} pax ke kandidat venue di {len(cities)} kota dan minta hold tanggal opsional." if cap else
+                  "1. Konfirmasi kapasitas per kota agar kebutuhan venue dapat dikunci.",
+                  "2. Konfirmasi ceiling budget per kota supaya BEP planning diganti angka final." if multi.get("planning_budget_per_pax")
+                  else "2. Kunci kontrak venue anchor lebih dulu, lalu negosiasi paket multi-kota dengan vendor produksi.",
+                  "3. Susun struktur sponsor tour (satu presenting nasional + sponsor lokal per kota) mengikuti urutan rute."])
+    if "routing" in latest or "rute" in latest:
+        lines.append("4. Terjemahkan rute di atas menjadi kalender load-in/show/load-out per kota beserta kebutuhan armada.")
+    return _strip_internal_leaks("\n".join(lines))
 
 
 def _dedupe_clean_lines(values: List[str]) -> List[str]:
@@ -2275,6 +2506,46 @@ def _venue_discovery_query(plan: Dict[str, Any]) -> str:
     return f"concert venue {city}"
 
 
+async def _okkax_catalog_venues(city: str, capacity: Optional[int]) -> List[Dict[str, Any]]:
+    """Fallback ke katalog venue OKKAX (search_supply) saat provider live mati."""
+    try:
+        rows = await db.venues.find({"city": city}, {"_id": 0}).to_list(20)
+    except Exception:
+        return []
+    if capacity:
+        rows.sort(key=lambda v: abs(int(v.get("standing_capacity") or 0) - int(capacity)))
+    return [{
+        "name": v.get("name"),
+        "address": v.get("address") or v.get("city"),
+        "capacity": v.get("standing_capacity"),
+        "indoor": v.get("indoor"),
+        "event_day_price": v.get("event_day_price"),
+        "meets_capacity": bool(capacity and int(v.get("standing_capacity") or 0) >= int(capacity)),
+    } for v in rows[:3]]
+
+
+async def run_venue_discovery_per_city(plan: Dict[str, Any], cities: List[str]) -> Dict[str, Any]:
+    """Satu venue discovery per kota — tidak berhenti setelah tool pertama.
+    Provider live diutamakan; bila tidak tersedia, pakai katalog venue OKKAX."""
+    capacity = (plan.get("constraints") or {}).get("capacity")
+    out: Dict[str, Any] = {}
+    for city in cities:
+        city_plan = {**plan, "entities": {**(plan.get("entities") or {}), "city": city}}
+        result = await run_venue_discovery(city_plan)
+        if not result.get("ok") or not result.get("items"):
+            catalog = await _okkax_catalog_venues(city, capacity)
+            if catalog:
+                result = {
+                    "ok": True,
+                    "items": catalog,
+                    "latency_ms": result.get("latency_ms", 0.0),
+                    "error_code": None,
+                    "provenance": {"source": "OKKAX venue catalog", "engine": "search_supply"},
+                }
+        out[city] = result
+    return out
+
+
 async def run_venue_discovery(plan: Dict[str, Any]) -> Dict[str, Any]:
     """Call the registered SerpApi Maps provider with a safe failure envelope."""
     try:
@@ -2662,11 +2933,37 @@ async def ask_okkax_copilot(
     # facts; final venue names still come only from the tool formatter.
     venue_discovery_result: Optional[Dict[str, Any]] = None
     venue_grounded_reply: Optional[str] = None
-    if _is_venue_discovery(message):
+    multi_city_plan = is_multi_city_plan(plan)
+    multi_city_projection: Dict[str, Any] = {}
+    multi_city_discovery: Optional[Dict[str, Any]] = None
+    tools_executed: List[str] = []
+    if multi_city_plan:
+        cities = list((plan.get("entities") or {}).get("cities") or [])
+        pipeline_stages.append("decompose_multi_city:" + ",".join(cities))
+        multi_city_projection = build_multi_city_projection(plan, calculator_policy)
+        if _is_venue_discovery(message):
+            multi_city_discovery = await run_venue_discovery_per_city(plan, cities)
+            for city in cities:
+                pipeline_stages.append(f"venue_discovery:{city}")
+                tools_executed.append(f"venue_discovery:{city}")
+            venue_discovery_result = multi_city_discovery.get(cities[0])
+            plan.setdefault("grounded_sources", {})["venue_discovery"] = multi_city_discovery
+            dynamic_context = (
+                f"{dynamic_context}\n"
+                f"venue_discovery_per_city={json.dumps(multi_city_discovery, ensure_ascii=False, default=str)}"
+            )
+        if multi_city_projection:
+            pipeline_stages.append("compute_multi_city_projection")
+            dynamic_context = (
+                f"{dynamic_context}\n"
+                f"multi_city_projection={json.dumps(multi_city_projection, ensure_ascii=False, default=str)}"
+            )
+    elif _is_venue_discovery(message):
         pipeline_stages.append("venue_discovery")
         venue_discovery_result = await run_venue_discovery(plan)
         venue_grounded_reply = _format_venue_discovery(venue_discovery_result)
         plan.setdefault("grounded_sources", {})["venue_discovery"] = venue_discovery_result
+        tools_executed.append("venue_discovery")
         dynamic_context = (
             f"{dynamic_context}\n"
             f"venue_discovery={json.dumps(venue_discovery_result, ensure_ascii=False, default=str)}"
@@ -2743,6 +3040,34 @@ async def ask_okkax_copilot(
     if projection and "compute_budget_projection" not in pipeline_stages:
         pipeline_stages.append("compute_budget_projection")
 
+    # Multi-city (tour) requests are synthesized across every city subtask:
+    # comparison + numbers + trade-off + recommendation + next action.
+    if multi_city_projection:
+        reply = compose_multi_city_answer(plan, multi_city_projection, multi_city_discovery)
+        extra = [part for part in (_render_intelligence(intelligence_block) if intelligence_block else None,) if part]
+        if extra:
+            reply = "\n\n".join([reply] + extra)
+        pipeline_stages.append("compose_multi_city_synthesis")
+        return {
+            "reply": reply,
+            "engine": "Okkax Copilot",
+            "source": "multi_city_plan+deterministic_calculation" + ("+serpapi_maps" if multi_city_discovery else ""),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "suggestions": get_smart_suggestions(current_route, role),
+            "tools_available": [t["name"] for t in COPILOT_TOOLS],
+            "intelligence": intelligence_block,
+            "intents": intents,
+            "grounded": bool(multi_city_discovery or intelligence_block),
+            "pipeline_stages": pipeline_stages,
+            "reasoning_mode": "multi_city_synthesis",
+            "llm_available": reasoning_available,
+            "semantic_plan": plan,
+            "calculation": projection,
+            "multi_city": multi_city_projection,
+            "venue_discovery": venue_discovery_result,
+            "tools_executed": tools_executed,
+        }
+
     # The provider has already produced a structured semantic plan. Existing
     # graph/data/intelligence and deterministic calculation now feed the final
     # natural composer without a second LLM call.
@@ -2769,7 +3094,7 @@ async def ask_okkax_copilot(
             "calculation": projection,
             "reasoning_provider": reasoning_meta,
             "venue_discovery": venue_discovery_result,
-            "tools_executed": ["venue_discovery"] if venue_discovery_result else [],
+            "tools_executed": tools_executed,
         }
 
     # Both external providers may be unavailable. Keep the exact same merged
@@ -2803,7 +3128,7 @@ async def ask_okkax_copilot(
             "semantic_plan": plan,
             "calculation": projection,
             "venue_discovery": venue_discovery_result,
-            "tools_executed": ["venue_discovery"] if venue_discovery_result else [],
+            "tools_executed": tools_executed,
         }
 
     # 2. LLM tidak tersedia. Transparansi ada di metadata (`llm_available`,
@@ -2834,7 +3159,7 @@ async def ask_okkax_copilot(
             "llm_available": reasoning_available,
             "semantic_plan": plan,
             "venue_discovery": venue_discovery_result,
-            "tools_executed": ["venue_discovery"] if venue_discovery_result else [],
+            "tools_executed": tools_executed,
         }
     reply = _strip_internal_leaks(deterministic_okkax_copilot_brain(message, history, current_route, role, policy=calculator_policy))
     return {
