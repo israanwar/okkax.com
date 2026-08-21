@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { api, apiError, LOGO_URL } from "@/lib/api";
+import { toPersonaLoginKey } from "@/lib/personaLogin";
 
 // -----------------------------------------------------------------------------
 // Canonical navigation taxonomy. Everything downstream (header, mobile drawer,
@@ -88,12 +89,12 @@ export const NAV = [
 // removed. Roles that do not have a live persona map to a friendly
 // register redirect so the button is honest.
 export const QUICK_DEMO_ROLES = [
-  { id: "organizer", label: "Organizer", persona: "Penyelenggara", destination: "/app" },
-  { id: "promoter",  label: "Promoter",  persona: "promotor",      destination: "/app" },
-  { id: "vendor",    label: "Vendor",    persona: "vendor",        destination: "/app" },
-  { id: "sponsor",   label: "Sponsor",   persona: "Sponsor",        destination: "/app/sponsor" },
-  { id: "tenant",    label: "Tenant",    persona: "Tenant",         destination: "/app/tenant" },
-  { id: "audience",  label: "Audience",  persona: "Pengunjung",     destination: "/app" },
+  { id: "organizer", label: "Organizer", persona: "organizer", destination: "/app" },
+  { id: "promoter",  label: "Promoter",  persona: "promoter",  destination: "/app" },
+  { id: "vendor",    label: "Vendor",    persona: "vendor",    destination: "/app" },
+  { id: "sponsor",   label: "Sponsor",   persona: "sponsor",   destination: "/app/sponsor" },
+  { id: "tenant",    label: "Tenant",    persona: "tenant",    destination: "/app/tenant" },
+  { id: "audience",  label: "Audience",  persona: "audience",  destination: "/app" },
 ];
 
 // -----------------------------------------------------------------------------
@@ -167,7 +168,7 @@ function useQuickPersonaLogin() {
     }
     setBusy(role.id);
     try {
-      const { data } = await api.post("/demo/persona-login", { label: role.persona });
+      const { data } = await api.post("/demo/persona-login", { label: toPersonaLoginKey(role.persona) });
       await adoptSession(data.token);
       toast.success("Masuk sebagai " + role.label);
       nav(role.destination);

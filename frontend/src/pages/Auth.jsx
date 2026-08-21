@@ -7,6 +7,7 @@ import PremiumSelect from "@/components/PremiumSelect";
 import { useAuth } from "@/context/AuthContext";
 import { api, apiError } from "@/lib/api";
 import { useCatalogCities } from "@/lib/cities";
+import { toPersonaLoginKey } from "@/lib/personaLogin";
 
 const GOOGLE_MARK_URL = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg";
 const AUTH_BACKGROUND_URL = "/assets/okkax-concert-hero-v2.png";
@@ -24,10 +25,6 @@ const ROLE_OPTIONS = [
   ["venue_manager", "Venue"],
   ["finance_approver", "Finance"],
 ];
-
-// Local persona keys -> backend's canonical persona-login key. Only entries
-// that differ need listing; everything else passes through unchanged.
-const PERSONA_LOGIN_KEY = { promotor: "promoter" };
 
 const DEMO_ACCOUNTS = [
   { key: "organizer", label: "Organizer", roleName: "Organizer", email: "organizer@okkax.id", defaultNext: "/app" },
@@ -361,10 +358,7 @@ export function Login() {
     setBusy(true);
     setError("");
     try {
-      const personaKey = item.key || item.label;
-      // Backend accepts only its canonical persona keys (see
-      // CANONICAL_PERSONA_EMAILS in backend/extras.py).
-      const { data } = await api.post("/demo/persona-login", { label: PERSONA_LOGIN_KEY[personaKey] || personaKey });
+      const { data } = await api.post("/demo/persona-login", { label: toPersonaLoginKey(item.key || item.label) });
       await adoptSession(data.token);
       toast.success(`Masuk langsung sebagai ${item.roleName || item.label}`);
       nav(next, { replace: true });
