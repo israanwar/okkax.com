@@ -468,6 +468,85 @@ def _to_int_money(value: str, unit: str) -> int:
     return int(v * mult)
 
 
+def _format_idr(amount: int) -> str:
+    if amount < 0:
+        return f"-Rp{-amount:,}".replace(",", ".")
+    return f"Rp{amount:,}".replace(",", ".")
+
+
+# -----------------------------------------------------------------------------
+# P0.1 direct arithmetic short-circuit — answers plain two-number
+# addition/subtraction ("Rp100 juta - Rp30 juta") deterministically, without
+# invoking the event-planning pipeline. Guarded off whenever the query
+# carries any event-planning/domain vocabulary so real budget-allocation
+# prompts (which also contain two money figures) are never intercepted.
+# -----------------------------------------------------------------------------
+def _direct_arithmetic_reply(query: str) -> Optional[str]:
+    q = query.lower()
+
+    guards = [
+        "buat", "rancang", "alokasi", "struktur", "break-even", "bep",
+        "kapasitas", "pax", "konser", "festival", "tour", "conference",
+        "maksimal", "ceiling", "sound", "lighting", "talent", "venue",
+        "vendor", "sponsor", "ticket", "tiket", "security", "medical",
+    ]
+    if any(g in q for g in guards):
+        return None
+
+    matches = list(_MONEY_RE.finditer(q))
+    if len(matches) != 2:
+        return None
+
+    val1 = _to_int_money(matches[0].group(1), matches[0].group(2))
+    val2 = _to_int_money(matches[1].group(1), matches[1].group(2))
+
+    between = q[matches[0].end():matches[1].start()]
+
+    sub_signals = [
+        "sisa", "sisanya", "terpakai", "sudah keluar",
+        "dipakai", "digunakan", "spent", "remaining", "dikurangi",
+    ]
+    add_signals = ["tambah", "ditambah", "jumlahkan", "penjumlahan"]
+
+    has_sub_signal = any(s in q for s in sub_signals)
+    has_add_signal = any(s in q for s in add_signals)
+
+    if "total" in q and not has_sub_signal:
+        has_add_signal = True
+
+    is_addition = False
+    is_subtraction = False
+
+    if "+" in between:
+        is_addition = True
+    elif "-" in between:
+        is_subtraction = True
+    elif has_sub_signal:
+        is_subtraction = True
+    elif has_add_signal:
+        is_addition = True
+
+    if not is_addition and not is_subtraction:
+        return None
+
+    if is_addition:
+        result = val1 + val2
+        prefix = "Total: "
+    else:
+        result = val1 - val2
+        prefix = "Sisa budget: "
+
+    formatted = _format_idr(result)
+
+    if any(
+        phrase in q
+        for phrase in ["jawab angka akhirnya saja", "angka saja", "hasilnya saja"]
+    ):
+        return formatted
+
+    return f"{prefix}{formatted}."
+
+
 def _to_int_capacity(raw: str, tail: str) -> Optional[int]:
     """Parse a capacity number with optional "rb"/"ribu"/"k" suffix, respecting
     Indonesian thousand grouping."""
@@ -2843,6 +2922,27 @@ async def ask_okkax_copilot(
             "intents": ["small_talk"],
             "pipeline_stages": pipeline_stages,
             "reasoning_mode": "conversational",
+            "llm_available": reasoning_available,
+        }
+
+    # Direct arithmetic short-circuit — plain two-figure add/subtract asks
+    # ("Rp100 juta - Rp30 juta") answer deterministically, before any
+    # platform-context load, constraint parsing, multi-turn merge, LLM
+    # reasoning, Intelligence Engine, or event calculator runs.
+    _math = _direct_arithmetic_reply(message)
+    if _math is not None:
+        pipeline_stages.append("direct_calculation")
+        return {
+            "reply": _math,
+            "engine": "Okkax Copilot",
+            "source": "direct_calculation",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "suggestions": get_smart_suggestions(current_route, role),
+            "tools_available": [t["name"] for t in COPILOT_TOOLS],
+            "grounded": False,
+            "intents": ["direct_calculation"],
+            "pipeline_stages": pipeline_stages,
+            "reasoning_mode": "deterministic",
             "llm_available": reasoning_available,
         }
 
