@@ -561,7 +561,16 @@ function PersonaLensSection() {
       }
       nav(persona.dashboardPath);
     } catch (error) {
-      toast.error(apiError(error));
+      if (error?.response?.status === 404) {
+        // Persona 1-klik login is demo-mode-only (OKKAX_DEMO_MODE=false in
+        // production returns 404 by design, see backend/extras.py). Fall
+        // back to the real sign-in flow instead of leaving the user stuck
+        // on a raw "Not found" toast.
+        toast.info(`Demo 1-klik tidak aktif di environment ini. Masuk manual sebagai ${persona.role}.`);
+        nav(`/login?role=${encodeURIComponent(persona.id)}&next=${encodeURIComponent(persona.dashboardPath)}`);
+      } else {
+        toast.error(apiError(error));
+      }
     } finally {
       setLoggingIn(false);
     }

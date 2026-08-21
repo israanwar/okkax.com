@@ -362,7 +362,16 @@ export function Login() {
       toast.success(`Masuk langsung sebagai ${item.roleName || item.label}`);
       nav(next, { replace: true });
     } catch (err) {
-      setError(apiError(err));
+      if (err?.response?.status === 404) {
+        // Persona 1-klik login is demo-mode-only (OKKAX_DEMO_MODE=false in
+        // production returns 404 by design, see backend/extras.py). Fall
+        // back to the real email+password form already on this page
+        // instead of a raw "Not found" error.
+        setEmail(item.email || "");
+        setError(`Demo 1-klik tidak aktif di environment ini. Masukkan password untuk ${item.roleName || item.label}.`);
+      } else {
+        setError(apiError(err));
+      }
     } finally {
       setBusy(false);
     }
