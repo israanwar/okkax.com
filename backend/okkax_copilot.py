@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 from core import db
 from integrations.ai.chatgpt_provider import (CHATGPT_MODELS, SMARTER_CHATGPT_MODEL,
                                               resolve_chatgpt_model)
+from financial_state import mirror_current_turn_constraints
+from language_intelligence import normalize_user_language
 
 logger = logging.getLogger("okkax.copilot")
 
@@ -893,10 +895,10 @@ def classify_intent(text: str, parsed: Optional[Dict[str, Any]] = None) -> str:
     # KNOWLEDGE precedes ANALYTICAL when the question is clearly informational
     # (definition/comparison/how-to/safety-yes-no) and carries no live-data
     # numeric anchor. Numeric constraints still route to ANALYTICAL.
-    knowledge_hit = any(k in q for k in ("apa itu", "apa yang dimaksud", "bagaimana cara", "kenapa", "mengapa",
+    knowledge_hit = _has_promoter_eo_knowledge(q) or any(k in q for k in ("apa itu", "apa yang dimaksud", "bagaimana cara", "kenapa", "mengapa",
                                           "how to", "jelaskan", "definisi", "prinsip", "sop", "standar",
                                           "apa beda", "beda antara", "perbedaan", " vs ",
-                                          "aman gak", "aman ga", "aman kah", "aman kalau", "aman jika"))
+                                          "aman gak", "aman ga", "aman tidak", "aman kah", "aman kalau", "aman jika"))
     numeric_anchor = bool(
         p.get("budget") is not None or p.get("capacity") is not None or p.get("quantity_tickets")
         or p.get("ticket_prices") or p.get("sponsor_expected") is not None
@@ -1187,6 +1189,91 @@ _SHORT_DEPENDENCY_TOKENS = (
 )
 
 
+def _has_active_prior_event_context(history: Optional[List[Dict[str, str]]]) -> bool:
+    """Return True only while prior user turns still belong to one active
+    event context.
+
+    Scans newest -> oldest:
+    - an explicit event anchor (city/event_type/capacity) confirms context;
+    - recognised state/action fragments may bridge back to that anchor;
+    - an unrelated standalone turn breaks the chain immediately.
+
+    This preserves multi-turn operational workflows without allowing an old
+    event to be resurrected across a genuine topic break.
+    """
+    user_turns = [
+        str(turn.get("content", "")).strip()
+        for turn in (history or [])
+        if turn.get("role") == "user" and str(turn.get("content", "")).strip()
+    ]
+
+    if not user_turns:
+        return False
+
+    for text in reversed(user_turns):
+        plan = build_semantic_plan(text)
+        entities = plan.get("entities") or {}
+        constraints = plan.get("constraints") or {}
+        normalized = text.lower().strip()
+
+        # Canonical event anchor.
+        has_anchor = bool(
+            entities.get("city")
+            or entities.get("event_type")
+            or constraints.get("capacity") is not None
+        )
+        if has_anchor:
+            return True
+
+        # Explicit state/action mutation belonging to an already-active event.
+        has_continuation_signal = bool(
+            constraints.get("budget") is not None
+            or constraints.get("target") is not None
+            or constraints.get("sponsor_status") is not None
+            or constraints.get("sponsor_replacement") is not None
+            or constraints.get("sponsor_offer") is not None
+            or constraints.get("sponsor_expected") is not None
+            or constraints.get("vendor_max_budget") is not None
+            or constraints.get("ticket_sales_pct") is not None
+            or bool(constraints.get("ticket_prices"))
+            or constraints.get("hospitality_change") is not None
+            or constraints.get("workforce_extra") is not None
+            or bool(constraints.get("vendor_quotes"))
+            or entities.get("headliner_status") is not None
+            or entities.get("vendor_status") is not None
+            or entities.get("weather_status") is not None
+            or entities.get("venue_outdoor") is not None
+            or entities.get("load_in") is not None
+            or entities.get("soundcheck_hours") is not None
+            or entities.get("action_mode") is not None
+            or entities.get("quantity_tickets") is not None
+            or entities.get("ticket_tier") is not None
+            or bool(entities.get("cancellation_intent"))
+        )
+        if has_continuation_signal:
+            continue
+
+        # Short analytical fragments may bridge to the same event.
+        if (
+            len(normalized.split()) <= 4
+            and any(token in normalized for token in (
+                "break-even",
+                "break even",
+                "bep",
+                "dampaknya",
+                "dampak",
+                "risikonya",
+                "risiko",
+                "feasible",
+            ))
+        ):
+            continue
+
+        # Anything else is a genuine context boundary.
+        return False
+
+    return False
+
 def _is_state_follow_up(plan: Dict[str, Any], history: Optional[List[Dict[str, str]]]) -> bool:
     """True only when the latest turn is a follow-up/correction on the SAME
     event as the conversation history — never for a standalone/new-topic
@@ -1221,7 +1308,7 @@ def _is_state_follow_up(plan: Dict[str, Any], history: Optional[List[Dict[str, s
     #    the current turn itself carries a state-mutating signal (sponsor
     #    cancelled/replaced/offered, headliner/vendor/weather status, venue
     #    change, load-in, soundcheck, vendor cap, ticket-price change,
-    #    cancellation intent).
+    #    hospitality/workforce update, cancellation intent, ticket quantity/tier).
     correction_signal = any([
         constraints.get("sponsor_status") is not None,
         constraints.get("sponsor_replacement") is not None,
@@ -1233,11 +1320,42 @@ def _is_state_follow_up(plan: Dict[str, Any], history: Optional[List[Dict[str, s
         entities.get("venue_outdoor") is not None,
         entities.get("load_in") is not None,
         entities.get("soundcheck_hours") is not None,
+        entities.get("action_mode") is not None,
+        entities.get("quantity_tickets") is not None,
+        entities.get("ticket_tier") is not None,
+        constraints.get("ticket_sales_pct") is not None,
         constraints.get("vendor_max_budget") is not None,
         bool(constraints.get("ticket_prices")),
+        constraints.get("hospitality_change") is not None,
+        constraints.get("workforce_extra") is not None,
+        bool(constraints.get("vendor_quotes")),
         bool(entities.get("cancellation_intent")),
     ])
     if correction_signal:
+        return True
+
+    # 2.5 Implicit missing-field continuation — a bare budget/target figure
+    #     ("Budget maksimal Rp800 juta.") with no city/event_type/capacity of
+    #     its own is filling in a field the ongoing plan is still missing,
+    #     not starting a new topic. `has_full_new_event_definition` already
+    #     ruled out the new-event case above, so any city/event_type present
+    #     here is only PARTIAL and is handled by the reference-token/
+    #     correction-signal checks instead — this step only fires when the
+    #     turn is a bare number with no subject of its own at all.
+    #     A bare number alone is never enough, though: it may only resurrect
+    #     state when the conversation still has an ACTIVE prior event
+    #     context (see `_has_active_prior_event_context`) — an intervening
+    #     standalone/new-topic turn, or no prior event at all, must not let
+    #     a stray budget figure pull in a stale/unrelated event.
+    has_any_new_subject = bool(
+        entities.get("city") or entities.get("event_type") or constraints.get("capacity")
+    )
+    provides_bare_budget_update = bool(
+        (constraints.get("budget") is not None or constraints.get("target") is not None)
+        and not has_any_new_subject
+        and _has_active_prior_event_context(history)
+    )
+    if provides_bare_budget_update:
         return True
 
     # 3. Short dependency question ("kenapa?", "dampaknya?", "apa risikonya?",
@@ -1406,6 +1524,35 @@ def _semantic_intents(plan: Dict[str, Any]) -> List[str]:
     if any(k in latest for k in ("break-even", "break even", "titik impas")) and "breakeven" not in intents:
         intents.append("breakeven")
     return intents
+
+
+def _select_relevant_reasoning_history(
+    message: str, plan: Dict[str, Any], history: Optional[List[Dict[str, str]]]
+) -> List[Dict[str, str]]:
+    """Scope the RAW history sent into the LLM reasoning prompt to the same
+    active-context boundary `_is_state_follow_up` already enforces on the
+    deterministic semantic state (see `merge_multi_turn_state`). Without
+    this, a standalone/new-topic turn's semantic state came out correctly
+    scoped (no stale city/capacity/budget) while the raw conversation
+    history — sent wholesale into the LLM prompt — still let the model see
+    and mention the old event. Reuses `_is_state_follow_up` directly; does
+    NOT invent a second/conflicting classifier.
+
+    `plan` here may already be the merged plan (its entities/constraints can
+    carry inherited values by the time reasoning runs), so the follow-up
+    decision is re-derived from the turn's own (pre-merge) semantic plan —
+    built from `message` alone — exactly like `ask_okkax_copilot` does
+    before calling `merge_multi_turn_state`. `event_id_present` is left at
+    its default because it only affects `missing_fields`/`needs_live_data`,
+    never the entities/constraints/latest_message fields the boundary check
+    reads.
+    """
+    if not history:
+        return history or []
+    own_plan = build_semantic_plan(message)
+    if _is_state_follow_up(own_plan, history):
+        return history
+    return []
 
 
 async def _run_primary_semantic_reasoning(
@@ -2267,7 +2414,7 @@ def _compose_semantic_reasoning_reply(
 # composer. NOT canned final answers; composer weaves relevant note into
 # a short direct reply.
 _KNOWLEDGE_NOTES: Dict[str, str] = {
-    "promoter_vs_eo": "Promoter memikul risiko finansial (talent, venue, funding, revenue tiket) dan mengambil untung/rugi dari sisa margin. Event Organizer (EO) adalah pelaksana operasional yang biasanya menerima management fee tetap dan risiko produksinya terbatas pada kontrak jasa.",
+    "promoter_vs_eo": "Promotor (promoter) adalah pemilik bisnis/komersial event yang memikul risiko finansial, mengatur pendanaan dan pendapatan tiket, serta menanggung untung/rugi. Event Organizer (EO) adalah pelaksana operasional atau penyedia jasa yang mengeksekusi produksi sesuai kontrak dan biasanya menerima management fee. Satu perusahaan dapat menjalankan kedua fungsi tersebut, dan struktur aktualnya tetap bergantung pada kontrak serta pembagian kerja event.",
     "outdoor_weather": "Event outdoor wajib memiliki mitigasi cuaca: tenda roder atau canopy grade production, ground drainage yang cukup, IP54+ pada rigging listrik/genset, jalur evakuasi anti-selip, standby dokter/ambulans, dan window keputusan `stop show` ~30–60 menit sebelum hujan berat berdasar radar BMKG.",
     "breakeven_definition": "Break-even = (biaya total setelah dikurangi komitmen sponsor & tenant) dibagi target harga tiket rata-rata; target aman biasanya di 80–85% okupansi kapasitas terjual.",
     "sponsor_tier": "Sponsor umumnya terdiri dari Presenting (eksklusif, naming rights), Main (2–3 brand non-kompetitif), Supporting/Category Partner (hak kategori). Distribusi budget contribution biasanya 40% / 30% / 30%.",
@@ -2275,9 +2422,32 @@ _KNOWLEDGE_NOTES: Dict[str, str] = {
 }
 
 
+_PROMOTER_EO_ALIASES = (
+    "promotor", "promoter", "event promoter", "eo", "event organizer", "event organiser",
+)
+
+
+def _has_promoter_eo_knowledge(text: str) -> bool:
+    q = text.lower()
+    tokens = set(re.findall("[A-Za-z0-9]+", q))
+    has_promoter = any(alias in tokens or alias in q for alias in _PROMOTER_EO_ALIASES[:3])
+    has_eo = any(alias in tokens or alias in q for alias in _PROMOTER_EO_ALIASES[3:])
+    definition_cue = any(k in q for k in ("apa itu", "itu apa", "definisi", "jelaskan", "apa yang dimaksud"))
+    comparison_cue = any(k in q for k in ("apa beda", "beda", "perbedaan", " vs "))
+    return (has_promoter and has_eo) or ((has_promoter or has_eo) and (definition_cue or comparison_cue))
+
+
+def _asks_to_apply_knowledge_to_event(text: str) -> bool:
+    q = text.lower()
+    return any(k in q for k in (
+        "terapkan ke event", "aplikasikan ke event", "berdasarkan event saya",
+        "untuk event saya", "di event saya", "event ini bagaimana",
+    ))
+
+
 def _knowledge_note_for(text: str) -> Optional[str]:
     q = text.lower()
-    if any(k in q for k in ("beda promoter", "promoter vs", "eo dan promoter", "promoter dan eo", "apa itu promoter", "apa itu eo")):
+    if _has_promoter_eo_knowledge(q):
         return _KNOWLEDGE_NOTES["promoter_vs_eo"]
     if any(k in q for k in ("outdoor", "hujan", "cuaca")):
         return _KNOWLEDGE_NOTES["outdoor_weather"]
@@ -3045,12 +3215,34 @@ async def ask_okkax_copilot(
             "llm_available": reasoning_available,
         }
 
+    language = normalize_user_language(message)
+    message = language["normalized_text"]
+    history = [
+        {**turn, "content": normalize_user_language(turn.get("content", ""))["normalized_text"]}
+        for turn in history
+    ]
     dynamic_context = await get_dynamic_platform_context()
-    pipeline_stages.append("load_platform_context")
+    pipeline_stages.extend(["normalize_language", "load_platform_context"])
 
     parsed = parse_constraints(message)
+    language_hints = language.get("constraint_hints", {})
+    if parsed.get("capacity") is None and language_hints.get("capacity_min"):
+        parsed["capacity"] = language_hints["capacity_min"]
+    if language_hints.get("budget_max"):
+        parsed["budget"] = language_hints["budget_max"]
     plan = build_semantic_plan(message, parsed, history=history, event_id_present=bool(event_id))
+    plan["language"] = language
+    plan["constraints"].update({
+        key: value for key, value in language.get("constraint_hints", {}).items()
+        if value not in (None, False)
+    })
+    # P0.3 foundation — mirror ONLY this turn's own explicit constraints
+    # (pre-merge, so P0.2's state boundary is inherited automatically) into
+    # a typed FinancialState. Additive/read-only: nothing downstream is
+    # required to consume it yet; existing behavior is untouched.
+    financial_state = mirror_current_turn_constraints(plan["entities"], plan["constraints"])
     plan = merge_multi_turn_state(plan, history)
+    plan["financial_state"] = financial_state.to_dict()
     intent_class = plan["intent"]
     calculator_policy = await get_active_copilot_calculator_policy(db)
     pipeline_stages.append("load_calculator_policy")
@@ -3074,11 +3266,17 @@ async def ask_okkax_copilot(
     # semantic-first (bukan template). Composer memakai domain note ringkas
     # dari model knowledge sebagai konteks bukan sebagai canned final.
     _knote = _knowledge_note_for(message)
-    if intent_class == INTENT_KNOWLEDGE and _knote and not (grounded_event_snapshot and grounded_event_snapshot.get("available")):
+    if intent_class == INTENT_KNOWLEDGE and _knote:
         pipeline_stages.append("knowledge_composer")
+        event_application = (
+            "\n\n[{label}] Penerapan ke event aktif dapat dibaca setelah Anda meminta analisis spesifik event."
+            .format(label=LABEL_RECO)
+            if _asks_to_apply_knowledge_to_event(message)
+            else ""
+        )
         reply = _strip_internal_leaks(
             f"[{LABEL_RECO}] {_knote}\n\n"
-            f"Kalau perlu penerapan spesifik untuk event Anda, lampirkan event yang sedang dikerjakan sehingga Copilot dapat menggabungkan penjelasan ini dengan data live (funding, tier, compliance, insiden)."
+            f"{event_application}"
         )
         return {
             "reply": reply,
@@ -3213,17 +3411,21 @@ async def ask_okkax_copilot(
     if resolved_reasoning_mode != "fast" and (
         intent_class in (INTENT_ANALYTICAL, INTENT_SIMULATION) or plan.get("needs_graph") or plan.get("needs_intelligence")
     ):
+        # P0.2 — the LLM reasoning prompt must obey the same active-context
+        # boundary as the deterministic semantic state: a standalone/new-
+        # topic turn never gets the raw history of an unrelated prior event.
+        reasoning_history = _select_relevant_reasoning_history(message, plan, history)
         if resolved_reasoning_mode == "smarter":
             # Smarter memakai model ChatGPT tertinggi yang terverifikasi
             # accepted, dengan ceiling latency yang memang lebih longgar.
             plan, reasoning_meta = await _run_primary_semantic_reasoning(
-                message, history, plan, dynamic_context,
+                message, reasoning_history, plan, dynamic_context,
                 engine_pref=engine_pref or SMARTER_CHATGPT_MODEL,
                 thinking_budget=2048, max_tokens=3072, llm_timeout_seconds=28.0, outer_timeout_seconds=35.0,
             )
         else:
             plan, reasoning_meta = await _run_primary_semantic_reasoning(
-                message, history, plan, dynamic_context, engine_pref=engine_pref)
+                message, reasoning_history, plan, dynamic_context, engine_pref=engine_pref)
         intent_class = plan["intent"]
         intents = _semantic_intents(plan)
         if reasoning_meta:

@@ -526,6 +526,49 @@ def test_knowledge_promoter_vs_eo_returns_semantic_note():
     assert "risiko" in reply or "management fee" in reply
 
 
+@pytest.mark.parametrize("message", [
+    "Apa perbedaan promotor dan EO?",
+    "Apa perbedaan promoter dan EO?",
+    "Beda promotor sama event organizer apa?",
+    "Apa itu event promoter?",
+    "Apa itu event organiser?",
+    "EO itu apa?",
+    "Promotor itu apa?",
+])
+def test_promoter_eo_aliases_resolve_to_direct_knowledge(message):
+    from okkax_copilot import _knowledge_note_for, classify_intent
+
+    assert classify_intent(message) == "KNOWLEDGE"
+    note = _knowledge_note_for(message).lower()
+    assert "risiko finansial" in note
+    assert "pelaksana operasional" in note
+    assert "kedua fungsi" in note
+
+
+def test_standalone_knowledge_does_not_leak_event_context(monkeypatch):
+    from okkax_copilot import ask_okkax_copilot
+
+    async def empty_platform_context():
+        return ""
+
+    async def default_policy(_database):
+        from okkax_copilot import DEFAULT_COPILOT_CALCULATOR_POLICY_DOC
+        return DEFAULT_COPILOT_CALCULATOR_POLICY_DOC
+
+    monkeypatch.setattr("okkax_copilot.get_dynamic_platform_context", empty_platform_context)
+    monkeypatch.setattr("okkax_copilot.get_active_copilot_calculator_policy", default_policy)
+    result = asyncio.run(ask_okkax_copilot(
+        "Apa perbedaan promotor dan EO?",
+        event_id="evt-aruna-2026",
+        grounded_event_snapshot={"available": True, "event": {"name": "Stale Event"}},
+    ))
+
+    assert result["reasoning_mode"] == "knowledge"
+    assert "risiko finansial" in result["reply"].lower()
+    assert "lampirkan event" not in result["reply"].lower()
+    assert "stale event" not in result["reply"].lower()
+
+
 def test_knowledge_outdoor_safety_returns_semantic_note():
     d = _chat("venue outdoor saya aman gak kalau hujan?")
     assert d["reasoning_mode"] == "knowledge"
