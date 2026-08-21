@@ -585,7 +585,7 @@ _DATE_ISO_RE = re.compile(r"\b(20\d{2}[-/]\d{1,2}[-/]\d{1,2})\b")
 _INDO_CITIES = ("jakarta", "bandung", "surabaya", "yogyakarta", "yogya", "denpasar",
                 "medan", "semarang", "makassar", "bali", "bogor", "malang",
                 "palembang", "manado", "batam", "pekanbaru")
-_EVENT_TYPE_TOKENS = ("konser", "festival", "expo", "konferensi", "seminar", "workshop",
+_EVENT_TYPE_TOKENS = ("konser", "festival", "expo", "konferensi", "conference", "seminar", "workshop",
                        "bazaar", "esports", "olahraga", "wedding", "peluncuran",
                        "product launch", "pameran", "gathering", "reuni", "run")
 _CANCEL_TOKENS = ("batal", "cancel", "batalkan", "mundur", "withdraw")
@@ -1164,9 +1164,108 @@ def build_semantic_plan(text: str, parsed: Optional[Dict[str, Any]] = None,
     }
 
 
+
+# -----------------------------------------------------------------------------
+# P0.2 stale-state boundary — deterministic (no LLM) decision on whether the
+# LATEST turn may inherit prior-turn state (city/capacity/budget/sponsor/
+# vendor/...). Conservative by design: defaults to NOT inheriting, so a
+# standalone/new-topic message never gets contaminated by a previous event's
+# numbers. History itself is never cleared — this only gates whether
+# `merge_multi_turn_state` folds it into the current-turn semantic state.
+# -----------------------------------------------------------------------------
+_FOLLOW_UP_REFERENCE_TOKENS = (
+    "event ini", "acara ini", "rencana ini", "yang tadi",
+    "budgetnya", "kapasitasnya", "sponsornya", "soundnya",
+    "lanjut", "ubah", "ganti", "tetap", "masih",
+    # "sekarang" deliberately excluded — too generic ("now/currently") to by
+    # itself authorize historical state inheritance; it appears in plenty of
+    # standalone new-event openers ("Sekarang buat conference ... di ...").
+)
+_SHORT_DEPENDENCY_TOKENS = (
+    "kenapa", "mengapa", "dampaknya", "dampak", "risikonya",
+    "risiko", "feasible",
+)
+
+
+def _is_state_follow_up(plan: Dict[str, Any], history: Optional[List[Dict[str, str]]]) -> bool:
+    """True only when the latest turn is a follow-up/correction on the SAME
+    event as the conversation history — never for a standalone/new-topic
+    message, even one that happens to reuse a domain keyword.
+    """
+    has_prior_user_turn = any(
+        (turn.get("role") == "user" and str(turn.get("content", "")).strip())
+        for turn in (history or [])
+    )
+    if not has_prior_user_turn:
+        return False
+
+    text = str(plan.get("latest_message") or "").lower()
+    entities = plan.get("entities") or {}
+    constraints = plan.get("constraints") or {}
+
+    # 0. A fully self-contained NEW event definition (its own city + event
+    #    type + capacity, all in the current turn) always wins over a
+    #    generic conversational follow-up word like "sekarang" — it is a
+    #    new topic even if it happens to contain one.
+    has_full_new_event_definition = bool(
+        entities.get("city") and entities.get("event_type") and constraints.get("capacity")
+    )
+    if has_full_new_event_definition:
+        return False
+
+    # 1. Explicit reference to the ongoing event/plan/field.
+    if any(tok in text for tok in _FOLLOW_UP_REFERENCE_TOKENS):
+        return True
+
+    # 2. Correction/update to a domain state the parser only ever sets when
+    #    the current turn itself carries a state-mutating signal (sponsor
+    #    cancelled/replaced/offered, headliner/vendor/weather status, venue
+    #    change, load-in, soundcheck, vendor cap, ticket-price change,
+    #    cancellation intent).
+    correction_signal = any([
+        constraints.get("sponsor_status") is not None,
+        constraints.get("sponsor_replacement") is not None,
+        constraints.get("sponsor_offer") is not None,
+        constraints.get("sponsor_expected") is not None,
+        entities.get("headliner_status") is not None,
+        entities.get("vendor_status") is not None,
+        entities.get("weather_status") is not None,
+        entities.get("venue_outdoor") is not None,
+        entities.get("load_in") is not None,
+        entities.get("soundcheck_hours") is not None,
+        constraints.get("vendor_max_budget") is not None,
+        bool(constraints.get("ticket_prices")),
+        bool(entities.get("cancellation_intent")),
+    ])
+    if correction_signal:
+        return True
+
+    # 3. Short dependency question ("kenapa?", "dampaknya?", "apa risikonya?",
+    #    "masih feasible?") — only a follow-up when the turn itself lacks
+    #    enough standalone context (no own budget/capacity/city/event_type).
+    has_own_anchor = bool(
+        constraints.get("budget") or constraints.get("capacity")
+        or entities.get("city") or entities.get("event_type")
+        or entities.get("quantity_tickets")
+    )
+    if not has_own_anchor:
+        word_count = len(text.split())
+        if word_count <= 6 and any(tok in text for tok in _SHORT_DEPENDENCY_TOKENS):
+            return True
+
+    return False
+
+
 def merge_multi_turn_state(plan: Dict[str, Any], history: Optional[List[Dict[str, str]]]) -> Dict[str, Any]:
-    """Accumulate every sanitized user turn into one conversation state."""
+    """Accumulate every sanitized user turn into one conversation state —
+    but only when `_is_state_follow_up` says the latest turn continues the
+    SAME event. A standalone/new-topic turn returns `plan` untouched: its
+    own current-turn values are the only state, so stale city/capacity/
+    budget/sponsor/vendor numbers from an earlier event never leak in.
+    """
     if not history:
+        return plan
+    if not _is_state_follow_up(plan, history):
         return plan
     prior_plans: List[Dict[str, Any]] = []
     for turn in history:
