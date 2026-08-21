@@ -406,6 +406,10 @@ function Hero() {
 // =============================================================================
 // 01.5  PERSONA LENS SWITCHER (Point of View 9 Roles + Okkax Event Copilot)
 // =============================================================================
+// Local persona ids -> backend's canonical persona-login key. Only entries
+// that differ need listing; everything else passes through unchanged.
+const PERSONA_LOGIN_KEY = { promotor: "promoter" };
+
 const PERSONA_LENSES = {
   organizer: {
     id: "organizer",
@@ -554,7 +558,10 @@ function PersonaLensSection() {
   const handleOpenDashboard = async (persona) => {
     setLoggingIn(true);
     try {
-      const { data } = await api.post("/demo/persona-login", { label: persona.id });
+      // Backend accepts only its canonical persona keys (see
+      // CANONICAL_PERSONA_EMAILS in backend/extras.py); "promotor" here is
+      // the local persona id, "promoter" is the canonical key it maps to.
+      const { data } = await api.post("/demo/persona-login", { label: PERSONA_LOGIN_KEY[persona.id] || persona.id });
       if (data?.token) {
         await adoptSession(data.token);
         toast.success(`Masuk langsung ke Dashboard ${persona.role}`);

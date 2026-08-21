@@ -19,7 +19,7 @@ API = f"{BASE}/api"
 
 @pytest.fixture(scope="session")
 def worker_auth():
-    r = httpx.post(f"{API}/demo/persona-login", json={"label": "worker"}, timeout=15)
+    r = httpx.post(f"{API}/demo/persona-login", json={"label": "workforce"}, timeout=15)
     assert r.status_code == 200, r.text
     d = r.json()
     return {"headers": {"Authorization": f"Bearer {d['token']}"}, "user": d["user"]}

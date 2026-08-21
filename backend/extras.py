@@ -15,8 +15,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from core import (db, nid, now_iso, create_access_token, issue_access_token, clean,
-                  get_current_user, is_admin, is_demo_mode, ensure_account_active,
-                  get_event_or_404, assert_event_access, audit, notify, ROLE_KEYS)
+                  get_current_user, is_admin, is_demo_mode, is_competition_demo_login_enabled,
+                  ensure_account_active, get_event_or_404, assert_event_access, audit, notify, ROLE_KEYS)
 from admission_engine import calculate_ticketing_fees, get_active_ticketing_fee_policy
 
 logger = logging.getLogger("okkax.extras")
@@ -344,7 +344,7 @@ async def demo_summary():
             "ticket_gmv": ticket_gmv, "break_even_tickets": b["break_even_tickets"],
         },
         "personas": personas,
-        "sandbox_login": "POST /api/demo/persona-login {\"label\": \"Penyelenggara\"}",
+        "sandbox_login": "POST /api/demo/persona-login {\"label\": \"organizer\"}",
         "brief": {
             "city": ev["city"], "days": ev["days"], "setup_days": ev["setup_days"],
             "capacity": ev["capacity"], "budget": ev["budget"], "objective": ev.get("objective"),
@@ -447,47 +447,21 @@ async def my_workspace(user: dict = Depends(get_current_user)):
     return out
 
 
-PERSONA_EMAILS = {
-    "Penyelenggara": "organizer@okkax.id",
-    "penyelenggara": "organizer@okkax.id",
-    "Penyelenggara Event": "organizer@okkax.id",
+# Canonical persona keys ONLY. The client may send exactly one of these
+# lowercase keys — nothing else is accepted (no free-text label, no email,
+# no user_id, no role, no organization_id). Server resolves every other
+# field (id, roles, org_id, suspension) from the matching seeded account,
+# so the client can never select an arbitrary user or escalate a role.
+CANONICAL_PERSONA_EMAILS = {
     "organizer": "organizer@okkax.id",
-    "Organizer": "organizer@okkax.id",
     "promoter": "promoter@okkax.id",
-    "promotor": "promoter@okkax.id",
-    "Promotor": "promoter@okkax.id",
-    "Promoter": "promoter@okkax.id",
-    "Promotor Musik": "promoter@okkax.id",
-    "Sponsor": "sponsor@okkax.id",
-    "sponsor": "sponsor@okkax.id",
-    "Sponsor Brand": "sponsor@okkax.id",
-    "Tenant": "tenant@okkax.id",
-    "tenant": "tenant@okkax.id",
-    "Tenant F&B": "tenant@okkax.id",
-    "audience": "audience@okkax.id",
-    "Audience": "audience@okkax.id",
-    "Pembeli Tiket": "audience@okkax.id",
-    "Pengunjung": "audience@okkax.id",
-    "pengunjung": "audience@okkax.id",
-    "Talent": "talent@okkax.id",
     "talent": "talent@okkax.id",
-    "Artis / Talent": "talent@okkax.id",
-    "talent_management": "talent@okkax.id",
-    "Venue": "venue@okkax.id",
     "venue": "venue@okkax.id",
-    "Pengelola Venue": "venue@okkax.id",
-    "Vendor": "vendor@okkax.id",
     "vendor": "vendor@okkax.id",
-    "Vendor Produksi": "vendor@okkax.id",
-    "Workforce": "worker@okkax.id",
     "workforce": "worker@okkax.id",
-    "Worker": "worker@okkax.id",
-    "worker": "worker@okkax.id",
-    "Worker / Kru": "worker@okkax.id",
-    "Supervisor": "supervisor@okkax.id",
-    "supervisor": "supervisor@okkax.id",
-    "Finance": "finance@okkax.id",
-    "finance": "finance@okkax.id",
+    "sponsor": "sponsor@okkax.id",
+    "tenant": "tenant@okkax.id",
+    "audience": "audience@okkax.id",
 }
 
 
@@ -495,12 +469,24 @@ PERSONA_EMAILS = {
 async def persona_login(body: Dict[str, Any], response: Response):
     """Masuk sekali klik sebagai persona sandbox. Persona administrator tidak diizinkan.
 
-    Endpoint ini hanya aktif ketika `OKKAX_DEMO_MODE=true` (default true selama
-    kompetisi berjalan). Ketika demo mode dimatikan, endpoint mengembalikan 404
-    sehingga tidak dapat dieksploitasi untuk bypass password di produksi."""
-    if not is_demo_mode():
+    Endpoint aktif ketika salah satu benar:
+    - `OKKAX_DEMO_MODE=true` (full demo/local dev mode), atau
+    - `OKKAX_COMPETITION_DEMO_LOGIN=true` — gate SEMPIT yang hanya menghidupkan
+      endpoint ini (bukan `/demo/reset` atau surface demo lain) supaya deployment
+      kompetisi/judging bisa menawarkan one-click persona login yang benar-benar
+      autentik tanpa menyalakan demo mode penuh di produksi.
+    Kalau kedua flag mati, endpoint mengembalikan 404 sehingga tidak dapat
+    dieksploitasi untuk bypass password di produksi.
+
+    Client HANYA boleh mengirim `label` berupa salah satu canonical persona key
+    di `CANONICAL_PERSONA_EMAILS` — bukan email/user_id/role/organization_id
+    bebas. Server memetakan key tersebut ke akun demo yang sudah di-seed;
+    seluruh identitas (id, roles, org_id) berasal dari record DB, tidak pernah
+    dari client, sehingga tidak bisa memilih user lain atau eskalasi role."""
+    if not (is_demo_mode() or is_competition_demo_login_enabled()):
         raise HTTPException(status_code=404, detail="Not found")
-    email = PERSONA_EMAILS.get(body.get("label"))
+    persona_key = str(body.get("label") or "").strip().lower()
+    email = CANONICAL_PERSONA_EMAILS.get(persona_key)
     if not email:
         raise HTTPException(status_code=400, detail="Persona demo tidak dikenali")
     user = await db.users.find_one({"email": email})
@@ -513,7 +499,7 @@ async def persona_login(body: Dict[str, Any], response: Response):
     token, _ = await issue_access_token(user["id"], email)
     response.set_cookie("access_token", token, httponly=True, secure=True, samesite="none",
                         path="/", max_age=7 * 24 * 3600)
-    await audit(None, user, "demo.persona_login", {"label": body.get("label")})
+    await audit(None, user, "demo.persona_login", {"label": persona_key})
     return {"token": token, "user": user}
 
 

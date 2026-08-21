@@ -160,7 +160,7 @@ def test_persona_login_denied_for_suspended_persona():
     _sync_db.users.update_one({"email": "organizer@okkax.id"}, {"$set": {"suspended": True}})
     try:
         r = httpx.post(f"{API}/demo/persona-login",
-                       json={"label": "Penyelenggara"}, timeout=30)
+                       json={"label": "organizer"}, timeout=30)
     finally:
         _sync_db.users.update_one({"email": "organizer@okkax.id"}, {"$set": {"suspended": False}})
     assert r.status_code == 403, r.text
@@ -170,6 +170,6 @@ def test_persona_login_denied_for_suspended_persona():
 def test_persona_login_still_works_for_active_persona():
     _sync_db.users.update_one({"email": "organizer@okkax.id"}, {"$set": {"suspended": False}})
     r = httpx.post(f"{API}/demo/persona-login",
-                   json={"label": "Penyelenggara"}, timeout=30)
+                   json={"label": "organizer"}, timeout=30)
     assert r.status_code == 200, r.text
     assert r.json().get("token")

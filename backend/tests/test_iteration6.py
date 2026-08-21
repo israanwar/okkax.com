@@ -183,7 +183,7 @@ class TestBulkEventGraph:
 
 # ---- Regression: persona login ----
 class TestPersonaLogin:
-    @pytest.mark.parametrize("label", ["Penyelenggara", "Sponsor", "Tenant", "Pengunjung", "Supervisor"])
+    @pytest.mark.parametrize("label", ["organizer", "sponsor", "tenant", "audience", "venue"])
     def test_persona(self, label):
         r = requests.post(f"{API}/demo/persona-login", json={"label": label})
         assert r.status_code == 200, f"{label}: {r.text}"

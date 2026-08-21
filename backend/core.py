@@ -268,6 +268,17 @@ def is_demo_mode() -> bool:
     return raw in ("1", "true", "yes", "on")
 
 
+def is_competition_demo_login_enabled() -> bool:
+    """Separate, narrower gate than `is_demo_mode()` — enables ONLY the
+    canonical-persona one-click login endpoint (never `/demo/reset` or other
+    demo-only surfaces) so a competition/judging deployment can offer true
+    one-click persona sign-in without turning on full demo mode. Default
+    False unless explicitly set to a truthy value (1, true, yes, on).
+    """
+    raw = os.environ.get("OKKAX_COMPETITION_DEMO_LOGIN", "").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
 async def audit(event_id: Optional[str], user: Optional[dict], action: str, detail: dict = None):
     await db.audit_logs.insert_one({
         "id": nid(),

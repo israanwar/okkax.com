@@ -37,7 +37,7 @@ def test_wallet_ledger_zero_divergence_reconciliation():
     2. Withdrawal deducts from available balance and immediately reflects in ledger debits.
     3. Ledger variance == 0.00.
     """
-    headers, user = get_auth_headers("worker")
+    headers, user = get_auth_headers("workforce")
     
     # 1. Fetch wallet summary
     res = httpx.get(f"{API}/wallet/personal", headers=headers, timeout=15)
@@ -112,7 +112,7 @@ def test_wallet_insufficient_funds_rejected():
 def test_workforce_checkin_anti_spoofing():
     """Verify User A (Audience/Talent) cannot spoof check-in on a workforce shift (403 Forbidden)."""
     aud_headers, aud_user = get_auth_headers("audience")
-    wrk_headers, wrk_user = get_auth_headers("worker")
+    wrk_headers, wrk_user = get_auth_headers("workforce")
     
     # 1. Fetch available shifts on worker
     me_res = httpx.get(f"{API}/me/workspace", headers=wrk_headers, timeout=15)
@@ -140,7 +140,7 @@ def test_workforce_checkin_anti_spoofing():
 
 def test_workforce_checkin_event_mismatch_and_duplicate_guard():
     """Verify event ID mismatch validation and duplicate check-in idempotency."""
-    wrk_headers, wrk_user = get_auth_headers("worker")
+    wrk_headers, wrk_user = get_auth_headers("workforce")
     
     me_res = httpx.get(f"{API}/me/workspace", headers=wrk_headers, timeout=15)
     sections = me_res.json().get("sections", [])

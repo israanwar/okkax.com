@@ -25,6 +25,10 @@ const ROLE_OPTIONS = [
   ["finance_approver", "Finance"],
 ];
 
+// Local persona keys -> backend's canonical persona-login key. Only entries
+// that differ need listing; everything else passes through unchanged.
+const PERSONA_LOGIN_KEY = { promotor: "promoter" };
+
 const DEMO_ACCOUNTS = [
   { key: "organizer", label: "Organizer", roleName: "Organizer", email: "organizer@okkax.id", defaultNext: "/app" },
   { key: "promotor", label: "Promotor", roleName: "Promotor", email: "promoter@okkax.id", defaultNext: "/app" },
@@ -357,7 +361,10 @@ export function Login() {
     setBusy(true);
     setError("");
     try {
-      const { data } = await api.post("/demo/persona-login", { label: item.key || item.label });
+      const personaKey = item.key || item.label;
+      // Backend accepts only its canonical persona keys (see
+      // CANONICAL_PERSONA_EMAILS in backend/extras.py).
+      const { data } = await api.post("/demo/persona-login", { label: PERSONA_LOGIN_KEY[personaKey] || personaKey });
       await adoptSession(data.token);
       toast.success(`Masuk langsung sebagai ${item.roleName || item.label}`);
       nav(next, { replace: true });
