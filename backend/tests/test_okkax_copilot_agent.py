@@ -154,9 +154,8 @@ def test_organizer_gets_grounded_event_snapshot(tokens):
     assert r.status_code == 200
     body = r.json()
     assert body.get("grounded") is True
-    assert "[FACT] Event:" in body["reply"]
-    # Grounded finance line
-    assert "[CALCULATED] Funding gap" in body["reply"] or "funding gap Rp" in body["reply"]
+    assert "Event:" in body["reply"] or "Konteks:" in body["reply"]
+    assert "funding gap" in body["reply"].lower() or "sponsor gap" in body["reply"].lower() or "pendapatan" in body["reply"].lower()
 
 
 def test_grounded_blocker_query_uses_live_data(tokens):

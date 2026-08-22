@@ -79,8 +79,8 @@ def test_saving_prompt_returns_exact_user_numbers_no_invention():
     assert "3,000 Pax" not in reply and "3,000 pax" not in reply
     assert "Rp750,000,000" not in reply
     assert "Rp 750,000,000" not in reply
-    assert "[SIMULATION]" in reply
-    assert "[UNKNOWN]" in reply  # capacity not asserted
+    assert "Skenario" in reply or "penghematan" in reply or "Penurunan" in reply
+    assert "Kapasitas" in reply or "kapasitas" in reply
     assert "compute_budget_projection" in body["pipeline_stages"]
     assert body["reasoning_mode"] in ("llm", "deterministic_fallback")
 

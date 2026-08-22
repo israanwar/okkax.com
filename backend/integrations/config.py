@@ -14,15 +14,15 @@ class IntegrationSettings:
     """Central configuration for external API integrations with zero-credential safety."""
 
     # AI Configuration
-    AI_ENABLED: bool = _to_bool(os.environ.get("OKKAX_AI_ENABLED"), default=False)
+    GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
+    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
+    AI_ENABLED: bool = _to_bool(os.environ.get("OKKAX_AI_ENABLED"), default=bool(GEMINI_API_KEY))
     AI_PRIMARY: str = os.environ.get("OKKAX_AI_PRIMARY", "gemini").strip().lower()
     AI_FALLBACK: List[str] = [
         s.strip().lower()
         for s in os.environ.get("OKKAX_AI_FALLBACK", "openai,anthropic").split(",")
         if s.strip()
     ]
-    GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "").strip()
-    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash").strip()
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "").strip()
     ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     EMERGENT_LLM_KEY: str = os.environ.get("EMERGENT_LLM_KEY", "").strip()

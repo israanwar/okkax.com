@@ -170,13 +170,12 @@ def sanitize_history(history: Optional[List[Dict[str, Any]]]) -> List[Dict[str, 
     for turn in list(history)[-_MAX_HISTORY_TURNS:]:
         if not isinstance(turn, dict):
             continue
-        role = turn.get("role", "user")
+        role_raw = turn.get("role") or turn.get("sender") or "user"
+        role = "assistant" if str(role_raw).lower() in ("copilot", "assistant", "bot", "model") else "user"
         max_chars = _MAX_ASSISTANT_HISTORY_CHAR if role == "assistant" else _MAX_USER_HISTORY_CHAR
-        content = str(turn.get("content", ""))[:max_chars]
+        content = str(turn.get("content") if "content" in turn else turn.get("text", ""))[:max_chars]
         for pat in _INJECT_PATTERNS:
             content = pat.sub("", content)
-        if role not in ("user", "assistant"):
-            role = "user"
         out.append({"role": role, "content": content})
     return out
 
@@ -323,8 +322,8 @@ def calculate_advanced_event_model(
                         int(capacity * int(ft.get("tenant_flat_per_pax", 16000))))
     ticket_revenue_target = max(0, budget - target_sponsor - target_tenant)
     occ = float(ft.get("ticket_break_even_occupancy", 0.82))
-    break_even_pax = max(1, int(capacity * occ))
-    avg_ticket_price = int(ticket_revenue_target / break_even_pax) if capacity else 250000
+    break_even_pax = int(capacity * occ) if capacity else None
+    avg_ticket_price = int(ticket_revenue_target / break_even_pax) if (capacity and break_even_pax) else None
 
     # Sound & Technical Specs
     sound_watt_rms = max(int(tr.get("sound_watt_rms_floor", 10000)),
@@ -736,14 +735,19 @@ def parse_constraints(text: str) -> Dict[str, Any]:
         sponsor_replacement = int(sponsor_each.group(1)) * _to_int_money(sponsor_each.group(2), sponsor_each.group(3))
         sponsor_status = "potential_replacement"
     elif "sponsor" in q or ("menawarkan" in q and "product support" in q):
-        scoped_money = [(m.start(), _to_int_money(m.group(1), m.group(2))) for m in _MONEY_RE.finditer(q)]
-        if scoped_money:
-            amount = scoped_money[-1][1]
-            if any(k in q for k in ("tadinya", "harapkan", "expectation")):
+        sponsor_money_matches = []
+        for m in _MONEY_RE.finditer(q):
+            start = m.start()
+            prefix = q[max(0, start - 30):start]
+            if not any(k in prefix for k in ("budget", "anggaran", "dana", "pagu")):
+                sponsor_money_matches.append((start, _to_int_money(m.group(1), m.group(2))))
+        if sponsor_money_matches:
+            amount = sponsor_money_matches[-1][1]
+            if any(k in q for k in ("tadinya", "harapkan", "expectation", "target sponsor")):
                 sponsor_expected = amount
             elif any(k in q for k in ("menawarkan", "offer", "tertarik")):
                 sponsor_offer = amount
-            else:
+            elif re.search(r"sponsor[^.!?]{0,30}(?:rp\s*)?\d", q) or re.search(r"(?:rp\s*)?\d[^.!?]{0,30}sponsor", q):
                 sponsor_expected = amount
         sponsor_cancel_context = bool(
             re.search(r"sponsor[^.!?]{0,80}\b(?:batal|nol|zero)\b", q)
@@ -816,6 +820,15 @@ def parse_constraints(text: str) -> Dict[str, Any]:
     if scm:
         soundcheck_hours = int(scm.group(1))
 
+    talent_name = None
+    tm = re.search(r"\b(?:undang|mengundang|panggil|artis|talent|headliner|lineup)\s+([a-zA-Z0-9\s]{2,25})\b", q)
+    if tm:
+        raw_talent = tm.group(1).strip()
+        stop_words = {"bisa", "gak", "ga", "tuh", "dong", "ya", "yang", "untuk", "di", "dengan", "budget", "pax", "orang", "berapa", "sponsor", "apakah", "gimana", "bagaimana", "tapi", "saya", "mau"}
+        words = [w for w in raw_talent.split() if w.lower() not in stop_words]
+        if words:
+            talent_name = " ".join(words).title()
+
     return {**base,
             "quantity_tickets": qty,
             "ticket_tier": ticket_tier,
@@ -836,6 +849,7 @@ def parse_constraints(text: str) -> Dict[str, Any]:
             "action_mode": action_mode,
             "headliner_status": headliner_status,
             "headliner_days_before": headliner_days_before,
+            "talent_name": talent_name,
             "vendor_status": vendor_status,
             "weather_status": weather_status,
             "venue_outdoor": venue_outdoor,
@@ -932,11 +946,27 @@ def parse_budget_prompt(text: str) -> Dict[str, Any]:
     """
     q = text.lower()
     labeled_cap = _LABELED_CAP_RE.search(q)
-    money_matches = [
-        (m.start(), _to_int_money(m.group(1), m.group(2)))
-        for m in _MONEY_RE.finditer(q)
-        if not (labeled_cap and m.start(1) == labeled_cap.start(1))
-    ]
+    explicit_cap = _CAP_RE.search(q)
+    money_matches = []
+    for m in _MONEY_RE.finditer(q):
+        if (labeled_cap and m.start(1) == labeled_cap.start(1)) or (
+            explicit_cap and m.start() < explicit_cap.end() and m.end() > explicit_cap.start()
+        ):
+            continue
+        amount = _to_int_money(m.group(1), m.group(2))
+        # Indonesian event shorthand is context-sensitive: "1M" is often
+        # used for satu miliar, while "950M" means 950 juta.  For a large
+        # event/premium-production budget, a single-digit M must not collapse
+        # into an impossible per-attendee amount.  Resolve that narrow case
+        # semantically; larger M values retain the canonical million meaning.
+        if m.group(2).lower() == "m":
+            raw_number = float(_normalize_id_number(m.group(1)))
+            event_scale = bool(re.search(r"\b(?:\d+(?:[\.,]\d+)?\s*k|\d{4,}\s*(?:pax|orang|penonton))\b", q))
+            event_budget_context = "budget" in q or "anggaran" in q
+            premium_context = any(k in q for k in ("premium", "festival", "konser", "produksi"))
+            if raw_number < 10 and event_scale and event_budget_context and premium_context:
+                amount = int(raw_number * 1_000_000_000)
+        money_matches.append((m.start(), amount))
     money_vals = [v for _, v in money_matches if v > 0]
 
     saving = any(tok in q for tok in _SAVING_TOKENS) or ("dari rp" in q and "jadi" in q)
@@ -953,7 +983,7 @@ def parse_budget_prompt(text: str) -> Dict[str, Any]:
 
     # Capacity: explicit "N pax/orang/penonton". No fallback to fabricated defaults.
     cap = None
-    cap_m = _CAP_RE.search(q)
+    cap_m = explicit_cap
     if cap_m:
         tail = q[cap_m.end(1): cap_m.end()]
         cap = _to_int_capacity(cap_m.group(1), tail)
@@ -1032,13 +1062,14 @@ def _small_talk_reply(query: str) -> Optional[str]:
 
 
 def _strip_internal_leaks(text: str) -> str:
-    """Remove developer-facing terminology from user chat bubbles: API paths,
-    endpoint hints, DB collection names, provider/model labels, pipeline
-    stage names. Keeps domain labels (FACT/CALCULATED/…) which are UX-facing.
+    """Remove developer-facing terminology and internal reasoning labels ([FACT],
+    [CALCULATED], [ESTIMATE], [UNKNOWN], [RECOMMENDATION], [SIMULATION]) from
+    user-facing responses so the reply is clean, natural, and conversational.
     """
     if not text:
         return text
     patterns = [
+        (re.compile(r"\[(FACT|CALCULATED|ESTIMATE|UNKNOWN|RECOMMENDATION|SIMULATION|RECOMMENDED|ANALYSIS|INFO|WARNING|DECISION)\]\s*", re.IGNORECASE), ""),
         (re.compile(r"`?/api/[a-zA-Z0-9/_\-{}\.]+`?"), ""),
         (re.compile(r"`?POST /[^\s`]+`?", re.IGNORECASE), ""),
         (re.compile(r"`?GET /[^\s`]+`?", re.IGNORECASE), ""),
@@ -1051,6 +1082,15 @@ def _strip_internal_leaks(text: str) -> str:
         (re.compile(r"reasoning_mode|pipeline_stages|LLM_UNAVAILABLE|llm_available", re.IGNORECASE), ""),
         (re.compile(r"semantic_plan|reasoning_provider|provider_llm|deterministic_engine", re.IGNORECASE), ""),
         (re.compile(r"\binternal\s+(?:provider|pipeline|prompt|state)\b", re.IGNORECASE), ""),
+        (re.compile(r"^.*(?:Sumber ratio|ratio dari policy|configurable via).*$", re.IGNORECASE | re.MULTILINE), ""),
+        (re.compile(r"\(\s*configurable\s+via\s*\)", re.IGNORECASE), ""),
+        (re.compile(r"\bpolicy internal versioned\b", re.IGNORECASE), "acuan perhitungan terverifikasi"),
+        (re.compile(r"\b(?:rujuk|lihat)\s+(?:untuk|di)\s+(?:item|data)?\s*(?:aktual|live)?", re.IGNORECASE), "verifikasi data aktual"),
+        (re.compile(r"^\s*(?:FACT\s*[·:-]\s*)?Okkax Copilot\s*$", re.IGNORECASE | re.MULTILINE), ""),
+        (re.compile(r"^\s*Intent:\s*.*$", re.IGNORECASE | re.MULTILINE), ""),
+        (re.compile(r"^\s*Provenance:\s*.*$", re.IGNORECASE | re.MULTILINE), ""),
+        (re.compile(r"^\s*Structured items:\s*.*$", re.IGNORECASE | re.MULTILINE), ""),
+        (re.compile(r"\b(?:IntelligenceIntentCategory|StructuredPayloadType)\.[A-Z_]+\b", re.IGNORECASE), ""),
     ]
     for pat, repl in patterns:
         text = pat.sub(repl, text)
@@ -1086,6 +1126,7 @@ def build_semantic_plan(text: str, parsed: Optional[Dict[str, Any]] = None,
         "action_mode": p.get("action_mode"),
         "headliner_status": p.get("headliner_status"),
         "headliner_days_before": p.get("headliner_days_before"),
+        "talent_name": p.get("talent_name"),
         "vendor_status": p.get("vendor_status"),
         "weather_status": p.get("weather_status"),
         "venue_outdoor": p.get("venue_outdoor"),
@@ -1178,10 +1219,7 @@ def build_semantic_plan(text: str, parsed: Optional[Dict[str, Any]] = None,
 _FOLLOW_UP_REFERENCE_TOKENS = (
     "event ini", "acara ini", "rencana ini", "yang tadi",
     "budgetnya", "kapasitasnya", "sponsornya", "soundnya",
-    "lanjut", "ubah", "ganti", "tetap", "masih",
-    # "sekarang" deliberately excluded — too generic ("now/currently") to by
-    # itself authorize historical state inheritance; it appears in plenty of
-    # standalone new-event openers ("Sekarang buat conference ... di ...").
+    "lanjut", "ubah", "ganti", "tetap", "masih", "pindah",
 )
 _SHORT_DEPENDENCY_TOKENS = (
     "kenapa", "mengapa", "dampaknya", "dampak", "risikonya",
@@ -1447,8 +1485,18 @@ def merge_multi_turn_state(plan: Dict[str, Any], history: Optional[List[Dict[str
             elif value is not None:
                 accumulated_constraints[key] = value
     merged["domains"] = domains
+    curr_msg = str(plan.get("latest_message") or "").lower()
+    if any(tok in curr_msg for tok in ("tambah", "ditambah", "penambahan")):
+        prior_b = None
+        for p_plan in prior_plans:
+            if p_plan.get("constraints", {}).get("budget"):
+                prior_b = p_plan["constraints"]["budget"]
+        curr_b = plan.get("constraints", {}).get("budget")
+        if prior_b and curr_b and curr_b < prior_b:
+            accumulated_constraints["budget"] = prior_b + curr_b
+
     if accumulated_entities.get("cities") and not accumulated_entities.get("city"):
-        accumulated_entities["city"] = accumulated_entities["cities"][0]
+        accumulated_entities["city"] = accumulated_entities["cities"][-1]
     merged["entities"] = accumulated_entities
     merged["constraints"] = accumulated_constraints
     if plan["intent"] in (INTENT_UNKNOWN, INTENT_KNOWLEDGE) and latest_signal is not None:
@@ -2223,66 +2271,86 @@ def _compose_semantic_reasoning_reply(
     context = [entities.get("event_type"), entities.get("city")]
     context = [str(v) for v in context if v]
     if context:
-        lines.append(f"[{LABEL_FACT}] Konteks: {' · '.join(context)}.")
+        lines.append(f"Konteks: {' · '.join(context)}.")
+    talent_name = entities.get("talent_name")
+    if talent_name:
+        lines.append(f"Rate card & ketersediaan talent **{talent_name}** belum terverifikasi di katalog live OKKAX.")
     # For discovery, venue names/claims come exclusively from the normalized
     # tool block below. Gemini may classify/reason over the facts but cannot
     # inject an unverified venue into the final answer.
     grounded_summary = "" if venue_tool_active else _grounded_reasoning_text(reasoning.get("summary") or "", plan, projection)
     if grounded_summary:
-        lines.append(f"[{LABEL_ESTIMATE}] Pertimbangan: {grounded_summary}")
+        lines.append(f"Pertimbangan: {grounded_summary}")
     if projection:
         budget = projection["event_budget"]
         capacity = projection.get("capacity")
         if projection.get("planning_estimate"):
             lines.append(
-                f"[{LABEL_ESTIMATE}] Karena ceiling belum diberikan, planning baseline sementara adalah **Rp{budget:,}** "
+                f"Karena ceiling belum diberikan, planning baseline sementara adalah **Rp{budget:,}** "
                 f"(**{capacity:,} pax × Rp{projection['planning_budget_per_pax']:,}/pax**). Ini skenario kerja, bukan budget final."
             )
         else:
-            lines.append(f"[{LABEL_CALC}] Budget event yang dipakai: **Rp{budget:,}**" + (f" untuk **{capacity:,} pax**." if capacity else "."))
+            lines.append(f"Budget event yang dipakai: **Rp{budget:,}**" + (f" untuk **{capacity:,} pax**." if capacity else "."))
         if projection.get("saving_amount") is not None:
             lines.append(
-                f"[{LABEL_SIM}] Skenario penghematan berbasis angka yang Anda berikan (bukan dari event live)."
+                "Skenario penghematan berbasis angka yang Anda berikan (bukan dari event live)."
             )
             lines.append(
-                f"[{LABEL_CALC}] Target turun **Rp{projection['saving_amount']:,} ({projection['saving_pct']}%)** "
+                f"Target turun **Rp{projection['saving_amount']:,} ({projection['saving_pct']}%)** "
                 f"dari baseline Rp{projection['baseline_budget']:,}."
             )
         if not capacity:
             lines.append(
-                f"[{LABEL_UNKNOWN}] Kapasitas tidak disebut — tidak diasumsikan; target sponsor/tenant/tiket "
-                "diturunkan dari budget saja."
+                "Kapasitas penonton belum ditentukan — perhitungan titik impas (Break-Even Point / BEP tiket) dan target tiket minimum tidak dihitung tanpa input kapasitas atau skema harga tiket."
             )
-        funding = projection["funding"]
-        lines.append(
-            f"[{LABEL_CALC}] Break-even: **{funding['break_even_pax']:,} tiket**; "
-            f"target pendapatan tiket **Rp{funding['ticket_revenue_target']:,}**; "
-            f"harga rata-rata minimum **Rp{funding['avg_ticket_price']:,}**."
-        )
+        if talent_name and budget > 0:
+            t_fee_verified = bool(constraints.get("talent_fee") or entities.get("talent_fee"))
+            if t_fee_verified:
+                t_fee = int(constraints.get("talent_fee") or entities.get("talent_fee"))
+                lines.append(f"Fee talent **{talent_name}** terverifikasi sebesar Rp{t_fee:,}.")
+            else:
+                talent_alloc = int(budget * 0.28)
+                lines.append(
+                    f"Alokasi budget talent standar (28% ≈ Rp{talent_alloc:,}) adalah acuan alokasi anggaran internal, "
+                    f"bukan rate card atau landed cost resmi dari **{talent_name}**. Kepastian kelayakan dan kebutuhan sponsor gap belum dapat dihitung secara definitif tanpa rate card resmi."
+                )
+                lines.append(
+                    f"Untuk menghitung sponsor gap dan kelayakan finansial **{talent_name}** secara akurat, data minimum yang dibutuhkan adalah:\n"
+                    f"1. Rate card / quote honor resmi & landed cost (transportasi, akomodasi, rider teknis) dari talent **{talent_name}**.\n"
+                    f"2. Perkiraan target kapasitas penonton atau estimasi pendapatan dari tiket."
+                )
+        if capacity:
+            funding = projection["funding"]
+            if funding.get("break_even_pax"):
+                lines.append(
+                    f"Break-even: **{funding['break_even_pax']:,} tiket**; "
+                    f"target pendapatan tiket **Rp{funding['ticket_revenue_target']:,}**; "
+                    f"harga rata-rata minimum **Rp{funding['avg_ticket_price']:,}**."
+                )
         if projection.get("sponsor_cancelled"):
             lines.append(
-                f"[{LABEL_SIM}] Sponsor dianggap batal: kontribusi sponsor menjadi Rp0, sehingga kebutuhan tiket dihitung ulang setelah target tenant Rp{funding['tenant_target']:,}."
+                f"Sponsor dianggap batal: kontribusi sponsor menjadi Rp0, sehingga kebutuhan tiket dihitung ulang setelah target tenant Rp{funding['tenant_target']:,}."
             )
         sponsor = projection.get("sponsor")
         if sponsor and ("sponsor" in latest or "rangkum" in latest or "seluruh percakapan" in latest):
             lines.append(
-                f"[{LABEL_CALC}] Ekspektasi sponsor Rp{sponsor['expected']:,}; pengganti potensial Rp{sponsor['replacement_potential']:,}; "
+                f"Ekspektasi sponsor Rp{sponsor['expected']:,}; pengganti potensial Rp{sponsor['replacement_potential']:,}; "
                 f"gap terhadap ekspektasi **Rp{sponsor['gap_to_expectation']:,}**. Offer yang belum disetujui tidak dihitung sebagai funding."
             )
         sales = projection.get("ticket_sales")
         if sales:
             timing = f" pada H-{sales['days_before']}" if sales.get("days_before") is not None else ""
             lines.append(
-                f"[{LABEL_CALC}] Penjualan {sales['pct']}%{timing} = **{sales['sold_pax']:,} tiket**; "
+                f"Penjualan {sales['pct']}%{timing} = **{sales['sold_pax']:,} tiket**; "
                 f"masih perlu **{sales['remaining_to_break_even']:,} tiket** untuk titik impas."
             )
         vendor = projection.get("vendor")
         if vendor:
             lines.append(
-                f"[{LABEL_FACT}] Batas vendor {vendor['type']}: **Rp{vendor['cap']:,}**—terpisah dari budget event Rp{budget:,}."
+                f"Batas vendor {vendor['type']}: **Rp{vendor['cap']:,}**—terpisah dari budget event Rp{budget:,}."
             )
             lines.append(
-                f"[{LABEL_CALC}] Alokasi produksi rencana Rp{vendor['planned_production_budget']:,}; "
+                f"Alokasi produksi rencana Rp{vendor['planned_production_budget']:,}; "
                 f"gap terhadap cap vendor **Rp{vendor['gap']:,}**."
             )
         ticket_economics = projection.get("ticket_economics")
@@ -2291,17 +2359,17 @@ def _compose_semantic_reasoning_reply(
             price_text = " · ".join(f"{k.title()} Rp{v:,}" for k, v in prices.items())
             mix = ticket_economics["recommended_mix_pct"]
             lines.append(
-                f"[{LABEL_CALC}] Ticket economics: {price_text}; mix kerja Regular {mix['regular']}% / VIP {mix['vip']}%; "
+                f"Ticket economics: {price_text}; mix kerja Regular {mix['regular']}% / VIP {mix['vip']}%; "
                 f"sellable {ticket_economics['sellable_capacity']:,} setelah complimentary {ticket_economics['complimentary_pct']}%."
             )
             lines.append(
-                f"[{LABEL_CALC}] Gross sell-out Rp{ticket_economics['gross_revenue_at_sellout']:,}; "
+                f"Gross sell-out Rp{ticket_economics['gross_revenue_at_sellout']:,}; "
                 f"BEP berbasis harga {ticket_economics['break_even_pax']:,} tiket; margin of safety {ticket_economics['margin_of_safety_pax']:,} tiket."
             )
             lines.append(
-                f"[{LABEL_RECO}] Pajak/fee event belum dapat dipastikan tanpa policy jurisdiction, kontrak payment, dan konfigurasi fee event yang aktual."
+                "Pajak/fee event belum dapat dipastikan tanpa policy jurisdiction, kontrak payment, dan konfigurasi fee event yang aktual."
             )
-        if projection.get("planning_estimate") or any(k in latest for k in ("struktur budget", "breakdown")):
+        if projection.get("planning_estimate") or budget > 0 or any(k in latest for k in ("struktur budget", "breakdown")):
             lines.extend(["", "#### Struktur budget deterministik"])
             lines.extend(f"- {name}: Rp{amount:,}" for name, amount in projection.get("budget_breakdown", {}).items())
         if projection.get("planning_estimate"):
@@ -2311,18 +2379,18 @@ def _compose_semantic_reasoning_reply(
                 f"- Sponsor target: Rp{funding['sponsor_target']:,}; tenant target: Rp{funding['tenant_target']:,}; kebutuhan revenue tiket: Rp{funding['ticket_revenue_target']:,}.",
                 f"- BEP kerja: {funding['break_even_pax']:,} tiket ({round(funding['break_even_pax'] / capacity * 100)}% kapasitas) dengan harga tiket rata-rata minimum Rp{funding['avg_ticket_price']:,}.",
                 f"- Teknis: {technical.get('sound_watt_rms', 0):,} Watt RMS; {technical.get('ushers', 0)} usher; {technical.get('security', 0)} security; {technical.get('medical_posts', 0)} pos medis.",
-                f"[{LABEL_RECO}] Konfirmasi ceiling event dan harga/mix tiket untuk mengganti planning baseline ini dengan BEP final.",
+                "Konfirmasi ceiling event dan harga/mix tiket untuk mengganti planning baseline ini dengan BEP final.",
             ])
         hospitality = projection.get("hospitality")
         if hospitality and ("hospitality" in latest or "rangkum" in latest):
             lines.append(
-                f"[{LABEL_CALC}] Add-on hospitality Rp{hospitality['add_on']:,} menyisakan contingency Rp{hospitality['remaining_contingency']:,} "
+                f"Add-on hospitality Rp{hospitality['add_on']:,} menyisakan contingency Rp{hospitality['remaining_contingency']:,} "
                 f"dari Rp{hospitality['contingency']:,}."
             )
         workforce = projection.get("workforce")
         if workforce and ("security" in latest or "personel" in latest or "rangkum" in latest):
             lines.append(
-                f"[{LABEL_FACT}] Tambahan security: {workforce['additional_security']} personel di atas baseline {workforce['base_security']}; "
+                f"Tambahan security: {workforce['additional_security']} personel di atas baseline {workforce['base_security']}; "
                 "security tetap constraint terlindungi."
             )
         operational = [
@@ -2334,7 +2402,7 @@ def _compose_semantic_reasoning_reply(
         ]
         active_operational = [(name, value) for name, value in operational if value]
         if active_operational and any(k in latest for k in ("timeline", "operasional", "hujan", "go/no-go", "graph", "domino", "dependency", "rangkum", "seluruh")):
-            lines.append(f"[{LABEL_FACT}] State operasional: " + " · ".join(f"{name}={value}" for name, value in active_operational) + ".")
+            lines.append("State operasional: " + " · ".join(f"{name}={value}" for name, value in active_operational) + ".")
         if "graph" in latest or "efek domino" in latest or "dependency" in latest:
             lines.extend([
                 "", "#### Event Graph — dependency kritis",
@@ -2407,7 +2475,10 @@ def _compose_semantic_reasoning_reply(
             recommendation = "Kunci target budget, validasi kontrak biaya terbesar, lalu lindungi produksi inti, compliance, dan contingency."
     if recommendation:
         lines.extend(["", f"[{LABEL_RECO}] {recommendation}"])
-    return _strip_internal_leaks("\n".join(lines))
+    res_text = "\n".join(lines)
+    if res_text.strip() == "### Analisis rencana event":
+        res_text += "\n[ESTIMATE] Tidak ada konteks event aktif atau parameter budget/kapasitas yang diberikan. Silakan masukkan parameter budget/kapasitas (misal: budget Rp1M, 5.000 pax) atau jalankan dalam Workspace yang memiliki event aktif agar Copilot dapat menganalisis risiko secara terperinci."
+    return _strip_internal_leaks(res_text)
 
 
 # Compact domain knowledge notes — used as CONTEXT for KNOWLEDGE intent
@@ -2513,17 +2584,17 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
         if saving_intent and baseline and target:
             delta = baseline - target
             pct = round(delta / baseline * 100, 1) if baseline else 0.0
-            reduction_note = f"[{LABEL_SIM}] Skenario penghematan berbasis angka yang Anda berikan (tidak berdasarkan event live)."
+            reduction_note = "Skenario penghematan berbasis angka yang Anda berikan (tidak berdasarkan event live)."
             base_data = calculate_advanced_event_model(baseline, cap or 0, "User-supplied", policy=None)
             tgt_data = calculate_advanced_event_model(target, cap or 0, "User-supplied", policy=None)
-            cap_line = (f"Kapasitas: {cap:,} pax (user)" if cap else f"[{LABEL_UNKNOWN}] Kapasitas tidak disebut — tidak diasumsikan; sponsor/tenant/tiket target diturunkan dari budget saja.")
+            cap_line = (f"Kapasitas: {cap:,} pax (user)" if cap else "Kapasitas tidak disebut — tidak diasumsikan; sponsor/tenant/tiket target diturunkan dari budget saja.")
             rows = [
-                f"### Simulasi Penurunan Budget Event",
+                "### Simulasi Penurunan Budget Event",
                 reduction_note,
                 "",
-                f"[{LABEL_FACT}] Baseline: **Rp{baseline:,}** → Target: **Rp{target:,}**",
-                f"[{LABEL_CALC}] Penghematan: **Rp{delta:,}** (**{pct}%** dari baseline).",
-                f"[{LABEL_FACT}] {cap_line}",
+                f"Baseline: **Rp{baseline:,}** → Target: **Rp{target:,}**",
+                f"Penghematan: **Rp{delta:,}** (**{pct}%** dari baseline).",
+                cap_line,
                 "",
                 "| Pos Pengeluaran | Baseline (Rp) | Target (Rp) | Selisih (Rp) |",
                 "| :--- | ---: | ---: | ---: |",
@@ -2533,10 +2604,10 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
                 t_amt = tgt_data["breakdown"][k]["amount"]
                 rows.append(f"| **{k}** | Rp{b_amt:,} | Rp{t_amt:,} | Rp{(b_amt - t_amt):,} |")
             rows.append("")
-            rows.append(f"[{LABEL_RECO}] Prioritas pemotongan yang umum aman tanpa menurunkan kualitas show: Marketing/OOH → Operasional/F&B → Contingency. Hindari memotong Talent/Produksi/Safety yang bisa merusak pengalaman & reputasi.")
+            rows.append("Prioritas pemotongan yang umum aman tanpa menurunkan kualitas show: Marketing/OOH → Operasional/F&B → Contingency. Hindari memotong Talent/Produksi/Safety yang bisa merusak pengalaman & reputasi.")
             if not cap:
-                rows.append(f"[{LABEL_UNKNOWN}] Untuk menerbitkan target tiket rata-rata & spesifikasi teknis (sound wattage, usher, security), sebutkan kapasitas penonton yang direncanakan.")
-            rows.append(f"[{LABEL_FACT}] Sumber ratio: policy `{base_data.get('policy_key')}` versi `{base_data.get('policy_version')}` (configurable via `platform_policies`).")
+                rows.append("Untuk menerbitkan target tiket rata-rata & spesifikasi teknis (sound wattage, usher, security), sebutkan kapasitas penonton yang direncanakan.")
+            rows.append(f"Sumber ratio: policy `{base_data.get('policy_key')}` versi `{base_data.get('policy_version')}` (configurable via `platform_policies`).")
             return "\n".join(rows)
 
         # B. User memberikan budget + kapasitas eksplisit — proyeksikan (ESTIMATE).
@@ -2545,7 +2616,7 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
             header = f"### Rencana Alokasi Anggaran Event ({cap:,} pax · Rp{budget:,})"
             body = [
                 header,
-                f"[{LABEL_ESTIMATE}] Proyeksi berdasarkan angka yang Anda berikan; ratio dari policy `{data.get('policy_key')}` versi `{data.get('policy_version')}`.",
+                f"Proyeksi berdasarkan angka yang Anda berikan; ratio dari policy `{data.get('policy_key')}` versi `{data.get('policy_version')}`.",
                 "",
                 "| Pos Pengeluaran | Porsi | Estimasi Alokasi (IDR) | Cakupan & Catatan |",
                 "| :--- | :--- | ---: | :--- |",
@@ -2556,10 +2627,10 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
             body += [
                 "",
                 "#### Rekomendasi Teknis & Crowd Management",
-                f"[{LABEL_ESTIMATE}] Sound: minimal **{data['technical_specs']['sound_watt_rms']:,} Watt RMS** Line Array (SPL target 104 dB di FOH).",
-                f"[{LABEL_ESTIMATE}] Tim lapangan: **{data['technical_specs']['ushers']} Usher**, **{data['technical_specs']['security']} Security**, **{data['technical_specs']['medical_posts']} Pos Medis**.",
+                f"Sound: minimal **{data['technical_specs']['sound_watt_rms']:,} Watt RMS** Line Array (SPL target 104 dB di FOH).",
+                f"Tim lapangan: **{data['technical_specs']['ushers']} Usher**, **{data['technical_specs']['security']} Security**, **{data['technical_specs']['medical_posts']} Pos Medis**.",
                 "",
-                f"[{LABEL_RECO}] Untuk menerbitkan target break-even & harga tiket rata-rata terkalibrasi, lakukan lanjutan di Event Studio yang menautkan angka ke data live (sponsor commitment, tenant occupancy, tier struktur).",
+                "Untuk menerbitkan target break-even & harga tiket rata-rata terkalibrasi, lakukan lanjutan di Event Studio yang menautkan angka ke data live (sponsor commitment, tenant occupancy, tier struktur).",
             ]
             return "\n".join(body)
 
@@ -2573,13 +2644,13 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
             ts = data["technical_specs"]
             return "\n".join([
                 f"### Spesifikasi Teknis & Kru untuk {cap:,} pax",
-                f"[{LABEL_FACT}] Kapasitas: **{cap:,} pax** (user).",
+                f"Kapasitas: **{cap:,} pax** (user).",
                 "",
-                f"[{LABEL_CALC}] Sound system minimal: **{ts['sound_watt_rms']:,} Watt RMS** Line Array (SPL target 104 dB di FOH).",
-                f"[{LABEL_CALC}] Tim lapangan: **{ts['ushers']} Usher**, **{ts['security']} Security**, **{ts['medical_posts']} Pos Medis**.",
+                f"Sound system minimal: **{ts['sound_watt_rms']:,} Watt RMS** Line Array (SPL target 104 dB di FOH).",
+                f"Tim lapangan: **{ts['ushers']} Usher**, **{ts['security']} Security**, **{ts['medical_posts']} Pos Medis**.",
                 "",
-                f"[{LABEL_UNKNOWN}] Budget belum disebut — Copilot tidak mengasumsikan angka Rupiah. Sebutkan budget total agar Copilot dapat menghitung alokasi anggaran, target sponsor/tenant, dan harga tiket break-even.",
-                f"[{LABEL_FACT}] Sumber ratio teknis: policy `{data.get('policy_key')}` versi `{data.get('policy_version')}` (configurable via `platform_policies`).",
+                "Budget belum disebut — Copilot tidak mengasumsikan angka Rupiah. Sebutkan budget total agar Copilot dapat menghitung alokasi anggaran, target sponsor/tenant, dan harga tiket break-even.",
+                f"Sumber ratio teknis: policy `{data.get('policy_key')}` versi `{data.get('policy_version')}` (configurable via `platform_policies`).",
             ])
 
         # C. Budget-only tanpa kapasitas — tidak menginvent capacity, ajukan klarifikasi.
@@ -2587,8 +2658,8 @@ def deterministic_okkax_copilot_brain(query: str, history: List[Dict[str, str]] 
             data = calculate_advanced_event_model(budget, 0, "User-supplied", policy=None)
             return "\n".join([
                 f"### Alokasi Anggaran (Rp{budget:,})",
-                f"[{LABEL_ESTIMATE}] Alokasi persentase dari policy `{data.get('policy_key')}` versi `{data.get('policy_version')}` untuk budget yang Anda sebut.",
-                f"[{LABEL_UNKNOWN}] Kapasitas penonton belum disebut — Copilot tidak mengasumsikan angka. Sebutkan target pax agar Copilot dapat menghitung sound wattage, usher, security, medis, dan target tiket break-even.",
+                f"Alokasi persentase dari policy `{data.get('policy_key')}` versi `{data.get('policy_version')}` untuk budget yang Anda sebut.",
+                "Kapasitas penonton belum disebut — Copilot tidak mengasumsikan angka. Sebutkan target pax agar Copilot dapat menghitung sound wattage, usher, security, medis, dan target tiket break-even.",
                 "",
                 "| Pos Pengeluaran | Porsi | Estimasi Alokasi (IDR) |",
                 "| :--- | :--- | ---: |",
@@ -3329,14 +3400,14 @@ async def ask_okkax_copilot(
             )
         elif _ask:
             reply = _strip_internal_leaks(
-                f"[{LABEL_RECO}] Sebelum lanjut ke eksekusi **{act}**, mohon jelaskan: **{_ask}**?\n\n"
+                f"Sebelum lanjut ke eksekusi **{act}**, mohon jelaskan: **{_ask}**?\n\n"
                 f"{qty_line}\n"
                 f"Setelah lengkap, konfirmasi akhir dilakukan di modul terkait ({who}) — domain engine yang menjalankan verifikasi, idempotency, dan audit."
             )
         else:
             reply = _strip_internal_leaks(
                 f"### Konfirmasi diperlukan sebelum eksekusi\n\n"
-                f"[RECOMMENDATION] Copilot mendeteksi permintaan aksi: **{act}**.\n"
+                f"Permintaan aksi terdeteksi: **{act}**.\n"
                 f"{qty_line}\n\n"
                 f"Untuk keamanan (RBAC + tenant isolation + audit), Copilot tidak "
                 f"menjalankan aksi finansial/inventory/permit langsung dari chat. "

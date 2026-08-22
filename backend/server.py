@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, Response, Query, BackgroundTasks
 from pymongo.errors import DuplicateKeyError
 from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
@@ -4088,7 +4088,11 @@ YoonaChatIn = OkkaxChatIn
 
 @api.post("/okkax/chat")
 @api.post("/yoona/chat")
-async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict] = Depends(get_optional_user)):
+async def okkax_copilot_chat_endpoint(
+    payload: OkkaxChatIn,
+    background_tasks: BackgroundTasks,
+    user: Optional[dict] = Depends(get_optional_user),
+):
     """Copilot chat entrypoint with server-side role derivation, tenant-safe
     event grounding, prompt-injection defense, quota (authed callers), and
     audit trail. Anonymous callers keep working for public knowledge questions,
@@ -4134,8 +4138,8 @@ async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict]
     if user:
         await increment_copilot_quota(user)
 
-    # 4. Execute Copilot.
-    result = await ask_okkax_copilot(
+    # 4. Execute legacy Copilot.
+    legacy_result = await ask_okkax_copilot(
         message=payload.message,
         history=safe_history,
         current_route=payload.current_route or "",
@@ -4146,6 +4150,44 @@ async def okkax_copilot_chat_endpoint(payload: OkkaxChatIn, user: Optional[dict]
         engine_pref=payload.engine,
         reasoning_mode=payload.reasoning_mode,
     )
+
+    # 4a. Safe Response Selector (COPILOT-06B Phase 1 Cutover)
+    try:
+        from okkax_copilot_selector import select_copilot_response  # noqa: PLC0415
+        result = await select_copilot_response(
+            message=payload.message,
+            history=safe_history,
+            current_route=payload.current_route or "",
+            event_id=resolved_event_id,
+            role=user_role,
+            event_snapshot=event_snapshot,
+            user=user,
+            legacy_response=legacy_result,
+            reasoning_mode=payload.reasoning_mode,
+        )
+    except Exception as _sel_err:
+        logger.warning(f"copilot.response_selector fallback to legacy: {_sel_err}")
+        result = legacy_result
+
+    # 4b. Safe runtime shadow observation bridge (fail-open, env-flag controlled, non-blocking)
+    try:
+        from okkax_copilot_bridge import is_shadow_runtime_enabled, run_shadow_observation  # noqa: PLC0415
+        if is_shadow_runtime_enabled():
+            background_tasks.add_task(
+                run_shadow_observation,
+                message=payload.message,
+                history=safe_history,
+                current_route=payload.current_route or "",
+                event_id=resolved_event_id,
+                role=user_role,
+                event_snapshot=event_snapshot,
+                user=user,
+                production_response=result,
+                reasoning_mode=payload.reasoning_mode,
+                db=db,
+            )
+    except Exception as _bridge_err:
+        logger.debug(f"copilot.shadow_bridge fail-open scheduling: {_bridge_err}")
 
     # 5. Audit + quota — authed only. Chat by anonymous users is not
     # persisted to keep audit surface honest (nothing to attribute).

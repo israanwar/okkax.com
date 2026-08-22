@@ -1,0 +1,202 @@
+{
+  "informal_indonesian": {
+    "tidak": [
+      "tidak",
+      "tdk",
+      "gak",
+      "ga",
+      "nggak",
+      "ngga",
+      "ndak",
+      "nda"
+    ],
+    "yang": [
+      "yang",
+      "yg"
+    ],
+    "dengan": [
+      "dengan",
+      "dgn",
+      "dg"
+    ],
+    "untuk": [
+      "untuk",
+      "utk",
+      "u/"
+    ],
+    "sudah": [
+      "sudah",
+      "sdh",
+      "udh",
+      "dah"
+    ],
+    "belum": [
+      "belum",
+      "blm",
+      "blom"
+    ],
+    "sekarang": [
+      "sekarang",
+      "skrg",
+      "skrng"
+    ],
+    "kemarin": [
+      "kemarin",
+      "kmrn"
+    ],
+    "jangan": [
+      "jangan",
+      "jgn"
+    ],
+    "harus": [
+      "harus",
+      "hrs"
+    ],
+    "bisa": [
+      "bisa",
+      "bsa"
+    ],
+    "kalau": [
+      "kalau",
+      "kalo",
+      "klo",
+      "klw"
+    ],
+    "terus": [
+      "terus",
+      "trs",
+      "trus"
+    ],
+    "bagaimana": [
+      "bagaimana",
+      "gimana",
+      "gmn"
+    ],
+    "kenapa": [
+      "kenapa",
+      "knp",
+      "napa"
+    ],
+    "berapa": [
+      "berapa",
+      "brp"
+    ],
+    "rencana": [
+      "rencana",
+      "rcna"
+    ],
+    "susun": [
+      "susun",
+      "ssun"
+    ],
+    "termasuk": [
+      "termasuk",
+      "trmasuk"
+    ],
+    "keputusan": [
+      "keputusan",
+      "kptusan"
+    ],
+    "lebih": [
+      "lebih",
+      "lbh"
+    ],
+    "dulu": [
+      "dulu",
+      "dlu"
+    ],
+    "orang": [
+      "orang",
+      "org",
+      "pax"
+    ],
+    "juta": [
+      "juta",
+      "jt"
+    ],
+    "ribu": [
+      "ribu",
+      "rb",
+      "k"
+    ],
+    "hitung": [
+      "hitung",
+      "itung",
+      "htg"
+    ]
+  },
+  "known_typos": {
+    "konser": [
+      "konser",
+      "knser",
+      "conser"
+    ],
+    "sponsor": [
+      "sponsor",
+      "sponsr",
+      "sponshor"
+    ],
+    "promotor": [
+      "promotor",
+      "promotr",
+      "promter",
+      "promoter"
+    ],
+    "venue": [
+      "venue",
+      "veneu"
+    ],
+    "lighting": [
+      "lighting",
+      "ligthing"
+    ],
+    "conference": [
+      "conference",
+      "confrence"
+    ],
+    "soundcheck": [
+      "soundcheck",
+      "soundcek"
+    ],
+    "security": [
+      "security",
+      "sekurity"
+    ],
+    "contingency": [
+      "contingency",
+      "contigency"
+    ]
+  },
+  "contextual_abbreviations": {
+    "EO": "event organizer/event organiser",
+    "FOH": "front of house",
+    "BOH": "back of house",
+    "BEP": "break-even point",
+    "GMV": "gross merchandise/value volume; not revenue/profit",
+    "DP": "down payment in transaction context",
+    "GA": "general admission in ticketing context; ga may also mean tidak",
+    "K3": "keselamatan dan kesehatan kerja",
+    "P3K": "pertolongan pertama",
+    "RFP": "request for proposal",
+    "RFQ": "request for quotation",
+    "SOW": "scope/statement of work",
+    "SLA": "service level agreement",
+    "SOP": "standard operating procedure"
+  },
+  "verified_domain_terms": {
+    "promotor": "Promotor memegang risiko komersial utama event seperti funding, talent/venue, ticket revenue, dan untung-rugi; EO berfokus pada eksekusi operasional sesuai scope/kontrak. Satu organisasi dapat menjalankan kedua peran sekaligus.",
+    "promoter": "Promotor/Promoter memegang risiko komersial & finansial utama event (funding, booking venue/talent, ticket sales, dan untung-rugi).",
+    "EO": "EO (Event Organizer) adalah pelaksana operasional event yang mengoordinasikan produksi, panggung, dan rundown sesuai scope/kontrak dari promotor.",
+    "vendor": "Vendor adalah penyedia spesialis produksi & kebutuhan event (sound system, lighting, panggung, LED, rigging, dan gate ticketing scanner).",
+    "talent buyer": "Talent Buyer bertugas menegosiasikan fee artis, ketersediaan jadwal (booking availability), dan mengunci technical/hospitality rider talent.",
+    "production manager": "Production Manager memimpin seluruh eksekusi teknis panggung, sirkulasi load-in/load-out, dan koordinasi kru teknis di lapangan.",
+    "FOH": "FOH (Front of House) dalam live production merujuk area kontrol teknis tata suara & tata cahaya di depan panggung.",
+    "load-in": "Load-in adalah fase masuknya peralatan, kru, dan material produksi ke venue sebelum setup dan memengaruhi akses, jadwal, manpower, dan critical path.",
+    "load-out": "Load-out adalah fase pembongkaran dan keluarnya peralatan/kru/material setelah event; jadwal, akses, overtime, dan aturan venue perlu diperhitungkan.",
+    "rider": "Rider adalah kumpulan kebutuhan talent/produksi yang menjadi bagian dari kesepakatan, umumnya technical rider dan hospitality rider.",
+    "BEP": "BEP adalah titik ketika pendapatan yang relevan menutup biaya yang relevan. Perhitungannya wajib memakai input biaya/pendapatan yang benar.",
+    "GMV": "GMV adalah nilai bruto transaksi/aktivitas yang diproses. GMV tidak sama dengan revenue atau profit.",
+    "DP": "DP dalam transaksi biasanya berarti down payment/uang muka, tetapi harus diselesaikan dari konteks.",
+    "settlement": "Settlement adalah penyelesaian kewajiban finansial berdasarkan ledger, kontrak, provider reconciliation, dan otorisasi yang berlaku."
+  }
+}

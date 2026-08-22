@@ -29,8 +29,8 @@ EXPLICIT_ALIASES = {
     "klo": "kalau", "klw": "kalau", "gmn": "bagaimana", "knp": "kenapa",
     "napa": "kenapa", "brp": "berapa", "ssun": "susun", "rcna": "rencana",
     "trmasuk": "termasuk", "kptusan": "keputusan", "lbh": "lebih",
-    "dlu": "dulu", "jt": "juta", "htg": "hitung",
-    "itung": "hitung",
+    "dlu": "dulu", "jt": "juta", "htg": "hitung", "itung": "hitung",
+    "gue": "saya", "gw": "saya", "500jt": "Rp500.000.000", "boncos": "rugi (deficit risk)",
 }
 
 DOMAIN_ALIASES = {
@@ -45,6 +45,7 @@ DOMAIN_ALIASES = {
     "sponsr": "sponsor",
     "knser": "konser",
     "veneu": "venue",
+    "band gede": "headliner talent",
     "jkt": "Jakarta",
     "bdg": "Bandung",
 }

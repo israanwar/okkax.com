@@ -85,7 +85,7 @@ class GeminiProvider(BaseLLMProvider):
                     "temperature": temperature,
                     "top_p": top_p,
                 }
-                if thinking_budget is not None:
+                if thinking_budget is not None and thinking_budget > 0:
                     config_kwargs["thinking_config"] = types.ThinkingConfig(
                         thinking_budget=thinking_budget,
                     )
