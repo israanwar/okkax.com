@@ -16,15 +16,22 @@ export const premiumSelectClass = "okx-premium-select";
 function childrenToOptions(children) {
   return React.Children.toArray(children)
     .filter(React.isValidElement)
-    .map((child) => ({
-      value: String(child.props.value ?? ""),
-      label:
+    .map((child) => {
+      const childText =
         typeof child.props.children === "string" ||
         typeof child.props.children === "number"
           ? String(child.props.children)
-          : String(child.props.label ?? child.props.value ?? ""),
-      disabled: Boolean(child.props.disabled),
-    }));
+          : String(child.props.label ?? "");
+      const value =
+        child.props.value !== undefined
+          ? String(child.props.value)
+          : childText;
+      return {
+        value,
+        label: childText || value,
+        disabled: Boolean(child.props.disabled),
+      };
+    });
 }
 
 export default function PremiumSelect({

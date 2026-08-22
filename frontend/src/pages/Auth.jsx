@@ -586,7 +586,7 @@ export function Register() {
               className="mt-1.5 w-full"
             >
               {["Corporate Brand", "Event Organizer", "Talent Management", "Venue", "Vendor", "Sponsor", "Tenant / UMKM", "Other"].map((option) => (
-                <option key={option}>{option}</option>
+                <option key={option} value={option}>{option}</option>
               ))}
             </PremiumSelect>
           </FieldLabel>
